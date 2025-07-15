@@ -19,7 +19,6 @@ body {
 /* Cache Control for Images */
 img {
   cache-control: max-age=31536000;
-  /* 1 year cache */
 }
 
 /* Custom Animations */
