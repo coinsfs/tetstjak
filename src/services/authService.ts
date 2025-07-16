@@ -1,6 +1,6 @@
 import {LoginResponse, UserProfile, AuthError } from '../types/auth';
 
-const API_BASE_URL = 'http://192.168.43.9:8000/api/v1';
+const API_BASE_URL = 'http://192.168.250.9:8000/api/v1';
 
 class AuthService {
   async login(username: string, password: string): Promise<LoginResponse> {

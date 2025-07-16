@@ -16,11 +16,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Cache Control for Images */
-img {
-  cache-control: max-age=31536000;
-}
-
 /* Custom Animations */
 @keyframes fadeIn {
   from {
@@ -54,6 +49,43 @@ img {
   animation: float 3s ease-in-out infinite;
 }
 
+@keyframes slideInFade {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px) scale(0.95);
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: translateX(-5px) scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.animate-slide-in-fade {
+  animation: slideInFade 0.6s ease-out;
+}
+
+@keyframes slideOutFade {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(20px) scale(0.95);
+  }
+}
+
+.animate-slide-out-fade {
+  animation: slideOutFade 0.4s ease-in;
+}
+
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 8px;
@@ -70,6 +102,15 @@ img {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+/* Hide scrollbar for sidebar */
+.scrollbar-hide {
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  -webkit-scrollbar: none;
+  /* Hide scrollbar for IE, Edge and Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Custom Utilities */

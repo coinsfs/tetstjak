@@ -89,7 +89,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick, isOpen, onCl
         </div>
 
         {/* Main Menu */}
-        <nav className="flex-1 px-4 py-6 overflow-y-auto">
+        <nav className="flex-1 px-4 py-6 overflow-y-auto scrollbar-hide">
           <ul className="space-y-2">
             {menuItems.map((item) => (
               <li key={item.id}>

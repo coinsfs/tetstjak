@@ -7,7 +7,7 @@ class WebSocketService {
 
   connect(token: string) {
     try {
-      this.ws = new WebSocket(`ws://192.168.43.9:8000/api/v1/ws/lobby?token=${token}`);
+      this.ws = new WebSocket(`ws://192.168.250.9:8000/api/v1/ws/lobby?token=${token}`);
       
       this.ws.onopen = () => {
         console.log('WebSocket connected');
@@ -61,8 +61,17 @@ class WebSocketService {
     this.messageHandlers.set(type, handler);
   }
 
-  offMessage(type: string) {
-    this.messageHandlers.delete(type);
+  offMessage(type: string, handler?: (data: any) => void) {
+    if (handler) {
+      // Remove specific handler if provided
+      const currentHandler = this.messageHandlers.get(type);
+      if (currentHandler === handler) {
+        this.messageHandlers.delete(type);
+      }
+    } else {
+      // Remove all handlers for this type
+      this.messageHandlers.delete(type);
+    }
   }
 
   send(message: any) {

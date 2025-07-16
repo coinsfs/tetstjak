@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://192.168.43.9:8000/api/v1';
+const API_BASE_URL = 'http://192.168.250.9:8000/api/v1';
 
 class DashboardService {
   async getDashboardStats(token: string) {
@@ -75,6 +75,21 @@ class DashboardService {
 
     if (!response.ok) {
       throw new Error('Failed to fetch activity logs');
+    }
+
+    return response.json();
+  }
+
+  async getStudentPerformanceRoster(token: string, limit: number = 5) {
+    const response = await fetch(`${API_BASE_URL}/analytics/student-performance-roster?limit=${limit}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch student performance roster');
     }
 
     return response.json();
