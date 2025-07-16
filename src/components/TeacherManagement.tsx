@@ -1222,7 +1222,7 @@ const TeacherManagement: React.FC = () => {
                         <option value="">Pilih Kelas</option>
                         {classes.map(cls => (
                           <option key={cls._id} value={cls._id}>
-                            {cls.name} - {cls.expertise_details.abbreviation}
+                            {cls.grade_level} {cls.expertise_details.abbreviation} {cls.name}
                           </option>
                         ))}
                       </select>
