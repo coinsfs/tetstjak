@@ -767,15 +767,15 @@ const TeacherManagement: React.FC = () => {
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="px-6 py-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-gray-900">Detail Guru</h3>
-                    <button
-                    onClick={() => setShowDetailModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                    >
-                    <X className="w-5 h-5" />
-                    </button>
-                </div>
+                  <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900">Detail Guru</h3>
+                      <button
+                      onClick={() => setShowDetailModal(false)}
+                      className="text-gray-400 hover:text-gray-600"
+                      >
+                      <X className="w-5 h-5" />
+                      </button>
+                  </div>
                 </div>
                 
                 <div className="px-6 py-4 space-y-6">

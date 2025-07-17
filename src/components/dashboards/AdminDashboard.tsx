@@ -12,6 +12,8 @@ import BrowserUsageChart from '../charts/BrowserUsageChart';
 import ActivityFeed from '../ActivityFeed';
 import StudentPerformanceTable from '../StudentPerformanceTable';
 import TeacherManagement from '../TeacherManagement';
+import StudentManagement from '../StudentManagement';
+import ExamManagement from '../ExamManagement';
 
 const AdminDashboard: React.FC = () => {
   const { user, token } = useAuth();
@@ -182,6 +184,60 @@ const AdminDashboard: React.FC = () => {
             
             <div className="flex-1 overflow-auto p-6">
               <TeacherManagement />
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    if (activeMenu === 'students') {
+      return (
+        <div className="flex h-screen bg-gray-50 overflow-hidden">
+          <Sidebar 
+            activeMenu={activeMenu} 
+            onMenuClick={handleMenuClick}
+            isOpen={sidebarOpen}
+            onClose={closeSidebar}
+          />
+          <div className="flex-1 lg:ml-0 flex flex-col overflow-hidden">
+            <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
+              <button
+                onClick={toggleSidebar}
+                className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+              >
+                <Menu className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-auto p-6">
+              <StudentManagement />
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    if (activeMenu === 'exams') {
+      return (
+        <div className="flex h-screen bg-gray-50 overflow-hidden">
+          <Sidebar 
+            activeMenu={activeMenu} 
+            onMenuClick={handleMenuClick}
+            isOpen={sidebarOpen}
+            onClose={closeSidebar}
+          />
+          <div className="flex-1 lg:ml-0 flex flex-col overflow-hidden">
+            <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
+              <button
+                onClick={toggleSidebar}
+                className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+              >
+                <Menu className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-auto p-6">
+              <ExamManagement />
             </div>
           </div>
         </div>
