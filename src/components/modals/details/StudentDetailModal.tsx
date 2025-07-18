@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, User, Mail, Phone, MapPin, Calendar, GraduationCap, School, Clock, CheckCircle, XCircle } from 'lucide-react';
-import { Student } from '../../types/student';
+import { Student } from '../../../types/student';
 
 interface StudentDetailModalProps {
   student: Student;

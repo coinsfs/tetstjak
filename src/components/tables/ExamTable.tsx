@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { Edit, Trash2, FileText, Calendar, Clock, User, BarChart3, Eye } from 'lucide-react';
-import { Exam, EXAM_STATUS } from '../types/exam';
+import { Exam, EXAM_STATUS } from '../../types/exam';
 
 interface ExamTableProps {
   exams: Exam[];

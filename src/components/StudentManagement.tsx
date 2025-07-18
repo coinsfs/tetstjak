@@ -3,10 +3,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { Student, StudentFilters } from '../types/student';
 import { studentService } from '../services/studentService';
 import StudentFilter from './StudentFilter';
-import StudentTable from './StudentTable';
+import StudentTable from './tables/StudentTable';
 import StudentPagination from './StudentPagination';
-import StudentDetailModal from './modals/StudentDetailModal';
-import StudentFormModal from './modals/StudentFormModal';
+import StudentDetailModal from './modals/details/StudentDetailModal';
+import StudentFormModal from './modals/forms/StudentFormModal';
+import StudentDeleteModal from './modals/StudentDeleteModal';
 import toast from 'react-hot-toast';
 import { Plus, Users, AlertCircle } from 'lucide-react';
 
@@ -28,6 +29,7 @@ const StudentManagement: React.FC = () => {
   // Modal state
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [formModalOpen, setFormModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   
   // Calculate start position for API
@@ -118,25 +120,8 @@ const StudentManagement: React.FC = () => {
   }, [token, fetchStudents]);
 
   const handleDeleteStudent = useCallback(async (student: Student) => {
-    if (!token) return;
-
-    const confirmed = window.confirm(
-      `Are you sure you want to delete ${student.profile_details?.full_name || student.login_id}?`
-    );
-
-    if (!confirmed) return;
-
-    try {
-      await studentService.deleteStudent(token, student._id);
-      toast.success('Student deleted successfully');
-      
-      // Refresh data
-      fetchStudents();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete student';
-      toast.error(errorMessage);
-      console.error('Error deleting student:', err);
-    }
+    setSelectedStudent(student);
+    setDeleteModalOpen(true);
   }, [token, fetchStudents]);
 
   const handleAddStudent = () => {
@@ -152,6 +137,15 @@ const StudentManagement: React.FC = () => {
   const handleCloseFormModal = () => {
     setFormModalOpen(false);
     setSelectedStudent(null);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setSelectedStudent(null);
+  };
+
+  const handleDeleteSuccess = () => {
+    fetchStudents();
   };
 
   const handleFormSuccess = () => {
@@ -276,6 +270,15 @@ const StudentManagement: React.FC = () => {
         onClose={handleCloseFormModal}
         onSuccess={handleFormSuccess}
       />
+
+      {selectedStudent && (
+        <StudentDeleteModal
+          student={selectedStudent}
+          isOpen={deleteModalOpen}
+          onClose={handleCloseDeleteModal}
+          onSuccess={handleDeleteSuccess}
+        />
+      )}
     </div>
   );
 };

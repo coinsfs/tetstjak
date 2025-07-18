@@ -1,28 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { X, User, Save, Loader } from 'lucide-react';
-import { Student, CreateStudentRequest, UpdateStudentRequest, ExpertiseProgram, ClassData } from '../../types/student';
-import { studentService } from '../../services/studentService';
-import { useAuth } from '../../contexts/AuthContext';
+import { Teacher, CreateTeacherRequest, UpdateTeacherRequest, ClassData, DepartmentData } from '../../../types/teacher';
+import { teacherService } from '../../../services/teacherService';
+import { useAuth } from '../../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
-interface StudentFormModalProps {
-  student?: Student | null;
+interface TeacherFormModalProps {
+  teacher?: Teacher | null;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-const StudentFormModal: React.FC<StudentFormModalProps> = ({
-  student,
+const TeacherFormModal: React.FC<TeacherFormModalProps> = ({
+  teacher,
   isOpen,
   onClose,
   onSuccess
 }) => {
   const { token } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [expertisePrograms, setExpertisePrograms] = useState<ExpertiseProgram[]>([]);
   const [classes, setClasses] = useState<ClassData[]>([]);
-  const [filteredClasses, setFilteredClasses] = useState<ClassData[]>([]);
+  const [departments, setDepartments] = useState<DepartmentData[]>([]);
 
   const [formData, setFormData] = useState({
     login_id: '',
@@ -36,13 +35,9 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({
       address: '',
       phone_number: '',
       class_id: '',
-      department_id: '',
-      start_year: new Date().getFullYear(),
-      end_year: new Date().getFullYear() + 3
+      department_id: ''
     }
   });
-
-  const [selectedGradeLevel, setSelectedGradeLevel] = useState<string>('');
 
   useEffect(() => {
     if (isOpen && token) {
@@ -51,78 +46,54 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({
   }, [isOpen, token]);
 
   useEffect(() => {
-    if (student) {
+    if (teacher) {
       setFormData({
-        login_id: student.login_id,
-        email: student.email,
-        is_active: student.is_active,
+        login_id: teacher.login_id,
+        email: teacher.email,
+        is_active: teacher.is_active,
         profile: {
-          full_name: student.profile_details?.full_name || '',
-          gender: student.profile_details?.gender || 'Laki Laki',
-          birth_date: student.profile_details?.birth_date ? 
-            new Date(student.profile_details.birth_date).toISOString().split('T')[0] : '',
-          birth_place: student.profile_details?.birth_place || '',
-          address: student.profile_details?.address || '',
-          phone_number: student.profile_details?.phone_number || '',
-          class_id: student.class_details?._id || '',
-          department_id: student.department_details?._id || '',
-          start_year: student.profile_details?.start_year || new Date().getFullYear(),
-          end_year: student.profile_details?.end_year || new Date().getFullYear() + 3
+          full_name: teacher.profile_details?.full_name || '',
+          gender: teacher.profile_details?.gender || 'Laki Laki',
+          birth_date: teacher.profile_details?.birth_date ? 
+            new Date(teacher.profile_details.birth_date).toISOString().split('T')[0] : '',
+          birth_place: teacher.profile_details?.birth_place || '',
+          address: teacher.profile_details?.address || '',
+          phone_number: teacher.profile_details?.phone_number || '',
+          class_id: teacher.class_details?._id || '',
+          department_id: teacher.department_details?._id || ''
         }
       });
-
-      if (student.class_details) {
-        setSelectedGradeLevel(student.class_details.grade_level.toString());
-      }
     } else {
-      // Reset form for new student
+      // Reset form for new teacher
       setFormData({
         login_id: '',
         email: '',
         is_active: true,
         profile: {
           full_name: '',
-          gender: 'Laki laki',
+          gender: 'Laki Laki',
           birth_date: '',
           birth_place: '',
           address: '',
           phone_number: '',
           class_id: '',
-          department_id: '',
-          start_year: new Date().getFullYear(),
-          end_year: new Date().getFullYear() + 3
+          department_id: ''
         }
       });
-      setSelectedGradeLevel('');
     }
-  }, [student]);
-
-  useEffect(() => {
-    // Filter classes based on selected grade level and department
-    let filtered = classes;
-
-    if (selectedGradeLevel) {
-      filtered = filtered.filter(cls => cls.grade_level.toString() === selectedGradeLevel);
-    }
-
-    if (formData.profile.department_id) {
-      filtered = filtered.filter(cls => cls.expertise_id === formData.profile.department_id);
-    }
-
-    setFilteredClasses(filtered);
-  }, [classes, selectedGradeLevel, formData.profile.department_id]);
+  }, [teacher]);
 
   const fetchFormData = async () => {
     if (!token) return;
 
     try {
-      const [expertiseData, classData] = await Promise.all([
-        studentService.getExpertisePrograms(token),
-        studentService.getClasses(token)
+      const [classData, departmentData] = await Promise.all([
+        teacherService.getClasses(token),
+        teacherService.getDepartments(token)
       ]);
 
-      setExpertisePrograms(expertiseData);
       setClasses(classData);
+      setDepartments(departmentData);
     } catch (error) {
       console.error('Error fetching form data:', error);
       toast.error('Gagal memuat data form');
@@ -138,7 +109,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({
         ...prev,
         profile: {
           ...prev.profile,
-          [profileField]: type === 'number' ? parseInt(value) || 0 : value
+          [profileField]: value
         }
       }));
     } else {
@@ -149,33 +120,19 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({
     }
   };
 
-  const handleGradeLevelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const gradeLevel = e.target.value;
-    setSelectedGradeLevel(gradeLevel);
-    
-    // Reset class selection when grade level changes
-    setFormData(prev => ({
-      ...prev,
-      profile: {
-        ...prev.profile,
-        class_id: ''
-      }
-    }));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
 
     setLoading(true);
     try {
-      if (student) {
-        // Update existing student
-        const updateData: UpdateStudentRequest = {
+      if (teacher) {
+        // Update existing teacher
+        const updateData: UpdateTeacherRequest = {
           login_id: formData.login_id,
           email: formData.email,
           is_active: formData.is_active,
-          roles: ['student'],
+          roles: ['teacher'],
           profile: {
             ...formData.profile,
             class_id: formData.profile.class_id || undefined,
@@ -183,14 +140,14 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({
           }
         };
         
-        await studentService.updateStudent(token, student._id, updateData);
-        toast.success('Data siswa berhasil diperbarui');
+        await teacherService.updateTeacher(token, teacher._id, updateData);
+        toast.success('Data guru berhasil diperbarui');
       } else {
-        // Create new student
-        const createData: CreateStudentRequest = {
+        // Create new teacher
+        const createData: CreateTeacherRequest = {
           login_id: formData.login_id,
           email: formData.email,
-          roles: ['student'],
+          roles: ['teacher'],
           is_active: formData.is_active,
           profile: {
             ...formData.profile,
@@ -199,8 +156,8 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({
           }
         };
         
-        await studentService.createStudent(token, createData);
-        toast.success('Siswa baru berhasil ditambahkan');
+        await teacherService.createTeacher(token, createData);
+        toast.success('Guru baru berhasil ditambahkan');
       }
 
       onSuccess();
@@ -208,7 +165,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan';
       toast.error(errorMessage);
-      console.error('Error saving student:', error);
+      console.error('Error saving teacher:', error);
     } finally {
       setLoading(false);
     }
@@ -216,7 +173,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({
 
   if (!isOpen) return null;
 
-  const isEditing = !!student;
+  const isEditing = !!teacher;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -224,15 +181,15 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <User className="w-5 h-5 text-blue-600" />
+            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+              <User className="w-5 h-5 text-green-600" />
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
-                {isEditing ? 'Edit Siswa' : 'Tambah Siswa Baru'}
+                {isEditing ? 'Edit Guru' : 'Tambah Guru Baru'}
               </h2>
               <p className="text-sm text-gray-500">
-                {isEditing ? 'Perbarui informasi siswa' : 'Masukkan data siswa baru'}
+                {isEditing ? 'Perbarui informasi guru' : 'Masukkan data guru baru'}
               </p>
             </div>
           </div>
@@ -255,7 +212,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  NIS <span className="text-red-500">*</span>
+                  NKTAM <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -400,36 +357,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tahun Masuk
-                </label>
-                <input
-                  type="number"
-                  name="profile.start_year"
-                  value={formData.profile.start_year}
-                  onChange={handleInputChange}
-                  min="2020"
-                  max="2030"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tahun Lulus
-                </label>
-                <input
-                  type="number"
-                  name="profile.end_year"
-                  value={formData.profile.end_year}
-                  onChange={handleInputChange}
-                  min="2020"
-                  max="2035"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Jurusan
                 </label>
                 <select
@@ -439,9 +366,9 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Pilih Jurusan</option>
-                  {expertisePrograms.map((expertise) => (
-                    <option key={expertise._id} value={expertise._id}>
-                      {expertise.abbreviation} - {expertise.name}
+                  {departments.map((department) => (
+                    <option key={department._id} value={department._id}>
+                      {department.abbreviation} - {department.name}
                     </option>
                   ))}
                 </select>
@@ -449,43 +376,21 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tingkat Kelas
-                </label>
-                <select
-                  value={selectedGradeLevel}
-                  onChange={handleGradeLevelChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Pilih Tingkat</option>
-                  <option value="10">Kelas X</option>
-                  <option value="11">Kelas XI</option>
-                  <option value="12">Kelas XII</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Kelas
+                  Wali Kelas
                 </label>
                 <select
                   name="profile.class_id"
                   value={formData.profile.class_id}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  disabled={filteredClasses.length === 0}
                 >
-                  <option value="">Pilih Kelas</option>
-                  {filteredClasses.map((cls) => (
+                  <option value="">Tidak menjadi wali kelas</option>
+                  {classes.map((cls) => (
                     <option key={cls._id} value={cls._id}>
                       {cls.grade_level} {cls.expertise_details.abbreviation} {cls.name} - {cls.academic_year}
                     </option>
                   ))}
                 </select>
-                {filteredClasses.length === 0 && selectedGradeLevel && formData.profile.department_id && (
-                  <p className="text-sm text-gray-500 mt-1">
-                    Tidak ada kelas tersedia untuk tingkat dan jurusan yang dipilih
-                  </p>
-                )}
               </div>
             </div>
           </div>
@@ -518,4 +423,4 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({
   );
 };
 
-export default StudentFormModal;
+export default TeacherFormModal;

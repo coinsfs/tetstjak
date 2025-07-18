@@ -2,11 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Exam, ExamFilters, AcademicPeriod } from '../types/exam';
 import { examService } from '../services/examService';
-import ExamTable from './ExamTable';
+import ExamTable from './tables/ExamTable';
 import ExamPagination from './ExamPagination';
-import ExamFormModal from './modals/ExamFormModal';
+import ExamFormModal from './modals/forms/ExamFormModal';
 import ExamDeleteModal from './modals/ExamDeleteModal';
-import ExamDetailModal from './modals/ExamDetailModal';
+import ExamDetailModal from './modals/details/ExamDetailModal';
 import toast from 'react-hot-toast';
 import { Plus, FileText, AlertCircle, Search, Filter, RotateCcw } from 'lucide-react';
 

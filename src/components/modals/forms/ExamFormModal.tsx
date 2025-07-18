@@ -9,9 +9,9 @@ import {
   ClassData, 
   Teacher,
   EXAM_TYPES 
-} from '../../types/exam';
-import { examService } from '../../services/examService';
-import { useAuth } from '../../contexts/AuthContext';
+} from '../../../types/exam';
+import { examService } from '../../../services/examService';
+import { useAuth } from '../../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 interface ExamFormModalProps {

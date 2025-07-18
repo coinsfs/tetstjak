@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, FileText, Calendar, Clock, User, Users, Settings, BookOpen, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { Exam, Question } from '../../types/exam';
-import { examService } from '../../services/examService';
-import { useAuth } from '../../contexts/AuthContext';
+import { Exam, Question } from '../../../types/exam';
+import { examService } from '../../../services/examService';
+import { useAuth } from '../../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 interface ExamDetailModalProps {

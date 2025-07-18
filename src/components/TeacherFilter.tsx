@@ -1,119 +1,73 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Search, RotateCcw, Filter } from 'lucide-react';
-import { StudentFilters } from '../types/student';
-import { studentService } from '../services/studentService';
+import { TeacherFilters } from '../types/teacher';
+import { teacherService } from '../services/teacherService';
 import { useAuth } from '../contexts/AuthContext';
 
-interface StudentFilterProps {
-  filters: StudentFilters;
-  onFiltersChange: (filters: StudentFilters) => void;
+interface TeacherFilterProps {
+  filters: TeacherFilters;
+  onFiltersChange: (filters: TeacherFilters) => void;
   onResetFilters: () => void;
 }
 
-interface ExpertiseProgram {
+interface DepartmentData {
   _id: string;
   name: string;
   abbreviation: string;
 }
 
-interface ClassData {
-  _id: string;
-  name: string;
-  grade_level: number;
-  expertise_id: string;
-  expertise_details: {
-    name: string;
-    abbreviation: string;
-  };
-}
-
-const StudentFilter: React.FC<StudentFilterProps> = ({
+const TeacherFilter: React.FC<TeacherFilterProps> = ({
   filters,
   onFiltersChange,
   onResetFilters
 }) => {
   const { token } = useAuth();
-  const [expertisePrograms, setExpertisePrograms] = useState<ExpertiseProgram[]>([]);
-  const [classes, setClasses] = useState<ClassData[]>([]);
-  const [filteredClasses, setFilteredClasses] = useState<ClassData[]>([]);
+  const [departments, setDepartments] = useState<DepartmentData[]>([]);
   const [searchValue, setSearchValue] = useState(filters.search || '');
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchDepartments = async () => {
       if (!token) return;
 
       try {
-        const [expertiseData, classData] = await Promise.all([
-          studentService.getExpertisePrograms(token),
-          studentService.getClasses(token)
-        ]);
-
-        setExpertisePrograms(expertiseData);
-        setClasses(classData);
+        const departmentData = await teacherService.getDepartments(token);
+        setDepartments(departmentData);
       } catch (error) {
-        console.error('Error fetching filter data:', error);
+        console.error('Error fetching departments:', error);
       }
     };
 
-    fetchData();
+    fetchDepartments();
   }, [token]);
-
-  // Filter classes based on selected grade level and expertise
-  useEffect(() => {
-    let filtered = classes;
-
-    if (filters.grade_level && filters.grade_level !== 'all') {
-      filtered = filtered.filter(cls => cls.grade_level.toString() === filters.grade_level);
-    }
-
-    if (filters.expertise_id && filters.expertise_id !== 'all') {
-      filtered = filtered.filter(cls => cls.expertise_id === filters.expertise_id);
-    }
-
-    setFilteredClasses(filtered);
-  }, [classes, filters.grade_level, filters.expertise_id]);
 
   // Update search value when filters change externally (like reset)
   useEffect(() => {
     setSearchValue(filters.search || '');
   }, [filters.search]);
 
-  // Debounce search input
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onFiltersChange({
-        ...filters,
-        search: searchValue || undefined
-      });
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchValue]);
   const handleSearchChange = useCallback((value: string) => {
     setSearchValue(value);
+    onFiltersChange({
+      ...filters,
+      search: value || undefined
+    });
   }, [filters, onFiltersChange]);
 
-  const handleFilterChange = useCallback((key: keyof StudentFilters, value: string) => {
+  const handleFilterChange = useCallback((key: keyof TeacherFilters, value: string) => {
     const newFilters = { ...filters };
     
     if (value === 'all' || value === '') {
       delete newFilters[key];
     } else {
-      newFilters[key] = value;
-    }
-
-    // Reset class filter when grade level or expertise changes
-    if (key === 'grade_level' || key === 'expertise_id') {
-      delete newFilters.class_id;
+      newFilters[key] = value as any;
     }
 
     onFiltersChange(newFilters);
   }, [filters, onFiltersChange]);
 
-
   // Memoize active filters to prevent unnecessary re-renders
   const activeFiltersDisplay = useMemo(() => {
-    if (!(searchValue || filters.grade_level || filters.expertise_id || filters.class_id)) {
+    if (!(filters.search || filters.department || filters.status || filters.onboarding)) {
       return null;
     }
 
@@ -122,37 +76,38 @@ const StudentFilter: React.FC<StudentFilterProps> = ({
         <div className="flex items-center space-x-2 text-sm text-gray-600">
           <span className="font-medium">Filter aktif:</span>
           <div className="flex flex-wrap gap-2">
-            {searchValue && (
+            {filters.search && (
               <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md">
-                Pencarian: "{searchValue}"
+                Pencarian: "{filters.search}"
               </span>
             )}
-            {filters.grade_level && (
+            {filters.department && filters.department !== 'all' && (
               <span className="px-2 py-1 bg-green-100 text-green-800 rounded-md">
-                Kelas: {filters.grade_level === '10' ? 'X' : filters.grade_level === '11' ? 'XI' : 'XII'}
+                Jurusan: {departments.find(d => d._id === filters.department)?.abbreviation}
               </span>
             )}
-            {filters.expertise_id && (
+            {filters.status && filters.status !== 'all' && (
               <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md">
-                Jurusan: {expertisePrograms.find(e => e._id === filters.expertise_id)?.abbreviation}
+                Status: {filters.status === 'active' ? 'Aktif' : 'Nonaktif'}
               </span>
             )}
-            {filters.class_id && (
+            {filters.onboarding && filters.onboarding !== 'all' && (
               <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-md">
-                Kelas: {filteredClasses.find(c => c._id === filters.class_id)?.name}
+                Onboarding: {filters.onboarding === 'completed' ? 'Selesai' : 'Pending'}
               </span>
             )}
           </div>
         </div>
       </div>
     );
-  }, [searchValue, filters, expertisePrograms, filteredClasses]);
+  }, [filters, departments]);
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <Filter className="w-5 h-5 text-gray-500" />
-          <h3 className="text-lg font-semibold text-gray-900">Filter Siswa</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Filter Guru</h3>
         </div>
         
         <button
@@ -174,7 +129,7 @@ const StudentFilter: React.FC<StudentFilterProps> = ({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Cari nama atau NIS..."
+              placeholder="Cari nama atau NKTAM..."
               value={searchValue}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
@@ -182,59 +137,54 @@ const StudentFilter: React.FC<StudentFilterProps> = ({
           </div>
         </div>
 
-        {/* Grade Level Filter */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Tingkat Kelas
-          </label>
-          <select
-            value={filters.grade_level || 'all'}
-            onChange={(e) => handleFilterChange('grade_level', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-          >
-            <option value="all">Semua Tingkat</option>
-            <option value="10">Kelas X</option>
-            <option value="11">Kelas XI</option>
-            <option value="12">Kelas XII</option>
-          </select>
-        </div>
-
-        {/* Expertise Filter */}
+        {/* Department Filter */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
             Jurusan
           </label>
           <select
-            value={filters.expertise_id || 'all'}
-            onChange={(e) => handleFilterChange('expertise_id', e.target.value)}
+            value={filters.department || 'all'}
+            onChange={(e) => handleFilterChange('department', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
           >
             <option value="all">Semua Jurusan</option>
-            {expertisePrograms.map((expertise) => (
-              <option key={expertise._id} value={expertise._id}>
-                {expertise.abbreviation} - {expertise.name}
+            {departments.map((department) => (
+              <option key={department._id} value={department._id}>
+                {department.abbreviation} - {department.name}
               </option>
             ))}
           </select>
         </div>
 
-        {/* Class Filter */}
+        {/* Status Filter */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
-            Kelas
+            Status Akun
           </label>
           <select
-            value={filters.class_id || 'all'}
-            onChange={(e) => handleFilterChange('class_id', e.target.value)}
+            value={filters.status || 'all'}
+            onChange={(e) => handleFilterChange('status', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            disabled={filteredClasses.length === 0}
           >
-            <option value="all">Semua Kelas</option>
-            {filteredClasses.map((cls) => (
-              <option key={cls._id} value={cls._id}>
-                {cls.grade_level} {cls.expertise_details.abbreviation} {cls.name}
-              </option>
-            ))}
+            <option value="all">Semua Status</option>
+            <option value="active">Aktif</option>
+            <option value="inactive">Nonaktif</option>
+          </select>
+        </div>
+
+        {/* Onboarding Filter */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Status Onboarding
+          </label>
+          <select
+            value={filters.onboarding || 'all'}
+            onChange={(e) => handleFilterChange('onboarding', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+          >
+            <option value="all">Semua Status</option>
+            <option value="completed">Selesai</option>
+            <option value="pending">Pending</option>
           </select>
         </div>
       </div>
@@ -245,4 +195,4 @@ const StudentFilter: React.FC<StudentFilterProps> = ({
   );
 };
 
-export default StudentFilter;
+export default TeacherFilter;

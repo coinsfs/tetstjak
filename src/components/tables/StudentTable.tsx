@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { Eye, Edit, UserX, UserCheck, Trash2, User, MapPin, Phone, Mail } from 'lucide-react';
-import { Student } from '../types/student';
+import { Student } from '../../types/student';
 
 interface StudentTableProps {
   students: Student[];
