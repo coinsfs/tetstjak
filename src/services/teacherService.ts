@@ -11,8 +11,8 @@ class TeacherService {
       url.searchParams.append('search', filters.search);
     }
     
-    if (filters?.department && filters.department !== 'all') {
-      url.searchParams.append('department', filters.department);
+    if (filters?.expertise_id && filters.expertise_id !== 'all') {
+      url.searchParams.append('expertise_id', filters.expertise_id);
     }
     
     if (filters?.class_id && filters.class_id !== 'all') {

@@ -92,7 +92,7 @@ const TeacherFilter: React.FC<TeacherFilterProps> = ({
 
   // Memoize active filters to prevent unnecessary re-renders
   const activeFiltersDisplay = useMemo(() => {
-    if (!(filters.search || filters.department || filters.class_id)) {
+    if (!(filters.search || filters.expertise_id || filters.class_id)) {
       return null;
     }
 
@@ -106,9 +106,9 @@ const TeacherFilter: React.FC<TeacherFilterProps> = ({
                 Pencarian: "{filters.search}"
               </span>
             )}
-            {filters.department && filters.department !== 'all' && (
+            {filters.expertise_id && filters.expertise_id !== 'all' && (
               <span className="px-2 py-1 bg-green-100 text-green-800 rounded-md">
-                Jurusan: {departments.find(d => d._id === filters.department)?.abbreviation}
+                Jurusan: {departments.find(d => d._id === filters.expertise_id)?.abbreviation}
               </span>
             )}
             {filters.class_id && filters.class_id !== 'all' && (
@@ -163,8 +163,8 @@ const TeacherFilter: React.FC<TeacherFilterProps> = ({
             Jurusan
           </label>
           <select
-            value={filters.department || 'all'}
-            onChange={(e) => handleFilterChange('department', e.target.value)}
+            value={filters.expertise_id || 'all'}
+            onChange={(e) => handleFilterChange('expertise_id', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
           >
             <option value="all">Semua Jurusan</option>

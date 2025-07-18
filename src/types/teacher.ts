@@ -59,7 +59,7 @@ export interface Teacher {
   
   export interface TeacherFilters {
     search?: string;
-    department?: string;
+    expertise_id?: string;
     class_id?: string;
   }
   
