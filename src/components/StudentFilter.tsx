@@ -35,7 +35,6 @@ const StudentFilter: React.FC<StudentFilterProps> = ({
   const { token } = useAuth();
   const [expertisePrograms, setExpertisePrograms] = useState<ExpertiseProgram[]>([]);
   const [classes, setClasses] = useState<ClassData[]>([]);
-  const [filteredClasses, setFilteredClasses] = useState<ClassData[]>([]);
   const [searchValue, setSearchValue] = useState(filters.search || '');
 
   useEffect(() => {
@@ -58,21 +57,6 @@ const StudentFilter: React.FC<StudentFilterProps> = ({
     fetchData();
   }, [token]);
 
-  // Filter classes based on selected grade level and expertise
-  useEffect(() => {
-    let filtered = classes;
-
-    if (filters.grade_level && filters.grade_level !== 'all') {
-      filtered = filtered.filter(cls => cls.grade_level.toString() === filters.grade_level);
-    }
-
-    if (filters.expertise_id && filters.expertise_id !== 'all') {
-      filtered = filtered.filter(cls => cls.expertise_id === filters.expertise_id);
-    }
-
-    setFilteredClasses(filtered);
-  }, [classes, filters.grade_level, filters.expertise_id]);
-
   // Update search value when filters change externally (like reset)
   useEffect(() => {
     setSearchValue(filters.search || '');
@@ -81,14 +65,16 @@ const StudentFilter: React.FC<StudentFilterProps> = ({
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
-      onFiltersChange({
-        ...filters,
-        search: searchValue || undefined
-      });
+      if (searchValue !== (filters.search || '')) {
+        onFiltersChange({
+          ...filters,
+          search: searchValue || undefined
+        });
+      }
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchValue, filters, onFiltersChange]);
+  }, [searchValue]);
 
   const handleSearchChange = useCallback((value: string) => {
     setSearchValue(value);
@@ -111,43 +97,21 @@ const StudentFilter: React.FC<StudentFilterProps> = ({
     onFiltersChange(newFilters);
   }, [filters, onFiltersChange]);
 
+  // Filter classes based on selected grade level and expertise
+  const filteredClasses = useMemo(() => {
+    let filtered = classes;
 
-  // Memoize active filters to prevent unnecessary re-renders
-  const activeFiltersDisplay = useMemo(() => {
-    if (!(searchValue || filters.grade_level || filters.expertise_id || filters.class_id)) {
-      return null;
+    if (filters.grade_level && filters.grade_level !== 'all') {
+      filtered = filtered.filter(cls => cls.grade_level.toString() === filters.grade_level);
     }
 
-    return (
-      <div className="mt-4 pt-4 border-t border-gray-200">
-        <div className="flex items-center space-x-2 text-sm text-gray-600">
-          <span className="font-medium">Filter aktif:</span>
-          <div className="flex flex-wrap gap-2">
-            {searchValue && (
-              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md">
-                Pencarian: "{searchValue}"
-              </span>
-            )}
-            {filters.grade_level && (
-              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-md">
-                Kelas: {filters.grade_level === '10' ? 'X' : filters.grade_level === '11' ? 'XI' : 'XII'}
-              </span>
-            )}
-            {filters.expertise_id && (
-              <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md">
-                Jurusan: {expertisePrograms.find(e => e._id === filters.expertise_id)?.abbreviation}
-              </span>
-            )}
-            {filters.class_id && (
-              <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-md">
-                Kelas: {filteredClasses.find(c => c._id === filters.class_id)?.name}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }, [searchValue, filters, expertisePrograms, filteredClasses]);
+    if (filters.expertise_id && filters.expertise_id !== 'all') {
+      filtered = filtered.filter(cls => cls.expertise_id === filters.expertise_id);
+    }
+
+    return filtered;
+  }, [classes, filters.grade_level, filters.expertise_id]);
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
@@ -241,7 +205,35 @@ const StudentFilter: React.FC<StudentFilterProps> = ({
       </div>
 
       {/* Active Filters Display */}
-      {activeFiltersDisplay}
+      {(filters.search || filters.grade_level || filters.expertise_id || filters.class_id) && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <span className="font-medium">Filter aktif:</span>
+            <div className="flex flex-wrap gap-2">
+              {filters.search && (
+                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md">
+                  Pencarian: "{filters.search}"
+                </span>
+              )}
+              {filters.grade_level && (
+                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-md">
+                  Kelas: {filters.grade_level === '10' ? 'X' : filters.grade_level === '11' ? 'XI' : 'XII'}
+                </span>
+              )}
+              {filters.expertise_id && (
+                <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md">
+                  Jurusan: {expertisePrograms.find(e => e._id === filters.expertise_id)?.abbreviation}
+                </span>
+              )}
+              {filters.class_id && (
+                <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-md">
+                  Kelas: {filteredClasses.find(c => c._id === filters.class_id)?.name}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
