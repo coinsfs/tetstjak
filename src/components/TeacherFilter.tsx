@@ -65,14 +65,16 @@ const TeacherFilter: React.FC<TeacherFilterProps> = ({
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
-      onFiltersChange({
-        ...filters,
-        search: searchValue || undefined
-      });
+      if (searchValue !== (filters.search || '')) {
+        onFiltersChange({
+          ...filters,
+          search: searchValue || undefined
+        });
+      }
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchValue]);
+  }, [searchValue, filters, onFiltersChange]);
 
   const handleSearchChange = useCallback((value: string) => {
     setSearchValue(value);

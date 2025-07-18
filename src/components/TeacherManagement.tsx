@@ -39,7 +39,8 @@ const TeacherManagement: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const response = await teacherService.getTeachers(token, filters);
+      const start = (currentPage - 1) * recordsPerPage;
+      const response = await teacherService.getTeachers(token, start, recordsPerPage, filters);
       
       setTeachers(response.data);
       setTotalRecords(response.recordsFiltered);
@@ -53,7 +54,7 @@ const TeacherManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [token, filters]);
+  }, [token, currentPage, recordsPerPage, filters]);
 
   useEffect(() => {
     fetchTeachers();

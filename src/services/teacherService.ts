@@ -3,9 +3,11 @@ import { Teacher, TeacherResponse, TeacherFilters, CreateTeacherRequest, UpdateT
 const API_BASE_URL = 'http://192.168.250.9:8000/api/v1';
 
 class TeacherService {
-  async getTeachers(token: string, filters?: TeacherFilters): Promise<TeacherResponse> {
+  async getTeachers(token: string, start: number = 0, length: number = 10, filters?: TeacherFilters): Promise<TeacherResponse> {
     const url = new URL(`${API_BASE_URL}/users/`);
     url.searchParams.append('role', 'teacher');
+    url.searchParams.append('start', start.toString());
+    url.searchParams.append('length', length.toString());
     
     if (filters?.search) {
       url.searchParams.append('search', filters.search);
