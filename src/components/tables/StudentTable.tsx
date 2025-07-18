@@ -29,19 +29,6 @@ const StudentTable: React.FC<StudentTableProps> = memo(({
     }
   };
 
-  if (loading) {
-    return (
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-8 text-center">
-          <div className="flex items-center justify-center space-x-2">
-            <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-900 border-t-transparent"></div>
-            <span className="text-sm font-medium text-gray-700">Memuat data siswa...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (students.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-200">
@@ -49,7 +36,7 @@ const StudentTable: React.FC<StudentTableProps> = memo(({
           <User className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">Tidak ada data siswa</h3>
           <p className="text-gray-500">
-            Belum ada siswa yang terdaftar atau sesuai dengan filter yang dipilih.
+            {loading ? 'Memuat data siswa...' : 'Belum ada siswa yang terdaftar atau sesuai dengan filter yang dipilih.'}
           </p>
         </div>
       </div>
