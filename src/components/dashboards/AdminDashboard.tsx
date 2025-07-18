@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useRouter } from '../../hooks/useRouter';
 import { Users, BookOpen, Calendar, Wifi, Menu, Activity, MoreHorizontal } from 'lucide-react';
 import { dashboardService } from '../../services/dashboardService';
 import { websocketService } from '../../services/websocketService';
@@ -17,7 +18,7 @@ import ExamManagement from '../ExamManagement';
 
 const AdminDashboard: React.FC = () => {
   const { user, token } = useAuth();
-  const [activeMenu, setActiveMenu] = useState('dashboard');
+  const { currentPath, navigate } = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<number>(0);
@@ -27,6 +28,20 @@ const AdminDashboard: React.FC = () => {
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [studentPerformance, setStudentPerformance] = useState<StudentPerformance[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Get active menu from current path
+  const getActiveMenuFromPath = (path: string) => {
+    if (path === '/' || path === '/admin') return 'dashboard';
+    if (path === '/manage/teachers') return 'teachers';
+    if (path === '/manage/students') return 'students';
+    if (path === '/manage/exams') return 'exams';
+    if (path === '/manage/subjects') return 'subjects';
+    if (path === '/manage/classes') return 'classes';
+    if (path === '/manage/analytics') return 'analytics';
+    return 'dashboard';
+  };
+
+  const activeMenu = getActiveMenuFromPath(currentPath);
 
   // Handle new activity from WebSocket
   const handleNewActivity = (newActivity: ActivityLog) => {
@@ -125,7 +140,18 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   const handleMenuClick = (menu: string) => {
-    setActiveMenu(menu);
+    const pathMap: { [key: string]: string } = {
+      'dashboard': '/admin',
+      'teachers': '/manage/teachers',
+      'students': '/manage/students',
+      'exams': '/manage/exams',
+      'subjects': '/manage/subjects',
+      'classes': '/manage/classes',
+      'analytics': '/manage/analytics',
+    };
+    
+    const path = pathMap[menu] || '/admin';
+    navigate(path);
   };
 
   const handleViewStudentProfile = (studentId: string) => {

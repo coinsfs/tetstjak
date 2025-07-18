@@ -72,6 +72,7 @@ export interface Exam {
     limit?: number;
     academic_period_id?: string;
     exam_type?: string;
+    grade_level?: string;
   }
   
   export interface CreateExamRequest {
@@ -200,8 +201,7 @@ export interface Exam {
     { value: 'official_uts', label: 'UTS (Ujian Tengah Semester)' },
     { value: 'official_uas', label: 'UAS (Ujian Akhir Semester)' },
     { value: 'quiz', label: 'Kuis' },
-    { value: 'assignment', label: 'Tugas' },
-    { value: 'practice', label: 'Latihan' }
+    { value: 'daily_test', label: 'Ulangan Harian' }
   ];
   
   export const EXAM_STATUS = [
@@ -212,3 +212,28 @@ export interface Exam {
     { value: 'completed', label: 'Selesai', color: 'bg-purple-100 text-purple-800' },
     { value: 'cancelled', label: 'Dibatalkan', color: 'bg-red-100 text-red-800' }
   ];
+
+export interface AcademicPeriod {
+  year: string;
+  semester: string;
+  status: string;
+  start_date: string;
+  end_date: string;
+  _id: string;
+}
+
+export interface Question {
+  subject_id: string;
+  created_by_teacher_id: string;
+  question_type: string;
+  difficulty: string;
+  question_text: string;
+  options?: {
+    id: string;
+    text: string;
+    is_correct: boolean;
+  }[];
+  points: number;
+  tags: string[];
+  _id: string;
+}

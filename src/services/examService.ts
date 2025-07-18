@@ -7,7 +7,9 @@ import {
     Subject,
     ExpertiseProgram,
     ClassData,
-    TeacherResponse
+    TeacherResponse,
+    AcademicPeriod,
+    Question
   } from '../types/exam';
   
   const API_BASE_URL = 'http://192.168.250.9:8000/api/v1';
@@ -34,6 +36,10 @@ import {
       
       if (filters?.exam_type) {
         url.searchParams.append('exam_type', filters.exam_type);
+      }
+      
+      if (filters?.grade_level) {
+        url.searchParams.append('grade_level', filters.grade_level);
       }
   
       const response = await fetch(url.toString(), {
@@ -180,6 +186,38 @@ import {
         throw new Error('Failed to fetch teachers');
       }
   
+      return response.json();
+    }
+
+    async getAcademicPeriods(token: string): Promise<AcademicPeriod[]> {
+      const response = await fetch(`${API_BASE_URL}/academic-periods/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch academic periods');
+      }
+
+      return response.json();
+    }
+
+    async getQuestionsByIds(token: string, ids: string[]): Promise<Question[]> {
+      const response = await fetch(`${API_BASE_URL}/questions/bulk`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ids }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch questions');
+      }
+
       return response.json();
     }
   }

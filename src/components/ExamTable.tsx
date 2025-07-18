@@ -1,10 +1,12 @@
 import React, { memo } from 'react';
-import { Edit, Trash2, FileText, Calendar, Clock, User, BarChart3 } from 'lucide-react';
+import { Edit, Trash2, FileText, Calendar, Clock, User, BarChart3, Eye } from 'lucide-react';
 import { Exam, EXAM_STATUS } from '../types/exam';
 
 interface ExamTableProps {
   exams: Exam[];
   loading: boolean;
+  onViewExam: (exam: Exam) => void;
+  onPrefetchExam: (examId: string) => void;
   onEditExam: (exam: Exam) => void;
   onDeleteExam: (exam: Exam) => void;
   onAnalyticsExam: (exam: Exam) => void;
@@ -13,6 +15,8 @@ interface ExamTableProps {
 const ExamTable: React.FC<ExamTableProps> = memo(({
   exams,
   loading,
+  onViewExam,
+  onPrefetchExam,
   onEditExam,
   onDeleteExam,
   onAnalyticsExam
@@ -41,8 +45,7 @@ const ExamTable: React.FC<ExamTableProps> = memo(({
       'official_uts': 'UTS',
       'official_uas': 'UAS',
       'quiz': 'Kuis',
-      'assignment': 'Tugas',
-      'practice': 'Latihan'
+      'daily_test': 'Ulangan Harian'
     };
     return typeLabels[examType] || examType;
   };
@@ -77,25 +80,25 @@ const ExamTable: React.FC<ExamTableProps> = memo(({
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full table-auto">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[300px] max-w-[400px]">
                 Ujian
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px] max-w-[250px]">
                 Mata Pelajaran & Kelas
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px] max-w-[250px]">
                 Jadwal
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px] max-w-[150px]">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px] max-w-[120px]">
                 Pengawas
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                 Aksi
               </th>
             </tr>
@@ -104,13 +107,13 @@ const ExamTable: React.FC<ExamTableProps> = memo(({
             {exams.map((exam) => (
               <tr key={exam._id} className="hover:bg-gray-50 transition-colors">
                 {/* Exam Info */}
-                <td className="px-6 py-4">
+                <td className="px-6 py-4 min-w-[300px] max-w-[400px]">
                   <div className="flex items-start">
                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
                       <FileText className="w-5 h-5 text-blue-600" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium text-gray-900 mb-1">
+                      <div className="text-sm font-medium text-gray-900 mb-1 break-words">
                         {exam.title}
                       </div>
                       <div className="flex items-center space-x-2 mb-1">
@@ -130,28 +133,28 @@ const ExamTable: React.FC<ExamTableProps> = memo(({
                 </td>
 
                 {/* Subject & Class */}
-                <td className="px-6 py-4">
+                <td className="px-6 py-4 min-w-[200px] max-w-[250px]">
                   <div className="space-y-1">
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-gray-900 break-words">
                       {exam.teaching_assignment_details.subject_details.name}
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-500 break-words">
                       Kelas {exam.teaching_assignment_details.class_details.grade_level} {exam.teaching_assignment_details.class_details.name}
                     </div>
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-gray-400 break-words">
                       {exam.teaching_assignment_details.class_details.academic_year}
                     </div>
                   </div>
                 </td>
 
                 {/* Schedule */}
-                <td className="px-6 py-4">
+                <td className="px-6 py-4 min-w-[200px] max-w-[250px]">
                   <div className="space-y-1">
                     <div className="flex items-center text-sm text-gray-900">
                       <Calendar className="w-4 h-4 mr-2 text-gray-400" />
                       <div>
                         <div className="font-medium">Mulai</div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 break-words">
                           {formatDateTime(exam.availability_start_time)}
                         </div>
                       </div>
@@ -160,7 +163,7 @@ const ExamTable: React.FC<ExamTableProps> = memo(({
                       <Calendar className="w-4 h-4 mr-2 text-gray-400" />
                       <div>
                         <div className="font-medium">Selesai</div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 break-words">
                           {formatDateTime(exam.availability_end_time)}
                         </div>
                       </div>
@@ -169,17 +172,17 @@ const ExamTable: React.FC<ExamTableProps> = memo(({
                 </td>
 
                 {/* Status */}
-                <td className="px-6 py-4">
+                <td className="px-6 py-4 min-w-[155px] max-w-[150px]">
                   <div className="space-y-2">
                     {getStatusBadge(exam.status)}
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 break-words">
                       Guru: {exam.teaching_assignment_details.teacher_details.login_id}
                     </div>
                   </div>
                 </td>
 
                 {/* Proctors */}
-                <td className="px-6 py-4">
+                <td className="px-6 py-4 min-w-[150px] max-w-[250px]">
                   <div className="flex items-center text-sm text-gray-500">
                     <User className="w-4 h-4 mr-2" />
                     {exam.proctor_ids.length > 0 ? (
@@ -191,8 +194,18 @@ const ExamTable: React.FC<ExamTableProps> = memo(({
                 </td>
 
                 {/* Actions */}
-                <td className="px-6 py-4">
-                  <div className="flex items-center justify-center space-x-2">
+                <td className="px-6 py-4 min-w-[150px]">
+                  <div className="flex items-center justify-center space-x-1">
+                    {/* View Detail Button */}
+                    <button
+                      onClick={() => onViewExam(exam)}
+                      onMouseEnter={() => onPrefetchExam(exam._id)}
+                      className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
+                      title="Lihat Detail"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+
                     {/* Analytics Button - Only show if status is completed */}
                     {exam.status === 'completed' && (
                       <button

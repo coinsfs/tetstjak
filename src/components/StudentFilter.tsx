@@ -36,7 +36,6 @@ const StudentFilter: React.FC<StudentFilterProps> = ({
   const [expertisePrograms, setExpertisePrograms] = useState<ExpertiseProgram[]>([]);
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [filteredClasses, setFilteredClasses] = useState<ClassData[]>([]);
-  const [searchDebounceTimer, setSearchDebounceTimer] = useState<NodeJS.Timeout | null>(null);
   const [searchValue, setSearchValue] = useState(filters.search || '');
 
   useEffect(() => {
@@ -81,22 +80,11 @@ const StudentFilter: React.FC<StudentFilterProps> = ({
 
   const handleSearchChange = useCallback((value: string) => {
     setSearchValue(value);
-    
-    // Clear existing timer
-    if (searchDebounceTimer) {
-      clearTimeout(searchDebounceTimer);
-    }
-
-    // Set new timer for debounce
-    const timer = setTimeout(() => {
-      onFiltersChange({
-        ...filters,
-        search: value || undefined
-      });
-    }, 500);
-
-    setSearchDebounceTimer(timer);
-  }, [searchDebounceTimer, filters, onFiltersChange]);
+    onFiltersChange({
+      ...filters,
+      search: value || undefined
+    });
+  }, [filters, onFiltersChange]);
 
   const handleFilterChange = useCallback((key: keyof StudentFilters, value: string) => {
     const newFilters = { ...filters };
@@ -115,14 +103,6 @@ const StudentFilter: React.FC<StudentFilterProps> = ({
     onFiltersChange(newFilters);
   }, [filters, onFiltersChange]);
 
-  // Cleanup timer on unmount
-  useEffect(() => {
-    return () => {
-      if (searchDebounceTimer) {
-        clearTimeout(searchDebounceTimer);
-      }
-    };
-  }, [searchDebounceTimer]);
 
   // Memoize active filters to prevent unnecessary re-renders
   const activeFiltersDisplay = useMemo(() => {

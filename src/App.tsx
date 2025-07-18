@@ -58,6 +58,12 @@ const AppContent: React.FC = () => {
   // Route based on current path
   switch (currentPath) {
     case '/admin':
+    case '/manage/teachers':
+    case '/manage/students':
+    case '/manage/exams':
+    case '/manage/subjects':
+    case '/manage/classes':
+    case '/manage/analytics':
       return (
         <ProtectedRoute requiredRole="admin">
           <AdminDashboard />

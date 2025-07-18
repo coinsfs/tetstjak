@@ -17,5 +17,9 @@ export const useRouter = () => {
     setCurrentPath(path);
   };
 
-  return { currentPath, navigate };
+  const replace = (path: string) => {
+    window.history.replaceState({}, '', path);
+    setCurrentPath(path);
+  };
+  return { currentPath, navigate, replace };
 };

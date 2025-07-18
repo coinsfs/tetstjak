@@ -4,7 +4,6 @@ import {
   Users, 
   GraduationCap, 
   FileText, 
-  HelpCircle, 
   BookOpen, 
   School, 
   BarChart3, 
@@ -26,10 +25,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick, isOpen, onCl
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'teachers', label: 'Kelola Guru', icon: Users },
-    { id: 'students', label: 'Kelola Siswa', icon: GraduationCap },
-    { id: 'exams', label: 'Kelola Ujian', icon: FileText },
-    { id: 'questions', label: 'Kelola Soal', icon: HelpCircle },
+    { id: 'teachers', label: 'Kelola Guru', icon: Users, path: '/manage/teachers' },
+    { id: 'students', label: 'Kelola Siswa', icon: GraduationCap, path: '/manage/students' },
+    { id: 'exams', label: 'Kelola Ujian', icon: FileText, path: '/manage/exams' },
     { id: 'subjects', label: 'Mata Pelajaran', icon: BookOpen },
     { id: 'classes', label: 'Kelas', icon: School },
     { id: 'analytics', label: 'Analitik', icon: BarChart3 },

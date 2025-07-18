@@ -27,6 +27,7 @@ import {
   CheckCircle,
   Clock
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const TeacherManagement: React.FC = () => {
     const { token } = useAuth();
@@ -267,8 +268,9 @@ const TeacherManagement: React.FC = () => {
       setShowEditModal(false);
       setSelectedTeacher(null);
       resetForm();
+      toast.success("Data berhasil ditambahkan")
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update teacher');
+      toast.error(err instanceof Error ? err.message : 'Failed to update teacher')
     }
   };
 
@@ -784,7 +786,7 @@ const TeacherManagement: React.FC = () => {
                     <h4 className="text-sm font-medium text-gray-900 mb-3">Informasi Dasar</h4>
                     <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="text-xs text-gray-500">ID Login</label>
+                        <label className="text-xs text-gray-500">NKTAM</label>
                         <p className="text-sm font-medium text-gray-900">{selectedTeacher.login_id}</p>
                     </div>
                     <div>

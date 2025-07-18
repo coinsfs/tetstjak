@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Exam, ExamFilters } from '../types/exam';
+import { Exam, ExamFilters, AcademicPeriod } from '../types/exam';
 import { examService } from '../services/examService';
 import ExamTable from './ExamTable';
 import ExamPagination from './ExamPagination';
 import ExamFormModal from './modals/ExamFormModal';
 import ExamDeleteModal from './modals/ExamDeleteModal';
+import ExamDetailModal from './modals/ExamDetailModal';
 import toast from 'react-hot-toast';
-import { Plus, FileText, AlertCircle, Search } from 'lucide-react';
+import { Plus, FileText, AlertCircle, Search, Filter, RotateCcw } from 'lucide-react';
 
 const ExamManagement: React.FC = () => {
   const { token } = useAuth();
   const [exams, setExams] = useState<Exam[]>([]);
+  const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -23,13 +25,26 @@ const ExamManagement: React.FC = () => {
   
   // Search state
   const [searchValue, setSearchValue] = useState('');
-  const [searchDebounceTimer, setSearchDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  
+  // Filter state
+  const [filters, setFilters] = useState<ExamFilters>({});
   
   // Modal state
   const [formModalOpen, setFormModalOpen] = useState(false);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
+  const [prefetchedExams, setPrefetchedExams] = useState<Set<string>>(new Set());
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchValue);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchValue]);
   const fetchExams = useCallback(async () => {
     if (!token) return;
 
@@ -37,16 +52,17 @@ const ExamManagement: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const filters: ExamFilters = {
+      const examFilters: ExamFilters = {
         page: currentPage,
-        limit: recordsPerPage
+        limit: recordsPerPage,
+        ...filters
       };
 
-      if (searchValue.trim()) {
-        filters.search = searchValue.trim();
+      if (debouncedSearch.trim()) {
+        examFilters.search = debouncedSearch.trim();
       }
       
-      const response = await examService.getExams(token, filters);
+      const response = await examService.getExams(token, examFilters);
       
       setExams(response.data);
       setTotalRecords(response.total_items);
@@ -60,27 +76,51 @@ const ExamManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [token, currentPage, recordsPerPage, searchValue]);
+  }, [token, currentPage, recordsPerPage, debouncedSearch, filters]);
 
   useEffect(() => {
     fetchExams();
   }, [fetchExams]);
 
+  useEffect(() => {
+    const fetchAcademicPeriods = async () => {
+      if (!token) return;
+      
+      try {
+        const periods = await examService.getAcademicPeriods(token);
+        setAcademicPeriods(periods);
+      } catch (error) {
+        console.error('Error fetching academic periods:', error);
+      }
+    };
+
+    fetchAcademicPeriods();
+  }, [token]);
+
   const handleSearchChange = useCallback((value: string) => {
     setSearchValue(value);
-    
-    // Clear existing timer
-    if (searchDebounceTimer) {
-      clearTimeout(searchDebounceTimer);
-    }
+    setCurrentPage(1); // Reset to first page when searching
+  }, []);
 
-    // Set new timer for debounce
-    const timer = setTimeout(() => {
-      setCurrentPage(1); // Reset to first page when searching
-    }, 500);
+  const handleFilterChange = useCallback((key: keyof ExamFilters, value: string) => {
+    setFilters(prev => {
+      const newFilters = { ...prev };
+      if (value === '' || value === 'all') {
+        delete newFilters[key];
+      } else {
+        newFilters[key] = value;
+      }
+      return newFilters;
+    });
+    setCurrentPage(1); // Reset to first page when filter changes
+  }, []);
 
-    setSearchDebounceTimer(timer);
-  }, [searchDebounceTimer]);
+  const handleResetFilters = useCallback(() => {
+    setFilters({});
+    setSearchValue('');
+    setDebouncedSearch('');
+    setCurrentPage(1);
+  }, []);
 
   const handlePageChange = useCallback((page: number) => {
     if (page >= 1 && page <= totalPages && page !== currentPage) {
@@ -100,6 +140,29 @@ const ExamManagement: React.FC = () => {
     setFormModalOpen(true);
   };
 
+  const handleViewExam = useCallback((exam: Exam) => {
+    setSelectedExam(exam);
+    setDetailModalOpen(true);
+  }, []);
+
+  const handlePrefetchExam = useCallback(async (examId: string) => {
+    if (!token || prefetchedExams.has(examId)) return;
+
+    try {
+      // Mark as prefetched to avoid duplicate requests
+      setPrefetchedExams(prev => new Set(prev).add(examId));
+      
+      // Find the exam to get question IDs
+      const exam = exams.find(e => e._id === examId);
+      if (exam && exam.questions && exam.questions.length > 0) {
+        // Prefetch questions
+        await examService.getQuestionsByIds(token, exam.questions);
+      }
+    } catch (error) {
+      // Silently handle prefetch errors
+      console.log('Prefetch failed for exam:', examId);
+    }
+  }, [token, exams, prefetchedExams]);
   const handleEditExam = useCallback((exam: Exam) => {
     setSelectedExam(exam);
     setFormModalOpen(true);
@@ -121,6 +184,11 @@ const ExamManagement: React.FC = () => {
     setSelectedExam(null);
   };
 
+  const handleCloseDetailModal = () => {
+    setDetailModalOpen(false);
+    setSelectedExam(null);
+  };
+
   const handleCloseDeleteModal = () => {
     setDeleteModalOpen(false);
     setSelectedExam(null);
@@ -134,14 +202,6 @@ const ExamManagement: React.FC = () => {
     fetchExams();
   };
 
-  // Cleanup timer on unmount
-  useEffect(() => {
-    return () => {
-      if (searchDebounceTimer) {
-        clearTimeout(searchDebounceTimer);
-      }
-    };
-  }, [searchDebounceTimer]);
 
   if (error) {
     return (
@@ -220,28 +280,133 @@ const ExamManagement: React.FC = () => {
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
         <div className="flex items-center space-x-2 mb-4">
-          <Search className="w-5 h-5 text-gray-500" />
-          <h3 className="text-lg font-semibold text-gray-900">Pencarian Ujian</h3>
+          <Filter className="w-5 h-5 text-gray-500" />
+          <h3 className="text-lg font-semibold text-gray-900">Filter & Pencarian</h3>
+          <button
+            onClick={handleResetFilters}
+            className="ml-auto flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-md transition-colors"
+          >
+            <RotateCcw className="w-4 h-4" />
+            <span>Reset</span>
+          </button>
         </div>
         
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Cari judul ujian, mata pelajaran, atau nama guru..."
-            value={searchValue}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Search Input */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Pencarian
+            </label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Cari judul ujian..."
+                value={searchValue}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Academic Period Filter */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Periode Akademik
+            </label>
+            <select
+              value={filters.academic_period_id || ''}
+              onChange={(e) => handleFilterChange('academic_period_id', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              <option value="">Semua Periode</option>
+              {academicPeriods.map((period) => (
+                <option key={period._id} value={period._id}>
+                  {period.year} - Semester {period.semester}
+                  {period.status === 'active' && ' (Aktif)'}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Grade Level Filter */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Tingkat Kelas
+            </label>
+            <select
+              value={filters.grade_level || ''}
+              onChange={(e) => handleFilterChange('grade_level', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              <option value="">Semua Tingkat</option>
+              <option value="10">Kelas X</option>
+              <option value="11">Kelas XI</option>
+              <option value="12">Kelas XII</option>
+            </select>
+          </div>
+
+          {/* Exam Type Filter */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Jenis Ujian
+            </label>
+            <select
+              value={filters.exam_type || ''}
+              onChange={(e) => handleFilterChange('exam_type', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              <option value="">Semua Jenis</option>
+              <option value="official_uts">UTS</option>
+              <option value="official_uas">UAS</option>
+              <option value="quiz">Kuis</option>
+              <option value="daily_test">Ulangan Harian</option>
+            </select>
+          </div>
         </div>
+
+        {/* Active Filters Display */}
+        {(filters.academic_period_id || filters.grade_level || filters.exam_type || searchValue) && (
+          <div className="pt-4 border-t border-gray-200">
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <span className="font-medium">Filter aktif:</span>
+              <div className="flex flex-wrap gap-2">
+                {searchValue && (
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md">
+                    Pencarian: "{searchValue}"
+                  </span>
+                )}
+                {filters.academic_period_id && (
+                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-md">
+                    Periode: {academicPeriods.find(p => p._id === filters.academic_period_id)?.year}
+                  </span>
+                )}
+                {filters.grade_level && (
+                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md">
+                    Kelas: {filters.grade_level === '10' ? 'X' : filters.grade_level === '11' ? 'XI' : 'XII'}
+                  </span>
+                )}
+                {filters.exam_type && (
+                  <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-md">
+                    Jenis: {filters.exam_type === 'official_uts' ? 'UTS' : 
+                           filters.exam_type === 'official_uas' ? 'UAS' : 
+                           filters.exam_type === 'quiz' ? 'Kuis' : 'Ulangan Harian'}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Exam Table */}
       <ExamTable
         exams={exams}
         loading={loading}
+        onViewExam={handleViewExam}
+        onPrefetchExam={handlePrefetchExam}
         onEditExam={handleEditExam}
         onDeleteExam={handleDeleteExam}
         onAnalyticsExam={handleAnalyticsExam}
@@ -264,6 +429,14 @@ const ExamManagement: React.FC = () => {
         onClose={handleCloseFormModal}
         onSuccess={handleFormSuccess}
       />
+
+      {selectedExam && (
+        <ExamDetailModal
+          exam={selectedExam}
+          isOpen={detailModalOpen}
+          onClose={handleCloseDetailModal}
+        />
+      )}
 
       {selectedExam && (
         <ExamDeleteModal
