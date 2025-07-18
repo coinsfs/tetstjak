@@ -60,8 +60,7 @@ export interface Teacher {
   export interface TeacherFilters {
     search?: string;
     department?: string;
-    status?: 'active' | 'inactive' | 'all';
-    onboarding?: 'completed' | 'pending' | 'all';
+    class_id?: string;
   }
   
   export interface CreateTeacherRequest {

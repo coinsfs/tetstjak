@@ -16,6 +16,17 @@ interface DepartmentData {
   abbreviation: string;
 }
 
+interface ClassData {
+  _id: string;
+  name: string;
+  grade_level: number;
+  expertise_id: string;
+  expertise_details: {
+    name: string;
+    abbreviation: string;
+  };
+}
+
 const TeacherFilter: React.FC<TeacherFilterProps> = ({
   filters,
   onFiltersChange,
@@ -23,21 +34,27 @@ const TeacherFilter: React.FC<TeacherFilterProps> = ({
 }) => {
   const { token } = useAuth();
   const [departments, setDepartments] = useState<DepartmentData[]>([]);
+  const [classes, setClasses] = useState<ClassData[]>([]);
   const [searchValue, setSearchValue] = useState(filters.search || '');
 
   useEffect(() => {
-    const fetchDepartments = async () => {
+    const fetchData = async () => {
       if (!token) return;
 
       try {
-        const departmentData = await teacherService.getDepartments(token);
+        const [departmentData, classData] = await Promise.all([
+          teacherService.getDepartments(token),
+          teacherService.getClasses(token)
+        ]);
+
         setDepartments(departmentData);
+        setClasses(classData);
       } catch (error) {
-        console.error('Error fetching departments:', error);
+        console.error('Error fetching filter data:', error);
       }
     };
 
-    fetchDepartments();
+    fetchData();
   }, [token]);
 
   // Update search value when filters change externally (like reset)
@@ -45,13 +62,21 @@ const TeacherFilter: React.FC<TeacherFilterProps> = ({
     setSearchValue(filters.search || '');
   }, [filters.search]);
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onFiltersChange({
+        ...filters,
+        search: searchValue || undefined
+      });
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchValue]);
+
   const handleSearchChange = useCallback((value: string) => {
     setSearchValue(value);
-    onFiltersChange({
-      ...filters,
-      search: value || undefined
-    });
-  }, [filters, onFiltersChange]);
+  }, []);
 
   const handleFilterChange = useCallback((key: keyof TeacherFilters, value: string) => {
     const newFilters = { ...filters };
@@ -67,7 +92,7 @@ const TeacherFilter: React.FC<TeacherFilterProps> = ({
 
   // Memoize active filters to prevent unnecessary re-renders
   const activeFiltersDisplay = useMemo(() => {
-    if (!(filters.search || filters.department || filters.status || filters.onboarding)) {
+    if (!(filters.search || filters.department || filters.class_id)) {
       return null;
     }
 
@@ -86,21 +111,16 @@ const TeacherFilter: React.FC<TeacherFilterProps> = ({
                 Jurusan: {departments.find(d => d._id === filters.department)?.abbreviation}
               </span>
             )}
-            {filters.status && filters.status !== 'all' && (
+            {filters.class_id && filters.class_id !== 'all' && (
               <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md">
-                Status: {filters.status === 'active' ? 'Aktif' : 'Nonaktif'}
-              </span>
-            )}
-            {filters.onboarding && filters.onboarding !== 'all' && (
-              <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-md">
-                Onboarding: {filters.onboarding === 'completed' ? 'Selesai' : 'Pending'}
+                Wali Kelas: {classes.find(c => c._id === filters.class_id)?.name}
               </span>
             )}
           </div>
         </div>
       </div>
     );
-  }, [filters, departments]);
+  }, [filters, departments, classes]);
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
@@ -119,7 +139,7 @@ const TeacherFilter: React.FC<TeacherFilterProps> = ({
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Search Input */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
@@ -156,35 +176,22 @@ const TeacherFilter: React.FC<TeacherFilterProps> = ({
           </select>
         </div>
 
-        {/* Status Filter */}
+        {/* Class Filter (Homeroom Teacher) */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
-            Status Akun
+            Wali Kelas
           </label>
           <select
-            value={filters.status || 'all'}
-            onChange={(e) => handleFilterChange('status', e.target.value)}
+            value={filters.class_id || 'all'}
+            onChange={(e) => handleFilterChange('class_id', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
           >
-            <option value="all">Semua Status</option>
-            <option value="active">Aktif</option>
-            <option value="inactive">Nonaktif</option>
-          </select>
-        </div>
-
-        {/* Onboarding Filter */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Status Onboarding
-          </label>
-          <select
-            value={filters.onboarding || 'all'}
-            onChange={(e) => handleFilterChange('onboarding', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-          >
-            <option value="all">Semua Status</option>
-            <option value="completed">Selesai</option>
-            <option value="pending">Pending</option>
+            <option value="all">Semua Kelas</option>
+            {classes.map((cls) => (
+              <option key={cls._id} value={cls._id}>
+                {cls.grade_level} {cls.expertise_details.abbreviation} {cls.name}
+              </option>
+            ))}
           </select>
         </div>
       </div>

@@ -53,7 +53,7 @@ const TeacherManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [token, filters, recordsPerPage]);
+  }, [token, filters]);
 
   useEffect(() => {
     fetchTeachers();

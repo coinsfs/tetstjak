@@ -15,8 +15,8 @@ class TeacherService {
       url.searchParams.append('department', filters.department);
     }
     
-    if (filters?.status && filters.status !== 'all') {
-      url.searchParams.append('is_active', filters.status === 'active' ? 'true' : 'false');
+    if (filters?.class_id && filters.class_id !== 'all') {
+      url.searchParams.append('class_id', filters.class_id);
     }
 
     const response = await fetch(url.toString(), {
