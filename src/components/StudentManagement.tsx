@@ -72,7 +72,8 @@ const StudentManagement: React.FC = () => {
   }, []);
 
   const handleResetFilters = useCallback(() => {
-    setFilters({});
+    const resetFilters = {};
+    setFilters(resetFilters);
     setCurrentPage(1);
   }, []);
 

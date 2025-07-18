@@ -88,10 +88,11 @@ const StudentFilter: React.FC<StudentFilterProps> = ({
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchValue]);
+  }, [searchValue, filters, onFiltersChange]);
+
   const handleSearchChange = useCallback((value: string) => {
     setSearchValue(value);
-  }, [filters, onFiltersChange]);
+  }, []);
 
   const handleFilterChange = useCallback((key: keyof StudentFilters, value: string) => {
     const newFilters = { ...filters };
