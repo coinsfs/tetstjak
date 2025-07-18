@@ -3,6 +3,7 @@ import { X, FileText, Calendar, Clock, User, Users, Settings, BookOpen, CheckCir
 import { Exam, Question } from '../../../types/exam';
 import { examService } from '../../../services/examService';
 import { useAuth } from '../../../contexts/AuthContext';
+import QuestionDisplay from '../../QuestionDisplay';
 import toast from 'react-hot-toast';
 
 interface ExamDetailModalProps {
@@ -82,24 +83,6 @@ const ExamDetailModal: React.FC<ExamDetailModalProps> = ({
         {config.label}
       </span>
     );
-  };
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return 'bg-green-100 text-green-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'hard': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getDifficultyLabel = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return 'Mudah';
-      case 'medium': return 'Sedang';
-      case 'hard': return 'Sulit';
-      default: return difficulty;
-    }
   };
 
   const totalPoints = questions.reduce((sum, question) => sum + question.points, 0);
@@ -305,92 +288,12 @@ const ExamDetailModal: React.FC<ExamDetailModalProps> = ({
                   <span className="text-sm font-medium text-gray-700">Memuat soal...</span>
                 </div>
               </div>
-            ) : questions.length === 0 ? (
-              <div className="text-center py-8">
-                <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h4 className="text-lg font-medium text-gray-900 mb-2">Belum ada soal</h4>
-                <p className="text-gray-500">
-                  Ujian ini belum memiliki soal atau soal belum ditambahkan.
-                </p>
-              </div>
             ) : (
-              <div className="space-y-4">
-                {questions.map((question, index) => (
-                  <div key={question._id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-2">
-                        <span className="inline-flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
-                          {index + 1}
-                        </span>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(question.difficulty)}`}>
-                          {getDifficultyLabel(question.difficulty)}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          {question.points} poin
-                        </span>
-                      </div>
-                      
-                      {question.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {question.tags.map((tag, tagIndex) => (
-                            <span key={tagIndex} className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mb-4">
-                      <p className="text-sm font-medium text-gray-900 break-words">
-                        {question.question_text}
-                      </p>
-                    </div>
-
-                    {question.question_type === 'multiple_choice' && question.options && (
-                      <div className="space-y-2">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Pilihan Jawaban:
-                        </p>
-                        <div className="grid grid-cols-1 gap-2">
-                          {question.options.map((option, optionIndex) => (
-                            <div 
-                              key={option.id} 
-                              className={`flex items-center space-x-3 p-3 rounded-md border ${
-                                option.is_correct 
-                                  ? 'bg-green-50 border-green-200' 
-                                  : 'bg-gray-50 border-gray-200'
-                              }`}
-                            >
-                              <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-sm font-medium ${
-                                option.is_correct 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                {String.fromCharCode(65 + optionIndex)}
-                              </span>
-                              <span className="text-sm text-gray-900 break-words flex-1">
-                                {option.text}
-                              </span>
-                              {option.is_correct && (
-                                <CheckCircle className="w-4 h-4 text-green-500" />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {question.question_type === 'essay' && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                        <p className="text-sm text-yellow-800">
-                          <strong>Soal Essay:</strong> Jawaban akan dinilai secara manual oleh guru.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <QuestionDisplay
+                questions={questions}
+                mode="view"
+                className="max-h-96 overflow-y-auto"
+              />
             )}
           </div>
         </div>

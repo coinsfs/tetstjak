@@ -205,7 +205,7 @@ import {
     }
 
     async getQuestionsByIds(token: string, ids: string[]): Promise<Question[]> {
-      const response = await fetch(`${API_BASE_URL}/questions/bulk`, {
+      const response = await fetch(`${API_BASE_URL}/question-banks/by-ids`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

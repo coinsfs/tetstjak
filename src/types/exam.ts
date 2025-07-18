@@ -55,7 +55,7 @@ export interface Exam {
       end_date: string;
       _id: string;
     };
-    questions: any;
+    question_ids: string[];
   }
   
   export interface ExamResponse {

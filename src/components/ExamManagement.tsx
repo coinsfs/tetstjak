@@ -293,12 +293,14 @@ const ExamManagement: React.FC = () => {
 
       {/* Search */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-        <div className="flex items-center space-x-2 mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
           <Filter className="w-5 h-5 text-gray-500" />
           <h3 className="text-lg font-semibold text-gray-900">Filter & Pencarian</h3>
+          </div>
           <button
             onClick={handleResetFilters}
-            className="ml-auto flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-md transition-colors"
+            className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-md transition-colors"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Reset</span>
@@ -343,22 +345,6 @@ const ExamManagement: React.FC = () => {
             </select>
           </div>
 
-          {/* Grade Level Filter */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Tingkat Kelas
-            </label>
-            <select
-              value={filters.grade_level || ''}
-              onChange={(e) => handleFilterChange('grade_level', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            >
-              <option value="">Semua Tingkat</option>
-              <option value="10">Kelas X</option>
-              <option value="11">Kelas XI</option>
-              <option value="12">Kelas XII</option>
-            </select>
-          </div>
 
           {/* Exam Type Filter */}
           <div className="space-y-2">
@@ -377,10 +363,13 @@ const ExamManagement: React.FC = () => {
               <option value="daily_test">Ulangan Harian</option>
             </select>
           </div>
+
+          {/* Empty column for spacing */}
+          <div></div>
         </div>
 
         {/* Active Filters Display */}
-        {(filters.academic_period_id || filters.grade_level || filters.exam_type || searchValue) && (
+        {(filters.academic_period_id || filters.exam_type || searchValue) && (
           <div className="pt-4 border-t border-gray-200">
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <span className="font-medium">Filter aktif:</span>
@@ -393,11 +382,6 @@ const ExamManagement: React.FC = () => {
                 {filters.academic_period_id && (
                   <span className="px-2 py-1 bg-green-100 text-green-800 rounded-md">
                     Periode: {academicPeriods.find(p => p._id === filters.academic_period_id)?.year}
-                  </span>
-                )}
-                {filters.grade_level && (
-                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md">
-                    Kelas: {filters.grade_level === '10' ? 'X' : filters.grade_level === '11' ? 'XI' : 'XII'}
                   </span>
                 )}
                 {filters.exam_type && (
