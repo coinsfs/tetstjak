@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { usePrefetch } from '../hooks/usePrefetch';
 import { Exam, ExamFilters, AcademicPeriod } from '../types/exam';
 import { examService } from '../services/examService';
 import ExamTable from './tables/ExamTable';
@@ -12,6 +13,7 @@ import { Plus, FileText, AlertCircle, Search, Filter, RotateCcw } from 'lucide-r
 
 const ExamManagement: React.FC = () => {
   const { token } = useAuth();
+  const { getCachedData } = usePrefetch(token);
   const [exams, setExams] = useState<Exam[]>([]);
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +50,16 @@ const ExamManagement: React.FC = () => {
   const fetchExams = useCallback(async () => {
     if (!token) return;
 
+    // Check if we have cached data for initial load
+    const cachedData = getCachedData('exams');
+    if (cachedData && currentPage === 1 && recordsPerPage === 10 && Object.keys(filters).length === 0 && !debouncedSearch) {
+      console.log('Using cached exams data');
+      setExams(cachedData.data);
+      setTotalRecords(cachedData.total_items);
+      setTotalPages(cachedData.total_pages);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);
@@ -76,7 +88,7 @@ const ExamManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [token, currentPage, recordsPerPage, debouncedSearch, filters]);
+  }, [token, currentPage, recordsPerPage, debouncedSearch, filters, getCachedData]);
 
   useEffect(() => {
     fetchExams();

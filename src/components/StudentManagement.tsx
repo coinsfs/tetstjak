@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { usePrefetch } from '../hooks/usePrefetch';
 import { Student, StudentFilters } from '../types/student';
 import { studentService } from '../services/studentService';
 import StudentFilter from './StudentFilter';
@@ -13,6 +14,7 @@ import { Plus, Users, AlertCircle } from 'lucide-react';
 
 const StudentManagement: React.FC = () => {
   const { token } = useAuth();
+  const { getCachedData } = usePrefetch(token);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +42,16 @@ const StudentManagement: React.FC = () => {
   const fetchStudents = useCallback(async () => {
     if (!token) return;
 
+    // Check if we have cached data for initial load
+    const cachedData = getCachedData('students');
+    if (cachedData && currentPage === 1 && recordsPerPage === 10 && Object.keys(filters).length === 0) {
+      console.log('Using cached students data');
+      setStudents(cachedData.data);
+      setTotalRecords(cachedData.recordsFiltered);
+      setTotalPages(Math.ceil(cachedData.recordsFiltered / recordsPerPage));
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);
@@ -60,7 +72,7 @@ const StudentManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [token, currentPage, recordsPerPage, filters]);
+  }, [token, currentPage, recordsPerPage, filters, getCachedData]);
 
   useEffect(() => {
     fetchStudents();

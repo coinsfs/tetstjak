@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { usePrefetch } from '../hooks/usePrefetch';
 import { Teacher, TeacherFilters } from '../types/teacher';
 import { teacherService } from '../services/teacherService';
 import TeacherFilter from './TeacherFilter';
@@ -13,6 +14,7 @@ import { Plus, Users, AlertCircle } from 'lucide-react';
 
 const TeacherManagement: React.FC = () => {
   const { token } = useAuth();
+  const { getCachedData } = usePrefetch(token);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +37,16 @@ const TeacherManagement: React.FC = () => {
   const fetchTeachers = useCallback(async () => {
     if (!token) return;
 
+    // Check if we have cached data for initial load
+    const cachedData = getCachedData('teachers');
+    if (cachedData && currentPage === 1 && recordsPerPage === 10 && Object.keys(filters).length === 0) {
+      console.log('Using cached teachers data');
+      setTeachers(cachedData.data);
+      setTotalRecords(cachedData.recordsFiltered);
+      setTotalPages(Math.ceil(cachedData.recordsFiltered / recordsPerPage));
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);
