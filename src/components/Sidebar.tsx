@@ -23,14 +23,14 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick, isOpen, onClose }) => {
   const { logout, token } = useAuth();
-  const { prefetchTeachers, prefetchStudents, prefetchExams } = usePrefetch(token);
+  const { prefetchTeachers, prefetchStudents, prefetchExams, prefetchSubjects } = usePrefetch(token);
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'teachers', label: 'Kelola Guru', icon: Users, path: '/manage/teachers', prefetch: prefetchTeachers },
     { id: 'students', label: 'Kelola Siswa', icon: GraduationCap, path: '/manage/students', prefetch: prefetchStudents },
     { id: 'exams', label: 'Kelola Ujian', icon: FileText, path: '/manage/exams', prefetch: prefetchExams },
-    { id: 'subjects', label: 'Mata Pelajaran', icon: BookOpen },
+    { id: 'subjects', label: 'Mata Pelajaran', icon: BookOpen, path: '/manage/subjects', prefetch: prefetchSubjects },
     { id: 'classes', label: 'Kelas', icon: School },
     { id: 'analytics', label: 'Analitik', icon: BarChart3 },
   ];

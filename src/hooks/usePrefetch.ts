@@ -2,14 +2,17 @@ import { useCallback, useRef } from 'react';
 import { teacherService } from '../services/teacherService';
 import { studentService } from '../services/studentService';
 import { examService } from '../services/examService';
+import { subjectService } from '../services/subjectService';
 import { TeacherFilters } from '../types/teacher';
 import { StudentFilters } from '../types/student';
 import { ExamFilters } from '../types/exam';
+import { SubjectFilters } from '../types/subject';
 
 interface PrefetchCache {
   teachers?: any;
   students?: any;
   exams?: any;
+  subjects?: any;
   timestamp?: number;
 }
 
@@ -73,6 +76,22 @@ export const usePrefetch = (token: string | null) => {
     }
   }, [token, isCacheValid]);
 
+  const prefetchSubjects = useCallback(async () => {
+    if (!token || isCacheValid('subjects')) return;
+
+    try {
+      console.log('Prefetching subjects data...');
+      const filters: SubjectFilters = { page: 1, limit: 10 };
+      const response = await subjectService.getSubjects(token, filters);
+      
+      cacheRef.current.subjects = response;
+      cacheRef.current.timestamp = Date.now();
+      console.log('Subjects data prefetched successfully');
+    } catch (error) {
+      console.log('Failed to prefetch subjects:', error);
+    }
+  }, [token, isCacheValid]);
+
   const getCachedData = useCallback((key: keyof PrefetchCache) => {
     if (isCacheValid(key)) {
       return cacheRef.current[key];
@@ -88,6 +107,7 @@ export const usePrefetch = (token: string | null) => {
     prefetchTeachers,
     prefetchStudents,
     prefetchExams,
+    prefetchSubjects,
     getCachedData,
     clearCache
   };

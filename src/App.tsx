@@ -62,6 +62,7 @@ const AppContent: React.FC = () => {
     case '/manage/students':
     case '/manage/exams':
     case '/manage/subjects':
+    case '/manage/subjects':
     case '/manage/classes':
     case '/manage/analytics':
       return (
