@@ -415,7 +415,6 @@ const AdminDashboard: React.FC = () => {
       icon: Calendar, 
       change: '+5%',
       positive: true
-    { id: 'assignments', label: 'Kelola Penugasan', icon: Users },
     },
   ];
 
