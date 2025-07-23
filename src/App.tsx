@@ -64,7 +64,6 @@ const AppContent: React.FC = () => {
     case '/manage/subjects':
     case '/manage/classes':
     case '/manage/assignments':
-    case '/manage/assignments':
     case '/manage/analytics':
       return (
         <ProtectedRoute requiredRole="admin">
