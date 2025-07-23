@@ -92,34 +92,34 @@ const ExamTable: React.FC<ExamTableProps> = memo(({
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full table-auto">
+        <table className="intelligent-table">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '250px', maxWidth: '300px' }}>
+              <th className="col-wide text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Judul Ujian
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '180px', maxWidth: '220px' }}>
+              <th className="col-medium text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Mata Pelajaran
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '120px', maxWidth: '150px' }}>
+              <th className="col-narrow text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Kelas
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '100px', maxWidth: '120px' }}>
+              <th className="col-narrow text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Jenis Ujian
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '80px', maxWidth: '100px' }}>
+              <th className="col-narrow text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Durasi
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '140px', maxWidth: '160px' }}>
+              <th className="col-medium text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Waktu Mulai
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '140px', maxWidth: '160px' }}>
+              <th className="col-medium text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Waktu Selesai
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '100px', maxWidth: '120px' }}>
+              <th className="col-narrow text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '120px', maxWidth: '150px' }}>
+              <th className="col-actions text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Aksi
               </th>
             </tr>
@@ -128,13 +128,13 @@ const ExamTable: React.FC<ExamTableProps> = memo(({
             {exams.map((exam) => (
               <tr key={exam._id} className="hover:bg-gray-50 transition-colors">
                 {/* Judul Ujian */}
-                <td className="px-4 py-4" style={{ minWidth: '250px', maxWidth: '300px' }}>
+                <td className="col-wide" title={exam.title}>
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <FileText className="w-5 h-5 text-blue-600" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-gray-900 break-words leading-tight">
+                      <div className="text-sm font-semibold text-gray-900">
                         {exam.title}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
@@ -145,8 +145,8 @@ const ExamTable: React.FC<ExamTableProps> = memo(({
                 </td>
 
                 {/* Mata Pelajaran */}
-                <td className="px-4 py-4" style={{ minWidth: '180px', maxWidth: '220px' }}>
-                  <div className="text-sm font-medium text-gray-900 break-words leading-tight">
+                <td className="col-medium" title={exam.teaching_assignment_details?.subject_details?.name || 'N/A'}>
+                  <div className="text-sm font-medium text-gray-900">
                     {exam.teaching_assignment_details?.subject_details?.name || 'N/A'}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
@@ -155,8 +155,8 @@ const ExamTable: React.FC<ExamTableProps> = memo(({
                 </td>
 
                 {/* Kelas */}
-                <td className="px-4 py-4" style={{ minWidth: '120px', maxWidth: '150px' }}>
-                  <div className="text-sm font-medium text-gray-900 break-words leading-tight">
+                <td className="col-narrow" title={formatClassDisplay(exam.teaching_assignment_details?.class_details)}>
+                  <div className="text-sm font-medium text-gray-900">
                     {formatClassDisplay(exam.teaching_assignment_details?.class_details)}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
@@ -165,14 +165,14 @@ const ExamTable: React.FC<ExamTableProps> = memo(({
                 </td>
 
                 {/* Jenis Ujian */}
-                <td className="px-4 py-4" style={{ minWidth: '100px', maxWidth: '120px' }}>
+                <td className="col-narrow">
                   <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     {getExamTypeLabel(exam.exam_type)}
                   </span>
                 </td>
 
                 {/* Durasi */}
-                <td className="px-4 py-4" style={{ minWidth: '80px', maxWidth: '100px' }}>
+                <td className="col-narrow">
                   <div className="flex items-center text-sm text-gray-900">
                     <Clock className="w-4 h-4 mr-1 text-gray-400" />
                     <span className="font-medium">{exam.duration_minutes}</span>
@@ -181,21 +181,21 @@ const ExamTable: React.FC<ExamTableProps> = memo(({
                 </td>
 
                 {/* Waktu Mulai */}
-                <td className="px-4 py-4" style={{ minWidth: '140px', maxWidth: '160px' }}>
-                  <div className="text-sm text-gray-900 break-words leading-tight">
+                <td className="col-medium" title={formatDateTime(exam.availability_start_time)}>
+                  <div className="text-sm text-gray-900">
                     {formatDateTime(exam.availability_start_time)}
                   </div>
                 </td>
 
                 {/* Waktu Selesai */}
-                <td className="px-4 py-4" style={{ minWidth: '140px', maxWidth: '160px' }}>
-                  <div className="text-sm text-gray-900 break-words leading-tight">
+                <td className="col-medium" title={formatDateTime(exam.availability_end_time)}>
+                  <div className="text-sm text-gray-900">
                     {formatDateTime(exam.availability_end_time)}
                   </div>
                 </td>
 
                 {/* Status */}
-                <td className="px-4 py-4" style={{ minWidth: '100px', maxWidth: '120px' }}>
+                <td className="col-narrow">
                   <div>
                     {getStatusBadge(exam.status)}
                     <div className="text-xs text-gray-500 mt-1">
@@ -205,7 +205,7 @@ const ExamTable: React.FC<ExamTableProps> = memo(({
                 </td>
 
                 {/* Actions */}
-                <td className="px-4 py-4" style={{ minWidth: '120px', maxWidth: '150px' }}>
+                <td className="col-actions">
                   <div className="flex items-center justify-center space-x-1">
                     {/* View Detail Button */}
                     <button

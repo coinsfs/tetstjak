@@ -40,22 +40,22 @@ const SubjectTable: React.FC<SubjectTableProps> = memo(({
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full table-auto">
+        <table className="intelligent-table">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[300px]">
+              <th className="col-wide text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Mata Pelajaran
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]">
+              <th className="col-narrow text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Kode
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[300px]">
+              <th className="col-wide text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Deskripsi
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]">
+              <th className="col-narrow text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Tanggal Dibuat
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]">
+              <th className="col-actions text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Aksi
               </th>
             </tr>
@@ -64,13 +64,13 @@ const SubjectTable: React.FC<SubjectTableProps> = memo(({
             {subjects.map((subject) => (
               <tr key={subject._id} className="hover:bg-gray-50 transition-colors">
                 {/* Subject Info */}
-                <td className="px-6 py-4 w-[300px]">
+                <td className="col-wide" title={subject.name}>
                   <div className="flex items-start">
                     <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
                       <BookOpen className="w-5 h-5 text-purple-600" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium text-gray-900 mb-1 break-words leading-tight">
+                      <div className="text-sm font-medium text-gray-900 mb-1">
                         {subject.name}
                       </div>
                       <div className="text-xs text-gray-500">
@@ -81,21 +81,21 @@ const SubjectTable: React.FC<SubjectTableProps> = memo(({
                 </td>
 
                 {/* Code */}
-                <td className="px-6 py-4 w-[150px]">
+                <td className="col-narrow">
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
                     {subject.code}
                   </span>
                 </td>
 
                 {/* Description */}
-                <td className="px-6 py-4 w-[300px]">
-                  <div className="text-sm text-gray-900 break-words leading-tight">
+                <td className="col-wide" title={subject.description || '-'}>
+                  <div className="text-sm text-gray-900">
                     {subject.description || '-'}
                   </div>
                 </td>
 
                 {/* Created Date */}
-                <td className="px-6 py-4 w-[150px]">
+                <td className="col-narrow">
                   <div className="flex items-center text-sm text-gray-500">
                     <Calendar className="w-4 h-4 mr-2" />
                     {formatDate(subject.created_at)}
@@ -103,7 +103,7 @@ const SubjectTable: React.FC<SubjectTableProps> = memo(({
                 </td>
 
                 {/* Actions */}
-                <td className="px-6 py-4 w-[150px]">
+                <td className="col-actions">
                   <div className="flex items-center justify-center space-x-1">
                     {/* View Detail Button */}
                     <button

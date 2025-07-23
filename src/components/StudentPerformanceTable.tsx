@@ -94,28 +94,28 @@ const StudentPerformanceTable: React.FC<StudentPerformanceTableProps> = ({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="intelligent-table">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="col-narrow text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Peringkat
               </th>
-              <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="col-wide text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Nama Siswa
               </th>
-              <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="col-narrow text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Kelas
               </th>
-              <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="col-narrow text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Jurusan
               </th>
-              <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="col-medium text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Skor
               </th>
-              <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="col-narrow text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Rata-rata
               </th>
-              <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="col-actions text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Aksi
               </th>
             </tr>
@@ -127,7 +127,7 @@ const StudentPerformanceTable: React.FC<StudentPerformanceTableProps> = ({
                 className="hover:bg-gray-50 transition-colors"
               >
                 {/* Peringkat */}
-                <td className="px-5 py-4 whitespace-nowrap">
+                <td className="col-narrow">
                   <div className="flex items-center space-x-2">
                     <div className={`flex items-center justify-center w-6 h-6 rounded-full border ${getRankBadgeColor(index)}`}>
                       <span className="text-xs font-bold">#{index + 1}</span>
@@ -137,7 +137,7 @@ const StudentPerformanceTable: React.FC<StudentPerformanceTableProps> = ({
                 </td>
 
                 {/* Nama Siswa */}
-                <td className="px-5 py-4 whitespace-nowrap">
+                <td className="col-wide" title={student.full_name}>
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                       <User className="w-4 h-4 text-blue-600" />
@@ -154,20 +154,20 @@ const StudentPerformanceTable: React.FC<StudentPerformanceTableProps> = ({
                 </td>
 
                 {/* Kelas */}
-                <td className="px-5 py-4 whitespace-nowrap">
+                <td className="col-narrow">
                   <span className="text-sm text-gray-900">{student.class_name}</span>
                 </td>
 
                 {/* Jurusan */}
-                <td className="px-5 py-4 whitespace-nowrap">
+                <td className="col-narrow">
                   <span className="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-md">
                     {student.major_name}
                   </span>
                 </td>
 
                 {/* Skor */}
-                <td className="px-5 py-4">
-                  <div className="text-sm text-gray-900 max-w-xs">
+                <td className="col-medium" title={student.scores && student.scores.length > 0 ? student.scores.map(score => score.toFixed(1)).join(', ') : '-'}>
+                  <div className="text-sm text-gray-900">
                     <div className="flex flex-wrap gap-1">
                       {student.scores && student.scores.length > 0 ? (
                         student.scores.map((score, scoreIndex) => (
@@ -186,7 +186,7 @@ const StudentPerformanceTable: React.FC<StudentPerformanceTableProps> = ({
                 </td>
 
                 {/* Rata-rata */}
-                <td className="px-5 py-4 whitespace-nowrap">
+                <td className="col-narrow">
                   <div className="flex items-center">
                     <span className="text-sm font-semibold text-gray-900">
                       {student.average_score.toFixed(1)}
@@ -201,7 +201,7 @@ const StudentPerformanceTable: React.FC<StudentPerformanceTableProps> = ({
                 </td>
 
                 {/* Aksi */}
-                <td className="px-5 py-4 whitespace-nowrap">
+                <td className="col-actions">
                   <button
                     onClick={() => handleViewProfile(student.student_id)}
                     className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"

@@ -147,6 +147,85 @@ body {
   }
 }
 
+/* Intelligent Table Layout Optimization */
+.intelligent-table {
+  table-layout: auto;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.intelligent-table th,
+.intelligent-table td {
+  max-width: 300px;
+  min-width: 80px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0.75rem 1rem;
+  vertical-align: top;
+  word-break: break-word;
+  position: relative;
+}
+
+/* Specific width constraints for different content types */
+.intelligent-table .col-narrow {
+  max-width: 120px;
+  min-width: 80px;
+}
+
+.intelligent-table .col-medium {
+  max-width: 200px;
+  min-width: 120px;
+}
+
+.intelligent-table .col-wide {
+  max-width: 300px;
+  min-width: 200px;
+}
+
+.intelligent-table .col-actions {
+  max-width: 150px;
+  min-width: 120px;
+  text-align: center;
+}
+
+/* Hover tooltip for truncated content */
+.intelligent-table td[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  white-space: normal;
+  max-width: 250px;
+  z-index: 1000;
+  pointer-events: none;
+  word-wrap: break-word;
+}
+
+/* Responsive table behavior */
+@media (max-width: 1024px) {
+  .intelligent-table th,
+  .intelligent-table td {
+    max-width: 200px;
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .intelligent-table th,
+  .intelligent-table td {
+    max-width: 150px;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+}
+
 /* Focus States */
 input:focus,
 button:focus {

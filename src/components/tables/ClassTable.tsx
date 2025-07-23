@@ -44,22 +44,22 @@ const ClassTable: React.FC<ClassTableProps> = memo(({
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full table-auto">
+        <table className="intelligent-table">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[300px]">
+              <th className="col-wide text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Kelas
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[250px]">
+              <th className="col-medium text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Jurusan
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]">
+              <th className="col-narrow text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Tahun Ajaran
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[300px]">
+              <th className="col-wide text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Wali Kelas
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]">
+              <th className="col-actions text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Aksi
               </th>
             </tr>
@@ -68,13 +68,13 @@ const ClassTable: React.FC<ClassTableProps> = memo(({
             {classes.map((classData) => (
               <tr key={classData._id} className="hover:bg-gray-50 transition-colors">
                 {/* Class Info */}
-                <td className="px-6 py-4 w-[300px]">
+                <td className="col-wide" title={`${getGradeLabel(classData.grade_level)} ${classData.expertise_details?.abbreviation} ${classData.name}`}>
                   <div className="flex items-start">
                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
                       <School className="w-5 h-5 text-blue-600" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium text-gray-900 mb-1 break-words leading-tight">
+                      <div className="text-sm font-medium text-gray-900 mb-1">
                         {getGradeLabel(classData.grade_level)} {classData.expertise_details?.abbreviation} {classData.name}
                       </div>
                       <div className="text-xs text-gray-500">
@@ -85,9 +85,9 @@ const ClassTable: React.FC<ClassTableProps> = memo(({
                 </td>
 
                 {/* Expertise */}
-                <td className="px-6 py-4 w-[250px]">
+                <td className="col-medium" title={classData.expertise_details?.name || 'Tidak ada data'}>
                   <div className="space-y-1">
-                    <div className="text-sm font-medium text-gray-900 break-words leading-tight">
+                    <div className="text-sm font-medium text-gray-900">
                       {classData.expertise_details?.name || 'Tidak ada data'}
                     </div>
                     <div className="text-xs text-gray-500">
@@ -97,7 +97,7 @@ const ClassTable: React.FC<ClassTableProps> = memo(({
                 </td>
 
                 {/* Academic Year */}
-                <td className="px-6 py-4 w-[150px]">
+                <td className="col-narrow">
                   <div className="flex items-center text-sm text-gray-900">
                     <Calendar className="w-4 h-4 mr-2 text-gray-400" />
                     {classData.academic_year}
@@ -105,7 +105,7 @@ const ClassTable: React.FC<ClassTableProps> = memo(({
                 </td>
 
                 {/* Homeroom Teacher */}
-                <td className="px-6 py-4 w-[300px]">
+                <td className="col-wide" title={classData.homeroom_teacher_details?.full_name || 'Belum ada wali kelas'}>
                   <div className="flex items-center">
                     {classData.homeroom_teacher_details?.profile_picture_url ? (
                       <img
@@ -127,7 +127,7 @@ const ClassTable: React.FC<ClassTableProps> = memo(({
                     <div className="min-w-0 flex-1">
                       {classData.homeroom_teacher_details ? (
                         <>
-                          <div className="text-sm font-medium text-gray-900 break-words leading-tight">
+                          <div className="text-sm font-medium text-gray-900">
                             {classData.homeroom_teacher_details.full_name}
                           </div>
                           <div className="text-xs text-gray-500">
@@ -144,7 +144,7 @@ const ClassTable: React.FC<ClassTableProps> = memo(({
                 </td>
 
                 {/* Actions */}
-                <td className="px-6 py-4 w-[150px]">
+                <td className="col-actions">
                   <div className="flex items-center justify-center space-x-1">
                     {/* View Detail Button */}
                     <button

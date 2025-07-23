@@ -46,22 +46,22 @@ const StudentTable: React.FC<StudentTableProps> = memo(({
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="intelligent-table">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[300px]">
+              <th className="col-wide text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Siswa
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[250px]">
+              <th className="col-medium text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Kelas & Jurusan
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[200px]">
+              <th className="col-medium text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Kontak
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]">
+              <th className="col-narrow text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[150px]">
+              <th className="col-actions text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Aksi
               </th>
             </tr>
@@ -70,13 +70,13 @@ const StudentTable: React.FC<StudentTableProps> = memo(({
             {students.map((student) => (
               <tr key={student._id} className="hover:bg-gray-50 transition-colors">
                 {/* Student Info */}
-                <td className="px-6 py-4 w-[300px]">
+                <td className="col-wide" title={student.profile_details?.full_name || 'Nama tidak tersedia'}>
                   <div className="flex items-center">
                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-4">
                       <User className="w-5 h-5 text-blue-600" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium text-gray-900 break-words leading-tight">
+                      <div className="text-sm font-medium text-gray-900">
                         {student.profile_details?.full_name || 'Nama tidak tersedia'}
                       </div>
                       <div className="text-sm text-gray-500">
@@ -85,7 +85,7 @@ const StudentTable: React.FC<StudentTableProps> = memo(({
                       {student.profile_details?.birth_place && (
                         <div className="flex items-center text-xs text-gray-400 mt-1">
                           <MapPin className="w-3 h-3 mr-1" />
-                          <span className="break-words leading-tight">{student.profile_details.birth_place}</span>
+                          <span>{student.profile_details.birth_place}</span>
                         </div>
                       )}
                     </div>
@@ -93,16 +93,16 @@ const StudentTable: React.FC<StudentTableProps> = memo(({
                 </td>
 
                 {/* Class & Department */}
-                <td className="px-6 py-4 w-[250px]">
+                <td className="col-medium" title={student.class_details ? `${getGradeLabel(student.class_details.grade_level)} ${student.class_details.expertise_details?.abbreviation} ${student.class_details.name}` : 'Kelas belum ditentukan'}>
                   <div className="space-y-1">
                     {student.class_details ? (
                       <>
-                        <div className="text-sm font-medium text-gray-900 break-words leading-tight">
+                        <div className="text-sm font-medium text-gray-900">
                           {getGradeLabel(student.class_details.grade_level)}{" "}
                           {student.class_details.expertise_details?.abbreviation}{" "}
                           {student.class_details.name}
                         </div>
-                        <div className="text-xs text-gray-500 break-words leading-tight">
+                        <div className="text-xs text-gray-500">
                           {student.class_details.expertise_details?.name}
                         </div>
                         <div className="text-xs text-gray-500">
@@ -118,23 +118,23 @@ const StudentTable: React.FC<StudentTableProps> = memo(({
                 </td>
 
                 {/* Contact */}
-                <td className="px-6 py-4 w-[200px]">
+                <td className="col-medium" title={`${student.email}${student.profile_details?.phone_number ? ` | ${student.profile_details.phone_number}` : ''}`}>
                   <div className="space-y-1">
                     <div className="flex items-center text-sm text-gray-900">
                       <Mail className="w-3 h-3 mr-2 text-gray-400" />
-                      <span className="break-all leading-tight">{student.email}</span>
+                      <span>{student.email}</span>
                     </div>
                     {student.profile_details?.phone_number && (
                       <div className="flex items-center text-sm text-gray-500">
                         <Phone className="w-3 h-3 mr-2 text-gray-400" />
-                        <span className="break-all leading-tight">{student.profile_details.phone_number}</span>
+                        <span>{student.profile_details.phone_number}</span>
                       </div>
                     )}
                   </div>
                 </td>
 
                 {/* Status */}
-                <td className="px-6 py-4 w-[150px]">
+                <td className="col-narrow">
                   <div className="space-y-2">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       student.is_active 
@@ -155,7 +155,7 @@ const StudentTable: React.FC<StudentTableProps> = memo(({
                 </td>
 
                 {/* Actions */}
-                <td className="px-6 py-4 w-[150px]">
+                <td className="col-actions">
                   <div className="flex items-center justify-center space-x-2">
                     {/* View Button */}
                     <button
