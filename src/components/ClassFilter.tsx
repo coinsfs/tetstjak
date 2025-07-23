@@ -56,7 +56,7 @@ const ClassFilter: React.FC<ClassFilterProps> = ({
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchValue]);
+  }, [searchValue, filters, onFiltersChange]);
 
   const handleSearchChange = useCallback((value: string) => {
     setSearchValue(value);
@@ -99,90 +99,11 @@ const ClassFilter: React.FC<ClassFilterProps> = ({
       </div>
 
       <div className="flex flex-wrap gap-4">
-  {(() => {
-    const activeFilters = [];
-
-    // grade level filter is always shown
-    activeFilters.push(
-      <div key="grade" className="min-w-[150px] basis-[var(--filter-basis)] grow-0">
-        <label className="block text-sm font-medium text-gray-700">
-          Tingkat Kelas
-        </label>
-        <select
-          value={filters.grade_level || 'all'}
-          onChange={(e) => handleFilterChange('grade_level', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-        >
-          <option value="all">Semua Tingkat</option>
-          <option value="10">Kelas X</option>
-          <option value="11">Kelas XI</option>
-          <option value="12">Kelas XII</option>
-        </select>
-      </div>
-    );
-
-    if (expertisePrograms.length > 0) {
-      activeFilters.push(
-        <div key="expertise" className="min-w-[150px] basis-[var(--filter-basis)] grow-0">
+        {/* Search Input - Always available */}
+        <div className="space-y-2 flex-1 min-w-[200px] max-w-[40%]">
           <label className="block text-sm font-medium text-gray-700">
-            Jurusan
+            Pencarian
           </label>
-          <select
-            value={filters.expertise_id || 'all'}
-            onChange={(e) => handleFilterChange('expertise_id', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-          >
-            <option value="all">Semua Jurusan</option>
-            {expertisePrograms.map((exp) => (
-              <option key={exp._id} value={exp._id}>
-                {exp.abbreviation} - {exp.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      );
-    }
-
-    activeFilters.push(
-      <div key="academic" className="min-w-[150px] basis-[var(--filter-basis)] grow-0">
-        <label className="block text-sm font-medium text-gray-700">
-          Tahun Ajaran
-        </label>
-        <select
-          value={filters.academic_year || 'all'}
-          onChange={(e) => handleFilterChange('academic_year', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-        >
-          <option value="all">Semua Tahun</option>
-          {academicYears.map((year) => (
-            <option key={year} value={year}>{year}</option>
-          ))}
-        </select>
-      </div>
-    );
-
-    const filterCount = activeFilters.length;
-    const searchBasis = filterCount === 1 ? '70%' :
-                        filterCount === 2 ? '40%' :
-                        filterCount === 3 ? '25%' : '100%';
-    const filterBasis = filterCount === 1 ? '30%' :
-                        filterCount === 2 ? '30%' :
-                        filterCount === 3 ? '25%' : '0%';
-
-    return (
-      <>
-        {/* Set CSS variables dynamically */}
-        <style>
-          {`:root {
-              --filter-basis: ${filterBasis};
-            }`}
-        </style>
-
-        {activeFilters}
-
-        {/* Search - Always available */}
-        <div className="min-w-[200px]" style={{ flexBasis: searchBasis }}>
-          <label className="block text-sm font-medium text-gray-700">Pencarian</label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -195,8 +116,25 @@ const ClassFilter: React.FC<ClassFilterProps> = ({
           </div>
         </div>
 
+        {/* Grade Level Filter - Always available */}
+        <div className="space-y-2 flex-1 min-w-[150px] max-w-[20%]">
+          <label className="block text-sm font-medium text-gray-700">
+            Tingkat Kelas
+          </label>
+          <select
+            value={filters.grade_level || 'all'}
+            onChange={(e) => handleFilterChange('grade_level', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+          >
+            <option value="all">Semua Tingkat</option>
+            <option value="10">Kelas X</option>
+            <option value="11">Kelas XI</option>
+            <option value="12">Kelas XII</option>
+          </select>
+        </div>
+
         {/* Expertise Program Filter - Show immediately with loading state */}
-        <div className="min-w-[150px] basis-[var(--filter-basis)] grow-0">
+        <div className="space-y-2 flex-1 min-w-[150px] max-w-[20%]">
           <label className="block text-sm font-medium text-gray-700">
             Jurusan
           </label>
@@ -218,7 +156,7 @@ const ClassFilter: React.FC<ClassFilterProps> = ({
         </div>
 
         {/* Academic Year Filter - Always available */}
-        <div className="min-w-[150px] basis-[var(--filter-basis)] grow-0">
+        <div className="space-y-2 flex-1 min-w-[150px] max-w-[20%]">
           <label className="block text-sm font-medium text-gray-700">
             Tahun Ajaran
           </label>
@@ -233,11 +171,7 @@ const ClassFilter: React.FC<ClassFilterProps> = ({
             ))}
           </select>
         </div>
-      </>
-    );
-  })()}
-</div>
-
+      </div>
 
       {/* Active Filters Display */}
       {(filters.search || filters.grade_level || filters.expertise_id || filters.academic_year) && (
