@@ -7,6 +7,7 @@ import {
   BookOpen, 
   School, 
   BarChart3, 
+  ClipboardList,
   User, 
   LogOut,
   X
@@ -32,6 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick, isOpen, onCl
     { id: 'exams', label: 'Kelola Ujian', icon: FileText, path: '/manage/exams', prefetch: prefetchExams },
     { id: 'subjects', label: 'Mata Pelajaran', icon: BookOpen, path: '/manage/subjects', prefetch: prefetchSubjects },
     { id: 'classes', label: 'Kelas', icon: School, path: '/manage/classes', prefetch: prefetchClasses },
+    { id: 'assignments', label: 'Penugasan', icon: ClipboardList, path: '/manage/assignments' },
     { id: 'analytics', label: 'Analitik', icon: BarChart3 },
   ];
 
