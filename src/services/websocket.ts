@@ -7,7 +7,7 @@ class WebSocketService {
 
   connect(token: string) {
     try {
-      this.ws = new WebSocket(`wss://localhost:8000/api/v1/ws/lobby?token=${token}`);
+      this.ws = new WebSocket(`wss://smkmuhammadiyah2kalirejo.up.railway.app/api/v1/ws/lobby?token=${token}`);
       
       this.ws.onopen = () => {
         console.log('WebSocket connected');
