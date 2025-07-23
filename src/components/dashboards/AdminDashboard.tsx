@@ -17,6 +17,7 @@ import StudentManagement from '../StudentManagement';
 import ExamManagement from '../ExamManagement';
 import SubjectManagement from '../SubjectManagement';
 import ClassManagement from '../ClassManagement';
+import AssignmentManagement from '../AssignmentManagement';
 
 const AdminDashboard: React.FC = () => {
   const { user, token } = useAuth();
@@ -39,6 +40,7 @@ const AdminDashboard: React.FC = () => {
     if (path === '/manage/exams') return 'exams';
     if (path === '/manage/subjects') return 'subjects';
     if (path === '/manage/classes') return 'classes';
+    if (path === '/manage/assignments') return 'assignments';
     if (path === '/manage/analytics') return 'analytics';
     return 'dashboard';
   };
@@ -149,6 +151,7 @@ const AdminDashboard: React.FC = () => {
       'exams': '/manage/exams',
       'subjects': '/manage/subjects',
       'classes': '/manage/classes',
+      'assignments': '/manage/assignments',
       'analytics': '/manage/analytics',
     };
     
@@ -326,6 +329,33 @@ const AdminDashboard: React.FC = () => {
       );
     }
     
+    if (activeMenu === 'assignments') {
+      return (
+        <div className="flex h-screen bg-gray-50 overflow-hidden">
+          <Sidebar 
+            activeMenu={activeMenu} 
+            onMenuClick={handleMenuClick}
+            isOpen={sidebarOpen}
+            onClose={closeSidebar}
+          />
+          <div className="flex-1 lg:ml-0 flex flex-col overflow-hidden">
+            <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
+              <button
+                onClick={toggleSidebar}
+                className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+              >
+                <Menu className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-auto p-6">
+              <AssignmentManagement />
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <div className="flex h-screen bg-gray-50 overflow-hidden">
         <Sidebar 
@@ -385,6 +415,7 @@ const AdminDashboard: React.FC = () => {
       icon: Calendar, 
       change: '+5%',
       positive: true
+    { id: 'assignments', label: 'Kelola Penugasan', icon: Users },
     },
   ];
 

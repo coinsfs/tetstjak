@@ -6,3 +6,4 @@ export * from './exam';
 export * from './subject';
 export * from './dashboard';
 export * from './common';
+export * from './assignment';
