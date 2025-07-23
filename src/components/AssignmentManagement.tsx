@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   TeachingAssignment, 
-  AssignmentMatrix, 
+  AssignmentMatrix as AssignmentMatrixType, 
   AssignmentAction, 
   AssignmentDraft 
 } from '@/types/assignment';
@@ -38,8 +38,8 @@ const AssignmentManagement: React.FC = () => {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   
   // Matrix state
-  const [matrix, setMatrix] = useState<AssignmentMatrix>({});
-  const [originalMatrix, setOriginalMatrix] = useState<AssignmentMatrix>({});
+  const [matrix, setMatrix] = useState<AssignmentMatrixType>({});
+  const [originalMatrix, setOriginalMatrix] = useState<AssignmentMatrixType>({});
   
   // UI states
   const [loading, setLoading] = useState(true);
@@ -65,7 +65,7 @@ const AssignmentManagement: React.FC = () => {
   }, []);
 
   // Save draft to localStorage
-  const saveDraft = useCallback((matrixData: AssignmentMatrix) => {
+  const saveDraft = useCallback((matrixData: AssignmentMatrixType) => {
     try {
       const draft: AssignmentDraft = {
         matrix: matrixData,
@@ -85,8 +85,8 @@ const AssignmentManagement: React.FC = () => {
   }, []);
 
   // Build matrix from assignments data
-  const buildMatrix = useCallback((assignmentsData: TeachingAssignment[]): AssignmentMatrix => {
-    const newMatrix: AssignmentMatrix = {};
+  const buildMatrix = useCallback((assignmentsData: TeachingAssignment[]): AssignmentMatrixType => {
+    const newMatrix: AssignmentMatrixType = {};
     
     // Initialize matrix for all class-subject combinations
     classes.forEach(cls => {
