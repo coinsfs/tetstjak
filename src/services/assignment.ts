@@ -8,7 +8,7 @@ class AssignmentService extends BaseService {
   }
 
   async batchUpdateAssignments(token: string, request: AssignmentBatchRequest): Promise<AssignmentBatchResponse> {
-    return this.post<AssignmentBatchResponse>('/teaching-assignments/batch', request, token);
+    return this.post<AssignmentBatchResponse>('/teaching-assignments/bulk-update', request, token);
   }
 
   async getTaskStatus(token: string, taskId: string): Promise<any> {

@@ -258,7 +258,7 @@ const AssignmentManagement: React.FC = () => {
       
       const response = await assignmentService.batchUpdateAssignments(token, { actions });
       
-      toast.success(`Perubahan berhasil diproses. Task ID: ${response.task_id}`);
+      toast.success('Perubahan penugasan berhasil disimpan');
       
       // Refresh data and clear draft
       await fetchData();
