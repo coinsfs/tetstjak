@@ -82,7 +82,7 @@ const TeacherDetailModal: React.FC<TeacherDetailModalProps> = ({
                 <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="text-xs text-gray-500">NKTAM</label>
-                    <p className="text-sm font-medium text-gray-900">{teacher}</p>
+                    <p className="text-sm font-medium text-gray-900">{teacher.login_id}</p>
                 </div>
                 <div>
                     <label className="text-xs text-gray-500">Email</label>
