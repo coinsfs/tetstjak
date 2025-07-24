@@ -415,9 +415,7 @@ const AssignmentManagement: React.FC = () => {
         status: response.status,
         errors: []
       });
-      
-      toast.info('Proses penyimpanan penugasan dimulai...');
-      
+            
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save changes';
       toast.error(errorMessage);
