@@ -68,7 +68,6 @@ const AssignmentMatrix: React.FC<AssignmentMatrixProps> = memo(({
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="sticky left-0 bg-gray-50 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 min-w-[200px]">
               <th className="sticky left-0 bg-gray-50 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 min-w-[200px] z-30">
                 <div className="flex items-center space-x-2">
                   <School className="w-4 h-4" />
@@ -93,7 +92,6 @@ const AssignmentMatrix: React.FC<AssignmentMatrixProps> = memo(({
             {classes.map((cls) => (
               <tr key={cls._id} className="hover:bg-gray-50">
                 {/* Class Name - Sticky Column */}
-                <td className="sticky left-0 bg-white px-4 py-3 border-r border-gray-200 min-w-[200px]">
                 <td className="sticky left-0 bg-white px-4 py-3 border-r border-gray-200 min-w-[200px] z-20">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
