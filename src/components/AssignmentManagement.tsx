@@ -272,44 +272,11 @@ const AssignmentManagement: React.FC = () => {
 
     const handleBulkUpdateComplete = async (data: BulkUpdateComplete) => {
       if (data.task_id === bulkUpdateProgress.taskId) {
-        setBulkUpdateProgress(prev => ({
-          ...prev,
-          isActive: false,
+        // Use centralized completion handler
+        await handleTaskCompletion(data.task_id, {
           status: data.status,
-          success: data.details.success,
-          failed: data.details.failed,
-          errors: data.details.errors || []
-        }));
-
-        // Clear task ID and refresh data
-        clearTaskId();
-        clearDraft();
-        
-        // Show completion message
-        if (data.status === 'SUCCESS') {
-          toast.success(`Penugasan berhasil disimpan (${data.details.success}/${data.details.total})`);
-        } else if (data.status === 'PARTIAL_SUCCESS') {
-          toast.success(`Penugasan sebagian berhasil disimpan (${data.details.success}/${data.details.total})`);
-        } else {
-          toast.error(`Gagal menyimpan penugasan (${data.details.failed}/${data.details.total} gagal)`);
-        }
-
-        // Refresh data after completion
-        await fetchData();
-        
-        // Reset progress state
-        setTimeout(() => {
-          setBulkUpdateProgress({
-            isActive: false,
-            taskId: null,
-            processed: 0,
-            total: 0,
-            success: 0,
-            failed: 0,
-            status: '',
-            errors: []
-          });
-        }, 3000);
+          details: data.details
+        });
       }
     };
 
@@ -320,7 +287,7 @@ const AssignmentManagement: React.FC = () => {
       websocketService.offMessage('bulk_update_progress');
       websocketService.offMessage('bulk_update_complete');
     };
-  }, [bulkUpdateProgress.taskId, clearTaskId, clearDraft, fetchData]);
+  }, [bulkUpdateProgress.taskId, handleTaskCompletion]);
   // Handle cell change
   const handleCellChange = useCallback((classId: string, subjectId: string, teacherId: string | null) => {
     setMatrix(prev => {
@@ -418,6 +385,20 @@ const AssignmentManagement: React.FC = () => {
       
       toast('Proses penyimpanan penugasan dimulai...');
       
+      // Immediate status check untuk mengatasi race condition
+      setTimeout(async () => {
+        try {
+          const taskStatus = await assignmentService.getTaskStatus(token, response.task_id);
+          
+          // Jika task sudah selesai, handle completion
+          if (taskStatus.status === 'SUCCESS' || taskStatus.status === 'PARTIAL_SUCCESS' || taskStatus.status === 'FAILED') {
+            await handleTaskCompletion(response.task_id, taskStatus);
+          }
+        } catch (error) {
+          console.error('Error checking immediate task status:', error);
+        }
+      }, 1000); // Check after 1 second
+      
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save changes';
       toast.error(errorMessage);
@@ -426,6 +407,37 @@ const AssignmentManagement: React.FC = () => {
       setSaving(false);
     }
   }, [token, hasChanges, bulkUpdateProgress.isActive, generateActions, saveTaskId]);
+
+  // Extract task completion logic untuk reusability
+  const handleTaskCompletion = useCallback(async (taskId: string, taskStatus: any) => {
+    // Clear task ID and refresh data
+    clearTaskId();
+    clearDraft();
+    
+    // Show completion message
+    if (taskStatus.status === 'SUCCESS') {
+      toast.success(`Penugasan berhasil disimpan`);
+    } else if (taskStatus.status === 'PARTIAL_SUCCESS') {
+      toast.success(`Penugasan sebagian berhasil disimpan`);
+    } else {
+      toast.error(`Gagal menyimpan penugasan`);
+    }
+
+    // Update progress state
+    setBulkUpdateProgress({
+      isActive: false,
+      taskId: null,
+      processed: 0,
+      total: 0,
+      success: 0,
+      failed: 0,
+      status: '',
+      errors: []
+    });
+
+    // Refresh data after completion
+    await fetchData();
+  }, [clearTaskId, clearDraft, fetchData]);
 
   // Handle restore draft
   const handleRestoreDraft = useCallback(() => {
