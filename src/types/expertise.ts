@@ -1,16 +1,12 @@
 import { BaseEntity, PaginationParams, PaginationResponse, SearchFilters } from './common';
+import { Teacher } from './user';
 
 export interface ExpertiseProgram extends BaseEntity {
   name: string;
   abbreviation: string;
   description: string;
   head_of_department_id: string;
-  head_of_department_details?: {
-    _id: string;
-    full_name: string;
-    gender: string;
-    profile_picture_url: string | null;
-  };
+  head_of_department_details?: Teacher;
 }
 
 export interface ExpertiseProgramResponse extends PaginationResponse {
