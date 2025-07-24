@@ -18,6 +18,7 @@ import ExamManagement from '../ExamManagement';
 import SubjectManagement from '../SubjectManagement';
 import ClassManagement from '../ClassManagement';
 import AssignmentManagement from '../AssignmentManagement';
+import ExpertiseProgramManagement from '../ExpertiseProgramManagement';
 
 const AdminDashboard: React.FC = () => {
   const { user, token } = useAuth();
@@ -37,6 +38,7 @@ const AdminDashboard: React.FC = () => {
     if (path === '/' || path === '/admin') return 'dashboard';
     if (path === '/manage/teachers') return 'teachers';
     if (path === '/manage/students') return 'students';
+    if (path === '/manage/expertise-programs') return 'expertise-programs';
     if (path === '/manage/exams') return 'exams';
     if (path === '/manage/subjects') return 'subjects';
     if (path === '/manage/classes') return 'classes';
@@ -148,6 +150,7 @@ const AdminDashboard: React.FC = () => {
       'dashboard': '/admin',
       'teachers': '/manage/teachers',
       'students': '/manage/students',
+      'expertise-programs': '/manage/expertise-programs',
       'exams': '/manage/exams',
       'subjects': '/manage/subjects',
       'classes': '/manage/classes',
@@ -242,6 +245,33 @@ const AdminDashboard: React.FC = () => {
             
             <div className="flex-1 overflow-auto p-6">
               <StudentManagement />
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    if (activeMenu === 'expertise-programs') {
+      return (
+        <div className="flex h-screen bg-gray-50 overflow-hidden">
+          <Sidebar 
+            activeMenu={activeMenu} 
+            onMenuClick={handleMenuClick}
+            isOpen={sidebarOpen}
+            onClose={closeSidebar}
+          />
+          <div className="flex-1 lg:ml-0 flex flex-col overflow-hidden">
+            <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
+              <button
+                onClick={toggleSidebar}
+                className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+              >
+                <Menu className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-auto p-6">
+              <ExpertiseProgramManagement />
             </div>
           </div>
         </div>

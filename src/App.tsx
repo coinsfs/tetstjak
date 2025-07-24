@@ -60,6 +60,7 @@ const AppContent: React.FC = () => {
     case '/admin':
     case '/manage/teachers':
     case '/manage/students':
+    case '/manage/expertise-programs':
     case '/manage/exams':
     case '/manage/subjects':
     case '/manage/classes':
