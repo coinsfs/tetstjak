@@ -255,6 +255,37 @@ const AssignmentManagement: React.FC = () => {
     checkExistingTask();
   }, [token, getStoredTaskId, clearTaskId, fetchData]);
 
+  // Extract task completion logic untuk reusability
+  const handleTaskCompletion = useCallback(async (taskId: string, taskStatus: any) => {
+    // Clear task ID and refresh data
+    clearTaskId();
+    clearDraft();
+    
+    // Show completion message
+    if (taskStatus.status === 'SUCCESS') {
+      toast.success(`Penugasan berhasil disimpan`);
+    } else if (taskStatus.status === 'PARTIAL_SUCCESS') {
+      toast.success(`Penugasan sebagian berhasil disimpan`);
+    } else {
+      toast.error(`Gagal menyimpan penugasan`);
+    }
+
+    // Update progress state
+    setBulkUpdateProgress({
+      isActive: false,
+      taskId: null,
+      processed: 0,
+      total: 0,
+      success: 0,
+      failed: 0,
+      status: '',
+      errors: []
+    });
+
+    // Refresh data after completion
+    await fetchData();
+  }, [clearTaskId, clearDraft, fetchData]);
+
   // WebSocket message handlers
   useEffect(() => {
     const handleBulkUpdateProgress = (data: BulkUpdateProgress) => {
@@ -288,6 +319,7 @@ const AssignmentManagement: React.FC = () => {
       websocketService.offMessage('bulk_update_complete');
     };
   }, [bulkUpdateProgress.taskId, handleTaskCompletion]);
+
   // Handle cell change
   const handleCellChange = useCallback((classId: string, subjectId: string, teacherId: string | null) => {
     setMatrix(prev => {
@@ -407,37 +439,6 @@ const AssignmentManagement: React.FC = () => {
       setSaving(false);
     }
   }, [token, hasChanges, bulkUpdateProgress.isActive, generateActions, saveTaskId]);
-
-  // Extract task completion logic untuk reusability
-  const handleTaskCompletion = useCallback(async (taskId: string, taskStatus: any) => {
-    // Clear task ID and refresh data
-    clearTaskId();
-    clearDraft();
-    
-    // Show completion message
-    if (taskStatus.status === 'SUCCESS') {
-      toast.success(`Penugasan berhasil disimpan`);
-    } else if (taskStatus.status === 'PARTIAL_SUCCESS') {
-      toast.success(`Penugasan sebagian berhasil disimpan`);
-    } else {
-      toast.error(`Gagal menyimpan penugasan`);
-    }
-
-    // Update progress state
-    setBulkUpdateProgress({
-      isActive: false,
-      taskId: null,
-      processed: 0,
-      total: 0,
-      success: 0,
-      failed: 0,
-      status: '',
-      errors: []
-    });
-
-    // Refresh data after completion
-    await fetchData();
-  }, [clearTaskId, clearDraft, fetchData]);
 
   // Handle restore draft
   const handleRestoreDraft = useCallback(() => {
