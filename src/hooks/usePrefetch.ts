@@ -3,10 +3,12 @@ import { userService } from '@/services/user';
 import { examService } from '@/services/exam';
 import { subjectService } from '@/services/subject';
 import { classService } from '@/services/class';
+import { expertiseProgramService } from '@/services/expertise';
 import { TeacherFilters, StudentFilters } from '@/types/user';
 import { ExamFilters } from '@/types/exam';
 import { SubjectFilters } from '@/types/subject';
 import { ClassFilters } from '@/types/class';
+import { ExpertiseProgramFilters } from '@/types/expertise';
 
 interface PrefetchCache {
   teachers?: any;
@@ -14,6 +16,7 @@ interface PrefetchCache {
   exams?: any;
   subjects?: any;
   classes?: any;
+  expertisePrograms?: any;
   timestamp?: number;
 }
 
@@ -108,6 +111,23 @@ export const usePrefetch = (token: string | null) => {
       console.log('Failed to prefetch classes:', error);
     }
   }, [token, isCacheValid]);
+
+  const prefetchExpertisePrograms = useCallback(async () => {
+    if (!token || isCacheValid('expertisePrograms')) return;
+
+    try {
+      console.log('Prefetching expertise programs data...');
+      const filters: ExpertiseProgramFilters = { page: 1, limit: 10 };
+      const response = await expertiseProgramService.getExpertisePrograms(token, filters);
+      
+      cacheRef.current.expertisePrograms = response;
+      cacheRef.current.timestamp = Date.now();
+      console.log('Expertise programs data prefetched successfully');
+    } catch (error) {
+      console.log('Failed to prefetch expertise programs:', error);
+    }
+  }, [token, isCacheValid]);
+
   const getCachedData = useCallback((key: keyof PrefetchCache) => {
     if (isCacheValid(key)) {
       return cacheRef.current[key];
@@ -125,6 +145,7 @@ export const usePrefetch = (token: string | null) => {
     prefetchExams,
     prefetchSubjects,
     prefetchClasses,
+    prefetchExpertisePrograms,
     getCachedData,
     clearCache
   };

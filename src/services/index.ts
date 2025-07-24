@@ -7,3 +7,4 @@ export * from './subject';
 export * from './dashboard';
 export * from './websocket';
 export * from './assignment';
+export * from './expertise';
