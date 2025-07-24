@@ -4,7 +4,7 @@ import { BaseService } from './base';
 
 class AssignmentService extends BaseService {
   async getTeachingAssignments(token: string): Promise<TeachingAssignment[]> {
-    const response = await this.get<{ data: TeachingAssignment[] }>('/teaching-assignments/', token);
+    const response = await this.get<{ data: TeachingAssignment[] }>('/teaching-assignments/?limit=1000', token);
     return response.data || [];
   }
 
