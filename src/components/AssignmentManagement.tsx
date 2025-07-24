@@ -503,12 +503,12 @@ const AssignmentManagement: React.FC = () => {
           </div>
         </div>
         
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
           {/* Draft Actions */}
           {hasDraft && (
             <button
               onClick={handleRestoreDraft}
-              className="flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+              className="flex items-center justify-center space-x-2 px-4 py-3 sm:py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm sm:text-base min-h-[44px] sm:min-h-auto"
             >
               <FileText className="w-4 h-4" />
               <span>Pulihkan Draft</span>
@@ -519,7 +519,7 @@ const AssignmentManagement: React.FC = () => {
           {hasChanges && (
             <button
               onClick={handleResetChanges}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              className="flex items-center justify-center space-x-2 px-4 py-3 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm sm:text-base min-h-[44px] sm:min-h-auto"
             >
               <RotateCcw className="w-4 h-4" />
               <span>Reset</span>
@@ -530,7 +530,7 @@ const AssignmentManagement: React.FC = () => {
           <button
             onClick={handleSaveChanges}
             disabled={!hasChanges || saving || bulkUpdateProgress.isActive}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center justify-center space-x-2 px-4 py-3 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm sm:text-base min-h-[44px] sm:min-h-auto"
           >
             {saving || bulkUpdateProgress.isActive ? (
               <>
@@ -553,62 +553,62 @@ const AssignmentManagement: React.FC = () => {
       </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Kelas</p>
-              <p className="text-2xl font-bold text-gray-900">{classes.length}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Total Kelas</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{classes.length}</p>
             </div>
-            <Users className="w-8 h-8 text-blue-500" />
+            <Users className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
           </div>
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Mata Pelajaran</p>
-              <p className="text-2xl font-bold text-gray-900">{subjects.length}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Mata Pelajaran</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{subjects.length}</p>
             </div>
-            <FileText className="w-8 h-8 text-green-500" />
+            <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
           </div>
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Guru</p>
-              <p className="text-2xl font-bold text-gray-900">{teachers.length}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Total Guru</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{teachers.length}</p>
             </div>
-            <Users className="w-8 h-8 text-purple-500" />
+            <Users className="w-6 h-6 sm:w-8 sm:h-8 text-purple-500" />
           </div>
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Penugasan Aktif</p>
-              <p className="text-2xl font-bold text-gray-900">{assignments.length}</p>
+              <p className="text-xs sm:text-sm text-gray-600">Penugasan Aktif</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{assignments.length}</p>
             </div>
-            <CheckCircle className="w-8 h-8 text-green-500" />
+            <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
           </div>
         </div>
       </div>
 
       {/* Status Indicators */}
       {(hasChanges || hasDraft) && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-center space-x-2">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
             {hasChanges && (
               <div className="flex items-center space-x-2 text-yellow-800">
                 <Clock className="w-4 h-4" />
-                <span className="text-sm font-medium">Ada perubahan yang belum disimpan</span>
+                <span className="text-xs sm:text-sm font-medium">Ada perubahan yang belum disimpan</span>
               </div>
             )}
             {hasDraft && (
               <div className="flex items-center space-x-2 text-orange-800">
                 <FileText className="w-4 h-4" />
-                <span className="text-sm font-medium">Draft tersedia untuk dipulihkan</span>
+                <span className="text-xs sm:text-sm font-medium">Draft tersedia untuk dipulihkan</span>
               </div>
             )}
           </div>
@@ -617,11 +617,11 @@ const AssignmentManagement: React.FC = () => {
 
       {/* Bulk Update Progress */}
       {bulkUpdateProgress.isActive && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
           <div className="flex items-center space-x-3 mb-3">
             <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
             <div>
-              <h4 className="text-sm font-medium text-blue-900">
+              <h4 className="text-xs sm:text-sm font-medium text-blue-900">
                 Memproses Penugasan
               </h4>
               <p className="text-xs text-blue-700">
@@ -641,7 +641,7 @@ const AssignmentManagement: React.FC = () => {
           </div>
           
           {/* Progress Details */}
-          <div className="flex justify-between text-xs text-blue-700">
+          <div className="flex flex-col sm:flex-row justify-between text-xs text-blue-700 space-y-1 sm:space-y-0">
             <span>Berhasil: {bulkUpdateProgress.success}</span>
             <span>Gagal: {bulkUpdateProgress.failed}</span>
             <span>Progress: {bulkUpdateProgress.total > 0 ? Math.round((bulkUpdateProgress.processed / bulkUpdateProgress.total) * 100) : 0}%</span>
@@ -649,7 +649,7 @@ const AssignmentManagement: React.FC = () => {
           
           {/* Errors */}
           {bulkUpdateProgress.errors.length > 0 && (
-            <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded">
+            <div className="mt-3 p-2 sm:p-3 bg-red-50 border border-red-200 rounded">
               <p className="text-xs font-medium text-red-800 mb-1">Error:</p>
               <ul className="text-xs text-red-700 space-y-1">
                 {bulkUpdateProgress.errors.map((error, index) => (

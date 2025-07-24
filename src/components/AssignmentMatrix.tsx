@@ -170,8 +170,8 @@ const AssignmentMatrix: React.FC<AssignmentMatrixProps> = memo(({
 
       {/* Legend */}
       <div className="p-4 bg-gray-50 border-t border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-6 text-xs">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-6 text-xs">
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-gray-50 border border-gray-300 rounded"></div>
               <span className="text-gray-600">Belum ada penugasan</span>
@@ -188,7 +188,7 @@ const AssignmentMatrix: React.FC<AssignmentMatrixProps> = memo(({
             </div>
           </div>
           
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-500 mt-2 sm:mt-0">
             Total: {classes.length} kelas × {subjects.length} mata pelajaran = {classes.length * subjects.length} penugasan
           </div>
         </div>
