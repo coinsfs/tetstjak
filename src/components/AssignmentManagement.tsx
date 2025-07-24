@@ -394,7 +394,7 @@ const AssignmentManagement: React.FC = () => {
 
     const actions = generateActions();
     if (actions.length === 0) {
-      toast.info('Tidak ada perubahan untuk disimpan');
+      toast('Tidak ada perubahan untuk disimpan');
       return;
     }
 
@@ -415,7 +415,9 @@ const AssignmentManagement: React.FC = () => {
         status: response.status,
         errors: []
       });
-            
+      
+      toast('Proses penyimpanan penugasan dimulai...');
+      
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save changes';
       toast.error(errorMessage);
