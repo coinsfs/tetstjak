@@ -61,17 +61,8 @@ class WebSocketService {
     this.messageHandlers.set(type, handler);
   }
 
-  offMessage(type: string, handler?: (data: any) => void) {
-    if (handler) {
-      // Remove specific handler if provided
-      const currentHandler = this.messageHandlers.get(type);
-      if (currentHandler === handler) {
-        this.messageHandlers.delete(type);
-      }
-    } else {
-      // Remove all handlers for this type
-      this.messageHandlers.delete(type);
-    }
+  offMessage(type: string) {
+    this.messageHandlers.delete(type);
   }
 
   send(message: any) {

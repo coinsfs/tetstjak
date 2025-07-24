@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { websocketService } from '@/services/websocket';
 import { 
   TeachingAssignment, 
   AssignmentMatrix as AssignmentMatrixType, 
   AssignmentAction, 
-  AssignmentDraft 
+  AssignmentDraft,
+  BulkUpdateProgress,
+  BulkUpdateComplete
 } from '@/types/assignment';
 import { Class } from '@/types/class';
 import { Subject } from '@/types/subject';
@@ -23,10 +26,12 @@ import {
   CheckCircle, 
   Clock,
   FileText,
-  RefreshCw
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 
 const DRAFT_STORAGE_KEY = 'assignment_draft';
+const TASK_ID_STORAGE_KEY = 'assignment_task_id';
 
 const AssignmentManagement: React.FC = () => {
   const { token } = useAuth();
@@ -47,6 +52,27 @@ const AssignmentManagement: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [hasDraft, setHasDraft] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  
+  // Bulk update progress states
+  const [bulkUpdateProgress, setBulkUpdateProgress] = useState<{
+    isActive: boolean;
+    taskId: string | null;
+    processed: number;
+    total: number;
+    success: number;
+    failed: number;
+    status: string;
+    errors: string[];
+  }>({
+    isActive: false,
+    taskId: null,
+    processed: 0,
+    total: 0,
+    success: 0,
+    failed: 0,
+    status: '',
+    errors: []
+  });
 
   // Load draft from localStorage
   const loadDraft = useCallback((): AssignmentDraft | null => {
@@ -84,6 +110,20 @@ const AssignmentManagement: React.FC = () => {
     setHasDraft(false);
   }, []);
 
+  // Save task ID to localStorage
+  const saveTaskId = useCallback((taskId: string) => {
+    localStorage.setItem(TASK_ID_STORAGE_KEY, taskId);
+  }, []);
+
+  // Clear task ID from localStorage
+  const clearTaskId = useCallback(() => {
+    localStorage.removeItem(TASK_ID_STORAGE_KEY);
+  }, []);
+
+  // Get task ID from localStorage
+  const getStoredTaskId = useCallback((): string | null => {
+    return localStorage.getItem(TASK_ID_STORAGE_KEY);
+  }, []);
   // Build matrix from assignments data
   const buildMatrix = useCallback((assignmentsData: TeachingAssignment[]): AssignmentMatrixType => {
     const newMatrix: AssignmentMatrixType = {};
@@ -176,6 +216,111 @@ const AssignmentManagement: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
+  // Check for existing task on component mount
+  useEffect(() => {
+    const checkExistingTask = async () => {
+      const storedTaskId = getStoredTaskId();
+      if (storedTaskId && token) {
+        try {
+          const taskStatus = await assignmentService.getTaskStatus(token, storedTaskId);
+          
+          if (taskStatus.status === 'SUCCESS' || taskStatus.status === 'PARTIAL_SUCCESS' || taskStatus.status === 'FAILED') {
+            // Task completed, clear storage and refresh data
+            clearTaskId();
+            await fetchData();
+            
+            if (taskStatus.status === 'SUCCESS') {
+              toast.success('Penugasan berhasil disimpan');
+            } else if (taskStatus.status === 'PARTIAL_SUCCESS') {
+              toast.success('Penugasan sebagian berhasil disimpan');
+            } else {
+              toast.error('Gagal menyimpan penugasan');
+            }
+          } else {
+            // Task still in progress, set up progress tracking
+            setBulkUpdateProgress(prev => ({
+              ...prev,
+              isActive: true,
+              taskId: storedTaskId,
+              status: taskStatus.status
+            }));
+          }
+        } catch (error) {
+          console.error('Error checking task status:', error);
+          clearTaskId();
+        }
+      }
+    };
+
+    checkExistingTask();
+  }, [token, getStoredTaskId, clearTaskId, fetchData]);
+
+  // WebSocket message handlers
+  useEffect(() => {
+    const handleBulkUpdateProgress = (data: BulkUpdateProgress) => {
+      if (data.task_id === bulkUpdateProgress.taskId) {
+        setBulkUpdateProgress(prev => ({
+          ...prev,
+          processed: data.processed,
+          total: data.total,
+          success: data.success,
+          failed: data.failed,
+          errors: data.errors || []
+        }));
+      }
+    };
+
+    const handleBulkUpdateComplete = async (data: BulkUpdateComplete) => {
+      if (data.task_id === bulkUpdateProgress.taskId) {
+        setBulkUpdateProgress(prev => ({
+          ...prev,
+          isActive: false,
+          status: data.status,
+          success: data.details.success,
+          failed: data.details.failed,
+          errors: data.details.errors || []
+        }));
+
+        // Clear task ID and refresh data
+        clearTaskId();
+        clearDraft();
+        
+        // Show completion message
+        if (data.status === 'SUCCESS') {
+          toast.success(`Penugasan berhasil disimpan (${data.details.success}/${data.details.total})`);
+        } else if (data.status === 'PARTIAL_SUCCESS') {
+          toast.success(`Penugasan sebagian berhasil disimpan (${data.details.success}/${data.details.total})`);
+        } else {
+          toast.error(`Gagal menyimpan penugasan (${data.details.failed}/${data.details.total} gagal)`);
+        }
+
+        // Refresh data after completion
+        await fetchData();
+        
+        // Reset progress state
+        setTimeout(() => {
+          setBulkUpdateProgress({
+            isActive: false,
+            taskId: null,
+            processed: 0,
+            total: 0,
+            success: 0,
+            failed: 0,
+            status: '',
+            errors: []
+          });
+        }, 3000);
+      }
+    };
+
+    websocketService.onMessage('bulk_update_progress', handleBulkUpdateProgress);
+    websocketService.onMessage('bulk_update_complete', handleBulkUpdateComplete);
+
+    return () => {
+      websocketService.offMessage('bulk_update_progress');
+      websocketService.offMessage('bulk_update_complete');
+    };
+  }, [bulkUpdateProgress.taskId, clearTaskId, clearDraft, fetchData]);
   // Handle cell change
   const handleCellChange = useCallback((classId: string, subjectId: string, teacherId: string | null) => {
     setMatrix(prev => {
@@ -245,7 +390,7 @@ const AssignmentManagement: React.FC = () => {
 
   // Handle save changes
   const handleSaveChanges = useCallback(async () => {
-    if (!token || !hasChanges) return;
+    if (!token || !hasChanges || bulkUpdateProgress.isActive) return;
 
     const actions = generateActions();
     if (actions.length === 0) {
@@ -258,11 +403,20 @@ const AssignmentManagement: React.FC = () => {
       
       const response = await assignmentService.batchUpdateAssignments(token, { actions });
       
-      toast.success('Perubahan penugasan berhasil disimpan');
+      // Save task ID and start progress tracking
+      saveTaskId(response.task_id);
+      setBulkUpdateProgress({
+        isActive: true,
+        taskId: response.task_id,
+        processed: 0,
+        total: actions.length,
+        success: 0,
+        failed: 0,
+        status: response.status,
+        errors: []
+      });
       
-      // Refresh data and clear draft
-      await fetchData();
-      clearDraft();
+      toast.info('Proses penyimpanan penugasan dimulai...');
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save changes';
@@ -271,7 +425,7 @@ const AssignmentManagement: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  }, [token, hasChanges, generateActions, fetchData, clearDraft]);
+  }, [token, hasChanges, bulkUpdateProgress.isActive, generateActions, saveTaskId]);
 
   // Handle restore draft
   const handleRestoreDraft = useCallback(() => {
@@ -285,10 +439,15 @@ const AssignmentManagement: React.FC = () => {
 
   // Handle reset changes
   const handleResetChanges = useCallback(() => {
+    if (bulkUpdateProgress.isActive) {
+      toast.error('Tidak dapat mereset saat proses penyimpanan berlangsung');
+      return;
+    }
+    
     setMatrix(JSON.parse(JSON.stringify(originalMatrix)));
     clearDraft();
     toast.info('Perubahan berhasil direset');
-  }, [originalMatrix, clearDraft]);
+  }, [originalMatrix, clearDraft, bulkUpdateProgress.isActive]);
 
   if (loading) {
     return (
@@ -357,13 +516,18 @@ const AssignmentManagement: React.FC = () => {
           {/* Save Button */}
           <button
             onClick={handleSaveChanges}
-            disabled={!hasChanges || saving}
+            disabled={!hasChanges || saving || bulkUpdateProgress.isActive}
             className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {saving ? (
+            {saving || bulkUpdateProgress.isActive ? (
               <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Menyimpan...</span>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>
+                  {bulkUpdateProgress.isActive 
+                    ? `Memproses... (${bulkUpdateProgress.processed}/${bulkUpdateProgress.total})`
+                    : 'Menyimpan...'
+                  }
+                </span>
               </>
             ) : (
               <>
@@ -435,6 +599,52 @@ const AssignmentManagement: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Bulk Update Progress */}
+      {bulkUpdateProgress.isActive && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center space-x-3 mb-3">
+            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+            <div>
+              <h4 className="text-sm font-medium text-blue-900">
+                Memproses Penugasan
+              </h4>
+              <p className="text-xs text-blue-700">
+                {bulkUpdateProgress.processed} dari {bulkUpdateProgress.total} penugasan telah diproses
+              </p>
+            </div>
+          </div>
+          
+          {/* Progress Bar */}
+          <div className="w-full bg-blue-200 rounded-full h-2 mb-2">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ 
+                width: `${bulkUpdateProgress.total > 0 ? (bulkUpdateProgress.processed / bulkUpdateProgress.total) * 100 : 0}%` 
+              }}
+            ></div>
+          </div>
+          
+          {/* Progress Details */}
+          <div className="flex justify-between text-xs text-blue-700">
+            <span>Berhasil: {bulkUpdateProgress.success}</span>
+            <span>Gagal: {bulkUpdateProgress.failed}</span>
+            <span>Progress: {bulkUpdateProgress.total > 0 ? Math.round((bulkUpdateProgress.processed / bulkUpdateProgress.total) * 100) : 0}%</span>
+          </div>
+          
+          {/* Errors */}
+          {bulkUpdateProgress.errors.length > 0 && (
+            <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded">
+              <p className="text-xs font-medium text-red-800 mb-1">Error:</p>
+              <ul className="text-xs text-red-700 space-y-1">
+                {bulkUpdateProgress.errors.map((error, index) => (
+                  <li key={index}>• {error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 

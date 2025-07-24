@@ -46,7 +46,7 @@ export interface AssignmentBatchRequest {
 export interface AssignmentBatchResponse {
   task_id: string;
   status: string;
-  result: any;
+  result: string;
 }
 
 export interface AssignmentMatrix {
@@ -63,4 +63,32 @@ export interface AssignmentMatrix {
 export interface AssignmentDraft {
   matrix: AssignmentMatrix;
   timestamp: number;
+}
+
+export interface BulkUpdateProgress {
+  type: 'bulk_update_progress';
+  task_id: string;
+  processed: number;
+  total: number;
+  success: number;
+  failed: number;
+  errors?: string[];
+}
+
+export interface BulkUpdateComplete {
+  type: 'bulk_update_complete';
+  task_id: string;
+  status: 'SUCCESS' | 'PARTIAL_SUCCESS' | 'FAILED';
+  details: {
+    total: number;
+    success: number;
+    failed: number;
+    errors?: string[];
+  };
+}
+
+export interface TaskStatus {
+  task_id: string;
+  status: string;
+  result: string;
 }

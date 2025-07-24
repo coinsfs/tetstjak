@@ -1,4 +1,5 @@
 import { TeachingAssignment, AssignmentBatchRequest, AssignmentBatchResponse } from '@/types/assignment';
+import { TaskStatus } from '@/types/assignment';
 import { BaseService } from './base';
 
 class AssignmentService extends BaseService {
@@ -11,8 +12,8 @@ class AssignmentService extends BaseService {
     return this.post<AssignmentBatchResponse>('/teaching-assignments/bulk-update', request, token);
   }
 
-  async getTaskStatus(token: string, taskId: string): Promise<any> {
-    return this.get<any>(`/tasks/${taskId}`, token);
+  async getTaskStatus(token: string, taskId: string): Promise<TaskStatus> {
+    return this.get<TaskStatus>(`/jobs/tasks/${taskId}`, token);
   }
 }
 
