@@ -73,18 +73,33 @@ const ProfileManagement: React.FC = () => {
     
     if (targetPath) {
       console.log('Navigating to:', targetPath); // Debug log
+      console.log('Current location:', window.location.pathname);
       
-      // Force navigation regardless of current path
-      // Gunakan setTimeout untuk memastikan state updates selesai terlebih dahulu
-      setTimeout(() => {
+      // Close sidebar first
+      setMainSidebarOpen(false);
+      
+      // Try multiple navigation methods
+      try {
+        // Method 1: Use the navigate function
         navigate(targetPath);
-      }, 0);
+        console.log('Navigate function called successfully');
+        
+        // Method 2: Force navigation after a delay if first method doesn't work
+        setTimeout(() => {
+          if (window.location.pathname === '/profile') {
+            console.log('Still on profile page, forcing navigation...');
+            window.location.href = targetPath;
+          }
+        }, 100);
+        
+      } catch (error) {
+        console.error('Navigation failed, using fallback:', error);
+        // Fallback: Direct browser navigation
+        window.location.href = targetPath;
+      }
     } else {
       console.warn('No path found for menu:', menu); // Debug log
     }
-    
-    // Close sidebar after navigation
-    setMainSidebarOpen(false);
   };
 
   // Alternative navigation function dengan force reload jika diperlukan
@@ -159,24 +174,37 @@ const ProfileManagement: React.FC = () => {
 
   const handleBackToDashboard = () => {
     console.log('Back to dashboard clicked'); // Debug log
-    navigate('/admin');
+    console.log('Current location before navigation:', window.location.pathname);
+    
+    try {
+      // Try the navigate function first
+      navigate('/admin');
+      console.log('Navigate to /admin called');
+      
+      // Force navigation if still on profile page after delay
+      setTimeout(() => {
+        if (window.location.pathname === '/profile') {
+          console.log('Still on profile page, forcing navigation to dashboard...');
+          window.location.href = '/admin';
+        }
+      }, 100);
+      
+    } catch (error) {
+      console.error('Navigation to dashboard failed, using fallback:', error);
+      window.location.href = '/admin';
+    }
   };
 
   // Debug component untuk memastikan event handlers bekerja
   const debugNavigation = (menu: string) => {
     console.log('Debug navigation called for:', menu);
     console.log('Current pathname:', window.location.pathname);
-    console.log('Navigate function:', typeof navigate);
+    console.log('Navigate function type:', typeof navigate);
+    console.log('Navigate function:', navigate);
     
-    // Test navigate function
-    try {
-      navigate('/admin');
-      console.log('Navigate function executed successfully');
-    } catch (error) {
-      console.error('Navigate function failed:', error);
-      // Fallback ke browser navigation
-      window.location.href = '/admin';
-    }
+    // Test different navigation methods
+    console.log('Testing direct window navigation...');
+    window.location.href = '/admin';
   };
 
   return (
