@@ -84,6 +84,15 @@ class UserService extends BaseService {
     return this.put<Student>(`/users/${studentId}/${endpoint}`, {}, token);
   }
 
+  // Change password method
+  async changePassword(token: string, data: {
+    current_password: string;
+    new_password: string;
+    confirm_new_password: string;
+  }): Promise<void> {
+    await this.post('/users/me/change-password', data, token);
+  }
+
   // Common methods for both teachers and students
   async getExpertisePrograms(token: string): Promise<ExpertiseProgram[]> {
     const result = await this.get<{ data: ExpertiseProgram[] }>('/expertise-programs/', token);

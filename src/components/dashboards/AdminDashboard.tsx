@@ -19,6 +19,7 @@ import SubjectManagement from '../SubjectManagement';
 import ClassManagement from '../ClassManagement';
 import AssignmentManagement from '../AssignmentManagement';
 import ExpertiseProgramManagement from '../ExpertiseProgramManagement';
+import ProfileManagement from '../ProfileManagement';
 
 const AdminDashboard: React.FC = () => {
   const { user, token } = useAuth();
@@ -44,6 +45,7 @@ const AdminDashboard: React.FC = () => {
     if (path === '/manage/classes') return 'classes';
     if (path === '/manage/assignments') return 'assignments';
     if (path === '/manage/analytics') return 'analytics';
+    if (path === '/profile') return 'profile';
     return 'dashboard';
   };
 
@@ -156,6 +158,7 @@ const AdminDashboard: React.FC = () => {
       'classes': '/manage/classes',
       'assignments': '/manage/assignments',
       'analytics': '/manage/analytics',
+      'profile': '/profile',
     };
     
     const path = pathMap[menu] || '/admin';
@@ -384,6 +387,10 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       );
+    }
+    
+    if (activeMenu === 'profile') {
+      return <ProfileManagement />;
     }
     
     return (

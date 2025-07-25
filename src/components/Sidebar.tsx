@@ -39,7 +39,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick, isOpen, onCl
   ];
 
   const bottomMenuItems = [
-    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'profile', label: 'Profile', icon: User, path: '/profile' },
     { id: 'logout', label: 'Logout', icon: LogOut, action: logout },
   ];
 
