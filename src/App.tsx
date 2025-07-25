@@ -66,6 +66,7 @@ const AppContent: React.FC = () => {
     case '/manage/classes':
     case '/manage/assignments':
     case '/manage/analytics':
+    case '/profile': // 🔥 INI YANG PENTING! Tambahkan route profile di sini
       return (
         <ProtectedRoute requiredRole="admin">
           <AdminDashboard />
@@ -84,7 +85,22 @@ const AppContent: React.FC = () => {
         </ProtectedRoute>
       );
     default:
-      return <LoginForm />;
+      // Fallback untuk route yang tidak dikenal
+      console.warn('Unknown route:', currentPath);
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Page Not Found</h2>
+            <p className="text-gray-600 mb-4">The page you're looking for doesn't exist.</p>
+            <button 
+              onClick={() => navigate('/admin')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        </div>
+      );
   }
 };
 
