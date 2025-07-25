@@ -64,7 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick, isOpen, onCl
   };
   return (
     <>
-      {/* Mobile Overlay */}
+      {/* Mobile Overlay - Only show when mobile sidebar is open */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
@@ -72,14 +72,17 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick, isOpen, onCl
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Fixed positioning for desktop, overlay for mobile */}
       <div className={`
-        fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out flex flex-col
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:static lg:z-auto
+        w-64 bg-white shadow-lg flex flex-col h-full
+        ${isOpen 
+          ? 'fixed top-0 left-0 z-50 transform translate-x-0 lg:relative lg:z-auto' 
+          : 'fixed top-0 left-0 z-50 transform -translate-x-full lg:relative lg:translate-x-0 lg:z-auto'
+        }
+        lg:translate-x-0 transition-transform duration-300 ease-in-out
       `}>
-        {/* Mobile Close Button */}
-        <div className="lg:hidden flex justify-end p-4">
+        {/* Mobile Close Button - Only show on mobile */}
+        <div className="lg:hidden flex justify-end p-4 flex-shrink-0">
           <button
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
@@ -88,8 +91,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick, isOpen, onCl
           </button>
         </div>
 
-        {/* Logo/Header */}
-        <div className="p-6 border-b border-gray-200">
+        {/* Logo/Header - Fixed */}
+        <div className="p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
               <School className="w-6 h-6 text-white" />
@@ -101,8 +104,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick, isOpen, onCl
           </div>
         </div>
 
-        {/* Main Menu */}
-        <nav className="flex-1 px-4 py-6 overflow-y-auto scrollbar-hide">
+        {/* Main Menu - Scrollable if needed */}
+        <nav className="flex-1 px-4 py-6 overflow-y-auto scrollbar-hide min-h-0">
           <ul className="space-y-2">
             {menuItems.map((item) => (
               <li key={item.id}>
@@ -123,8 +126,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick, isOpen, onCl
           </ul>
         </nav>
 
-        {/* Bottom Menu */}
-        <div className="px-4 py-4 border-t border-gray-200">
+        {/* Bottom Menu - Fixed at bottom */}
+        <div className="px-4 py-4 border-t border-gray-200 flex-shrink-0">
           <ul className="space-y-2">
             {bottomMenuItems.map((item) => (
               <li key={item.id}>

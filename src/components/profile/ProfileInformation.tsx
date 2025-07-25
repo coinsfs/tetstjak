@@ -121,7 +121,7 @@ const ProfileInformation: React.FC = () => {
       </div>
 
       {/* Information Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 sm:gap-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Personal Information */}
         <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
           <div className="flex items-center space-x-2 mb-6">
