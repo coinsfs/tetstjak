@@ -116,40 +116,191 @@ const ProfileManagement: React.FC = () => {
     navigate('/admin');
   };
 
+  // Add body class for mobile sidebar state management
+  React.useEffect(() => {
+    if (mainSidebarOpen || profileSidebarOpen) {
+      document.body.classList.add('sidebar-mobile-open');
+    } else {
+      document.body.classList.remove('sidebar-mobile-open');
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove('sidebar-mobile-open');
+    };
+  }, [mainSidebarOpen, profileSidebarOpen]);
+
   return (
-    <div className="h-screen bg-gray-50 flex overflow-hidden">
-      {/* Main Application Sidebar - Fixed */}
-      <div className="hidden lg:block">
-        <Sidebar 
-          activeMenu="profile" 
-          onMenuClick={handleMainSidebarMenuClick}
-          isOpen={false}
-          onClose={closeMainSidebar}
-        />
+    <div className="fixed-layout-container">
+      {/* Mobile Overlays */}
+      <div className={`sidebar-overlay ${mainSidebarOpen || profileSidebarOpen ? 'active' : ''} lg:hidden`} 
+           onClick={() => {
+             closeMainSidebar();
+             closeProfileSidebar();
+           }} />
+
+      {/* Main Application Sidebar - Always Fixed */}
+      <Sidebar 
+        activeMenu="profile" 
+        onMenuClick={handleMainSidebarMenuClick}
+        isOpen={mainSidebarOpen}
+        onClose={closeMainSidebar}
+      />
+
+      {/* Profile Sidebar - Fixed on Desktop */}
+      <div className={`profile-sidebar-fixed hidden lg:flex lg:flex-col ${profileSidebarOpen ? 'mobile-open' : ''}`}>
+        {/* Profile Sidebar Header - Fixed */}
+        <div className="p-6 sidebar-header-fixed">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+              <User className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">Profile Management</h1>
+              <p className="text-sm text-gray-500">{user?.login_id}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Navigation - Scrollable content area */}
+        <nav className="sidebar-nav-scrollable px-4 py-6">
+          <ul className="space-y-2">
+            {mainMenuItems.map((item) => (
+              <li key={item.id}>
+                <button
+                  onClick={() => {
+                    setActiveMainMenu(item.id);
+                  }}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-colors ${
+                    activeMainMenu === item.id
+                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                    <span className="font-medium">{item.label}</span>
+                  </div>
+                  {item.subItems.length > 0 && (
+                    <ChevronRight className={`w-4 h-4 transition-transform ${
+                      activeMainMenu === item.id ? 'rotate-90' : ''
+                    }`} />
+                  )}
+                </button>
+
+                {/* Sub-menu */}
+                {item.subItems.length > 0 && activeMainMenu === item.id && (
+                  <ul className="mt-2 ml-4 space-y-1">
+                    {item.subItems.map((subItem) => (
+                      <li key={subItem.id}>
+                        <button
+                          onClick={() => setActiveSubMenu(subItem.id)}
+                          className={`w-full flex items-center px-4 py-2 rounded-lg text-left text-sm transition-colors ${
+                            activeSubMenu === subItem.id
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                          }`}
+                        >
+                          <span>{subItem.label}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        </nav>
       </div>
 
-      {/* Mobile Main Sidebar Overlay */}
-      {mainSidebarOpen && (
-        <>
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-            onClick={closeMainSidebar}
-          />
-          <div className="fixed top-0 left-0 h-full z-50 lg:hidden">
-            <Sidebar 
-              activeMenu="profile" 
-              onMenuClick={handleMainSidebarMenuClick}
-              isOpen={mainSidebarOpen}
-              onClose={closeMainSidebar}
-            />
+      {/* Profile Sidebar - Mobile Version */}
+      {profileSidebarOpen && (
+        <div className="profile-sidebar-fixed mobile-open lg:hidden">
+          {/* Mobile Close Button - Fixed */}
+          <div className="flex justify-end p-4 sidebar-header-fixed">
+            <button
+              onClick={closeProfileSidebar}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
           </div>
-        </>
+
+          {/* Profile Sidebar Header - Fixed */}
+          <div className="p-6 sidebar-header-fixed">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <User className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-gray-900">Profile Management</h1>
+                <p className="text-sm text-gray-500">{user?.login_id}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Profile Navigation - Scrollable */}
+          <nav className="sidebar-nav-scrollable px-4 py-6">
+            <ul className="space-y-2">
+              {mainMenuItems.map((item) => (
+                <li key={item.id}>
+                  <button
+                    onClick={() => {
+                      setActiveMainMenu(item.id);
+                      if (item.subItems.length === 0) {
+                        closeProfileSidebar();
+                      }
+                    }}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-colors ${
+                      activeMainMenu === item.id
+                        ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      <span className="font-medium">{item.label}</span>
+                    </div>
+                    {item.subItems.length > 0 && (
+                      <ChevronRight className={`w-4 h-4 transition-transform ${
+                        activeMainMenu === item.id ? 'rotate-90' : ''
+                      }`} />
+                    )}
+                  </button>
+
+                  {/* Sub-menu */}
+                  {item.subItems.length > 0 && activeMainMenu === item.id && (
+                    <ul className="mt-2 ml-4 space-y-1">
+                      {item.subItems.map((subItem) => (
+                        <li key={subItem.id}>
+                          <button
+                            onClick={() => {
+                              setActiveSubMenu(subItem.id);
+                              closeProfileSidebar();
+                            }}
+                            className={`w-full flex items-center px-4 py-2 rounded-lg text-left text-sm transition-colors ${
+                              activeSubMenu === subItem.id
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                            }`}
+                          >
+                            <span>{subItem.label}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
       )}
 
-      {/* Profile Content Area - Flexible with fixed header */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Header - Fixed at top */}
-        <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 flex-shrink-0 z-30">
+      {/* Main Content Area - Scrollable with fixed header */}
+      <div className="content-with-fixed-sidebars flex flex-col">
+        {/* Header - Sticky at top of content area */}
+        <header className="profile-header-fixed px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {/* Mobile Menu Button */}
@@ -190,171 +341,12 @@ const ProfileManagement: React.FC = () => {
           </div>
         </header>
 
-        {/* Main Content Layout - Flexible container */}
-        <div className="flex-1 flex overflow-hidden min-h-0">
-          {/* Profile Sidebar - Desktop Fixed */}
-          <div className="hidden lg:flex lg:flex-col lg:w-80 bg-white border-r border-gray-200 flex-shrink-0">
-            {/* Profile Sidebar Header - Fixed */}
-            <div className="p-6 border-b border-gray-200 flex-shrink-0">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <User className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-bold text-gray-900">Profile Management</h1>
-                  <p className="text-sm text-gray-500">{user?.login_id}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Profile Navigation - Scrollable if needed */}
-            <nav className="flex-1 px-4 py-6 overflow-y-auto min-h-0">
-              <ul className="space-y-2">
-                {mainMenuItems.map((item) => (
-                  <li key={item.id}>
-                    <button
-                      onClick={() => {
-                        setActiveMainMenu(item.id);
-                      }}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-colors ${
-                        activeMainMenu === item.id
-                          ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <item.icon className="w-5 h-5 flex-shrink-0" />
-                        <span className="font-medium">{item.label}</span>
-                      </div>
-                      {item.subItems.length > 0 && (
-                        <ChevronRight className={`w-4 h-4 transition-transform ${
-                          activeMainMenu === item.id ? 'rotate-90' : ''
-                        }`} />
-                      )}
-                    </button>
-
-                    {/* Sub-menu */}
-                    {item.subItems.length > 0 && activeMainMenu === item.id && (
-                      <ul className="mt-2 ml-4 space-y-1">
-                        {item.subItems.map((subItem) => (
-                          <li key={subItem.id}>
-                            <button
-                              onClick={() => setActiveSubMenu(subItem.id)}
-                              className={`w-full flex items-center px-4 py-2 rounded-lg text-left text-sm transition-colors ${
-                                activeSubMenu === subItem.id
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                              }`}
-                            >
-                              <span>{subItem.label}</span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </nav>
+        {/* Main Content - Scrollable */}
+        <main className="profile-main-content">
+          <div className="max-w-6xl mx-auto">
+            {renderContent()}
           </div>
-
-          {/* Profile Sidebar - Mobile Overlay */}
-          {profileSidebarOpen && (
-            <>
-              <div 
-                className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-                onClick={closeProfileSidebar}
-              />
-              <div className="fixed top-0 left-0 h-full w-80 bg-white shadow-lg z-50 flex flex-col border-r border-gray-200 lg:hidden overflow-hidden">
-                {/* Mobile Close Button - Fixed */}
-                <div className="flex justify-end p-4 flex-shrink-0">
-                  <button
-                    onClick={closeProfileSidebar}
-                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <X className="w-5 h-5 text-gray-600" />
-                  </button>
-                </div>
-
-                {/* Profile Sidebar Header - Fixed */}
-                <div className="p-6 border-b border-gray-200 flex-shrink-0">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                      <User className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h1 className="text-lg font-bold text-gray-900">Profile Management</h1>
-                      <p className="text-sm text-gray-500">{user?.login_id}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Profile Navigation - Scrollable */}
-                <nav className="flex-1 px-4 py-6 overflow-y-auto min-h-0">
-                  <ul className="space-y-2">
-                    {mainMenuItems.map((item) => (
-                      <li key={item.id}>
-                        <button
-                          onClick={() => {
-                            setActiveMainMenu(item.id);
-                            if (item.subItems.length === 0) {
-                              closeProfileSidebar();
-                            }
-                          }}
-                          className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-colors ${
-                            activeMainMenu === item.id
-                              ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                              : 'text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex items-center space-x-3">
-                            <item.icon className="w-5 h-5 flex-shrink-0" />
-                            <span className="font-medium">{item.label}</span>
-                          </div>
-                          {item.subItems.length > 0 && (
-                            <ChevronRight className={`w-4 h-4 transition-transform ${
-                              activeMainMenu === item.id ? 'rotate-90' : ''
-                            }`} />
-                          )}
-                        </button>
-
-                        {/* Sub-menu */}
-                        {item.subItems.length > 0 && activeMainMenu === item.id && (
-                          <ul className="mt-2 ml-4 space-y-1">
-                            {item.subItems.map((subItem) => (
-                              <li key={subItem.id}>
-                                <button
-                                  onClick={() => {
-                                    setActiveSubMenu(subItem.id);
-                                    closeProfileSidebar();
-                                  }}
-                                  className={`w-full flex items-center px-4 py-2 rounded-lg text-left text-sm transition-colors ${
-                                    activeSubMenu === subItem.id
-                                      ? 'bg-blue-100 text-blue-800'
-                                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                                  }`}
-                                >
-                                  <span>{subItem.label}</span>
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </nav>
-              </div>
-            </>
-          )}
-
-          {/* Content Area - Scrollable */}
-          <main className="flex-1 overflow-auto min-w-0">
-            <div className="max-w-6xl mx-auto p-4 sm:p-6">
-              {renderContent()}
-            </div>
-          </main>
-        </div>
+        </main>
       </div>
     </div>
   );
