@@ -195,7 +195,7 @@ const ProfileSettings: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div>
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-center space-x-2 mb-6">
           <User className="w-5 h-5 text-blue-600" />

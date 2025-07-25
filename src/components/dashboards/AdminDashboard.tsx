@@ -390,11 +390,7 @@ const AdminDashboard: React.FC = () => {
     }
     
     if (activeMenu === 'profile') {
-      return (
-        <div className="fixed inset-0 z-50 bg-gray-50">
-          <ProfileManagement />
-        </div>
-      );
+      return <ProfileManagement />;
     }
     
     return (

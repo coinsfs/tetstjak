@@ -221,7 +221,7 @@ const ProfileManagement: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-80 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0 lg:ml-80">
         {/* Header */}
         <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-30">
           <div className="flex items-center justify-between">
@@ -265,7 +265,9 @@ const ProfileManagement: React.FC = () => {
 
         {/* Content */}
         <main className="flex-1 overflow-auto p-6">
-          {renderContent()}
+          <div className="max-w-6xl mx-auto">
+            {renderContent()}
+          </div>
         </main>
       </div>
     </div>

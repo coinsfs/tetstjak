@@ -151,7 +151,7 @@ const SecuritySettings: React.FC = () => {
   const passwordStrength = getPasswordStrength(formData.new_password);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl space-y-6">
       {/* Security Overview */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-center space-x-2 mb-4">
