@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Settings, Activity, ChevronRight, Menu, X, ArrowLeft } from 'lucide-react';
-import { useRouter } from '@/hooks/useRouter';
-import Sidebar from './Sidebar';
+import { User, Settings, Activity, ChevronRight, Menu, X } from 'lucide-react';
 import ProfileInformation from './profile/ProfileInformation';
 import ProfileSettings from './profile/ProfileSettings';
 import SecuritySettings from './profile/SecuritySettings';
@@ -14,11 +12,9 @@ type ProfileSubMenuItem = 'information' | 'profile-settings' | 'security';
 
 const ProfileManagement: React.FC = () => {
   const { user } = useAuth();
-  const { navigate } = useRouter();
   const [activeMainMenu, setActiveMainMenu] = useState<MainMenuItem>('profile');
   const [activeSubMenu, setActiveSubMenu] = useState<ProfileSubMenuItem>('information');
-  const [mainSidebarOpen, setMainSidebarOpen] = useState(false);
-  const [profileSidebarOpen, setProfileSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Reset submenu when main menu changes
   useEffect(() => {
@@ -52,29 +48,6 @@ const ProfileManagement: React.FC = () => {
     }
   ];
 
-  const handleMainSidebarMenuClick = (menu: string) => {
-    // Handle main sidebar navigation
-    const pathMap: { [key: string]: string } = {
-      'dashboard': '/admin',
-      'teachers': '/manage/teachers',
-      'students': '/manage/students',
-      'expertise-programs': '/manage/expertise-programs',
-      'exams': '/manage/exams',
-      'subjects': '/manage/subjects',
-      'classes': '/manage/classes',
-      'assignments': '/manage/assignments',
-      'analytics': '/manage/analytics',
-      'profile': '/profile',
-    };
-    
-    const path = pathMap[menu];
-    if (path && path !== '/profile') {
-      navigate(path);
-    }
-    
-    setMainSidebarOpen(false);
-  };
-
   const renderContent = () => {
     if (activeMainMenu === 'profile') {
       switch (activeSubMenu) {
@@ -104,53 +77,38 @@ const ProfileManagement: React.FC = () => {
     return mainItem?.label || 'Profile';
   };
 
-  const closeMainSidebar = () => {
-    setMainSidebarOpen(false);
+  const closeSidebar = () => {
+    setSidebarOpen(false);
   };
-
-  const closeProfileSidebar = () => {
-    setProfileSidebarOpen(false);
-  };
-
-  const handleBackToDashboard = () => {
-    navigate('/admin');
-  };
-
-  // Add body class for mobile sidebar state management
-  React.useEffect(() => {
-    if (mainSidebarOpen || profileSidebarOpen) {
-      document.body.classList.add('sidebar-mobile-open');
-    } else {
-      document.body.classList.remove('sidebar-mobile-open');
-    }
-    
-    // Cleanup on unmount
-    return () => {
-      document.body.classList.remove('sidebar-mobile-open');
-    };
-  }, [mainSidebarOpen, profileSidebarOpen]);
 
   return (
-    <div className="fixed-layout-container">
-      {/* Mobile Overlays */}
-      <div className={`sidebar-overlay ${mainSidebarOpen || profileSidebarOpen ? 'active' : ''} lg:hidden`} 
-           onClick={() => {
-             closeMainSidebar();
-             closeProfileSidebar();
-           }} />
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={closeSidebar}
+        />
+      )}
 
-      {/* Main Application Sidebar - Always Fixed */}
-      <Sidebar 
-        activeMenu="profile" 
-        onMenuClick={handleMainSidebarMenuClick}
-        isOpen={mainSidebarOpen}
-        onClose={closeMainSidebar}
-      />
+      {/* Sidebar */}
+      <div className={`
+        fixed top-0 left-0 h-full w-80 bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out flex flex-col
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:translate-x-0 lg:static lg:z-auto
+      `}>
+        {/* Mobile Close Button */}
+        <div className="lg:hidden flex justify-end p-4">
+          <button
+            onClick={closeSidebar}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
 
-      {/* Profile Sidebar - Fixed on Desktop */}
-      <div className={`profile-sidebar-fixed hidden lg:flex lg:flex-col ${profileSidebarOpen ? 'mobile-open' : ''}`}>
-        {/* Profile Sidebar Header - Fixed */}
-        <div className="p-6 sidebar-header-fixed">
+        {/* Header */}
+        <div className="p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
               <User className="w-6 h-6 text-white" />
@@ -162,14 +120,17 @@ const ProfileManagement: React.FC = () => {
           </div>
         </div>
 
-        {/* Profile Navigation - Scrollable content area */}
-        <nav className="sidebar-nav-scrollable px-4 py-6">
+        {/* Navigation */}
+        <nav className="flex-1 px-4 py-6 overflow-y-auto">
           <ul className="space-y-2">
             {mainMenuItems.map((item) => (
               <li key={item.id}>
                 <button
                   onClick={() => {
                     setActiveMainMenu(item.id);
+                    if (item.subItems.length === 0) {
+                      closeSidebar();
+                    }
                   }}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-colors ${
                     activeMainMenu === item.id
@@ -194,7 +155,10 @@ const ProfileManagement: React.FC = () => {
                     {item.subItems.map((subItem) => (
                       <li key={subItem.id}>
                         <button
-                          onClick={() => setActiveSubMenu(subItem.id)}
+                          onClick={() => {
+                            setActiveSubMenu(subItem.id);
+                            closeSidebar();
+                          }}
                           className={`w-full flex items-center px-4 py-2 rounded-lg text-left text-sm transition-colors ${
                             activeSubMenu === subItem.id
                               ? 'bg-blue-100 text-blue-800'
@@ -213,127 +177,22 @@ const ProfileManagement: React.FC = () => {
         </nav>
       </div>
 
-      {/* Profile Sidebar - Mobile Version */}
-      {profileSidebarOpen && (
-        <div className="profile-sidebar-fixed mobile-open lg:hidden">
-          {/* Mobile Close Button - Fixed */}
-          <div className="flex justify-end p-4 sidebar-header-fixed">
-            <button
-              onClick={closeProfileSidebar}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
-
-          {/* Profile Sidebar Header - Fixed */}
-          <div className="p-6 sidebar-header-fixed">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                <User className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">Profile Management</h1>
-                <p className="text-sm text-gray-500">{user?.login_id}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Profile Navigation - Scrollable */}
-          <nav className="sidebar-nav-scrollable px-4 py-6">
-            <ul className="space-y-2">
-              {mainMenuItems.map((item) => (
-                <li key={item.id}>
-                  <button
-                    onClick={() => {
-                      setActiveMainMenu(item.id);
-                      if (item.subItems.length === 0) {
-                        closeProfileSidebar();
-                      }
-                    }}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-colors ${
-                      activeMainMenu === item.id
-                        ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
-                      <span className="font-medium">{item.label}</span>
-                    </div>
-                    {item.subItems.length > 0 && (
-                      <ChevronRight className={`w-4 h-4 transition-transform ${
-                        activeMainMenu === item.id ? 'rotate-90' : ''
-                      }`} />
-                    )}
-                  </button>
-
-                  {/* Sub-menu */}
-                  {item.subItems.length > 0 && activeMainMenu === item.id && (
-                    <ul className="mt-2 ml-4 space-y-1">
-                      {item.subItems.map((subItem) => (
-                        <li key={subItem.id}>
-                          <button
-                            onClick={() => {
-                              setActiveSubMenu(subItem.id);
-                              closeProfileSidebar();
-                            }}
-                            className={`w-full flex items-center px-4 py-2 rounded-lg text-left text-sm transition-colors ${
-                              activeSubMenu === subItem.id
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                            }`}
-                          >
-                            <span>{subItem.label}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </div>
-      )}
-
-      {/* Main Content Area - Scrollable with fixed header */}
-      <div className="content-with-fixed-sidebars flex flex-col">
-        {/* Header - Sticky at top of content area */}
-        <header className="profile-header-fixed px-4 sm:px-6 py-4">
+      {/* Main Content */}
+      <div className="flex-1 lg:ml-0 flex flex-col">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              {/* Mobile Menu Button */}
               <button
-                onClick={() => setMainSidebarOpen(true)}
+                onClick={() => setSidebarOpen(true)}
                 className="lg:hidden p-1.5 rounded-md hover:bg-gray-100 transition-colors"
-                title="Open main menu"
               >
                 <Menu className="w-5 h-5 text-gray-600" />
               </button>
-
-              {/* Profile Menu Button (Mobile) */}
-              <button
-                onClick={() => setProfileSidebarOpen(true)}
-                className="lg:hidden p-1.5 rounded-md hover:bg-gray-100 transition-colors"
-                title="Open profile menu"
-              >
-                <User className="w-5 h-5 text-gray-600" />
-              </button>
               
-              {/* Back to Dashboard Button */}
-              <button
-                onClick={handleBackToDashboard}
-                className="flex items-center space-x-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Kembali ke Dashboard</span>
-                <span className="sm:hidden">Kembali</span>
-              </button>
-              
-              <div className="border-l border-gray-200 pl-4">
-                <h1 className="text-lg sm:text-xl font-semibold text-gray-900">{getPageTitle()}</h1>
-                <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">{getPageTitle()}</h1>
+                <p className="text-sm text-gray-500 mt-0.5">
                   Kelola informasi dan pengaturan akun Anda
                 </p>
               </div>
@@ -341,11 +200,9 @@ const ProfileManagement: React.FC = () => {
           </div>
         </header>
 
-        {/* Main Content - Scrollable */}
-        <main className="profile-main-content">
-          <div className="max-w-6xl mx-auto">
-            {renderContent()}
-          </div>
+        {/* Content */}
+        <main className="flex-1 overflow-auto p-6">
+          {renderContent()}
         </main>
       </div>
     </div>
