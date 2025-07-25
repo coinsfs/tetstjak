@@ -53,7 +53,9 @@ const ProfileManagement: React.FC = () => {
   ];
 
   const handleMainSidebarMenuClick = (menu: string) => {
-    console.log('Main sidebar menu clicked:', menu); // Debug log
+    console.log('🔥 ProfileManagement - Main sidebar menu clicked:', menu);
+    console.log('🔥 Current window location:', window.location.pathname);
+    console.log('🔥 Current router path from useRouter:', currentPath);
     
     // Handle main sidebar navigation
     const pathMap: { [key: string]: string } = {
@@ -72,33 +74,18 @@ const ProfileManagement: React.FC = () => {
     const targetPath = pathMap[menu];
     
     if (targetPath) {
-      console.log('Navigating to:', targetPath); // Debug log
-      console.log('Current location:', window.location.pathname);
+      console.log('🔥 Target path:', targetPath);
+      console.log('🔥 Navigate function type:', typeof navigate);
       
       // Close sidebar first
       setMainSidebarOpen(false);
       
-      // Try multiple navigation methods
-      try {
-        // Method 1: Use the navigate function
-        navigate(targetPath);
-        console.log('Navigate function called successfully');
-        
-        // Method 2: Force navigation after a delay if first method doesn't work
-        setTimeout(() => {
-          if (window.location.pathname === '/profile') {
-            console.log('Still on profile page, forcing navigation...');
-            window.location.href = targetPath;
-          }
-        }, 100);
-        
-      } catch (error) {
-        console.error('Navigation failed, using fallback:', error);
-        // Fallback: Direct browser navigation
-        window.location.href = targetPath;
-      }
+      // FORCE browser navigation - bypass custom router
+      console.log('🔥 FORCING browser navigation...');
+      window.location.href = targetPath;
+      
     } else {
-      console.warn('No path found for menu:', menu); // Debug log
+      console.warn('🔥 No path found for menu:', menu);
     }
   };
 
@@ -173,37 +160,25 @@ const ProfileManagement: React.FC = () => {
   };
 
   const handleBackToDashboard = () => {
-    console.log('Back to dashboard clicked'); // Debug log
-    console.log('Current location before navigation:', window.location.pathname);
+    console.log('🔥 Back to dashboard clicked');
+    console.log('🔥 Current location before navigation:', window.location.pathname);
+    console.log('🔥 Current router path:', currentPath);
     
-    try {
-      // Try the navigate function first
-      navigate('/admin');
-      console.log('Navigate to /admin called');
-      
-      // Force navigation if still on profile page after delay
-      setTimeout(() => {
-        if (window.location.pathname === '/profile') {
-          console.log('Still on profile page, forcing navigation to dashboard...');
-          window.location.href = '/admin';
-        }
-      }, 100);
-      
-    } catch (error) {
-      console.error('Navigation to dashboard failed, using fallback:', error);
-      window.location.href = '/admin';
-    }
+    // FORCE browser navigation - bypass custom router completely
+    console.log('🔥 FORCING navigation to /admin...');
+    window.location.href = '/admin';
   };
 
   // Debug component untuk memastikan event handlers bekerja
   const debugNavigation = (menu: string) => {
-    console.log('Debug navigation called for:', menu);
-    console.log('Current pathname:', window.location.pathname);
-    console.log('Navigate function type:', typeof navigate);
-    console.log('Navigate function:', navigate);
+    console.log('🔥 Debug navigation called for:', menu);
+    console.log('🔥 Current pathname:', window.location.pathname);
+    console.log('🔥 Current router path:', currentPath);
+    console.log('🔥 Navigate function type:', typeof navigate);
+    console.log('🔥 Navigate function:', navigate);
     
-    // Test different navigation methods
-    console.log('Testing direct window navigation...');
+    // Test direct window navigation
+    console.log('🔥 Testing direct window navigation to /admin...');
     window.location.href = '/admin';
   };
 
