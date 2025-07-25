@@ -111,9 +111,9 @@ const TeacherTable: React.FC<TeacherTableProps> = memo(({
                   </div>
                 </td>
 
-                <td className="col-narrow">
+                <td className="col-medium">
                   <div className="space-y-2">
-                    <span className={`inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-full ${
+                    <span className={`inline-flex items-center mr-2 px-3 py-1.5 text-xs font-semibold rounded-full ${
                       teacher.is_active
                         ? 'bg-green-100 text-green-800 border border-green-200'
                         : 'bg-red-100 text-red-800 border border-red-200'
