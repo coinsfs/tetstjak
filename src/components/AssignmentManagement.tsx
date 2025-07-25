@@ -162,7 +162,7 @@ const AssignmentManagement: React.FC = () => {
       setError(null);
 
       const [assignmentsData, classesData, subjectsData, teachersData] = await Promise.all([
-        assignmentService.getTeachingAssignments(token),
+        assignmentService.getTeachingAssignments(token, {limit: 1000}),
         classService.getClasses(token, { limit: 1000 }),
         subjectService.getSubjects(token, { limit: 1000 }),
         userService.getTeachers(token, { limit: 1000 })
