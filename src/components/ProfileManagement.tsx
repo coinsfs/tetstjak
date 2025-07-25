@@ -170,16 +170,6 @@ const ProfileManagement: React.FC = () => {
                 <User className="w-5 h-5 text-gray-600" />
               </button>
               
-              {/* Back to Dashboard Button */}
-              <button
-                onClick={handleBackToDashboard}
-                className="flex items-center space-x-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Kembali ke Dashboard</span>
-                <span className="sm:hidden">Kembali</span>
-              </button>
-              
               <div className="border-l border-gray-200 pl-4">
                 <h1 className="text-lg sm:text-xl font-semibold text-gray-900">{getPageTitle()}</h1>
                 <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
