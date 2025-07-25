@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
-import { Users, BookOpen, Calendar, Wifi, Menu, Activity, MoreHorizontal } from 'lucide-react';
+import { getProfileImageUrl } from '@/constants/config';
+import { Users, BookOpen, Calendar, Wifi, Menu, Activity, User } from 'lucide-react';
 import { dashboardService } from '@/services/dashboard';
 import { websocketService } from '@/services/websocket';
 import { DashboardStats, StudentCountByMajor, StudentGrowth, BrowserUsage, ActivityLog } from '@/types/dashboard';
@@ -390,7 +391,30 @@ const AdminDashboard: React.FC = () => {
     }
     
     if (activeMenu === 'profile') {
-      return <ProfileManagement />;
+      return (
+        <div className="flex h-screen bg-gray-50 overflow-hidden">
+          <Sidebar 
+            activeMenu={activeMenu} 
+            onMenuClick={handleMenuClick}
+            isOpen={sidebarOpen}
+            onClose={closeSidebar}
+          />
+          <div className="flex-1 lg:ml-0 flex flex-col overflow-hidden">
+            <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
+              <button
+                onClick={toggleSidebar}
+                className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+              >
+                <Menu className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-auto p-6">
+              <ProfileManagement />
+            </div>
+          </div>
+        </div>
+      );
     }
     
     return (
@@ -482,15 +506,60 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
             
+            {/* User Profile Section */}
             <div className="flex items-center space-x-3">
-              <div className="hidden sm:flex items-center space-x-2 px-2.5 py-1.5 bg-green-50 rounded-md">
-                <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                <span className="text-xs font-medium text-green-700">System Active</span>
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900 truncate max-w-[120px] sm:max-w-[200px]">
+                  {user?.profile_details?.full_name || user?.login_id}
+                </p>
+                {user?.department_details && (
+                  <p className="text-xs text-gray-500 truncate max-w-[120px] sm:max-w-[200px]">
+                    <span className="hidden lg:inline">
+                      {user.department_details.name}
+                    </span>
+                    <span className="lg:hidden">
+                      {user.department_details.abbreviation}
+                    </span>
+                  </p>
+                )}
               </div>
               
-              <button className="p-1.5 rounded-md hover:bg-gray-100 transition-colors">
-                <MoreHorizontal className="w-5 h-5 text-gray-500" />
-              </button>
+              {/* Profile Picture */}
+              <div className="relative flex-shrink-0">
+                {user?.profile_details?.profile_picture_url ? (
+                  <img
+                    src={getProfileImageUrl(user.profile_details.profile_picture_url) || user.profile_details.profile_picture_url}
+                    alt="Profile"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 shadow-sm"
+                    onError={(e) => {
+                      // Fallback to default avatar if image fails to load
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      const fallback = target.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                
+                {/* Fallback Avatar */}
+                <div 
+                  className={`w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center border-2 border-gray-200 shadow-sm ${
+                    user?.profile_details?.profile_picture_url ? 'hidden' : 'flex'
+                  }`}
+                >
+                  <span className="text-white font-semibold text-sm">
+                    {user?.profile_details?.full_name 
+                      ? user.profile_details.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+                      : user?.login_id?.substring(0, 2).toUpperCase() || 'U'
+                    }
+                  </span>
+                </div>
+                
+                {/* Online Status Indicator */}
+                {user?.is_active && (
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
+                )}
+              </div>
             </div>
           </div>
         </header>
