@@ -170,7 +170,7 @@ const ProfileManagement: React.FC = () => {
                 <User className="w-5 h-5 text-gray-600" />
               </button>
               
-              <div className="border-l border-gray-200 pl-4">
+              <div>
                 <h1 className="text-lg sm:text-xl font-semibold text-gray-900">{getPageTitle()}</h1>
                 <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
                   Kelola informasi dan pengaturan akun Anda
