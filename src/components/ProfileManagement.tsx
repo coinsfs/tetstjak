@@ -53,6 +53,8 @@ const ProfileManagement: React.FC = () => {
   ];
 
   const handleMainSidebarMenuClick = (menu: string) => {
+    console.log('Main sidebar menu clicked:', menu); // Debug log
+    
     // Handle main sidebar navigation
     const pathMap: { [key: string]: string } = {
       'dashboard': '/admin',
@@ -67,9 +69,52 @@ const ProfileManagement: React.FC = () => {
       'profile': '/profile',
     };
     
-    const path = pathMap[menu];
-    if (path && path !== '/profile') {
-      navigate(path);
+    const targetPath = pathMap[menu];
+    
+    if (targetPath) {
+      console.log('Navigating to:', targetPath); // Debug log
+      
+      // Force navigation regardless of current path
+      // Gunakan setTimeout untuk memastikan state updates selesai terlebih dahulu
+      setTimeout(() => {
+        navigate(targetPath);
+      }, 0);
+    } else {
+      console.warn('No path found for menu:', menu); // Debug log
+    }
+    
+    // Close sidebar after navigation
+    setMainSidebarOpen(false);
+  };
+
+  // Alternative navigation function dengan force reload jika diperlukan
+  const handleMainSidebarMenuClickAlternative = (menu: string) => {
+    console.log('Alternative navigation for:', menu);
+    
+    const pathMap: { [key: string]: string } = {
+      'dashboard': '/admin',
+      'teachers': '/manage/teachers',
+      'students': '/manage/students',
+      'expertise-programs': '/manage/expertise-programs',
+      'exams': '/manage/exams',
+      'subjects': '/manage/subjects',
+      'classes': '/manage/classes',
+      'assignments': '/manage/assignments',
+      'analytics': '/manage/analytics',
+      'profile': '/profile',
+    };
+    
+    const targetPath = pathMap[menu];
+    
+    if (targetPath && targetPath !== window.location.pathname) {
+      // Jika menggunakan browser history API langsung
+      window.history.pushState({}, '', targetPath);
+      
+      // Atau jika perlu force reload
+      // window.location.href = targetPath;
+      
+      // Trigger re-render atau reload komponen parent jika diperlukan
+      window.dispatchEvent(new PopStateEvent('popstate'));
     }
     
     setMainSidebarOpen(false);
@@ -113,11 +158,39 @@ const ProfileManagement: React.FC = () => {
   };
 
   const handleBackToDashboard = () => {
+    console.log('Back to dashboard clicked'); // Debug log
     navigate('/admin');
+  };
+
+  // Debug component untuk memastikan event handlers bekerja
+  const debugNavigation = (menu: string) => {
+    console.log('Debug navigation called for:', menu);
+    console.log('Current pathname:', window.location.pathname);
+    console.log('Navigate function:', typeof navigate);
+    
+    // Test navigate function
+    try {
+      navigate('/admin');
+      console.log('Navigate function executed successfully');
+    } catch (error) {
+      console.error('Navigate function failed:', error);
+      // Fallback ke browser navigation
+      window.location.href = '/admin';
+    }
   };
 
   return (
     <div className="h-screen bg-gray-50 flex overflow-hidden">
+      {/* Debug Button - Remove in production */}
+      <div className="fixed top-4 right-4 z-50">
+        <button
+          onClick={() => debugNavigation('dashboard')}
+          className="bg-red-500 text-white px-3 py-1 rounded text-xs"
+        >
+          Debug Nav
+        </button>
+      </div>
+
       {/* Main Application Sidebar - Fixed */}
       <div className="hidden lg:block">
         <Sidebar 
@@ -169,6 +242,16 @@ const ProfileManagement: React.FC = () => {
               >
                 <User className="w-5 h-5 text-gray-600" />
               </button>
+
+              {/* Back to Dashboard Button */}
+              <button
+                onClick={handleBackToDashboard}
+                className="p-1.5 rounded-md hover:bg-gray-100 transition-colors flex items-center space-x-2"
+                title="Back to Dashboard"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+                <span className="hidden sm:inline text-sm text-gray-600">Dashboard</span>
+              </button>
               
               <div>
                 <h1 className="text-lg sm:text-xl font-semibold text-gray-900">{getPageTitle()}</h1>
@@ -184,7 +267,6 @@ const ProfileManagement: React.FC = () => {
         <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Profile Sidebar - Desktop Fixed */}
           <div className="hidden lg:flex lg:flex-col lg:w-80 bg-white border-r border-gray-200 flex-shrink-0">
-
             {/* Profile Navigation - Scrollable if needed */}
             <nav className="flex-1 px-4 py-6 overflow-y-auto min-h-0">
               <ul className="space-y-2">
