@@ -149,7 +149,7 @@ const ProfileManagement: React.FC = () => {
       {/* Profile Content Area - Flexible with fixed header */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header - Fixed at top */}
-        <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 flex-shrink-0 z-30">
+        <header className="bg-white border-b border-gray-200 py-4 flex-shrink-0 z-30">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {/* Mobile Menu Button */}
