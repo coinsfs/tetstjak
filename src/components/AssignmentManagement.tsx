@@ -163,9 +163,9 @@ const AssignmentManagement: React.FC = () => {
 
       const [assignmentsData, classesData, subjectsData, teachersData] = await Promise.all([
         assignmentService.getTeachingAssignments(token),
-        classService.getClasses(token, { limit: 100 }),
-        subjectService.getSubjects(token, { limit: 100 }),
-        userService.getTeachers(token, { limit: 100 })
+        classService.getClasses(token, { limit: 1000 }),
+        subjectService.getSubjects(token, { limit: 1000 }),
+        userService.getTeachers(token, { limit: 1000 })
       ]);
 
       setAssignments(assignmentsData);
