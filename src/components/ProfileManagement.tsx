@@ -245,13 +245,6 @@ const ProfileManagement: React.FC = () => {
               </div>
               
               {/* Back to Dashboard Button */}
-              <button
-                onClick={handleBackToDashboard}
-                className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-md transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Back to Dashboard</span>
-              </button>
               
               <div className="border-l border-gray-200 pl-4">
                 <h1 className="text-xl font-semibold text-gray-900">{getPageTitle()}</h1>
