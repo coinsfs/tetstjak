@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Settings, Activity, ChevronRight, Menu, X } from 'lucide-react';
+import { User, Settings, Activity, ChevronRight, Menu, X, ArrowLeft } from 'lucide-react';
+import { useRouter } from '@/hooks/useRouter';
+import Sidebar from './Sidebar';
 import ProfileInformation from './profile/ProfileInformation';
 import ProfileSettings from './profile/ProfileSettings';
 import SecuritySettings from './profile/SecuritySettings';
@@ -12,9 +14,11 @@ type ProfileSubMenuItem = 'information' | 'profile-settings' | 'security';
 
 const ProfileManagement: React.FC = () => {
   const { user } = useAuth();
+  const { navigate } = useRouter();
   const [activeMainMenu, setActiveMainMenu] = useState<MainMenuItem>('profile');
   const [activeSubMenu, setActiveSubMenu] = useState<ProfileSubMenuItem>('information');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mainSidebarOpen, setMainSidebarOpen] = useState(false);
+  const [profileSidebarOpen, setProfileSidebarOpen] = useState(false);
 
   // Reset submenu when main menu changes
   useEffect(() => {
@@ -48,6 +52,29 @@ const ProfileManagement: React.FC = () => {
     }
   ];
 
+  const handleMainSidebarMenuClick = (menu: string) => {
+    // Handle main sidebar navigation
+    const pathMap: { [key: string]: string } = {
+      'dashboard': '/admin',
+      'teachers': '/manage/teachers',
+      'students': '/manage/students',
+      'expertise-programs': '/manage/expertise-programs',
+      'exams': '/manage/exams',
+      'subjects': '/manage/subjects',
+      'classes': '/manage/classes',
+      'assignments': '/manage/assignments',
+      'analytics': '/manage/analytics',
+      'profile': '/profile',
+    };
+    
+    const path = pathMap[menu];
+    if (path && path !== '/profile') {
+      navigate(path);
+    }
+    
+    setMainSidebarOpen(false);
+  };
+
   const renderContent = () => {
     if (activeMainMenu === 'profile') {
       switch (activeSubMenu) {
@@ -77,37 +104,53 @@ const ProfileManagement: React.FC = () => {
     return mainItem?.label || 'Profile';
   };
 
-  const closeSidebar = () => {
-    setSidebarOpen(false);
+  const closeMainSidebar = () => {
+    setMainSidebarOpen(false);
+  };
+
+  const closeProfileSidebar = () => {
+    setProfileSidebarOpen(false);
+  };
+
+  const handleBackToDashboard = () => {
+    navigate('/admin');
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Mobile Overlay */}
-      {sidebarOpen && (
+      {/* Main Application Sidebar */}
+      <Sidebar 
+        activeMenu="profile" 
+        onMenuClick={handleMainSidebarMenuClick}
+        isOpen={mainSidebarOpen}
+        onClose={closeMainSidebar}
+      />
+
+      {/* Profile Sidebar Overlay for Mobile */}
+      {profileSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={closeSidebar}
+          onClick={closeProfileSidebar}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Profile Sidebar */}
       <div className={`
-        fixed top-0 left-0 h-full w-80 bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out flex flex-col
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        fixed top-0 left-0 lg:left-64 h-full w-80 bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out flex flex-col border-r border-gray-200
+        ${profileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:static lg:z-auto
       `}>
         {/* Mobile Close Button */}
         <div className="lg:hidden flex justify-end p-4">
           <button
-            onClick={closeSidebar}
+            onClick={closeProfileSidebar}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>
 
-        {/* Header */}
+        {/* Profile Sidebar Header */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
@@ -120,7 +163,7 @@ const ProfileManagement: React.FC = () => {
           </div>
         </div>
 
-        {/* Navigation */}
+        {/* Profile Navigation */}
         <nav className="flex-1 px-4 py-6 overflow-y-auto">
           <ul className="space-y-2">
             {mainMenuItems.map((item) => (
@@ -129,7 +172,7 @@ const ProfileManagement: React.FC = () => {
                   onClick={() => {
                     setActiveMainMenu(item.id);
                     if (item.subItems.length === 0) {
-                      closeSidebar();
+                      closeProfileSidebar();
                     }
                   }}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-colors ${
@@ -157,7 +200,7 @@ const ProfileManagement: React.FC = () => {
                         <button
                           onClick={() => {
                             setActiveSubMenu(subItem.id);
-                            closeSidebar();
+                            closeProfileSidebar();
                           }}
                           className={`w-full flex items-center px-4 py-2 rounded-lg text-left text-sm transition-colors ${
                             activeSubMenu === subItem.id
@@ -178,19 +221,39 @@ const ProfileManagement: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-0 flex flex-col">
+      <div className="flex-1 lg:ml-80 flex flex-col">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-30">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
+              {/* Mobile Menu Buttons */}
+              <div className="flex items-center space-x-2 lg:hidden">
+                <button
+                  onClick={() => setMainSidebarOpen(true)}
+                  className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+                  title="Open main menu"
+                >
+                  <Menu className="w-5 h-5 text-gray-600" />
+                </button>
+                <button
+                  onClick={() => setProfileSidebarOpen(true)}
+                  className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+                  title="Open profile menu"
+                >
+                  <User className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+              
+              {/* Back to Dashboard Button */}
               <button
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+                onClick={handleBackToDashboard}
+                className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-md transition-colors"
               >
-                <Menu className="w-5 h-5 text-gray-600" />
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Back to Dashboard</span>
               </button>
               
-              <div>
+              <div className="border-l border-gray-200 pl-4">
                 <h1 className="text-xl font-semibold text-gray-900">{getPageTitle()}</h1>
                 <p className="text-sm text-gray-500 mt-0.5">
                   Kelola informasi dan pengaturan akun Anda
