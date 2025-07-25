@@ -151,20 +151,20 @@ const SecuritySettings: React.FC = () => {
   const passwordStrength = getPasswordStrength(formData.new_password);
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-full lg:max-w-2xl space-y-4 sm:space-y-6">
       {/* Security Overview */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
         <div className="flex items-center space-x-2 mb-4">
           <Shield className="w-5 h-5 text-green-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Keamanan Akun</h3>
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900">Keamanan Akun</h3>
         </div>
         
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
           <div className="flex items-start space-x-3">
             <Info className="w-5 h-5 text-blue-600 mt-0.5" />
             <div>
-              <h4 className="text-sm font-medium text-blue-900 mb-1">Tips Keamanan</h4>
-              <ul className="text-sm text-blue-800 space-y-1">
+              <h4 className="text-xs sm:text-sm font-medium text-blue-900 mb-1">Tips Keamanan</h4>
+              <ul className="text-xs sm:text-sm text-blue-800 space-y-1">
                 <li>• Gunakan password yang unik dan kuat</li>
                 <li>• Jangan bagikan password Anda kepada siapapun</li>
                 <li>• Ubah password secara berkala untuk keamanan optimal</li>
@@ -176,10 +176,10 @@ const SecuritySettings: React.FC = () => {
       </div>
 
       {/* Change Password Form */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
         <div className="flex items-center space-x-2 mb-6">
           <Key className="w-5 h-5 text-orange-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Ubah Password</h3>
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900">Ubah Password</h3>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -242,16 +242,16 @@ const SecuritySettings: React.FC = () => {
             
             {/* Password Strength Indicator */}
             {formData.new_password && (
-              <div className="mt-2">
+              <div className="mt-2 space-y-1">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-gray-500">Kekuatan Password:</span>
                   <span className={`text-xs font-medium ${passwordStrength.textColor}`}>
                     {passwordStrength.label}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 rounded-full h-1.5 sm:h-2">
                   <div 
-                    className={`h-2 rounded-full transition-all duration-300 ${passwordStrength.color}`}
+                    className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${passwordStrength.color}`}
                     style={{ 
                       width: `${(passwordRequirements.filter(req => req.check(formData.new_password)).length / passwordRequirements.length) * 100}%` 
                     }}
@@ -301,19 +301,19 @@ const SecuritySettings: React.FC = () => {
           </div>
 
           {/* Password Requirements */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-gray-900 mb-3">Persyaratan Password:</h4>
-            <div className="space-y-2">
+          <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+            <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-3">Persyaratan Password:</h4>
+            <div className="space-y-1.5 sm:space-y-2">
               {passwordRequirements.map((requirement, index) => {
                 const isValid = formData.new_password ? requirement.check(formData.new_password) : false;
                 return (
                   <div key={index} className="flex items-center space-x-2">
                     {isValid ? (
-                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
                     ) : (
-                      <div className="w-4 h-4 border border-gray-300 rounded-full"></div>
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 border border-gray-300 rounded-full flex-shrink-0"></div>
                     )}
-                    <span className={`text-sm ${isValid ? 'text-green-700' : 'text-gray-600'}`}>
+                    <span className={`text-xs sm:text-sm ${isValid ? 'text-green-700' : 'text-gray-600'}`}>
                       {requirement.text}
                     </span>
                   </div>
@@ -323,11 +323,11 @@ const SecuritySettings: React.FC = () => {
           </div>
 
           {/* Submit Button */}
-          <div className="flex justify-end pt-4">
+          <div className="flex flex-col sm:flex-row justify-end pt-4">
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? (
                 <>

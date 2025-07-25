@@ -60,10 +60,10 @@ const ProfileInformation: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 max-w-full">
       {/* Profile Header Card */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-8">
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden w-full">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-6 sm:py-8">
           <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
             {/* Profile Picture */}
             <div className="relative">
@@ -106,13 +106,13 @@ const ProfileInformation: React.FC = () => {
                 ))}
               </div>
               <div className="flex items-center justify-center sm:justify-start space-x-4 text-sm text-blue-100">
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-1 min-w-0">
                   <Mail className="w-4 h-4" />
-                  <span>{user.email}</span>
+                  <span className="truncate">{user.email}</span>
                 </div>
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-1 min-w-0">
                   <User className="w-4 h-4" />
-                  <span>{user.login_id}</span>
+                  <span className="truncate">{user.login_id}</span>
                 </div>
               </div>
             </div>
@@ -121,20 +121,20 @@ const ProfileInformation: React.FC = () => {
       </div>
 
       {/* Information Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Personal Information */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
           <div className="flex items-center space-x-2 mb-6">
             <User className="w-5 h-5 text-blue-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Informasi Pribadi</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Informasi Pribadi</h3>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-start space-x-3">
               <User className="w-4 h-4 text-gray-400 mt-1" />
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-500">Nama Lengkap</p>
-                <p className="text-gray-900">{user.profile_details?.full_name || '-'}</p>
+                <p className="text-gray-900 break-words">{user.profile_details?.full_name || '-'}</p>
               </div>
             </div>
 
@@ -171,27 +171,27 @@ const ProfileInformation: React.FC = () => {
 
             <div className="flex items-start space-x-3">
               <MapPin className="w-4 h-4 text-gray-400 mt-1" />
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-500">Alamat</p>
-                <p className="text-gray-900">{user.profile_details?.address || '-'}</p>
+                <p className="text-gray-900 break-words">{user.profile_details?.address || '-'}</p>
               </div>
             </div>
 
             <div className="flex items-start space-x-3">
               <Phone className="w-4 h-4 text-gray-400 mt-1" />
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-500">Nomor Telepon</p>
-                <p className="text-gray-900">{user.profile_details?.phone_number || '-'}</p>
+                <p className="text-gray-900 break-words">{user.profile_details?.phone_number || '-'}</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Academic/Work Information */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
           <div className="flex items-center space-x-2 mb-6">
             <Building className="w-5 h-5 text-green-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Informasi Akademik</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Informasi Akademik</h3>
           </div>
 
           <div className="space-y-4">
@@ -254,10 +254,10 @@ const ProfileInformation: React.FC = () => {
         </div>
 
         {/* Account Information */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
           <div className="flex items-center space-x-2 mb-6">
             <Shield className="w-5 h-5 text-purple-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Informasi Akun</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Informasi Akun</h3>
           </div>
 
           <div className="space-y-4">
@@ -311,19 +311,19 @@ const ProfileInformation: React.FC = () => {
 
         {/* Teaching Summary (for teachers) */}
         {user.roles.includes('teacher') && user.teaching_summary && user.teaching_summary.length > 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
             <div className="flex items-center space-x-2 mb-6">
               <GraduationCap className="w-5 h-5 text-orange-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Ringkasan Mengajar</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Ringkasan Mengajar</h3>
             </div>
 
             <div className="space-y-3">
               {user.teaching_summary.map((teaching, index) => (
                 <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <BookOpen className="w-4 h-4 text-gray-400" />
-                  <div>
-                    <p className="font-medium text-gray-900">{teaching.subject_name}</p>
-                    <p className="text-sm text-gray-500">{teaching.class_name}</p>
+                  <BookOpen className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-gray-900 break-words">{teaching.subject_name}</p>
+                    <p className="text-sm text-gray-500 break-words">{teaching.class_name}</p>
                   </div>
                 </div>
               ))}

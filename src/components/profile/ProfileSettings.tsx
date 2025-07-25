@@ -195,16 +195,16 @@ const ProfileSettings: React.FC = () => {
   }
 
   return (
-    <div>
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className="max-w-full">
+      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
         <div className="flex items-center space-x-2 mb-6">
           <User className="w-5 h-5 text-blue-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Pengaturan Profile</h3>
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900">Pengaturan Profile</h3>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Account Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Login ID <span className="text-red-500">*</span>
@@ -258,7 +258,7 @@ const ProfileSettings: React.FC = () => {
           <div className="border-t border-gray-200 pt-6">
             <h4 className="text-md font-medium text-gray-900 mb-4">Informasi Pribadi</h4>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nama Lengkap <span className="text-red-500">*</span>
@@ -355,7 +355,7 @@ const ProfileSettings: React.FC = () => {
                     value={formData.profile.address}
                     onChange={(e) => handleInputChange('profile.address', e.target.value)}
                     rows={3}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-vertical"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-vertical min-h-[80px]"
                     placeholder="Masukkan alamat lengkap"
                   />
                 </div>
@@ -394,7 +394,7 @@ const ProfileSettings: React.FC = () => {
                     type="number"
                     value={formData.profile.start_year || ''}
                     onChange={(e) => handleInputChange('profile.start_year', parseInt(e.target.value) || undefined)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm"
                     placeholder="2020"
                     min="1900"
                     max="2100"
@@ -409,7 +409,7 @@ const ProfileSettings: React.FC = () => {
                     type="number"
                     value={formData.profile.end_year || ''}
                     onChange={(e) => handleInputChange('profile.end_year', parseInt(e.target.value) || undefined)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm"
                     placeholder="2024"
                     min="1900"
                     max="2100"
@@ -420,11 +420,11 @@ const ProfileSettings: React.FC = () => {
           </div>
 
           {/* Submit Button */}
-          <div className="flex justify-end pt-6 border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row justify-end pt-6 border-t border-gray-200">
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? (
                 <>
