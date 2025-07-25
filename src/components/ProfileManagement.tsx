@@ -254,8 +254,6 @@ const ProfileManagement: React.FC = () => {
                   </button>
                 </div>
 
-                
-
                 {/* Profile Navigation - Scrollable */}
                 <nav className="flex-1 px-4 py-6 overflow-y-auto min-h-0">
                   <ul className="space-y-2">
