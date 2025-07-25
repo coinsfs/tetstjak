@@ -53,9 +53,7 @@ const ProfileManagement: React.FC = () => {
   ];
 
   const handleMainSidebarMenuClick = (menu: string) => {
-    console.log('🔥 ProfileManagement - Main sidebar menu clicked:', menu);
-    console.log('🔥 Current window location:', window.location.pathname);
-    console.log('🔥 Current router path from useRouter:', currentPath);
+    console.log('Main sidebar menu clicked:', menu); // Debug log
     
     // Handle main sidebar navigation
     const pathMap: { [key: string]: string } = {
@@ -74,19 +72,19 @@ const ProfileManagement: React.FC = () => {
     const targetPath = pathMap[menu];
     
     if (targetPath) {
-      console.log('🔥 Target path:', targetPath);
-      console.log('🔥 Navigate function type:', typeof navigate);
+      console.log('Navigating to:', targetPath); // Debug log
       
-      // Close sidebar first
-      setMainSidebarOpen(false);
-      
-      // FORCE browser navigation - bypass custom router
-      console.log('🔥 FORCING browser navigation...');
-      window.location.href = targetPath;
-      
+      // Force navigation regardless of current path
+      // Gunakan setTimeout untuk memastikan state updates selesai terlebih dahulu
+      setTimeout(() => {
+        navigate(targetPath);
+      }, 0);
     } else {
-      console.warn('🔥 No path found for menu:', menu);
+      console.warn('No path found for menu:', menu); // Debug log
     }
+    
+    // Close sidebar after navigation
+    setMainSidebarOpen(false);
   };
 
   // Alternative navigation function dengan force reload jika diperlukan
@@ -160,26 +158,25 @@ const ProfileManagement: React.FC = () => {
   };
 
   const handleBackToDashboard = () => {
-    console.log('🔥 Back to dashboard clicked');
-    console.log('🔥 Current location before navigation:', window.location.pathname);
-    console.log('🔥 Current router path:', currentPath);
-    
-    // FORCE browser navigation - bypass custom router completely
-    console.log('🔥 FORCING navigation to /admin...');
-    window.location.href = '/admin';
+    console.log('Back to dashboard clicked'); // Debug log
+    navigate('/admin');
   };
 
   // Debug component untuk memastikan event handlers bekerja
   const debugNavigation = (menu: string) => {
-    console.log('🔥 Debug navigation called for:', menu);
-    console.log('🔥 Current pathname:', window.location.pathname);
-    console.log('🔥 Current router path:', currentPath);
-    console.log('🔥 Navigate function type:', typeof navigate);
-    console.log('🔥 Navigate function:', navigate);
+    console.log('Debug navigation called for:', menu);
+    console.log('Current pathname:', window.location.pathname);
+    console.log('Navigate function:', typeof navigate);
     
-    // Test direct window navigation
-    console.log('🔥 Testing direct window navigation to /admin...');
-    window.location.href = '/admin';
+    // Test navigate function
+    try {
+      navigate('/admin');
+      console.log('Navigate function executed successfully');
+    } catch (error) {
+      console.error('Navigate function failed:', error);
+      // Fallback ke browser navigation
+      window.location.href = '/admin';
+    }
   };
 
   return (
