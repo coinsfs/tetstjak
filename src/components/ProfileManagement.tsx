@@ -254,18 +254,7 @@ const ProfileManagement: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Profile Sidebar Header - Fixed */}
-                <div className="p-6 border-b border-gray-200 flex-shrink-0">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                      <User className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h1 className="text-lg font-bold text-gray-900">Profile Management</h1>
-                      <p className="text-sm text-gray-500">{user?.login_id}</p>
-                    </div>
-                  </div>
-                </div>
+                
 
                 {/* Profile Navigation - Scrollable */}
                 <nav className="flex-1 px-4 py-6 overflow-y-auto min-h-0">
