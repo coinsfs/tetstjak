@@ -63,6 +63,80 @@ const TeacherDeleteModal: React.FC<TeacherDeleteModalProps> = ({
           </button>
         </div>
 
+        {/* Content */}
+        <div className="p-6">
+          <div className="mb-4">
+            <p className="text-gray-700 mb-4">
+              Apakah Anda yakin ingin menghapus data guru berikut?
+            </p>
+            
+            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+              <div>
+                <span className="text-sm font-medium text-gray-500">Nama Lengkap:</span>
+                <p className="text-sm text-gray-900">
+                  {teacher.profile_details?.full_name || 'Nama tidak tersedia'}
+                </p>
+              </div>
+              
+              <div>
+                <span className="text-sm font-medium text-gray-500">ID Login:</span>
+                <p className="text-sm text-gray-900">{teacher.login_id}</p>
+              </div>
+              
+              <div>
+                <span className="text-sm font-medium text-gray-500">Email:</span>
+                <p className="text-sm text-gray-900">{teacher.email}</p>
+              </div>
+              
+              {teacher.department_details && (
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Jurusan:</span>
+                  <p className="text-sm text-gray-900">{teacher.department_details.name}</p>
+                </div>
+              )}
+              
+              <div>
+                <span className="text-sm font-medium text-gray-500">Status:</span>
+                <p className="text-sm text-gray-900">
+                  {teacher.is_active ? 'Aktif' : 'Tidak Aktif'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Recommendation */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start">
+              <AlertTriangle className="w-5 h-5 text-blue-500 mr-3 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="text-sm font-medium text-blue-800 mb-1">Rekomendasi</h4>
+                <p className="text-sm text-blue-700 mb-2">
+                  Sebaiknya <strong>nonaktifkan</strong> guru ini daripada menghapus data secara permanen. 
+                  Menonaktifkan akan menjaga riwayat data tetap utuh.
+                </p>
+                <p className="text-sm text-blue-700">
+                  Jika tetap ingin menghapus, pastikan tidak ada penugasan mengajar yang masih aktif.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start">
+              <AlertTriangle className="w-5 h-5 text-red-500 mr-3 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="text-sm font-medium text-red-800 mb-1">Dampak Penghapusan</h4>
+                <p className="text-sm text-red-700">
+                  • Semua penugasan mengajar akan dihapus<br/>
+                  • Riwayat ujian yang dibuat akan hilang<br/>
+                  • Data profil dan aktivitas akan terhapus permanen<br/>
+                  • <strong>Tindakan ini tidak dapat dibatalkan</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Footer */}
         <div className="flex justify-end space-x-3 p-6 border-t border-gray-200">
           <button

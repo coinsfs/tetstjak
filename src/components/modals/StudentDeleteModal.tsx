@@ -81,7 +81,7 @@ const StudentDeleteModal: React.FC<StudentDeleteModalProps> = ({
             
             <div className="bg-gray-50 rounded-lg p-4 space-y-2">
               <div>
-                <span className="text-sm font-medium text-gray-500">Nama:</span>
+                <span className="text-sm font-medium text-gray-500">Nama Lengkap:</span>
                 <p className="text-sm text-gray-900">
                   {student.profile_details?.full_name || 'Nama tidak tersedia'}
                 </p>
@@ -105,6 +105,30 @@ const StudentDeleteModal: React.FC<StudentDeleteModalProps> = ({
                   </p>
                 </div>
               )}
+              
+              <div>
+                <span className="text-sm font-medium text-gray-500">Status:</span>
+                <p className="text-sm text-gray-900">
+                  {student.is_active ? 'Aktif' : 'Tidak Aktif'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Recommendation */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start">
+              <AlertTriangle className="w-5 h-5 text-blue-500 mr-3 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="text-sm font-medium text-blue-800 mb-1">Rekomendasi</h4>
+                <p className="text-sm text-blue-700 mb-2">
+                  Sebaiknya <strong>nonaktifkan</strong> siswa ini daripada menghapus data secara permanen. 
+                  Menonaktifkan akan menjaga riwayat akademik tetap utuh.
+                </p>
+                <p className="text-sm text-blue-700">
+                  Penghapusan hanya disarankan jika data siswa benar-benar salah input atau duplikat.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -112,10 +136,13 @@ const StudentDeleteModal: React.FC<StudentDeleteModalProps> = ({
             <div className="flex items-start">
               <AlertTriangle className="w-5 h-5 text-red-500 mr-3 mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="text-sm font-medium text-red-800 mb-1">Peringatan!</h4>
+                <h4 className="text-sm font-medium text-red-800 mb-1">Dampak Penghapusan</h4>
                 <p className="text-sm text-red-700">
-                  Menghapus data siswa akan menghilangkan semua informasi terkait termasuk riwayat akademik, 
-                  nilai, dan data lainnya. Tindakan ini tidak dapat dibatalkan.
+                  • Semua riwayat akademik dan nilai akan hilang<br/>
+                  • Hasil ujian dan tugas akan terhapus<br/>
+                  • Data kehadiran akan hilang<br/>
+                  • Data profil dan aktivitas akan terhapus permanen<br/>
+                  • <strong>Tindakan ini tidak dapat dibatalkan</strong>
                 </p>
               </div>
             </div>

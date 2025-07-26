@@ -82,7 +82,7 @@ const ExamDeleteModal: React.FC<ExamDeleteModalProps> = ({
             
             <div className="bg-gray-50 rounded-lg p-4 space-y-2">
               <div>
-                <span className="text-sm font-medium text-gray-500">Judul:</span>
+                <span className="text-sm font-medium text-gray-500">Judul Ujian:</span>
                 <p className="text-sm text-gray-900">{exam.title}</p>
               </div>
               
@@ -111,6 +111,11 @@ const ExamDeleteModal: React.FC<ExamDeleteModalProps> = ({
                 <span className="text-sm font-medium text-gray-500">Status:</span>
                 <p className="text-sm text-gray-900">{exam.status}</p>
               </div>
+              
+              <div>
+                <span className="text-sm font-medium text-gray-500">Jumlah Soal:</span>
+                <p className="text-sm text-gray-900">{exam.questions?.length || 0} soal</p>
+              </div>
             </div>
           </div>
 
@@ -118,10 +123,16 @@ const ExamDeleteModal: React.FC<ExamDeleteModalProps> = ({
             <div className="flex items-start">
               <AlertTriangle className="w-5 h-5 text-red-500 mr-3 mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="text-sm font-medium text-red-800 mb-1">Peringatan!</h4>
+                <h4 className="text-sm font-medium text-red-800 mb-1">Dampak Penghapusan</h4>
                 <p className="text-sm text-red-700">
-                  Menghapus ujian akan menghilangkan semua data terkait termasuk soal, jawaban siswa, dan hasil ujian. 
-                  Tindakan ini tidak dapat dibatalkan.
+                  • Semua soal ujian akan hilang<br/>
+                  • Jawaban dan hasil siswa akan terhapus<br/>
+                  • Riwayat nilai ujian akan hilang<br/>
+                  • Data analisis ujian akan terhapus<br/>
+                  • <strong>Tindakan ini tidak dapat dibatalkan</strong>
+                </p>
+                <p className="text-sm text-red-700 mt-2 font-medium">
+                  Pastikan Anda sudah mengunduh laporan hasil ujian jika diperlukan.
                 </p>
               </div>
             </div>

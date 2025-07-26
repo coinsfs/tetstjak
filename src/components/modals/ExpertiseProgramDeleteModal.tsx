@@ -72,7 +72,7 @@ const ExpertiseProgramDeleteModal: React.FC<ExpertiseProgramDeleteModalProps> = 
         <div className="p-6">
           <div className="mb-4">
             <p className="text-sm text-gray-600 mb-4">
-              Anda yakin ingin menghapus jurusan berikut? Tindakan ini tidak dapat dibatalkan.
+              Apakah Anda yakin ingin menghapus jurusan berikut?
             </p>
             
             <div className="bg-gray-50 rounded-lg p-4 space-y-2">
@@ -91,13 +91,39 @@ const ExpertiseProgramDeleteModal: React.FC<ExpertiseProgramDeleteModalProps> = 
             </div>
           </div>
 
+          {/* Warning about dependencies */}
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start">
+              <AlertTriangle className="w-5 h-5 text-orange-500 mr-3 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="text-sm font-medium text-orange-800 mb-1">Perhatian!</h4>
+                <p className="text-sm text-orange-700 mb-2">
+                  Jurusan ini mungkin memiliki data terkait yang akan terpengaruh:
+                </p>
+                <ul className="text-sm text-orange-700 list-disc list-inside space-y-1">
+                  <li>Kelas-kelas yang menggunakan jurusan ini</li>
+                  <li>Siswa dan guru yang terdaftar di jurusan ini</li>
+                  <li>Penugasan mengajar dan kurikulum</li>
+                  <li>Data akademik dan ujian</li>
+                </ul>
+                <p className="text-sm text-orange-700 mt-2 font-medium">
+                  Sebaiknya pindahkan semua kelas dan pengguna ke jurusan lain terlebih dahulu.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
             <div className="flex items-start">
               <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 mr-2 flex-shrink-0" />
               <div>
-                <h4 className="text-sm font-medium text-red-800 mb-1">Peringatan</h4>
+                <h4 className="text-sm font-medium text-red-800 mb-1">Dampak Penghapusan</h4>
                 <p className="text-sm text-red-700">
-                  Menghapus jurusan akan mempengaruhi data terkait seperti kelas dan siswa yang terdaftar dalam jurusan ini.
+                  • Semua kelas di jurusan ini akan kehilangan referensi<br/>
+                  • Siswa dan guru akan kehilangan afiliasi jurusan<br/>
+                  • Penugasan mengajar akan terpengaruh<br/>
+                  • Riwayat akademik jurusan akan hilang<br/>
+                  • <strong>Tindakan ini tidak dapat dibatalkan</strong>
                 </p>
               </div>
             </div>

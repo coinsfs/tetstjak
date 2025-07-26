@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { X, Trash2, AlertTriangle } from 'lucide-react';
-import { Subject } from '@/types/subject';
-import { subjectService } from '@/services/subject';
+import { TeachingAssignment } from '@/types/assignment';
+import { assignmentService } from '@/services/assignment';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 
-interface SubjectDeleteModalProps {
-  subject: Subject;
+interface AssignmentDeleteModalProps {
+  assignment: TeachingAssignment;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-const SubjectDeleteModal: React.FC<SubjectDeleteModalProps> = ({
-  subject,
+const AssignmentDeleteModal: React.FC<AssignmentDeleteModalProps> = ({
+  assignment,
   isOpen,
   onClose,
   onSuccess
@@ -26,20 +26,36 @@ const SubjectDeleteModal: React.FC<SubjectDeleteModalProps> = ({
 
     setLoading(true);
     try {
-      await subjectService.deleteSubject(token, subject._id);
-      toast.success('Mata pelajaran berhasil dihapus');
+      const batchRequest = {
+        actions: [{
+          type: 'delete' as const,
+          assignment_id: assignment._id
+        }]
+      };
+      
+      await assignmentService.batchUpdateAssignments(token, batchRequest);
+      toast.success('Penugasan berhasil dihapus');
       onSuccess();
       onClose();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Gagal menghapus mata pelajaran';
+      const errorMessage = error instanceof Error ? error.message : 'Gagal menghapus penugasan';
       toast.error(errorMessage);
-      console.error('Error deleting subject:', error);
+      console.error('Error deleting assignment:', error);
     } finally {
       setLoading(false);
     }
   };
 
   if (!isOpen) return null;
+
+  const getGradeLabel = (gradeLevel: number) => {
+    switch (gradeLevel) {
+      case 10: return 'X';
+      case 11: return 'XI';
+      case 12: return 'XII';
+      default: return gradeLevel.toString();
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -67,44 +83,52 @@ const SubjectDeleteModal: React.FC<SubjectDeleteModalProps> = ({
         <div className="p-6">
           <div className="mb-4">
             <p className="text-gray-700 mb-4">
-              Apakah Anda yakin ingin menghapus mata pelajaran berikut?
+              Apakah Anda yakin ingin menghapus penugasan berikut?
             </p>
             
             <div className="bg-gray-50 rounded-lg p-4 space-y-2">
               <div>
-                <span className="text-sm font-medium text-gray-500">Nama Mata Pelajaran:</span>
-                <p className="text-sm text-gray-900">{subject.name}</p>
+                <span className="text-sm font-medium text-gray-500">Mata Pelajaran:</span>
+                <p className="text-sm text-gray-900">
+                  {assignment.subject_details?.name || 'Tidak tersedia'}
+                </p>
               </div>
               
               <div>
-                <span className="text-sm font-medium text-gray-500">Kode Mata Pelajaran:</span>
-                <p className="text-sm text-gray-900">{subject.code}</p>
+                <span className="text-sm font-medium text-gray-500">Kelas:</span>
+                <p className="text-sm text-gray-900">
+                  {assignment.class_details ? 
+                    `${getGradeLabel(assignment.class_details.grade_level)} ${assignment.class_details.expertise_details?.abbreviation} ${assignment.class_details.name}` 
+                    : 'Tidak tersedia'
+                  }
+                </p>
               </div>
               
               <div>
-                <span className="text-sm font-medium text-gray-500">Deskripsi:</span>
-                <p className="text-sm text-gray-900">{subject.description || 'Tidak ada deskripsi'}</p>
+                <span className="text-sm font-medium text-gray-500">Guru:</span>
+                <p className="text-sm text-gray-900">
+                  {assignment.teacher_details?.full_name || 'Tidak tersedia'}
+                </p>
+              </div>
+              
+              <div>
+                <span className="text-sm font-medium text-gray-500">Tahun Ajaran:</span>
+                <p className="text-sm text-gray-900">
+                  {assignment.class_details?.academic_year || 'Tidak tersedia'}
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Warning about dependencies */}
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+          {/* Recommendation */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
             <div className="flex items-start">
-              <AlertTriangle className="w-5 h-5 text-orange-500 mr-3 mt-0.5 flex-shrink-0" />
+              <AlertTriangle className="w-5 h-5 text-blue-500 mr-3 mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="text-sm font-medium text-orange-800 mb-1">Perhatian!</h4>
-                <p className="text-sm text-orange-700 mb-2">
-                  Mata pelajaran ini mungkin memiliki data terkait yang akan terpengaruh:
-                </p>
-                <ul className="text-sm text-orange-700 list-disc list-inside space-y-1">
-                  <li>Penugasan mengajar guru</li>
-                  <li>Ujian dan soal yang sudah dibuat</li>
-                  <li>Bank soal mata pelajaran</li>
-                  <li>Jadwal pembelajaran</li>
-                </ul>
-                <p className="text-sm text-orange-700 mt-2 font-medium">
-                  Sebaiknya ubah penugasan dan pindahkan ujian ke mata pelajaran lain terlebih dahulu.
+                <h4 className="text-sm font-medium text-blue-800 mb-1">Rekomendasi</h4>
+                <p className="text-sm text-blue-700">
+                  Sebaiknya <strong>ganti guru</strong> pada penugasan ini daripada menghapus penugasan. 
+                  Mengganti guru akan menjaga kontinuitas pembelajaran dan data ujian tetap utuh.
                 </p>
               </div>
             </div>
@@ -116,10 +140,10 @@ const SubjectDeleteModal: React.FC<SubjectDeleteModalProps> = ({
               <div>
                 <h4 className="text-sm font-medium text-red-800 mb-1">Dampak Penghapusan</h4>
                 <p className="text-sm text-red-700">
-                  • Semua penugasan mengajar mata pelajaran ini akan dihapus<br/>
-                  • Ujian dan bank soal akan hilang<br/>
-                  • Jadwal pembelajaran akan terhapus<br/>
-                  • Riwayat nilai siswa untuk mata pelajaran ini akan hilang<br/>
+                  • <strong>Semua ujian terkait akan dihapus</strong><br/>
+                  • Jadwal pembelajaran akan hilang<br/>
+                  • Bank soal mata pelajaran untuk kelas ini akan terhapus<br/>
+                  • Riwayat nilai siswa akan hilang<br/>
                   • <strong>Tindakan ini tidak dapat dibatalkan</strong>
                 </p>
               </div>
@@ -149,7 +173,7 @@ const SubjectDeleteModal: React.FC<SubjectDeleteModalProps> = ({
             ) : (
               <>
                 <Trash2 className="w-4 h-4" />
-                <span>Hapus Mata Pelajaran</span>
+                <span>Hapus Penugasan</span>
               </>
             )}
           </button>
@@ -159,4 +183,4 @@ const SubjectDeleteModal: React.FC<SubjectDeleteModalProps> = ({
   );
 };
 
-export default SubjectDeleteModal;
+export default AssignmentDeleteModal;
