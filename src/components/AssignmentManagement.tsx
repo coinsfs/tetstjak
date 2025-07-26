@@ -17,6 +17,7 @@ import { classService } from '@/services/class';
 import { subjectService } from '@/services/subject';
 import { userService } from '@/services/user';
 import AssignmentMatrix from './AssignmentMatrix';
+import AssignmentConfirmationModal from './modals/AssignmentConfirmationModal';
 import toast from 'react-hot-toast';
 import { 
   Users, 
@@ -52,6 +53,10 @@ const AssignmentManagement: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [hasDraft, setHasDraft] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  
+  // Confirmation modal state
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [pendingActions, setPendingActions] = useState<AssignmentAction[]>([]);
   
   // Bulk update progress states
   const [bulkUpdateProgress, setBulkUpdateProgress] = useState<{
@@ -388,7 +393,7 @@ const AssignmentManagement: React.FC = () => {
   }, [matrix, originalMatrix]);
 
   // Handle save changes
-  const handleSaveChanges = useCallback(async () => {
+  const handleSaveChanges = useCallback(() => {
     if (!token || !hasChanges || bulkUpdateProgress.isActive) return;
 
     const actions = generateActions();
@@ -397,10 +402,19 @@ const AssignmentManagement: React.FC = () => {
       return;
     }
 
+    // Store actions and show confirmation modal
+    setPendingActions(actions);
+    setShowConfirmationModal(true);
+  }, [token, hasChanges, bulkUpdateProgress.isActive, generateActions]);
+
+  // Handle confirmed save
+  const handleConfirmedSave = useCallback(async () => {
+    if (!token || pendingActions.length === 0) return;
+
     try {
       setSaving(true);
       
-      const response = await assignmentService.batchUpdateAssignments(token, { actions });
+      const response = await assignmentService.batchUpdateAssignments(token, { actions: pendingActions });
       
       // Save task ID and start progress tracking
       saveTaskId(response.task_id);
@@ -408,12 +422,16 @@ const AssignmentManagement: React.FC = () => {
         isActive: true,
         taskId: response.task_id,
         processed: 0,
-        total: actions.length,
+        total: pendingActions.length,
         success: 0,
         failed: 0,
         status: response.status,
         errors: []
       });
+      
+      // Close confirmation modal
+      setShowConfirmationModal(false);
+      setPendingActions([]);
       
       toast('Proses penyimpanan penugasan dimulai...');
       
@@ -438,7 +456,7 @@ const AssignmentManagement: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  }, [token, hasChanges, bulkUpdateProgress.isActive, generateActions, saveTaskId]);
+  }, [token, pendingActions, saveTaskId]);
 
   // Handle restore draft
   const handleRestoreDraft = useCallback(() => {
@@ -668,6 +686,21 @@ const AssignmentManagement: React.FC = () => {
         subjects={subjects}
         teachers={teachers}
         onCellChange={handleCellChange}
+      />
+
+      {/* Confirmation Modal */}
+      <AssignmentConfirmationModal
+        isOpen={showConfirmationModal}
+        onClose={() => {
+          setShowConfirmationModal(false);
+          setPendingActions([]);
+        }}
+        onConfirm={handleConfirmedSave}
+        actions={pendingActions}
+        classes={classes}
+        subjects={subjects}
+        teachers={teachers}
+        loading={saving}
       />
     </div>
   );
