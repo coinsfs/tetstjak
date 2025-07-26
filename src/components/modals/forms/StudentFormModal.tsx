@@ -62,8 +62,9 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({
         profile: {
           full_name: student.profile_details?.full_name || '',
           gender: student.profile_details?.gender || 'Laki Laki',
-          birth_date: student.profile_details?.birth_date ? 
-            new Date(student.profile_details.birth_date).toISOString().split('T')[0] : '',
+          birth_date: student.profile_details?.birth_date 
+            ? student.profile_details.birth_date.substring(0, 10)
+            : '',
           birth_place: student.profile_details?.birth_place || '',
           address: student.profile_details?.address || '',
           phone_number: student.profile_details?.phone_number || '',
