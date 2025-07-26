@@ -153,21 +153,21 @@ const ExpertiseProgramTable: React.FC<ExpertiseProgramTableProps> = memo(({
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => onViewExpertiseProgram(expertiseProgram)}
-                      className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                      className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
                       title="Lihat Detail"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => onEditExpertiseProgram(expertiseProgram)}
-                      className="p-1 text-gray-400 hover:text-green-600 transition-colors"
+                      className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-colors"
                       title="Edit"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => onDeleteExpertiseProgram(expertiseProgram)}
-                      className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                      className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
                       title="Hapus"
                     >
                       <Trash2 className="w-4 h-4" />
