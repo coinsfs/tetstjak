@@ -1,4 +1,4 @@
-src/components/TeacherManagement.tsx
+
 src/components/TeacherFilter.tsx
 src/components/SubjectManagement.tsx
 src/components/StudentPerformanceTable.tsx
