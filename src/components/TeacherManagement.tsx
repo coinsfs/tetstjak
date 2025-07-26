@@ -9,8 +9,9 @@ import Pagination from './Pagination';
 import TeacherDetailModal from './modals/details/TeacherDetailModal';
 import TeacherFormModal from './modals/forms/TeacherFormModal';
 import TeacherDeleteModal from './modals/TeacherDeleteModal';
+import ImportDataModal from './modals/ImportDataModal';
 import toast from 'react-hot-toast';
-import { Plus, Users, AlertCircle } from 'lucide-react';
+import { Plus, Users, AlertCircle, FileSpreadsheet } from 'lucide-react';
 
 const TeacherManagement: React.FC = () => {
   const { token } = useAuth();
@@ -32,6 +33,7 @@ const TeacherManagement: React.FC = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
 
   const fetchTeachers = useCallback(async () => {
@@ -194,13 +196,23 @@ const TeacherManagement: React.FC = () => {
           </div>
         </div>
         
-        <button 
-          onClick={handleAddTeacher}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Tambah Guru</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={() => setImportModalOpen(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Import Data</span>
+          </button>
+          
+          <button 
+            onClick={handleAddTeacher}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Tambah Guru</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Summary */}
@@ -291,6 +303,14 @@ const TeacherManagement: React.FC = () => {
           onSuccess={handleDeleteSuccess}
         />
       )}
+
+      <ImportDataModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onSuccess={handleFormSuccess}
+        type="teachers"
+        title="Guru"
+      />
     </div>
   );
 };

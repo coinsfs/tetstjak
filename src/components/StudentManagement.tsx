@@ -9,8 +9,9 @@ import Pagination from './Pagination';
 import StudentDetailModal from './modals/details/StudentDetailModal';
 import StudentFormModal from './modals/forms/StudentFormModal';
 import StudentDeleteModal from './modals/StudentDeleteModal';
+import ImportDataModal from './modals/ImportDataModal';
 import toast from 'react-hot-toast';
-import { Plus, Users, AlertCircle } from 'lucide-react';
+import { Plus, Users, AlertCircle, FileSpreadsheet } from 'lucide-react';
 
 const StudentManagement: React.FC = () => {
   const { token } = useAuth();
@@ -32,6 +33,7 @@ const StudentManagement: React.FC = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   const fetchStudents = useCallback(async () => {
@@ -194,13 +196,23 @@ const StudentManagement: React.FC = () => {
           </div>
         </div>
         
-        <button 
-          onClick={handleAddStudent}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Tambah Siswa</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={() => setImportModalOpen(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Import Data</span>
+          </button>
+          
+          <button 
+            onClick={handleAddStudent}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Tambah Siswa</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Summary */}
@@ -291,6 +303,14 @@ const StudentManagement: React.FC = () => {
           onSuccess={handleDeleteSuccess}
         />
       )}
+
+      <ImportDataModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onSuccess={handleFormSuccess}
+        type="students"
+        title="Siswa"
+      />
     </div>
   );
 };
