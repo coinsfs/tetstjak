@@ -134,7 +134,7 @@ const StudentTable: React.FC<StudentTableProps> = memo(({
                 </td>
 
                 {/* Status */}
-                <td className="col-narrow">
+                <td className="col-medium">
                   <div className="space-y-2">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       student.is_active 
