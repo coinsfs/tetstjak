@@ -19,7 +19,7 @@ export interface ImportTaskStatus {
 
 class ImportService extends BaseService {
   async downloadTemplate(token: string, type: 'users' | 'teachers' | 'students'): Promise<Blob> {
-    const endpoint = `/jobs/${type}/import-template`;
+    const endpoint = `/jobs/users/import-template`;
     
     const response = await fetch(`${this.baseURL}${endpoint}`, {
       method: 'GET',
@@ -39,7 +39,7 @@ class ImportService extends BaseService {
     const formData = new FormData();
     formData.append('file', file);
 
-    const endpoint = `/jobs/${type}/import`;
+    const endpoint = `/jobs/users/import`;
     
     const response = await fetch(`${this.baseURL}${endpoint}`, {
       method: 'POST',
