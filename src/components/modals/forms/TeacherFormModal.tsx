@@ -55,8 +55,9 @@ const TeacherFormModal: React.FC<TeacherFormModalProps> = ({
         profile: {
           full_name: teacher.profile_details?.full_name || '',
           gender: teacher.profile_details?.gender || 'Laki Laki',
-          birth_date: teacher.profile_details?.birth_date ? 
-            new Date(teacher.profile_details.birth_date).toISOString().split('T')[0] : '',
+          birth_date: teacher.profile_details?.birth_date 
+            ? teacher.profile_details.birth_date.substring(0, 10)
+            : '',
           birth_place: teacher.profile_details?.birth_place || '',
           address: teacher.profile_details?.address || '',
           phone_number: teacher.profile_details?.phone_number || '',
