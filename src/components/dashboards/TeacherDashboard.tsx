@@ -76,7 +76,7 @@ const TeacherDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sidebar-desktop-fixed ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="sidebar-container">
@@ -165,9 +165,9 @@ const TeacherDashboard: React.FC = () => {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:ml-0">
+      <div className="flex-1 flex flex-col lg:main-content-with-fixed-sidebar">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
+        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30 lg:fixed lg:top-0 lg:right-0 lg:left-64 lg:z-30">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6">
             {/* Mobile Menu Button */}
             <button
@@ -219,7 +219,7 @@ const TeacherDashboard: React.FC = () => {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 overflow-y-auto lg:pt-20">
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
             {stats.map((stat, index) => (
