@@ -504,9 +504,9 @@ const AdminDashboard: React.FC = () => {
                 <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
                 <p className="text-sm text-gray-500 mt-0.5">Welcome back, {user?.login_id}</p>
               </div>
-        <div className="sidebar-container">
+            </div>
             
-          <div className="sidebar-header flex items-center justify-between h-16 px-6">
+            {/* User Profile Section */}
             <div className="flex items-center space-x-3">
               <div className="text-right">
                 <p className="text-sm font-medium text-gray-900 truncate max-w-[120px] sm:max-w-[200px]">
@@ -566,7 +566,7 @@ const AdminDashboard: React.FC = () => {
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
-          <nav className="sidebar-nav">
+          <div className="max-w-7xl mx-auto p-6">
             {/* Stats Grid - Compact */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {statCards.map((stat, index) => (
@@ -627,7 +627,7 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Secondary Charts */}
-          <div className="sidebar-footer">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white rounded-lg border border-gray-200">
                 <div className="px-5 py-4 border-b border-gray-100">
                   <h3 className="text-base font-semibold text-gray-900">Student Growth</h3>
