@@ -1,8 +1,8 @@
-
+src/components/TeacherManagement.tsx
 src/components/TeacherFilter.tsx
 src/components/SubjectManagement.tsx
 src/components/StudentPerformanceTable.tsx
-
+src/components/StudentManagement.tsx
 src/components/StudentFilter.tsx
 src/components/Sidebar.tsx
 src/components/QuestionDisplay.tsx
