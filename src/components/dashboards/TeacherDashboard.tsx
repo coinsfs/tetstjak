@@ -79,9 +79,9 @@ const TeacherDashboard: React.FC = () => {
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full min-h-0">
           {/* Sidebar Header */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+          <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
                 <BookOpen className="w-5 h-5 text-green-600" />
@@ -97,7 +97,7 @@ const TeacherDashboard: React.FC = () => {
           </div>
 
           {/* Navigation Menu */}
-          <nav className="flex-1 px-4 py-6 overflow-y-auto">
+          <nav className="flex-1 px-4 py-6 overflow-y-auto min-h-0">
             <div className="space-y-2">
               {menuItems.map((item) => {
                 const Icon = item.icon;
@@ -122,7 +122,7 @@ const TeacherDashboard: React.FC = () => {
           </nav>
 
           {/* Bottom Menu Items */}
-          <div className="border-t border-gray-200 p-4">
+          <div className="border-t border-gray-200 p-4 flex-shrink-0">
             <div className="space-y-2">
               {bottomMenuItems.map((item) => {
                 const Icon = item.icon;
