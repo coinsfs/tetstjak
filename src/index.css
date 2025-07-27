@@ -170,6 +170,50 @@ body {
   overflow: hidden;
 }
 
+/* Sidebar Layout Fixes */
+.sidebar-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  flex-shrink: 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 1.5rem 1rem;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.sidebar-footer {
+  flex-shrink: 0;
+  border-top: 1px solid #e5e7eb;
+  padding: 1rem;
+  background: white;
+}
+
 /* Profile page specific layout fixes */
 .profile-layout {
   height: 100vh;
@@ -187,10 +231,8 @@ body {
   flex-shrink: 0;
 }
 
-.profile-sidebar-nav {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
+.profile-sidebar .sidebar-nav {
+  padding: 1.5rem 1rem;
 }
 
 /* Responsive Design */
