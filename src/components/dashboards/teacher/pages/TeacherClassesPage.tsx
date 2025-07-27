@@ -32,7 +32,7 @@ const TeacherClassesPage: React.FC = () => {
 
   useEffect(() => {
     if (selectedClass) {
-      fetchClassStudents(selectedClass.class_details.name, searchQuery);
+      fetchClassStudents(selectedClass.class_details._id, searchQuery);
     }
   }, [selectedClass, searchQuery]);
 
@@ -342,52 +342,121 @@ const TeacherClassesPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-4">
           {classes.map((classItem, index) => (
             <div
               key={index}
               onClick={() => setSelectedClass(classItem)}
-              className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:-translate-y-1 border border-gray-100 hover:border-green-200"
+              className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border border-gray-100 hover:border-green-200 p-6"
             >
-              {/* Card Header */}
-              <div className="p-6 border-b border-gray-100">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+              <div className="flex items-center justify-between">
+                {/* Left Section - Class Info */}
+                <div className="flex items-center space-x-4 flex-1">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
                     <GraduationCap className="w-6 h-6 text-white" />
                   </div>
-                  <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-1 rounded-full">
-                    {classItem.total_students} siswa
-                  </span>
+                  
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xl font-bold text-gray-900 mb-1 truncate">
+                      Kelas {getGradeLabel(classItem.class_details.grade_level)} {classItem.expertise_details.abbreviation} {classItem.class_details.name}
+                    </h3>
+                    
+                    <p className="text-gray-600 text-sm mb-2 truncate">
+                      {classItem.expertise_details.name}
+                    </p>
+                    
+                    <div className="flex items-center space-x-4 text-xs text-gray-500">
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="w-3 h-3" />
+                        <span>Tahun Ajaran {classItem.class_details.academic_year}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Users className="w-3 h-3" />
+                        <span>{classItem.total_students} siswa</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  Kelas {getGradeLabel(classItem.class_details.grade_level)} {classItem.expertise_details.abbreviation} {classItem.class_details.name}
-                </h3>
-                
-                <p className="text-gray-600 text-sm mb-2">
-                  {classItem.expertise_details.name}
-                </p>
-                
-                <div className="flex items-center space-x-2 text-xs text-gray-500">
-                  <Calendar className="w-4 h-4" />
-                  <span>Tahun Ajaran {classItem.class_details.academic_year}</span>
+
+                {/* Middle Section - Subjects */}
+                <div className="hidden md:flex flex-1 max-w-md mx-6">
+                  <div className="w-full">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-2">Mata Pelajaran</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {classItem.assignments.slice(0, 4).map((assignment, assignmentIndex) => (
+                        <div key={assignmentIndex} className="flex items-center space-x-2 px-3 py-1 bg-blue-50 rounded-full">
+                          <BookOpen className="w-3 h-3 text-blue-600" />
+                          <span className="text-xs font-medium text-blue-800 truncate max-w-20">
+                            {assignment.name}
+                          </span>
+                        </div>
+                      ))}
+                      {classItem.assignments.length > 4 && (
+                        <div className="px-3 py-1 bg-gray-100 rounded-full">
+                          <span className="text-xs text-gray-600">
+                            +{classItem.assignments.length - 4} lainnya
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Section - Stats & Action */}
+                <div className="flex items-center space-x-4 flex-shrink-0">
+                  {/* Stats */}
+                  <div className="hidden sm:flex flex-col items-center space-y-1">
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-gray-900">{classItem.total_students}</div>
+                      <div className="text-xs text-gray-500">Siswa</div>
+                    </div>
+                  </div>
+                  
+                  <div className="hidden sm:flex flex-col items-center space-y-1">
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-gray-900">{classItem.assignments.length}</div>
+                      <div className="text-xs text-gray-500">Mapel</div>
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  <div className="flex items-center space-x-2 text-sm text-green-600 font-medium bg-green-50 px-4 py-2 rounded-lg hover:bg-green-100 transition-colors">
+                    <span>Lihat Detail</span>
+                    <ArrowLeft className="w-4 h-4 rotate-180" />
+                  </div>
                 </div>
               </div>
 
-              {/* Card Body */}
-              <div className="p-6">
-                <div className="mb-4">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3">Mata Pelajaran yang Diajar</h4>
-                  <div className="space-y-2">
-                    {classItem.assignments.slice(0, 3).map((assignment, assignmentIndex) => (
-                      <div key={assignmentIndex} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
-                        <div className="w-6 h-6 bg-blue-100 rounded-md flex items-center justify-center">
-                          <BookOpen className="w-3 h-3 text-blue-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{assignment.name}</p>
-                          <p className="text-xs text-gray-500">{assignment.code}</p>
-                        </div>
+              {/* Mobile Subjects - Show on small screens */}
+              <div className="md:hidden mt-4 pt-4 border-t border-gray-100">
+                <h4 className="text-sm font-semibold text-gray-900 mb-2">Mata Pelajaran</h4>
+                <div className="flex flex-wrap gap-2">
+                  {classItem.assignments.slice(0, 3).map((assignment, assignmentIndex) => (
+                    <div key={assignmentIndex} className="flex items-center space-x-2 px-3 py-1 bg-blue-50 rounded-full">
+                      <BookOpen className="w-3 h-3 text-blue-600" />
+                      <span className="text-xs font-medium text-blue-800">
+                        {assignment.name}
+                      </span>
+                    </div>
+                  ))}
+                  {classItem.assignments.length > 3 && (
+                    <div className="px-3 py-1 bg-gray-100 rounded-full">
+                      <span className="text-xs text-gray-600">
+                        +{classItem.assignments.length - 3} lainnya
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TeacherClassesPage;
                       </div>
                     ))}
                     {classItem.assignments.length > 3 && (
