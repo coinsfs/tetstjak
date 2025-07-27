@@ -1,14 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
+import { dashboardService } from '@/services/dashboard';
+import { TeacherDashboardStats } from '@/types/dashboard';
 import TeacherSidebar from './teacher/TeacherSidebar';
 import TeacherHeader from './teacher/TeacherHeader';
 import TeacherMainContent from './teacher/TeacherMainContent';
+import toast from 'react-hot-toast';
 
 const TeacherDashboard: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const { currentPath, navigate } = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [dashboardStats, setDashboardStats] = useState<TeacherDashboardStats | undefined>();
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      if (!token) return;
+
+      try {
+        setStatsLoading(true);
+        const stats = await dashboardService.getTeacherDashboardStats(token);
+        setDashboardStats(stats);
+      } catch (error) {
+        console.error('Error fetching teacher dashboard stats:', error);
+        toast.error('Gagal memuat statistik dashboard');
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchDashboardStats();
+  }, [token]);
 
   const getPageTitle = () => {
     switch (currentPath) {
@@ -53,6 +77,8 @@ const TeacherDashboard: React.FC = () => {
         <TeacherMainContent
           user={user}
           currentPath={currentPath}
+          dashboardStats={dashboardStats}
+          statsLoading={statsLoading}
         />
       </div>
     </div>

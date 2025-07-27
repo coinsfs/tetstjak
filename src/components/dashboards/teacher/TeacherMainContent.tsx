@@ -1,5 +1,6 @@
 import React from 'react';
 import { UserProfile } from '@/types/auth';
+import { TeacherDashboardStats } from '@/types/dashboard';
 import TeacherStatsGrid from './TeacherStatsGrid';
 import TeacherDepartmentInfo from './TeacherDepartmentInfo';
 import TeacherSubjectsList from './TeacherSubjectsList';
@@ -13,18 +14,22 @@ import TeacherProfilePage from './pages/TeacherProfilePage';
 interface TeacherMainContentProps {
   user: UserProfile | null;
   currentPath: string;
+  dashboardStats?: TeacherDashboardStats;
+  statsLoading?: boolean;
 }
 
 const TeacherMainContent: React.FC<TeacherMainContentProps> = ({
   user,
-  currentPath
+  currentPath,
+  dashboardStats,
+  statsLoading = false
 }) => {
   const renderContent = () => {
     switch (currentPath) {
       case '/teacher':
         return (
           <>
-            <TeacherStatsGrid />
+            <TeacherStatsGrid stats={dashboardStats} loading={statsLoading} />
             <TeacherDepartmentInfo user={user} />
             <TeacherSubjectsList user={user} />
             <TeacherWelcomeCard user={user} />
@@ -43,7 +48,7 @@ const TeacherMainContent: React.FC<TeacherMainContentProps> = ({
       default:
         return (
           <>
-            <TeacherStatsGrid />
+            <TeacherStatsGrid stats={dashboardStats} loading={statsLoading} />
             <TeacherDepartmentInfo user={user} />
             <TeacherSubjectsList user={user} />
             <TeacherWelcomeCard user={user} />

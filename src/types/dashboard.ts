@@ -5,6 +5,12 @@ export interface DashboardStats {
   total_subjects: number;
 }
 
+export interface TeacherDashboardStats {
+  total_classes: number;
+  total_students: number;
+  total_exams: number;
+  total_questions: number;
+}
 export interface StudentCountByMajor {
   major_name: string;
   major_abbreviation: string;
