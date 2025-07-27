@@ -20,8 +20,8 @@ const TeacherStatsGrid: React.FC<TeacherStatsGridProps> = ({ stats, loading = fa
       return [
         { title: 'Kelas Mengajar', value: '0', icon: BookOpen, color: 'bg-blue-500' },
         { title: 'Total Siswa', value: '0', icon: Users, color: 'bg-green-500' },
-        { title: 'Total Ujian Dibuat', value: '0', icon: FileText, color: 'bg-purple-500' },
-        { title: 'Total Soal Dibuat', value: '0', icon: HelpCircle, color: 'bg-orange-500' },
+        { title: 'Total Ujian', value: '0', icon: FileText, color: 'bg-purple-500' },
+        { title: 'Soal Dibuat', value: '0', icon: HelpCircle, color: 'bg-orange-500' },
       ];
     }
 
