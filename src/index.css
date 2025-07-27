@@ -141,50 +141,14 @@ body {
 }
 
 /* Fixed Sidebar Layout Utilities */
-.sidebar-fixed {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100vh;
-  z-index: 50;
-}
-
-.sidebar-desktop {
-  position: relative;
-  height: 100vh;
-  flex-shrink: 0;
-}
-
-.content-with-sidebar {
-  margin-left: 0;
-}
-
 @media (min-width: 1024px) {
-  .content-with-sidebar {
-    margin-left: 16rem; /* 64 * 0.25rem = 16rem for w-64 sidebar */
-  }
-  
-  .sidebar-desktop-fixed {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    width: 16rem; /* w-64 equivalent */
-    z-index: 40;
-    overflow: hidden;
-  }
-  
-  .main-content-with-fixed-sidebar {
-    margin-left: 16rem;
+  /* Desktop layout - ensure main content doesn't overlap with fixed sidebar */
+  .lg\:ml-64 {
+    margin-left: 16rem; /* 256px / 16 = 16rem for w-64 sidebar */
   }
 }
 
 /* Prevent body scroll when mobile sidebar is open */
-.sidebar-mobile-open {
-  overflow: hidden;
-}
-
-/* Sidebar Layout Fixes */
 .sidebar-container {
   height: 100vh;
   display: flex;
@@ -247,13 +211,6 @@ body {
 
 .profile-sidebar .sidebar-nav {
   padding: 1.5rem 1rem;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .mobile-padding {
-    padding: 1rem;
-  }
 }
 
 /* Intelligent Table Layout Optimization */
