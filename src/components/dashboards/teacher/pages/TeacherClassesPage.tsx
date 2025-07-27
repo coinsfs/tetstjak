@@ -457,36 +457,3 @@ const TeacherClassesPage: React.FC = () => {
 };
 
 export default TeacherClassesPage;
-                      </div>
-                    ))}
-                    {classItem.assignments.length > 3 && (
-                      <div className="text-center">
-                        <span className="text-xs text-gray-500">
-                          +{classItem.assignments.length - 3} mata pelajaran lainnya
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Card Footer */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <Users className="w-4 h-4" />
-                    <span>{classItem.total_students} siswa</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm text-green-600 font-medium">
-                    <span>Lihat Detail</span>
-                    <ArrowLeft className="w-4 h-4 rotate-180" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default TeacherClassesPage;
