@@ -1,13 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { FileText, Plus, Search, Filter } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePrefetch } from '@/hooks/usePrefetch';
 import { Exam, ExamFilters, AcademicPeriod } from '@/types/exam';
 import { examService } from '@/services/exam';
 import ExamTable from './tables/ExamTable';
+import ExamTable from './tables/ExamTable';
 import Pagination from './Pagination';
 import ExamFormModal from './modals/forms/ExamFormModal';
 import ExamDeleteModal from './modals/ExamDeleteModal';
 import ExamDetailModal from './modals/details/ExamDetailModal';
+import Pagination from './Pagination';
 import toast from 'react-hot-toast';
 import { Plus, FileText, AlertCircle, Search, Filter, RotateCcw } from 'lucide-react';
 
@@ -17,6 +19,9 @@ const ExamManagement: React.FC = () => {
   const [exams, setExams] = useState<Exam[]>([]);
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   
   // Pagination state
@@ -29,11 +34,14 @@ const ExamManagement: React.FC = () => {
   const [searchValue, setSearchValue] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   
+    page: 1,
+    limit: 10
   // Filter state
   const [filters, setFilters] = useState<ExamFilters>({});
   
   // Modal state
   const [formModalOpen, setFormModalOpen] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
@@ -79,6 +87,9 @@ const ExamManagement: React.FC = () => {
       const response = await examService.getExams(token, examFilters);
       
       setExams(response.data);
+      setTotalItems(response.total_items);
+      setTotalPages(response.total_pages);
+      setCurrentPage(response.current_page);
       setTotalRecords(response.total_items);
       setTotalPages(response.total_pages);
       
@@ -185,6 +196,7 @@ const ExamManagement: React.FC = () => {
 
   const handleDeleteExam = useCallback((exam: Exam) => {
     setSelectedExam(exam);
+      page: 1
     setDeleteModalOpen(true);
   }, []);
 
@@ -210,14 +222,22 @@ const ExamManagement: React.FC = () => {
   };
 
   const handleFormSuccess = () => {
+      page: 1
     fetchExams();
   };
 
+  const handlePageChange = (page: number) => {
+    setFilters(prev => ({ ...prev, page }));
+  };
   const handleDeleteSuccess = () => {
     fetchExams();
   };
 
   if (error) {
+  const handleEditExam = (exam: Exam) => {
+    setSelectedExam(exam);
+    setShowEditModal(true);
+  };
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -231,6 +251,8 @@ const ExamManagement: React.FC = () => {
             Try Again
           </button>
         </div>
+      page: 1,
+      limit: 10
       </div>
     );
   }
@@ -296,123 +318,24 @@ const ExamManagement: React.FC = () => {
       {/* Search & Filters */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <Filter className="w-5 h-5 text-gray-500" />
-            <h3 className="text-lg font-semibold text-gray-900">Filter & Pencarian</h3>
-          </div>
-          <button
-            onClick={handleResetFilters}
-            className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-md transition-colors"
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span>Reset</span>
-          </button>
-        </div>
-        
-        <div className="flex flex-wrap gap-4">
-          {/* Calculate filter count for width distribution */}
-          {(() => {
-            const filterCount = [
-              academicPeriods.length > 0,
-              true // exam type always available
-            ].filter(Boolean).length;
-            
-            const searchWidth = filterCount === 0 ? '100%' : 
-                               filterCount === 1 ? '70%' :
-                               filterCount === 2 ? '40%' : '25%';
-            
-            return (
-              <>
-            {/* Search Input */}
-                <div className="space-y-2 flex-1 min-w-[200px]" style={{ maxWidth: searchWidth }}>
-              <label className="block text-sm font-medium text-gray-700">
-                Pencarian
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Cari judul ujian..."
-                  value={searchValue}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                />
-              </div>
-            </div>
+      <ExamTable
+        exams={exams}
+        loading={loading}
+        onViewExam={handleViewExam}
+        onEditExam={handleEditExam}
+        onDeleteExam={handleDeleteExam}
+      />
 
-                {academicPeriods.length > 0 && (
-                  <div className="space-y-2 flex-1 min-w-[150px] max-w-[30%]">
-            {/* Academic Period Filter */}
-              <label className="block text-sm font-medium text-gray-700">
-                Periode Akademik
-              </label>
-              <select
-                value={filters.academic_period_id || ''}
-                onChange={(e) => handleFilterChange('academic_period_id', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              >
-                <option value="">Semua Periode</option>
-                {academicPeriods.map((period) => (
-                  <option key={period._id} value={period._id}>
-                    {period.year} - Semester {period.semester}
-                    {period.status === 'active' && ' (Aktif)'}
-                  </option>
-                ))}
-              </select>
-            </div>
-                )}
-
-                <div className="space-y-2 flex-1 min-w-[150px] max-w-[30%]">
-            {/* Exam Type Filter */}
-              <label className="block text-sm font-medium text-gray-700">
-                Jenis Ujian
-              </label>
-              <select
-                value={filters.exam_type || ''}
-                onChange={(e) => handleFilterChange('exam_type', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              >
-                <option value="">Semua Jenis</option>
-                <option value="official_uts">UTS</option>
-                <option value="official_uas">UAS</option>
-                <option value="quiz">Kuis</option>
-                <option value="daily_test">Ulangan Harian</option>
-              </select>
-            </div>
-
-              </>
-            );
-          })()}
-        </div>
-
-        {/* Active Filters Display */}
-        {(filters.academic_period_id || filters.exam_type || searchValue) && (
-          <div className="pt-4 border-t border-gray-200">
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <span className="font-medium">Filter aktif:</span>
-              <div className="flex flex-wrap gap-2">
-                {searchValue && (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md">
-                    Pencarian: "{searchValue}"
-                  </span>
-                )}
-                {filters.academic_period_id && (
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-md">
-                    Periode: {academicPeriods.find(p => p._id === filters.academic_period_id)?.year}
-                  </span>
-                )}
-                {filters.exam_type && (
-                  <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-md">
-                    Jenis: {filters.exam_type === 'official_uts' ? 'UTS' : 
-                           filters.exam_type === 'official_uas' ? 'UAS' : 
-                           filters.exam_type === 'quiz' ? 'Kuis' : 'Ulangan Harian'}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={filters.limit || 10}
+          onPageChange={handlePageChange}
+        />
+      )}
 
       {/* Exam Table */}
       <ExamTable
@@ -438,6 +361,7 @@ const ExamManagement: React.FC = () => {
       {/* Modals */}
       <ExamFormModal
         exam={selectedExam}
+          mode="create"
         isOpen={formModalOpen}
         onClose={handleCloseFormModal}
         onSuccess={handleFormSuccess}
@@ -448,6 +372,23 @@ const ExamManagement: React.FC = () => {
           exam={selectedExam}
           isOpen={detailModalOpen}
           onClose={handleCloseDetailModal}
+        />
+      )}
+
+      {showEditModal && selectedExam && (
+        <ExamFormModal
+          mode="edit"
+          exam={selectedExam}
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedExam(null);
+          }}
+          onSuccess={() => {
+            setShowEditModal(false);
+            setSelectedExam(null);
+            fetchExams();
+          }}
         />
       )}
 
