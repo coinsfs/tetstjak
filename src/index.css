@@ -318,9 +318,6 @@ button:focus {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}: flex;
-  flex-direction: column;
-  overflow: hidden;
 }
 
 .sidebar-header {
