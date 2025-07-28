@@ -202,9 +202,9 @@ const TeacherExamsPage: React.FC = () => {
         return (
           <button
             onClick={() => handleExamAction(exam, 'input_questions')}
-            className="flex items-center space-x-2 px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm"
+            className="flex items-center space-x-1 px-2 py-1.5 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-xs whitespace-nowrap"
           >
-            <HelpCircle className="w-4 h-4" />
+            <HelpCircle className="w-3 h-3" />
             <span>Input Soal</span>
           </button>
         );
@@ -212,9 +212,9 @@ const TeacherExamsPage: React.FC = () => {
         return (
           <button
             onClick={() => handleExamAction(exam, 'start')}
-            className="flex items-center space-x-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+            className="flex items-center space-x-1 px-2 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs whitespace-nowrap"
           >
-            <Play className="w-4 h-4" />
+            <Play className="w-3 h-3" />
             <span>Mulai</span>
           </button>
         );
@@ -222,9 +222,9 @@ const TeacherExamsPage: React.FC = () => {
         return (
           <button
             onClick={() => handleExamAction(exam, 'monitor')}
-            className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+            className="flex items-center space-x-1 px-2 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs whitespace-nowrap"
           >
-            <Eye className="w-4 h-4" />
+            <Eye className="w-3 h-3" />
             <span>Monitoring</span>
           </button>
         );
@@ -232,9 +232,9 @@ const TeacherExamsPage: React.FC = () => {
         return (
           <button
             onClick={() => handleExamAction(exam, 'analytics')}
-            className="flex items-center space-x-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+            className="flex items-center space-x-1 px-2 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-xs whitespace-nowrap"
           >
-            <BarChart3 className="w-4 h-4" />
+            <BarChart3 className="w-3 h-3" />
             <span>Analitik</span>
           </button>
         );
@@ -287,13 +287,13 @@ const TeacherExamsPage: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
         <div className="flex items-center space-x-2 mb-4">
           <Filter className="w-5 h-5 text-gray-500" />
           <h3 className="text-lg font-semibold text-gray-900">Filter Ujian</h3>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -302,7 +302,7 @@ const TeacherExamsPage: React.FC = () => {
               placeholder="Cari ujian..."
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-sm"
             />
           </div>
 
@@ -310,7 +310,7 @@ const TeacherExamsPage: React.FC = () => {
           <select
             value={filters.academic_period_id || ''}
             onChange={(e) => handleFilterChange('academic_period_id', e.target.value || undefined)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-sm"
           >
             <option value="">Semua Periode Akademik</option>
             {academicPeriods.map((period) => (
@@ -324,7 +324,7 @@ const TeacherExamsPage: React.FC = () => {
           <select
             value={filters.class_id || ''}
             onChange={(e) => handleFilterChange('class_id', e.target.value || undefined)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-sm sm:col-span-2 lg:col-span-1"
           >
             <option value="">Semua Kelas</option>
             {teachingClasses.map((teachingClass, index) => (
@@ -383,82 +383,82 @@ const TeacherExamsPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto min-w-full">
-            <table className="w-full table-auto">
+          <div className="overflow-x-auto">
+            <table className="w-full table-fixed min-w-[1200px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 min-w-[200px] max-w-[300px]">Ujian</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 min-w-[120px]">Jenis</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 min-w-[120px]">Status</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 min-w-[200px] max-w-[250px]">Jadwal</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 min-w-[80px]">Durasi</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 min-w-[80px]">Soal</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900 min-w-[180px]">Aksi</th>
+                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[25%]">Ujian</th>
+                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[12%]">Jenis</th>
+                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[12%]">Status</th>
+                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[20%]">Jadwal</th>
+                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[8%]">Durasi</th>
+                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[8%]">Soal</th>
+                  <th className="px-3 py-3 text-center text-sm font-semibold text-gray-900 w-[15%]">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {exams.map((exam) => (
                   <tr key={exam._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-4 min-w-[200px] max-w-[300px]">
+                    <td className="px-3 py-4 w-[25%]">
                       <div>
-                        <h3 className="font-medium text-gray-900 break-words" title={exam.title}>
+                        <h3 className="font-medium text-gray-900 truncate" title={exam.title}>
                           {exam.title}
                         </h3>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-sm text-gray-500 mt-1 truncate">
                           ID: {exam._id.slice(-8)}
                         </p>
                       </div>
                     </td>
                     
-                    <td className="px-4 py-4 min-w-[120px]">
+                    <td className="px-3 py-4 w-[12%]">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                         {getExamTypeLabel(exam.exam_type)}
                       </span>
                     </td>
                     
-                    <td className="px-4 py-4 min-w-[120px]">
+                    <td className="px-3 py-4 w-[12%]">
                       {getStatusBadge(exam.status)}
                     </td>
                     
-                    <td className="px-4 py-4 min-w-[200px] max-w-[250px]">
+                    <td className="px-3 py-4 w-[20%]">
                       <div className="text-sm">
-                        <div className="flex items-center space-x-1 text-gray-900 mb-1">
+                        <div className="flex items-center space-x-1 text-gray-900 mb-1 truncate">
                           <Calendar className="w-3 h-3" />
-                          <span className="break-words">Mulai: {formatDateTime(exam.availability_start_time)}</span>
+                          <span className="truncate">Mulai: {formatDateTime(exam.availability_start_time)}</span>
                         </div>
-                        <div className="flex items-center space-x-1 text-gray-500">
+                        <div className="flex items-center space-x-1 text-gray-500 truncate">
                           <Calendar className="w-3 h-3" />
-                          <span className="break-words">Selesai: {formatDateTime(exam.availability_end_time)}</span>
+                          <span className="truncate">Selesai: {formatDateTime(exam.availability_end_time)}</span>
                         </div>
                       </div>
                     </td>
                     
-                    <td className="px-4 py-4 min-w-[80px]">
+                    <td className="px-3 py-4 w-[8%]">
                       <div className="flex items-center space-x-1 text-sm text-gray-900">
                         <Clock className="w-4 h-4 text-gray-400" />
                         <span>{exam.duration_minutes} menit</span>
                       </div>
                     </td>
                     
-                    <td className="px-4 py-4 min-w-[80px]">
+                    <td className="px-3 py-4 w-[8%]">
                       <div className="flex items-center space-x-1 text-sm text-gray-900">
                         <BookOpen className="w-4 h-4 text-gray-400" />
                         <span>{exam.question_ids.length} soal</span>
                       </div>
                     </td>
                     
-                    <td className="px-4 py-4 min-w-[180px]">
-                      <div className="flex items-center justify-center space-x-1">
+                    <td className="px-3 py-4 w-[15%]">
+                      <div className="flex items-center justify-center space-x-1 flex-wrap gap-1">
                         {/* Main Action Button */}
                         {getActionButton(exam)}
                         
                         {/* Edit Button */}
                         <button
                           onClick={() => handleEditExam(exam)}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Edit Soal"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-3.5 h-3.5" />
                         </button>
                         
                         {/* Delete Button */}
@@ -472,7 +472,7 @@ const TeacherExamsPage: React.FC = () => {
                           }`}
                           title={isDeleteDisabled(exam) ? 'Ujian resmi tidak dapat dihapus' : 'Hapus Ujian'}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -485,16 +485,16 @@ const TeacherExamsPage: React.FC = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-200 gap-4">
             <div className="text-sm text-gray-500">
               Menampilkan {((currentPage - 1) * (filters.limit || 10)) + 1} - {Math.min(currentPage * (filters.limit || 10), totalItems)} dari {totalItems} ujian
             </div>
             
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-1 flex-wrap justify-center">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100"
+                className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100"
               >
                 Sebelumnya
               </button>
@@ -505,7 +505,7 @@ const TeacherExamsPage: React.FC = () => {
                   <button
                     key={page}
                     onClick={() => handlePageChange(page)}
-                    className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                    className={`px-2.5 py-1.5 text-sm rounded-lg transition-colors ${
                       currentPage === page
                         ? 'bg-purple-600 text-white'
                         : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
@@ -519,7 +519,7 @@ const TeacherExamsPage: React.FC = () => {
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100"
+                className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100"
               >
                 Selanjutnya
               </button>

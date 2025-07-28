@@ -138,7 +138,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-4">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
@@ -159,7 +159,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6">
           {/* Academic Period Warning */}
           {!canCreateExam && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -200,7 +200,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
               Informasi Dasar
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Judul Ujian *
@@ -209,7 +209,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                   type="text"
                   value={formData.title}
                   onChange={(e) => handleInputChange('title', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-sm"
                   placeholder="Masukkan judul ujian"
                   required
                 />
@@ -222,7 +222,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                 <select
                   value={formData.exam_type}
                   onChange={(e) => handleInputChange('exam_type', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-sm"
                   disabled={!canCreateExam}
                   required
                 >
@@ -239,7 +239,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                   type="number"
                   value={formData.duration_minutes}
                   onChange={(e) => handleInputChange('duration_minutes', parseInt(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-sm"
                   min="1"
                   disabled={!canCreateExam}
                   required
@@ -253,7 +253,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                 <select
                   value={selectedClassId}
                   onChange={(e) => handleClassChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-sm"
                   disabled={!canCreateExam}
                   required
                 >
@@ -273,7 +273,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                 <select
                   value={formData.teaching_assignment_id}
                   onChange={(e) => handleInputChange('teaching_assignment_id', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-sm"
                   disabled={!selectedClassId}
                   disabled={!canCreateExam || !selectedClassId}
                   required
@@ -299,7 +299,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
               Jadwal Ujian
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Waktu Mulai *
@@ -308,7 +308,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                   type="datetime-local"
                   value={formData.availability_start_time}
                   onChange={(e) => handleInputChange('availability_start_time', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-sm"
                   disabled={!canCreateExam}
                   required
                 />
@@ -322,7 +322,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                   type="datetime-local"
                   value={formData.availability_end_time}
                   onChange={(e) => handleInputChange('availability_end_time', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-sm"
                   disabled={!canCreateExam}
                   required
                 />
@@ -397,22 +397,22 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
               </div>
             </div>
           </div>
-        </form>
+        </div>
 
         {/* Footer */}
-        <div className="flex justify-end space-x-3 p-6 border-t border-gray-200">
+        <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 p-4 sm:p-6 border-t border-gray-200">
           <button
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+            className="w-full sm:w-auto px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
           >
             Batal
           </button>
           <button
             onClick={handleSubmit}
             disabled={loading || !canCreateExam}
-            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full sm:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? (
               <>
