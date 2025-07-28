@@ -262,33 +262,33 @@ body {
 
 /* Column specific widths for exam table */
 .teacher-exam-table .col-title {
-  min-width: 200px;
-  max-width: 300px;
+  min-width: 300px;
+  max-width: 400px;
 }
 
 .teacher-exam-table .col-type {
-  min-width: 120px;
-  max-width: 150px;
-}
-
-.teacher-exam-table .col-status {
-  min-width: 120px;
-  max-width: 150px;
-}
-
-.teacher-exam-table .col-schedule {
-  min-width: 200px;
+  min-width: 220px;
   max-width: 250px;
 }
 
+.teacher-exam-table .col-status {
+  min-width: 220px;
+  max-width: 250px;
+}
+
+.teacher-exam-table .col-schedule {
+  min-width: 300px;
+  max-width: 350px;
+}
+
 .teacher-exam-table .col-duration {
-  min-width: 80px;
-  max-width: 100px;
+  min-width: 90px;
+  max-width: 200px;
 }
 
 .teacher-exam-table .col-questions {
-  min-width: 80px;
-  max-width: 100px;
+  min-width: 90px;
+  max-width: 200px;
 }
 
 .teacher-exam-table .col-actions {
