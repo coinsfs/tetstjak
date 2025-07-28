@@ -393,7 +393,7 @@ const TeacherExamsPage: React.FC = () => {
                   <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[20%]">Jadwal</th>
                   <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[12%]">Durasi</th>
                   <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[9%]">Soal</th>
-                  <th className="px-3 py-3 text-center text-sm font-semibold text-gray-900 w-[15%]">Aksi</th>
+                  <th className="px-3 py-3 text-center text-sm font-semibold text-gray-900 w-[20%]">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
