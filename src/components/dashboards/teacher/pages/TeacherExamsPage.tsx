@@ -376,10 +376,9 @@ const TeacherExamsPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          {/* Table with Isolated Horizontal Scroll */}
+          /* Table with Isolated Horizontal Scroll */
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <table className="w-full min-w-[1200px]">
+            <table className="w-full min-w-[1200px]">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64">
