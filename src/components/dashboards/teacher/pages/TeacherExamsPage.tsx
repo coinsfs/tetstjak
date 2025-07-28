@@ -384,7 +384,7 @@ const TeacherExamsPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full table-fixed min-w-[1200px]">
+            <table className="w-full table-fixed">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[20%]">Ujian</th>
