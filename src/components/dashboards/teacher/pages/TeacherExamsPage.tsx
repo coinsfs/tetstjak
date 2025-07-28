@@ -383,8 +383,8 @@ const TeacherExamsPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="teacher-exam-table">
+          <div className="overflow-x-auto max-w-full">
+            <table className="teacher-exam-table min-w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="col-title px-3 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Ujian</th>
