@@ -416,7 +416,7 @@ const TeacherExamsPage: React.FC = () => {
                       </span>
                     </td>
                     
-                    <td className="max-width[20%] px-3 py-4">
+                    <td className="max-width[50%] px-3 py-4">
                       {getStatusBadge(exam.status)}
                     </td>
                     
