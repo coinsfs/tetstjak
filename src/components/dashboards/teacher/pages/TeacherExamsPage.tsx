@@ -355,16 +355,16 @@ const TeacherExamsPage: React.FC = () => {
       )}
 
       {/* Exams List */}
-      <div className="bg-white rounded-xl shadow-sm flex-1 flex flex-col min-h-0">
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-12 flex-1">
+          <div className="flex items-center justify-center py-12">
             <div className="flex items-center space-x-2">
               <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-600 border-t-transparent"></div>
               <span className="text-gray-600">Memuat daftar ujian...</span>
             </div>
           </div>
         ) : exams.length === 0 ? (
-          <div className="text-center py-12 flex-1 flex flex-col justify-center">
+          <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <FileText className="h-8 w-8 text-gray-400" />
             </div>
@@ -383,83 +383,103 @@ const TeacherExamsPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          <>
-          <div className="flex-1 overflow-auto">
-            <table className="teacher-exam-table min-w-full">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="col-title px-3 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Ujian</th>
-                  <th className="col-type px-3 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Jenis</th>
-                  <th className="col-status px-3 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="col-schedule px-3 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Jadwal</th>
-                  <th className="col-duration px-3 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Durasi</th>
-                  <th className="col-questions px-3 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Soal</th>
-                  <th className="col-actions px-3 py-3 text-center text-sm font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ujian
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Jenis
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Jadwal
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Durasi
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Soal
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200">
                 {exams.map((exam) => (
                   <tr key={exam._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="col-title px-3 py-4 whitespace-pre-wrap" title={exam.title}>
+                    {/* Ujian */}
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <h3 className="font-medium text-gray-900 truncate" title={exam.title}>
+                        <div className="text-sm font-medium text-gray-900">
                           {exam.title}
-                        </h3>
+                        </div>
                         <p className="text-sm text-gray-500 mt-1 truncate">
                           ID: {exam._id.slice(-8)}
                         </p>
                       </div>
                     </td>
                     
-                    <td className="col-type px-3 py-4">
+                    {/* Jenis */}
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                         {getExamTypeLabel(exam.exam_type)}
                       </span>
                     </td>
                     
-                    <td className="max-width[50%] px-3 py-4">
+                    {/* Status */}
+                    <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(exam.status)}
                     </td>
                     
-                    <td className="col-schedule px-3 py-4" title={`Mulai: ${formatDateTime(exam.availability_start_time)} - Selesai: ${formatDateTime(exam.availability_end_time)}`}>
+                    {/* Jadwal */}
+                    <td className="px-6 py-4">
                       <div className="text-sm">
-                        <div className="flex items-center space-x-1 text-gray-900 mb-1 truncate">
+                        <div className="flex items-center space-x-1 text-gray-900 mb-1">
                           <Calendar className="w-3 h-3" />
-                          <span className="truncate">Mulai: {formatDateTime(exam.availability_start_time)}</span>
+                          <span>Mulai: {formatDateTime(exam.availability_start_time)}</span>
                         </div>
-                        <div className="flex items-center space-x-1 text-gray-500 truncate">
+                        <div className="flex items-center space-x-1 text-gray-500">
                           <Calendar className="w-3 h-3" />
-                          <span className="truncate">Selesai: {formatDateTime(exam.availability_end_time)}</span>
+                          <span>Selesai: {formatDateTime(exam.availability_end_time)}</span>
                         </div>
                       </div>
                     </td>
                     
-                    <td className="col-duration px-3 py-4">
+                    {/* Durasi */}
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-1 text-sm text-gray-900">
                         <Clock className="w-4 h-4 text-gray-400" />
                         <span>{exam.duration_minutes} menit</span>
                       </div>
                     </td>
                     
-                    <td className="col-questions px-3 py-4">
+                    {/* Soal */}
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-1 text-sm text-gray-900">
                         <BookOpen className="w-4 h-4 text-gray-400" />
                         <span>{exam.question_ids.length} soal</span>
                       </div>
                     </td>
                     
-                    <td className="col-actions px-3 py-4">
-                      <div className="flex items-center justify-center space-x-1 flex-wrap gap-1">
+                    {/* Aksi */}
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                      <div className="flex items-center justify-center space-x-2">
                         {/* Main Action Button */}
                         {getActionButton(exam)}
                         
                         {/* Edit Button */}
                         <button
                           onClick={() => handleEditExam(exam)}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Edit Soal"
                         >
-                          <Edit className="w-3.5 h-3.5" />
+                          <Edit className="w-4 h-4" />
                         </button>
                         
                         {/* Delete Button */}
@@ -473,7 +493,7 @@ const TeacherExamsPage: React.FC = () => {
                           }`}
                           title={isDeleteDisabled(exam) ? 'Ujian resmi tidak dapat dihapus' : 'Hapus Ujian'}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -484,53 +504,54 @@ const TeacherExamsPage: React.FC = () => {
           </div>
 
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-200 gap-4 flex-shrink-0 bg-white">
-              <div className="text-sm text-gray-500">
-                Menampilkan {((currentPage - 1) * (filters.limit || 10)) + 1} - {Math.min(currentPage * (filters.limit || 10), totalItems)} dari {totalItems} ujian
-              </div>
-              
-              <div className="flex items-center space-x-1 flex-wrap justify-center">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100"
-                >
-                  Sebelumnya
-                </button>
-                
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const page = i + 1;
-                  return (
-                    <button
-                      key={page}
-                      onClick={() => handlePageChange(page)}
-                      className={`px-2.5 py-1.5 text-sm rounded-lg transition-colors ${
-                        currentPage === page
-                          ? 'bg-purple-600 text-white'
-                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  );
-                })}
-                
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100"
-                >
-                  Selanjutnya
-                </button>
-              </div>
-            </div>
-          )}
-          </>
         )}
       </div>
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="bg-white rounded-xl shadow-sm">
+          <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 gap-4">
+            <div className="text-sm text-gray-500">
+              Menampilkan {((currentPage - 1) * (filters.limit || 10)) + 1} - {Math.min(currentPage * (filters.limit || 10), totalItems)} dari {totalItems} ujian
+            </div>
+            
+            <div className="flex items-center space-x-1 flex-wrap justify-center">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100"
+              >
+                Sebelumnya
+              </button>
+              
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const page = i + 1;
+                return (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`px-2.5 py-1.5 text-sm rounded-lg transition-colors ${
+                      currentPage === page
+                        ? 'bg-purple-600 text-white'
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+              
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100"
+              >
+                Selanjutnya
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Modals */}
       {showCreateModal && (
         <TeacherExamFormModal
