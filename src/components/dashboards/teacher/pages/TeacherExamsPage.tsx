@@ -347,7 +347,168 @@ const TeacherExamsPage: React.FC = () => {
       )}
 
       {/* Table */}
-      
+      <div>
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-600 border-t-transparent"></div>
+              <span className="text-gray-600">Memuat daftar ujian...</span>
+            </div>
+          </div>
+        ) : exams.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FileText className="h-8 w-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Belum Ada Ujian
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Anda belum membuat ujian apapun. Mulai dengan membuat ujian pertama Anda.
+            </p>
+            <button
+              onClick={handleCreateExam}
+              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors mx-auto"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Buat Ujian Pertama</span>
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ujian
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Jenis
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Jadwal
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Durasi
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Soal
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Aksi
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {exams.map((exam) => (
+                  <tr key={exam._id} className="hover:bg-gray-50">
+                    {/* Ujian */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="max-w-xs">
+                        <div className="text-sm font-medium text-gray-900 truncate">
+                          {exam.title}
+                        </div>
+                        <p className="text-sm text-gray-500 truncate">
+                          ID: {exam._id.slice(-8)}
+                        </p>
+                      </div>
+                    </td>
+                    
+                    {/* Jenis */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        {getExamTypeLabel(exam.exam_type)}
+                      </span>
+                    </td>
+                    
+                    {/* Status */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(exam.status)}
+                    </td>
+                    
+                    {/* Jadwal */}
+                    <td className="px-6 py-4">
+                      <div className="text-sm space-y-1">
+                        <div className="flex items-center space-x-1 text-gray-900">
+                          <Calendar className="w-3 h-3" />
+                          <span className="truncate">Mulai: {formatDateTime(exam.availability_start_time)}</span>
+                        </div>
+                        <div className="flex items-center space-x-1 text-gray-500">
+                          <Calendar className="w-3 h-3" />
+                          <span className="truncate">Selesai: {formatDateTime(exam.availability_end_time)}</span>
+                        </div>
+                      </div>
+                    </td>
+                    
+                    {/* Durasi */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-1 text-sm text-gray-900">
+                        <Clock className="w-4 h-4 text-gray-400" />
+                        <span>{exam.duration_minutes} menit</span>
+                      </div>
+                    </td>
+                    
+                    {/* Soal */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-1 text-sm text-gray-900">
+                        <BookOpen className="w-4 h-4 text-gray-400" />
+                        <span>{exam.question_ids.length} soal</span>
+                      </div>
+                    </td>
+                    
+                    {/* Aksi */}
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <div className="flex items-center justify-center space-x-2">
+                        {/* Main Action Button */}
+                        {getActionButton(exam)}
+                        
+                        {/* Edit Button */}
+                        <button
+                          onClick={() => handleEditExam(exam)}
+                          disabled={exam.status === 'active' || exam.status === 'completed'}
+                          className={`p-2 rounded-lg transition-colors ${
+                            exam.status === 'active' || exam.status === 'completed'
+                              ? 'text-gray-300 cursor-not-allowed'
+                              : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                          }`}
+                          title="Edit Ujian"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        
+                        {/* Delete Button */}
+                        <button
+                          onClick={() => handleDeleteExam(exam)}
+                          disabled={isDeleteDisabled(exam)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            isDeleteDisabled(exam)
+                              ? 'text-gray-300 cursor-not-allowed' 
+                              : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                          }`}
+                          title={
+                            exam.exam_type === 'official_uts' || exam.exam_type === 'official_uas'
+                              ? 'Ujian resmi tidak dapat dihapus'
+                              : exam.status === 'active' || exam.status === 'completed'
+                              ? 'Ujian yang sedang berlangsung atau selesai tidak dapat dihapus'
+                              : 'Hapus Ujian'
+                          }
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
