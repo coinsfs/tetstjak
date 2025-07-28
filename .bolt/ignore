@@ -23,7 +23,7 @@ src/components/tables/SubjectTable.tsx
 src/components/tables/StudentTable.tsx
 src/components/tables/ExpertiseProgramTable.tsx
 src/components/tables/ExamTable.tsx
-src/components/tables/ClassTable.tsx
+
 src/components/profile/UserActivity.tsx
 src/components/profile/SecuritySettings.tsx
 src/components/profile/ProfileSettings.tsx
