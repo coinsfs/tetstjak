@@ -354,8 +354,6 @@ const TeacherExamsPage: React.FC = () => {
         </div>
       )}
 
-      
-
       {/* Modals */}
       {showCreateModal && (
         <TeacherExamFormModal
