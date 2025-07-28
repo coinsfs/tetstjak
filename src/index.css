@@ -260,43 +260,6 @@ body {
   background-color: #f9fafb;
 }
 
-/* Column specific widths for exam table */
-.teacher-exam-table .col-title {
-  min-width: 300px;
-  max-width: 400px;
-}
-
-.teacher-exam-table .col-type {
-  min-width: 220px;
-  max-width: 250px;
-}
-
-.teacher-exam-table .col-status {
-  min-width: 220px;
-  max-width: 250px;
-}
-
-.teacher-exam-table .col-schedule {
-  min-width: 300px;
-  max-width: 350px;
-}
-
-.teacher-exam-table .col-duration {
-  min-width: 90px;
-  max-width: 200px;
-}
-
-.teacher-exam-table .col-questions {
-  min-width: 90px;
-  max-width: 200px;
-}
-
-.teacher-exam-table .col-actions {
-  min-width: 180px;
-  max-width: 200px;
-  text-align: center;
-}
-
 /* Hover tooltip for truncated content in exam table */
 .teacher-exam-table td[title]:hover::after {
   content: attr(title);
