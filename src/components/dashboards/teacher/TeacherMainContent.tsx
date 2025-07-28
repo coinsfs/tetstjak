@@ -28,12 +28,12 @@ const TeacherMainContent: React.FC<TeacherMainContentProps> = ({
     switch (currentPath) {
       case '/teacher':
         return (
-          <>
+          <div className="space-y-6">
             <TeacherStatsGrid stats={dashboardStats} loading={statsLoading} />
             <TeacherDepartmentInfo user={user} />
             <TeacherSubjectsList user={user} />
             <TeacherWelcomeCard user={user} />
-          </>
+          </div>
         );
       case '/teacher/classes':
         return <TeacherClassesPage />;
@@ -47,18 +47,18 @@ const TeacherMainContent: React.FC<TeacherMainContentProps> = ({
         return <TeacherProfilePage />;
       default:
         return (
-          <>
+          <div className="space-y-6">
             <TeacherStatsGrid stats={dashboardStats} loading={statsLoading} />
             <TeacherDepartmentInfo user={user} />
             <TeacherSubjectsList user={user} />
             <TeacherWelcomeCard user={user} />
-          </>
+          </div>
         );
     }
   };
 
   return (
-    <main className="flex-1 p-4 sm:p-6 lg:pt-20 space-y-6">
+    <main className="flex-1 p-4 sm:p-6 lg:pt-20 overflow-hidden">
       {renderContent()}
     </main>
   );
