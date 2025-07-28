@@ -387,7 +387,7 @@ const TeacherExamsPage: React.FC = () => {
             <table className="w-full table-fixed min-w-[1200px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[25%]">Ujian</th>
+                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[20%]">Ujian</th>
                   <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[12%]">Jenis</th>
                   <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[12%]">Status</th>
                   <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[20%]">Jadwal</th>
