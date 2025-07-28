@@ -23,7 +23,8 @@ import {
   teacherExamService, 
   TeacherExam, 
   TeacherExamFilters,
-  AcademicPeriod 
+  AcademicPeriod,
+  ActiveAcademicPeriod
 } from '@/services/teacherExam';
 import { teacherService, TeachingClass } from '@/services/teacher';
 import TeacherExamFormModal from './modals/TeacherExamFormModal';
@@ -38,6 +39,7 @@ const TeacherExamsPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [teachingClasses, setTeachingClasses] = useState<TeachingClass[]>([]);
+  const [activeAcademicPeriod, setActiveAcademicPeriod] = useState<ActiveAcademicPeriod | null>(null);
   
   // Filters
   const [filters, setFilters] = useState<TeacherExamFilters>({
@@ -63,13 +65,15 @@ const TeacherExamsPage: React.FC = () => {
     if (!token) return;
 
     try {
-      const [academicPeriodsData, teachingData] = await Promise.all([
+      const [academicPeriodsData, teachingData, activeAcademicData] = await Promise.all([
         teacherExamService.getAcademicPeriods(token),
-        teacherService.getTeachingSummary(token)
+        teacherService.getTeachingSummary(token),
+        teacherExamService.getActiveAcademicPeriod(token)
       ]);
       
       setAcademicPeriods(academicPeriodsData);
       setTeachingClasses(teachingData.classes);
+      setActiveAcademicPeriod(activeAcademicData);
     } catch (error) {
       console.error('Error fetching initial data:', error);
       toast.error('Gagal memuat data awal');
@@ -111,6 +115,10 @@ const TeacherExamsPage: React.FC = () => {
   };
 
   const handleCreateExam = () => {
+    if (!activeAcademicPeriod) {
+      toast.error('Tidak ada periode akademik yang aktif. Hubungi administrator.');
+      return;
+    }
     setShowCreateModal(true);
   };
 
@@ -147,8 +155,6 @@ const TeacherExamsPage: React.FC = () => {
     const typeLabels: { [key: string]: string } = {
       'quiz': 'Kuis',
       'daily_test': 'Ulangan Harian (UH)',
-      'official_uts': 'UTS (Ujian Tengah Semester)',
-      'official_uas': 'UAS (Ujian Akhir Semester)'
     };
     return typeLabels[examType] || examType;
   };
@@ -270,7 +276,9 @@ const TeacherExamsPage: React.FC = () => {
           
           <button
             onClick={handleCreateExam}
+            disabled={!activeAcademicPeriod}
             className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            title={!activeAcademicPeriod ? 'Tidak ada periode akademik aktif' : 'Buat ujian baru'}
           >
             <Plus className="w-5 h-5" />
             <span>Buat Ujian</span>
@@ -328,8 +336,26 @@ const TeacherExamsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Academic Period Status */}
+      {!activeAcademicPeriod && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="text-sm font-medium text-yellow-800 mb-1">
+                Periode Akademik Tidak Aktif
+              </h4>
+              <p className="text-sm text-yellow-700">
+                Saat ini tidak ada periode akademik yang aktif. Anda tidak dapat membuat ujian baru. 
+                Silakan hubungi administrator untuk mengaktifkan periode akademik.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Exams List */}
-      <div className="bg-white rounded-xl shadow-sm">
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="flex items-center space-x-2">
@@ -357,25 +383,25 @@ const TeacherExamsPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto min-w-full">
+            <table className="w-full table-auto">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Ujian</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Jenis</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Jadwal</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Durasi</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Soal</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">Aksi</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 min-w-[200px] max-w-[300px]">Ujian</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 min-w-[120px]">Jenis</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 min-w-[120px]">Status</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 min-w-[200px] max-w-[250px]">Jadwal</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 min-w-[80px]">Durasi</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 min-w-[80px]">Soal</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900 min-w-[180px]">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {exams.map((exam) => (
                   <tr key={exam._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4 min-w-[200px] max-w-[300px]">
                       <div>
-                        <h3 className="font-medium text-gray-900 truncate max-w-xs" title={exam.title}>
+                        <h3 className="font-medium text-gray-900 break-words" title={exam.title}>
                           {exam.title}
                         </h3>
                         <p className="text-sm text-gray-500 mt-1">
@@ -384,45 +410,45 @@ const TeacherExamsPage: React.FC = () => {
                       </div>
                     </td>
                     
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4 min-w-[120px]">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                         {getExamTypeLabel(exam.exam_type)}
                       </span>
                     </td>
                     
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4 min-w-[120px]">
                       {getStatusBadge(exam.status)}
                     </td>
                     
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4 min-w-[200px] max-w-[250px]">
                       <div className="text-sm">
-                        <div className="flex items-center space-x-1 text-gray-900">
+                        <div className="flex items-center space-x-1 text-gray-900 mb-1">
                           <Calendar className="w-3 h-3" />
-                          <span>Mulai: {formatDateTime(exam.availability_start_time)}</span>
+                          <span className="break-words">Mulai: {formatDateTime(exam.availability_start_time)}</span>
                         </div>
-                        <div className="flex items-center space-x-1 text-gray-500 mt-1">
+                        <div className="flex items-center space-x-1 text-gray-500">
                           <Calendar className="w-3 h-3" />
-                          <span>Selesai: {formatDateTime(exam.availability_end_time)}</span>
+                          <span className="break-words">Selesai: {formatDateTime(exam.availability_end_time)}</span>
                         </div>
                       </div>
                     </td>
                     
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4 min-w-[80px]">
                       <div className="flex items-center space-x-1 text-sm text-gray-900">
                         <Clock className="w-4 h-4 text-gray-400" />
                         <span>{exam.duration_minutes} menit</span>
                       </div>
                     </td>
                     
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4 min-w-[80px]">
                       <div className="flex items-center space-x-1 text-sm text-gray-900">
                         <BookOpen className="w-4 h-4 text-gray-400" />
                         <span>{exam.question_ids.length} soal</span>
                       </div>
                     </td>
                     
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-center space-x-2">
+                    <td className="px-4 py-4 min-w-[180px]">
+                      <div className="flex items-center justify-center space-x-1">
                         {/* Main Action Button */}
                         {getActionButton(exam)}
                         
@@ -459,16 +485,16 @@ const TeacherExamsPage: React.FC = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 gap-4">
             <div className="text-sm text-gray-500">
               Menampilkan {((currentPage - 1) * (filters.limit || 10)) + 1} - {Math.min(currentPage * (filters.limit || 10), totalItems)} dari {totalItems} ujian
             </div>
             
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100"
               >
                 Sebelumnya
               </button>
@@ -493,7 +519,7 @@ const TeacherExamsPage: React.FC = () => {
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100"
               >
                 Selanjutnya
               </button>
@@ -513,6 +539,7 @@ const TeacherExamsPage: React.FC = () => {
           }}
           teachingClasses={teachingClasses}
           currentUserId={user?._id || ''}
+          activeAcademicPeriod={activeAcademicPeriod}
         />
       )}
 
