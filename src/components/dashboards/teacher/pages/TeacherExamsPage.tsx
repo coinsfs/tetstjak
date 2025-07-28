@@ -384,22 +384,22 @@ const TeacherExamsPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full table-fixed">
+            <table className="teacher-exam-table">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[20%]">Ujian</th>
-                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[12%]">Jenis</th>
-                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[17%]">Status</th>
-                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[20%]">Jadwal</th>
-                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[12%]">Durasi</th>
-                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[9%]">Soal</th>
-                  <th className="px-3 py-3 text-center text-sm font-semibold text-gray-900 w-[20%]">Aksi</th>
+                  <th className="col-title px-3 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Ujian</th>
+                  <th className="col-type px-3 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Jenis</th>
+                  <th className="col-status px-3 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="col-schedule px-3 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Jadwal</th>
+                  <th className="col-duration px-3 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Durasi</th>
+                  <th className="col-questions px-3 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Soal</th>
+                  <th className="col-actions px-3 py-3 text-center text-sm font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {exams.map((exam) => (
                   <tr key={exam._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-3 py-4 w-[25%]">
+                    <td className="col-title px-3 py-4" title={exam.title}>
                       <div>
                         <h3 className="font-medium text-gray-900 truncate" title={exam.title}>
                           {exam.title}
@@ -410,17 +410,17 @@ const TeacherExamsPage: React.FC = () => {
                       </div>
                     </td>
                     
-                    <td className="px-3 py-4 w-[12%]">
+                    <td className="col-type px-3 py-4">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                         {getExamTypeLabel(exam.exam_type)}
                       </span>
                     </td>
                     
-                    <td className="px-3 py-4 w-[12%]">
+                    <td className="col-status px-3 py-4">
                       {getStatusBadge(exam.status)}
                     </td>
                     
-                    <td className="px-3 py-4 w-[20%]">
+                    <td className="col-schedule px-3 py-4" title={`Mulai: ${formatDateTime(exam.availability_start_time)} - Selesai: ${formatDateTime(exam.availability_end_time)}`}>
                       <div className="text-sm">
                         <div className="flex items-center space-x-1 text-gray-900 mb-1 truncate">
                           <Calendar className="w-3 h-3" />
@@ -433,21 +433,21 @@ const TeacherExamsPage: React.FC = () => {
                       </div>
                     </td>
                     
-                    <td className="px-3 py-4 w-[8%]">
+                    <td className="col-duration px-3 py-4">
                       <div className="flex items-center space-x-1 text-sm text-gray-900">
                         <Clock className="w-4 h-4 text-gray-400" />
                         <span>{exam.duration_minutes} menit</span>
                       </div>
                     </td>
                     
-                    <td className="px-3 py-4 w-[8%]">
+                    <td className="col-questions px-3 py-4">
                       <div className="flex items-center space-x-1 text-sm text-gray-900">
                         <BookOpen className="w-4 h-4 text-gray-400" />
                         <span>{exam.question_ids.length} soal</span>
                       </div>
                     </td>
                     
-                    <td className="px-3 py-4 w-[15%]">
+                    <td className="col-actions px-3 py-4">
                       <div className="flex items-center justify-center space-x-1 flex-wrap gap-1">
                         {/* Main Action Button */}
                         {getActionButton(exam)}
