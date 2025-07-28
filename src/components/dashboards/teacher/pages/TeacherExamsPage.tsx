@@ -347,8 +347,8 @@ const TeacherExamsPage: React.FC = () => {
       )}
 
       {/* Table */}
-      <div className="min-w-0">
-        <div className="bg-white rounded-xl shadow-sm min-w-0">
+      <div className="w-full">
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="flex items-center space-x-2">
@@ -376,30 +376,30 @@ const TeacherExamsPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          /* Table with Isolated Horizontal Scroll */
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1200px]">
+          <div className="w-full overflow-x-auto">
+            <div className="min-w-[1200px]">
+              <table className="w-full table-fixed">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '280px'}}>
                     Ujian
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '140px'}}>
                     Jenis
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '160px'}}>
                     Status
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-80">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '320px'}}>
                     Jadwal
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '100px'}}>
                     Durasi
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '80px'}}>
                     Soal
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '200px'}}>
                     Aksi
                   </th>
                 </tr>
@@ -409,7 +409,7 @@ const TeacherExamsPage: React.FC = () => {
                   <tr key={exam._id} className="hover:bg-gray-50">
                     {/* Ujian */}
                     <td className="px-4 py-4">
-                      <div className="max-w-60">
+                      <div className="w-full">
                         <div className="text-sm font-medium text-gray-900 truncate">
                           {exam.title}
                         </div>
@@ -433,7 +433,7 @@ const TeacherExamsPage: React.FC = () => {
                     
                     {/* Jadwal */}
                     <td className="px-4 py-4">
-                      <div className="text-sm space-y-1 max-w-72">
+                      <div className="text-sm space-y-1 w-full">
                         <div className="flex items-center space-x-1 text-gray-900">
                           <Calendar className="w-3 h-3" />
                           <span className="truncate">Mulai: {formatDateTime(exam.availability_start_time)}</span>
@@ -505,7 +505,8 @@ const TeacherExamsPage: React.FC = () => {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         )}
         </div>
@@ -513,7 +514,7 @@ const TeacherExamsPage: React.FC = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="bg-white rounded-xl shadow-sm p-4 min-w-0">
+        <div className="bg-white rounded-xl shadow-sm p-4">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
