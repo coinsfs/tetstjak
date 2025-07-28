@@ -384,22 +384,22 @@ const TeacherExamsPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed min-w-[1200px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 min-w-[200px]">Ujian</th>
-                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 min-w-[100px]">Jenis</th>
-                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 min-w-[120px]">Status</th>
-                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 min-w-[180px]">Jadwal</th>
-                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 min-w-[80px]">Durasi</th>
-                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 min-w-[70px]">Soal</th>
-                  <th className="px-3 py-3 text-center text-sm font-semibold text-gray-900 min-w-[150px]">Aksi</th>
+                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[20%]">Ujian</th>
+                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[12%]">Jenis</th>
+                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[17%]">Status</th>
+                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[20%]">Jadwal</th>
+                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[12%]">Durasi</th>
+                  <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900 w-[9%]">Soal</th>
+                  <th className="px-3 py-3 text-center text-sm font-semibold text-gray-900 w-[20%]">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {exams.map((exam) => (
                   <tr key={exam._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-3 py-4">
+                    <td className="px-3 py-4 w-[25%]">
                       <div>
                         <h3 className="font-medium text-gray-900 truncate" title={exam.title}>
                           {exam.title}
@@ -410,17 +410,17 @@ const TeacherExamsPage: React.FC = () => {
                       </div>
                     </td>
                     
-                    <td className="px-3 py-4">
+                    <td className="px-3 py-4 w-[12%]">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                         {getExamTypeLabel(exam.exam_type)}
                       </span>
                     </td>
                     
-                    <td className="px-3 py-4">
+                    <td className="px-3 py-4 w-[12%]">
                       {getStatusBadge(exam.status)}
                     </td>
                     
-                    <td className="px-3 py-4">
+                    <td className="px-3 py-4 w-[20%]">
                       <div className="text-sm">
                         <div className="flex items-center space-x-1 text-gray-900 mb-1 truncate">
                           <Calendar className="w-3 h-3" />
@@ -433,21 +433,21 @@ const TeacherExamsPage: React.FC = () => {
                       </div>
                     </td>
                     
-                    <td className="px-3 py-4">
+                    <td className="px-3 py-4 w-[8%]">
                       <div className="flex items-center space-x-1 text-sm text-gray-900">
                         <Clock className="w-4 h-4 text-gray-400" />
                         <span>{exam.duration_minutes} menit</span>
                       </div>
                     </td>
                     
-                    <td className="px-3 py-4">
+                    <td className="px-3 py-4 w-[8%]">
                       <div className="flex items-center space-x-1 text-sm text-gray-900">
                         <BookOpen className="w-4 h-4 text-gray-400" />
                         <span>{exam.question_ids.length} soal</span>
                       </div>
                     </td>
                     
-                    <td className="px-3 py-4">
+                    <td className="px-3 py-4 w-[15%]">
                       <div className="flex items-center justify-center space-x-1 flex-wrap gap-1">
                         {/* Main Action Button */}
                         {getActionButton(exam)}
