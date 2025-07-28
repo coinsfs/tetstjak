@@ -264,9 +264,9 @@ const TeacherExamsPage: React.FC = () => {
   const totalPages = Math.ceil(totalItems / (filters.limit || 10));
 
   return (
-    <div className="space-y-6 overflow-x-hidden">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm p-6 min-w-0">
+      <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
@@ -291,7 +291,7 @@ const TeacherExamsPage: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 min-w-0">
+      <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
         <div className="flex items-center space-x-2 mb-4">
           <Filter className="w-5 h-5 text-gray-500" />
           <h3 className="text-lg font-semibold text-gray-900">Filter Ujian</h3>
@@ -330,7 +330,7 @@ const TeacherExamsPage: React.FC = () => {
 
       {/* Academic Period Warning */}
       {!activeAcademicPeriod && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 min-w-0">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
           <div className="flex items-start space-x-3">
             <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
             <div>
@@ -347,8 +347,8 @@ const TeacherExamsPage: React.FC = () => {
       )}
 
       {/* Table */}
-      <div className="w-full">
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div>
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="flex items-center space-x-2">
@@ -376,30 +376,29 @@ const TeacherExamsPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="w-full overflow-x-auto">
-            <div className="min-w-[1200px]">
-              <table className="w-full table-fixed">
+          <div className="overflow-x-auto">
+            <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '280px'}}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ujian
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '140px'}}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Jenis
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '160px'}}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '320px'}}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Jadwal
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '100px'}}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Durasi
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '80px'}}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Soal
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{width: '200px'}}>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Aksi
                   </th>
                 </tr>
@@ -408,8 +407,8 @@ const TeacherExamsPage: React.FC = () => {
                 {exams.map((exam) => (
                   <tr key={exam._id} className="hover:bg-gray-50">
                     {/* Ujian */}
-                    <td className="px-4 py-4">
-                      <div className="w-full">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="max-w-xs">
                         <div className="text-sm font-medium text-gray-900 truncate">
                           {exam.title}
                         </div>
@@ -420,20 +419,20 @@ const TeacherExamsPage: React.FC = () => {
                     </td>
                     
                     {/* Jenis */}
-                    <td className="px-4 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                         {getExamTypeLabel(exam.exam_type)}
                       </span>
                     </td>
                     
                     {/* Status */}
-                    <td className="px-4 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(exam.status)}
                     </td>
                     
                     {/* Jadwal */}
-                    <td className="px-4 py-4">
-                      <div className="text-sm space-y-1 w-full">
+                    <td className="px-6 py-4">
+                      <div className="text-sm space-y-1">
                         <div className="flex items-center space-x-1 text-gray-900">
                           <Calendar className="w-3 h-3" />
                           <span className="truncate">Mulai: {formatDateTime(exam.availability_start_time)}</span>
@@ -446,7 +445,7 @@ const TeacherExamsPage: React.FC = () => {
                     </td>
                     
                     {/* Durasi */}
-                    <td className="px-4 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-1 text-sm text-gray-900">
                         <Clock className="w-4 h-4 text-gray-400" />
                         <span>{exam.duration_minutes} menit</span>
@@ -454,7 +453,7 @@ const TeacherExamsPage: React.FC = () => {
                     </td>
                     
                     {/* Soal */}
-                    <td className="px-4 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-1 text-sm text-gray-900">
                         <BookOpen className="w-4 h-4 text-gray-400" />
                         <span>{exam.question_ids.length} soal</span>
@@ -462,7 +461,7 @@ const TeacherExamsPage: React.FC = () => {
                     </td>
                     
                     {/* Aksi */}
-                    <td className="px-4 py-4 whitespace-nowrap text-center">
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center space-x-2">
                         {/* Main Action Button */}
                         {getActionButton(exam)}
@@ -505,11 +504,10 @@ const TeacherExamsPage: React.FC = () => {
                   </tr>
                 ))}
               </tbody>
-              </table>
-            </div>
+            </table>
           </div>
         )}
-        </div>
+      </div>
       </div>
 
       {/* Pagination */}
