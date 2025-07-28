@@ -233,16 +233,17 @@ body {
   table-layout: fixed;
   width: 100%;
   border-collapse: collapse;
+  min-width: 800px; /* Minimum width to ensure proper layout */
 }
 
 .teacher-exam-table th,
 .teacher-exam-table td {
   padding: 0.75rem 1rem;
   vertical-align: top;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   position: relative;
+  word-wrap: break-word;
 }
 
 .teacher-exam-table th {
@@ -250,6 +251,9 @@ body {
   font-weight: 600;
   color: #111827;
   border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .teacher-exam-table td {
@@ -258,6 +262,42 @@ body {
 
 .teacher-exam-table tr:hover td {
   background-color: #f9fafb;
+}
+
+/* Column width specifications for better control */
+.teacher-exam-table .col-title {
+  width: 25%;
+  min-width: 200px;
+}
+
+.teacher-exam-table .col-type {
+  width: 12%;
+  min-width: 100px;
+}
+
+.teacher-exam-table .col-status {
+  width: 15%;
+  min-width: 120px;
+}
+
+.teacher-exam-table .col-schedule {
+  width: 20%;
+  min-width: 180px;
+}
+
+.teacher-exam-table .col-duration {
+  width: 10%;
+  min-width: 80px;
+}
+
+.teacher-exam-table .col-questions {
+  width: 8%;
+  min-width: 70px;
+}
+
+.teacher-exam-table .col-actions {
+  width: 10%;
+  min-width: 120px;
 }
 
 /* Hover tooltip for truncated content in exam table */
@@ -272,89 +312,55 @@ body {
   padding: 0.5rem;
   border-radius: 0.25rem;
   font-size: 0.75rem;
-  white-space: normal;
+  white-space: nowrap;
   max-width: 250px;
   z-index: 1000;
   pointer-events: none;
   word-wrap: break-word;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-/* Responsive behavior for exam table */
-@media (max-width: 1280px) {
-  .teacher-exam-table .col-title {
-    min-width: 180px;
-    max-width: 250px;
-  }
-  
-  .teacher-exam-table .col-schedule {
-    min-width: 180px;
-    max-width: 220px;
-  }
-  
-  .teacher-exam-table .col-actions {
-    min-width: 140px;
-    max-width: 180px;
-  }
+/* Scrollbar styling for table container */
+.teacher-exam-table-container {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
 }
 
+.teacher-exam-table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.teacher-exam-table-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.teacher-exam-table-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.teacher-exam-table-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Responsive adjustments */
 @media (max-width: 1024px) {
-  .teacher-exam-table th,
-  .teacher-exam-table td {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-  }
-  
-  .teacher-exam-table .col-title {
-    min-width: 160px;
-    max-width: 200px;
-  }
-  
-  .teacher-exam-table .col-schedule {
-    min-width: 160px;
-    max-width: 180px;
-  }
-  
-  .teacher-exam-table .col-actions {
-    min-width: 120px;
-    max-width: 160px;
+  .teacher-exam-table {
+    min-width: 700px;
   }
 }
 
 @media (max-width: 768px) {
   .teacher-exam-table {
-    font-size: 0.8rem;
+    min-width: 600px;
+    font-size: 0.875rem;
   }
   
   .teacher-exam-table th,
   .teacher-exam-table td {
-    padding: 0.5rem;
-  }
-  
-  .teacher-exam-table .col-title {
-    min-width: 140px;
-    max-width: 160px;
-  }
-  
-  .teacher-exam-table .col-type,
-  .teacher-exam-table .col-status {
-    min-width: 100px;
-    max-width: 120px;
-  }
-  
-  .teacher-exam-table .col-schedule {
-    min-width: 140px;
-    max-width: 160px;
-  }
-  
-  .teacher-exam-table .col-duration,
-  .teacher-exam-table .col-questions {
-    min-width: 70px;
-    max-width: 90px;
-  }
-  
-  .teacher-exam-table .col-actions {
-    min-width: 120px;
-    max-width: 140px;
+    padding: 0.5rem 0.75rem;
   }
 }
 

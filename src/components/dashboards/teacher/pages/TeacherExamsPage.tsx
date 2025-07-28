@@ -260,9 +260,9 @@ const TeacherExamsPage: React.FC = () => {
   const totalPages = Math.ceil(totalItems / (filters.limit || 10));
 
   return (
-    <div className="space-y-6">
+    <div className="h-full flex flex-col space-y-6 overflow-hidden">
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-white rounded-xl shadow-sm p-6 flex-shrink-0">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
@@ -287,7 +287,7 @@ const TeacherExamsPage: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+      <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 flex-shrink-0">
         <div className="flex items-center space-x-2 mb-4">
           <Filter className="w-5 h-5 text-gray-500" />
           <h3 className="text-lg font-semibold text-gray-900">Filter Ujian</h3>
@@ -338,7 +338,7 @@ const TeacherExamsPage: React.FC = () => {
 
       {/* Academic Period Status */}
       {!activeAcademicPeriod && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex-shrink-0">
           <div className="flex items-start space-x-3">
             <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
             <div>
@@ -355,16 +355,16 @@ const TeacherExamsPage: React.FC = () => {
       )}
 
       {/* Exams List */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm flex-1 flex flex-col min-h-0">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center py-12 flex-1">
             <div className="flex items-center space-x-2">
               <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-600 border-t-transparent"></div>
               <span className="text-gray-600">Memuat daftar ujian...</span>
             </div>
           </div>
         ) : exams.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-12 flex-1 flex flex-col justify-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <FileText className="h-8 w-8 text-gray-400" />
             </div>
@@ -383,7 +383,8 @@ const TeacherExamsPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto max-w-full">
+          <>
+          <div className="flex-1 overflow-auto">
             <table className="teacher-exam-table min-w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -481,50 +482,52 @@ const TeacherExamsPage: React.FC = () => {
               </tbody>
             </table>
           </div>
-        )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-200 gap-4">
-            <div className="text-sm text-gray-500">
-              Menampilkan {((currentPage - 1) * (filters.limit || 10)) + 1} - {Math.min(currentPage * (filters.limit || 10), totalItems)} dari {totalItems} ujian
-            </div>
-            
-            <div className="flex items-center space-x-1 flex-wrap justify-center">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100"
-              >
-                Sebelumnya
-              </button>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-200 gap-4 flex-shrink-0 bg-white">
+              <div className="text-sm text-gray-500">
+                Menampilkan {((currentPage - 1) * (filters.limit || 10)) + 1} - {Math.min(currentPage * (filters.limit || 10), totalItems)} dari {totalItems} ujian
+              </div>
               
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const page = i + 1;
-                return (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    className={`px-2.5 py-1.5 text-sm rounded-lg transition-colors ${
-                      currentPage === page
-                        ? 'bg-purple-600 text-white'
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                );
-              })}
-              
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100"
-              >
-                Selanjutnya
-              </button>
+              <div className="flex items-center space-x-1 flex-wrap justify-center">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100"
+                >
+                  Sebelumnya
+                </button>
+                
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const page = i + 1;
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`px-2.5 py-1.5 text-sm rounded-lg transition-colors ${
+                        currentPage === page
+                          ? 'bg-purple-600 text-white'
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
+                
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100"
+                >
+                  Selanjutnya
+                </button>
+              </div>
             </div>
-          </div>
+          )}
+          </>
         )}
       </div>
 

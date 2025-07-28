@@ -58,7 +58,7 @@ const TeacherMainContent: React.FC<TeacherMainContentProps> = ({
   };
 
   return (
-    <main className="flex-1 p-4 sm:p-6 overflow-y-auto lg:pt-20">
+    <main className="flex-1 p-4 sm:p-6 lg:pt-20 flex flex-col min-h-0">
       {renderContent()}
     </main>
   );
