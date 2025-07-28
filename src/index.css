@@ -14,8 +14,6 @@ body {
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Prevent horizontal scroll on body */
-  overflow-x: hidden;
 }
 
 /* Custom Animations */
@@ -88,28 +86,24 @@ body {
   animation: slideOutFade 0.4s ease-in;
 }
 
-/* Enhanced Scrollbar Styling */
+/* Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #f1f1f1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #c1c1c1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-::-webkit-scrollbar-corner {
-  background: #f1f5f9;
+  background: #a8a8a8;
 }
 
 /* Hide scrollbar for sidebar */
@@ -160,6 +154,171 @@ body {
 .sidebar-container {
   height: 100vh;
   display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  flex-shrink: 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 1.5rem 1rem;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.sidebar-footer {
+  flex-shrink: 0;
+  border-top: 1px solid #e5e7eb;
+  padding: 1rem;
+  background: white;
+}
+
+/* Profile page specific layout fixes */
+.profile-layout {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.profile-content {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.profile-sidebar {
+  height: 100vh;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.profile-sidebar .sidebar-nav {
+  padding: 1.5rem 1rem;
+}
+
+/* Intelligent Table Layout Optimization */
+.intelligent-table {
+  table-layout: auto;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.intelligent-table th,
+.intelligent-table td {
+  padding: 0.75rem 1rem;
+  vertical-align: top;
+  word-break: break-word;
+  position: relative;
+}
+
+
+.intelligent-table th,
+.intelligent-table td {
+  max-width: 300px;
+  min-width: 80px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Specific width constraints for different content types */
+.intelligent-table .col-narrow {
+  max-width: 120px;
+  min-width: 80px;
+}
+
+.intelligent-table .col-medium {
+  max-width: 200px;
+  min-width: 120px;
+}
+
+.intelligent-table .col-wide {
+  max-width: 300px;
+  min-width: 200px;
+}
+
+.intelligent-table .col-actions {
+  max-width: 150px;
+  min-width: 120px;
+  text-align: center;
+}
+
+/* Hover tooltip for truncated content */
+.intelligent-table td[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  white-space: normal;
+  max-width: 250px;
+  z-index: 1000;
+  pointer-events: none;
+  word-wrap: break-word;
+}
+
+/* Responsive table behavior */
+@media (max-width: 1024px) {
+  .intelligent-table th,
+  .intelligent-table td {
+    max-width: 200px;
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .intelligent-table th,
+  .intelligent-table td {
+    max-width: 150px;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Focus States */
+input:focus,
+button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Hover Effects */
+.hover-lift:hover {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease;
+}
+
+/* Utility classes for text truncation */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}: flex;
   flex-direction: column;
   overflow: hidden;
 }
