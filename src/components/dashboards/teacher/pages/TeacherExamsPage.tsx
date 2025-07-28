@@ -29,6 +29,8 @@ import {
 import { teacherService, TeachingClass } from '@/services/teacher';
 import TeacherExamFormModal from './modals/TeacherExamFormModal';
 import TeacherExamDeleteModal from './modals/TeacherExamDeleteModal';
+import TeacherExamEditModal from './modals/TeacherExamEditModal';
+import Pagination from '@/components/Pagination';
 import toast from 'react-hot-toast';
 
 const TeacherExamsPage: React.FC = () => {
@@ -51,6 +53,7 @@ const TeacherExamsPage: React.FC = () => {
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedExam, setSelectedExam] = useState<TeacherExam | null>(null);
 
   useEffect(() => {
@@ -123,8 +126,8 @@ const TeacherExamsPage: React.FC = () => {
   };
 
   const handleEditExam = (exam: TeacherExam) => {
-    // TODO: Implement edit functionality
-    toast.info('Fitur edit ujian akan segera tersedia');
+    setSelectedExam(exam);
+    setShowEditModal(true);
   };
 
   const handleDeleteExam = (exam: TeacherExam) => {
@@ -254,7 +257,8 @@ const TeacherExamsPage: React.FC = () => {
   };
 
   const isDeleteDisabled = (exam: TeacherExam) => {
-    return exam.exam_type === 'official_uts' || exam.exam_type === 'official_uas';
+    return exam.status === 'active' || exam.status === 'completed' || 
+           exam.exam_type === 'official_uts' || exam.exam_type === 'official_uas';
   };
 
   const totalPages = Math.ceil(totalItems / (filters.limit || 10));
@@ -469,7 +473,12 @@ const TeacherExamsPage: React.FC = () => {
                           {/* Edit Button */}
                           <button
                             onClick={() => handleEditExam(exam)}
-                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            disabled={exam.status === 'active' || exam.status === 'completed'}
+                            className={`p-2 rounded-lg transition-colors ${
+                              exam.status === 'active' || exam.status === 'completed'
+                                ? 'text-gray-300 cursor-not-allowed'
+                                : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                            }`}
                             title="Edit Soal"
                           >
                             <Edit className="w-4 h-4" />
@@ -481,10 +490,16 @@ const TeacherExamsPage: React.FC = () => {
                             disabled={isDeleteDisabled(exam)}
                             className={`p-2 rounded-lg transition-colors ${
                               isDeleteDisabled(exam)
-                                ? 'text-gray-300 cursor-not-allowed'
+                                ? 'text-gray-300 cursor-not-allowed' 
                                 : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
                             }`}
-                            title={isDeleteDisabled(exam) ? 'Ujian resmi tidak dapat dihapus' : 'Hapus Ujian'}
+                            title={
+                              exam.exam_type === 'official_uts' || exam.exam_type === 'official_uas'
+                                ? 'Ujian resmi tidak dapat dihapus'
+                                : exam.status === 'active' || exam.status === 'completed'
+                                ? 'Ujian yang sedang berlangsung atau selesai tidak dapat dihapus'
+                                : 'Hapus Ujian'
+                            }
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -502,47 +517,15 @@ const TeacherExamsPage: React.FC = () => {
       {/* Fixed Pagination */}
       {totalPages > 1 && (
         <div className="teacher-exam-pagination">
-          <div className="bg-white rounded-xl shadow-sm">
-            <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 gap-4">
-              <div className="text-sm text-gray-500">
-                Menampilkan {((currentPage - 1) * (filters.limit || 10)) + 1} - {Math.min(currentPage * (filters.limit || 10), totalItems)} dari {totalItems} ujian
-              </div>
-              
-              <div className="flex items-center space-x-1 flex-wrap justify-center">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100"
-                >
-                  Sebelumnya
-                </button>
-                
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const page = i + 1;
-                  return (
-                    <button
-                      key={page}
-                      onClick={() => handlePageChange(page)}
-                      className={`px-2.5 py-1.5 text-sm rounded-lg transition-colors ${
-                        currentPage === page
-                          ? 'bg-purple-600 text-white'
-                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  );
-                })}
-                
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md hover:bg-gray-100"
-                >
-                  Selanjutnya
-                </button>
-              </div>
-            </div>
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              totalItems={totalItems}
+              itemsPerPage={filters.limit || 10}
+              itemName="ujian"
+            />
           </div>
         </div>
       )}
@@ -572,6 +555,22 @@ const TeacherExamsPage: React.FC = () => {
           }}
           onSuccess={() => {
             setShowDeleteModal(false);
+            setSelectedExam(null);
+            fetchExams();
+          }}
+        />
+      )}
+
+      {showEditModal && selectedExam && (
+        <TeacherExamEditModal
+          exam={selectedExam}
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedExam(null);
+          }}
+          onSuccess={() => {
+            setShowEditModal(false);
             setSelectedExam(null);
             fetchExams();
           }}

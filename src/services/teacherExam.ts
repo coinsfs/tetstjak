@@ -1,5 +1,10 @@
 import { BaseService } from './base';
 
+export interface BasicTeacher {
+  _id: string;
+  full_name: string;
+}
+
 export interface ActiveAcademicPeriod {
   year: string;
   semester: string;
@@ -56,6 +61,21 @@ export interface CreateTeacherExamRequest {
   proctor_ids: string[];
 }
 
+export interface UpdateTeacherExamRequest {
+  title: string;
+  exam_type: 'quiz' | 'daily_test' | 'official_uts' | 'official_uas';
+  duration_minutes: number;
+  availability_start_time: string;
+  availability_end_time: string;
+  status: string;
+  settings: {
+    shuffle_questions: boolean;
+    shuffle_options: boolean;
+    show_results_after_submission: boolean;
+  };
+  proctor_ids: string[];
+}
+
 export interface AcademicPeriod {
   _id: string;
   year: string;
@@ -89,8 +109,16 @@ class TeacherExamService extends BaseService {
     return this.post<TeacherExam>('/exams/', requestData, token);
   }
 
+  async updateTeacherExam(token: string, examId: string, data: UpdateTeacherExamRequest): Promise<TeacherExam> {
+    return this.put<TeacherExam>(`/exams/${examId}`, data, token);
+  }
+
   async deleteTeacherExam(token: string, examId: string): Promise<void> {
     await this.delete(`/exams/${examId}`, token);
+  }
+
+  async getBasicTeachers(token: string): Promise<BasicTeacher[]> {
+    return this.get<BasicTeacher[]>('/users/teachers/basic', token);
   }
 
   async getAcademicPeriods(token: string): Promise<AcademicPeriod[]> {

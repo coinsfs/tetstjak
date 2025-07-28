@@ -358,7 +358,7 @@ button:focus {
 /* Table Styling */
 .teacher-exam-table {
   width: 100%;
-  min-width: 1200px; /* Minimum width to prevent cramping */
+  min-width: 1400px; /* Increased minimum width */
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -390,19 +390,73 @@ button:focus {
 
 /* Column Widths */
 .teacher-exam-table th:nth-child(1),
-.teacher-exam-table td:nth-child(1) { width: 200px; } /* Ujian */
+.teacher-exam-table td:nth-child(1) { 
+  width: 250px; 
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+} /* Ujian */
+
 .teacher-exam-table th:nth-child(2),
-.teacher-exam-table td:nth-child(2) { width: 120px; } /* Jenis */
+.teacher-exam-table td:nth-child(2) { 
+  width: 140px; 
+  max-width: 140px;
+} /* Jenis */
+
 .teacher-exam-table th:nth-child(3),
-.teacher-exam-table td:nth-child(3) { width: 140px; } /* Status */
+.teacher-exam-table td:nth-child(3) { 
+  width: 160px; 
+  max-width: 160px;
+} /* Status */
+
 .teacher-exam-table th:nth-child(4),
-.teacher-exam-table td:nth-child(4) { width: 280px; } /* Jadwal */
+.teacher-exam-table td:nth-child(4) { 
+  width: 320px; 
+  max-width: 320px;
+} /* Jadwal */
+
 .teacher-exam-table th:nth-child(5),
-.teacher-exam-table td:nth-child(5) { width: 100px; } /* Durasi */
+.teacher-exam-table td:nth-child(5) { 
+  width: 120px; 
+  max-width: 120px;
+} /* Durasi */
+
 .teacher-exam-table th:nth-child(6),
-.teacher-exam-table td:nth-child(6) { width: 80px; } /* Soal */
+.teacher-exam-table td:nth-child(6) { 
+  width: 100px; 
+  max-width: 100px;
+} /* Soal */
+
 .teacher-exam-table th:nth-child(7),
-.teacher-exam-table td:nth-child(7) { width: 200px; text-align: center; } /* Aksi */
+.teacher-exam-table td:nth-child(7) { 
+  width: 220px; 
+  max-width: 220px;
+  text-align: center; 
+} /* Aksi */
+
+/* Text truncation for long content */
+.teacher-exam-table td {
+  position: relative;
+}
+
+.teacher-exam-table td[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  white-space: normal;
+  max-width: 300px;
+  z-index: 1000;
+  pointer-events: none;
+  word-wrap: break-word;
+}
 
 /* Custom Scrollbar for Table */
 .teacher-exam-table-scroll::-webkit-scrollbar {
@@ -436,7 +490,7 @@ button:focus {
   }
   
   .teacher-exam-table {
-    min-width: 1000px;
+    min-width: 1200px;
   }
 }
 
@@ -447,7 +501,7 @@ button:focus {
   }
   
   .teacher-exam-table {
-    min-width: 900px;
+    min-width: 1100px;
   }
   
   .teacher-exam-table th,
