@@ -399,7 +399,7 @@ const TeacherExamsPage: React.FC = () => {
               <tbody className="divide-y divide-gray-200">
                 {exams.map((exam) => (
                   <tr key={exam._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="col-title px-3 py-4" title={exam.title}>
+                    <td className="col-title px-3 py-4 whitespace-pre-wrap" title={exam.title}>
                       <div>
                         <h3 className="font-medium text-gray-900 truncate" title={exam.title}>
                           {exam.title}
