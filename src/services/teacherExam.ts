@@ -31,7 +31,7 @@ export interface TeacherExamResponse {
 
 export interface CreateTeacherExamRequest {
   title: string;
-  exam_type: 'quiz' | 'daily_test';
+  exam_type: 'quiz' | 'daily_test' | 'official_uts' | 'official_uas';
   duration_minutes: number;
   availability_start_time: string;
   availability_end_time: string;
@@ -41,7 +41,7 @@ export interface CreateTeacherExamRequest {
     shuffle_options: boolean;
     show_results_after_submission: boolean;
   };
-  academic_period_id?: string;
+  academic_period_id: string;
   teaching_assignment_id: string;
   question_ids: string[];
   proctor_ids: string[];
@@ -71,7 +71,13 @@ class TeacherExamService extends BaseService {
   }
 
   async createTeacherExam(token: string, data: CreateTeacherExamRequest): Promise<TeacherExam> {
-    return this.post<TeacherExam>('/exams/', data, token);
+    // Set academic_period_id to empty string if not provided
+    const requestData = {
+      ...data,
+      academic_period_id: data.academic_period_id || ''
+    };
+    
+    return this.post<TeacherExam>('/exams/', requestData, token);
   }
 
   async deleteTeacherExam(token: string, examId: string): Promise<void> {

@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { X, FileText, Calendar, Clock, Settings } from 'lucide-react';
+import { X, FileText, Calendar, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   teacherExamService, 
   CreateTeacherExamRequest,
-  AcademicPeriod 
 } from '@/services/teacherExam';
 import { TeachingClass } from '@/services/teacher';
 import toast from 'react-hot-toast';
@@ -14,7 +13,6 @@ interface TeacherExamFormModalProps {
   onClose: () => void;
   onSuccess: () => void;
   teachingClasses: TeachingClass[];
-  academicPeriods: AcademicPeriod[];
   currentUserId: string;
 }
 
@@ -23,7 +21,6 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
   onClose,
   onSuccess,
   teachingClasses,
-  academicPeriods,
   currentUserId
 }) => {
   const { token } = useAuth();
@@ -40,10 +37,13 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
       shuffle_options: true,
       show_results_after_submission: false
     },
+    academic_period_id: '',
     teaching_assignment_id: '',
     question_ids: [],
     proctor_ids: [currentUserId] // Default centang user ini sendiri
   });
+  
+  const [selectedClassId, setSelectedClassId] = useState<string>('');
 
   const handleInputChange = (field: keyof CreateTeacherExamRequest, value: any) => {
     setFormData(prev => ({
@@ -52,6 +52,14 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
     }));
   };
 
+  const handleClassChange = (classId: string) => {
+    setSelectedClassId(classId);
+    // Reset teaching assignment when class changes
+    setFormData(prev => ({
+      ...prev,
+      teaching_assignment_id: ''
+    }));
+  };
   const handleSettingsChange = (field: keyof CreateTeacherExamRequest['settings'], value: boolean) => {
     setFormData(prev => ({
       ...prev,
@@ -74,7 +82,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
     }
 
     if (!formData.teaching_assignment_id) {
-      toast.error('Pilih kelas dan mata pelajaran');
+      toast.error('Pilih mata pelajaran');
       return;
     }
 
@@ -93,6 +101,10 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
       return;
     }
 
+    if (!selectedClassId) {
+      toast.error('Pilih kelas terlebih dahulu');
+      return;
+    }
     setLoading(true);
     try {
       await teacherExamService.createTeacherExam(token, formData);
@@ -107,20 +119,13 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
     }
   };
 
-  const getTeachingAssignmentOptions = () => {
-    const options: { value: string; label: string }[] = [];
-    
-    teachingClasses.forEach(teachingClass => {
-      teachingClass.assignments.forEach(assignment => {
-        // Kita perlu membuat teaching_assignment_id dari kombinasi class dan subject
-        // Karena API response tidak memberikan teaching_assignment_id langsung
-        const value = `${teachingClass.class_details._id}-${assignment.code}`;
-        const label = `${assignment.name} - Kelas ${teachingClass.class_details.grade_level} ${teachingClass.expertise_details.abbreviation} ${teachingClass.class_details.name}`;
-        options.push({ value, label });
-      });
-    });
-    
-    return options;
+  const getSelectedClass = () => {
+    return teachingClasses.find(tc => tc.class_details._id === selectedClassId);
+  };
+
+  const getAvailableSubjects = () => {
+    const selectedClass = getSelectedClass();
+    return selectedClass ? selectedClass.assignments : [];
   };
 
   if (!isOpen) return null;
@@ -176,12 +181,14 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                 </label>
                 <select
                   value={formData.exam_type}
-                  onChange={(e) => handleInputChange('exam_type', e.target.value as 'quiz' | 'daily_test')}
+                  onChange={(e) => handleInputChange('exam_type', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
                   required
                 >
                   <option value="quiz">Kuis</option>
                   <option value="daily_test">Ulangan Harian (UH)</option>
+                  <option value="official_uts">UTS (Ujian Tengah Semester)</option>
+                  <option value="official_uas">UAS (Ujian Akhir Semester)</option>
                 </select>
               </div>
 
@@ -199,23 +206,46 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                 />
               </div>
 
-              <div className="md:col-span-2">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Kelas dan Mata Pelajaran *
+                  Kelas *
+                </label>
+                <select
+                  value={selectedClassId}
+                  onChange={(e) => handleClassChange(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  required
+                >
+                  <option value="">Pilih kelas</option>
+                  {teachingClasses.map((teachingClass) => (
+                    <option key={teachingClass.class_details._id} value={teachingClass.class_details._id}>
+                      Kelas {teachingClass.class_details.grade_level} {teachingClass.expertise_details.abbreviation} {teachingClass.class_details.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mata Pelajaran *
                 </label>
                 <select
                   value={formData.teaching_assignment_id}
                   onChange={(e) => handleInputChange('teaching_assignment_id', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  disabled={!selectedClassId}
                   required
                 >
-                  <option value="">Pilih kelas dan mata pelajaran</option>
-                  {getTeachingAssignmentOptions().map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
+                  <option value="">Pilih mata pelajaran</option>
+                  {getAvailableSubjects().map((assignment) => (
+                    <option key={assignment.teaching_assignment_id} value={assignment.teaching_assignment_id}>
+                      {assignment.name} ({assignment.code})
                     </option>
                   ))}
                 </select>
+                {!selectedClassId && (
+                  <p className="text-xs text-gray-500 mt-1">Pilih kelas terlebih dahulu</p>
+                )}
               </div>
             </div>
           </div>
@@ -315,7 +345,6 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                   <li>• Ujian akan dibuat dengan status "Menunggu Soal"</li>
                   <li>• Anda akan menjadi pengawas default untuk ujian ini</li>
                   <li>• Setelah ujian dibuat, Anda dapat menambahkan soal-soal ujian</li>
-                  <li>• Periode akademik akan diatur secara otomatis oleh sistem</li>
                 </ul>
               </div>
             </div>

@@ -512,7 +512,6 @@ const TeacherExamsPage: React.FC = () => {
             fetchExams();
           }}
           teachingClasses={teachingClasses}
-          academicPeriods={academicPeriods}
           currentUserId={user?._id || ''}
         />
       )}

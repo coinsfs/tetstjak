@@ -4,9 +4,12 @@ export interface TeachingAssignment {
   name: string;
   code: string;
   description: string;
+  teaching_assignment_id: string;
+  subject_id: string;
 }
 
 export interface ClassDetails {
+  _id: string;
   grade_level: number;
   expertise_id: string;
   name: string;
@@ -15,10 +18,12 @@ export interface ClassDetails {
 }
 
 export interface ExpertiseDetails {
+  _id: string;
   name: string;
   abbreviation: string;
   description: string;
   head_of_department_id: string;
+  head_of_department_details: any | null;
 }
 
 export interface TeachingClass {
