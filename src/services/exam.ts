@@ -82,10 +82,6 @@ class ExamService extends BaseService {
   async getQuestionsByIds(token: string, ids: string[]): Promise<Question[]> {
     return this.post<Question[]>('/question-banks/by-ids', { ids }, token);
   }
-
-  async getBasicTeachers(token: string): Promise<{ _id: string; full_name: string }[]> {
-    return this.get<{ _id: string; full_name: string }[]>('/users/teachers/basic', token);
-  }
 }
 
 export const examService = new ExamService();
