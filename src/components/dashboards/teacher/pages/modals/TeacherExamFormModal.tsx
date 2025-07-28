@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { X, FileText, Calendar, Settings } from 'lucide-react';
+import { X, FileText, Calendar, Settings, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   teacherExamService, 
   CreateTeacherExamRequest,
+  ActiveAcademicPeriod
 } from '@/services/teacherExam';
 import { TeachingClass } from '@/services/teacher';
 import toast from 'react-hot-toast';
@@ -14,6 +15,7 @@ interface TeacherExamFormModalProps {
   onSuccess: () => void;
   teachingClasses: TeachingClass[];
   currentUserId: string;
+  activeAcademicPeriod: ActiveAcademicPeriod | null;
 }
 
 const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
@@ -21,7 +23,8 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
   onClose,
   onSuccess,
   teachingClasses,
-  currentUserId
+  currentUserId,
+  activeAcademicPeriod
 }) => {
   const { token } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -37,7 +40,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
       shuffle_options: true,
       show_results_after_submission: false
     },
-    academic_period_id: '',
+    academic_period_id: activeAcademicPeriod?._id || '',
     teaching_assignment_id: '',
     question_ids: [],
     proctor_ids: [currentUserId] // Default centang user ini sendiri
@@ -119,6 +122,9 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
     }
   };
 
+  // Check if user can create exam
+  const canCreateExam = activeAcademicPeriod !== null;
+
   const getSelectedClass = () => {
     return teachingClasses.find(tc => tc.class_details._id === selectedClassId);
   };
@@ -154,6 +160,40 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Academic Period Warning */}
+          {!canCreateExam && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="text-sm font-medium text-red-800 mb-2">
+                    Tidak Dapat Membuat Ujian
+                  </h4>
+                  <p className="text-sm text-red-700">
+                    Saat ini tidak ada periode akademik yang aktif. Hubungi administrator untuk mengaktifkan periode akademik terlebih dahulu.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Active Academic Period Info */}
+          {canCreateExam && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <Calendar className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="text-sm font-medium text-blue-800 mb-1">
+                    Periode Akademik Aktif
+                  </h4>
+                  <p className="text-sm text-blue-700">
+                    Tahun Ajaran {activeAcademicPeriod.year} - Semester {activeAcademicPeriod.semester}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
@@ -183,12 +223,11 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                   value={formData.exam_type}
                   onChange={(e) => handleInputChange('exam_type', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  disabled={!canCreateExam}
                   required
                 >
                   <option value="quiz">Kuis</option>
                   <option value="daily_test">Ulangan Harian (UH)</option>
-                  <option value="official_uts">UTS (Ujian Tengah Semester)</option>
-                  <option value="official_uas">UAS (Ujian Akhir Semester)</option>
                 </select>
               </div>
 
@@ -202,6 +241,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                   onChange={(e) => handleInputChange('duration_minutes', parseInt(e.target.value) || 0)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
                   min="1"
+                  disabled={!canCreateExam}
                   required
                 />
               </div>
@@ -214,6 +254,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                   value={selectedClassId}
                   onChange={(e) => handleClassChange(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  disabled={!canCreateExam}
                   required
                 >
                   <option value="">Pilih kelas</option>
@@ -234,6 +275,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                   onChange={(e) => handleInputChange('teaching_assignment_id', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
                   disabled={!selectedClassId}
+                  disabled={!canCreateExam || !selectedClassId}
                   required
                 >
                   <option value="">Pilih mata pelajaran</option>
@@ -267,6 +309,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                   value={formData.availability_start_time}
                   onChange={(e) => handleInputChange('availability_start_time', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  disabled={!canCreateExam}
                   required
                 />
               </div>
@@ -280,6 +323,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                   value={formData.availability_end_time}
                   onChange={(e) => handleInputChange('availability_end_time', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  disabled={!canCreateExam}
                   required
                 />
               </div>
@@ -304,6 +348,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                   checked={formData.settings.shuffle_questions}
                   onChange={(e) => handleSettingsChange('shuffle_questions', e.target.checked)}
                   className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  disabled={!canCreateExam}
                 />
               </div>
 
@@ -317,6 +362,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                   checked={formData.settings.shuffle_options}
                   onChange={(e) => handleSettingsChange('shuffle_options', e.target.checked)}
                   className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  disabled={!canCreateExam}
                 />
               </div>
 
@@ -330,6 +376,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                   checked={formData.settings.show_results_after_submission}
                   onChange={(e) => handleSettingsChange('show_results_after_submission', e.target.checked)}
                   className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  disabled={!canCreateExam}
                 />
               </div>
             </div>
@@ -344,6 +391,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                 <ul className="text-sm text-blue-700 space-y-1">
                   <li>• Ujian akan dibuat dengan status "Menunggu Soal"</li>
                   <li>• Anda akan menjadi pengawas default untuk ujian ini</li>
+                  <li>• Guru hanya dapat membuat ujian tipe Kuis dan Ulangan Harian</li>
                   <li>• Setelah ujian dibuat, Anda dapat menambahkan soal-soal ujian</li>
                 </ul>
               </div>
@@ -363,7 +411,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || !canCreateExam}
             className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? (

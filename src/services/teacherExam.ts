@@ -1,5 +1,14 @@
 import { BaseService } from './base';
 
+export interface ActiveAcademicPeriod {
+  year: string;
+  semester: string;
+  status: string;
+  start_date: string;
+  end_date: string;
+  _id: string;
+}
+
 export interface TeacherExam {
   _id: string;
   title: string;
@@ -86,6 +95,16 @@ class TeacherExamService extends BaseService {
 
   async getAcademicPeriods(token: string): Promise<AcademicPeriod[]> {
     return this.get<AcademicPeriod[]>('/academic-periods/', token);
+  }
+
+  async getActiveAcademicPeriod(token: string): Promise<ActiveAcademicPeriod | null> {
+    try {
+      const response = await this.get<ActiveAcademicPeriod>('/academic-periods/active', token);
+      return response;
+    } catch (error) {
+      // Return null if no active period found
+      return null;
+    }
   }
 }
 
