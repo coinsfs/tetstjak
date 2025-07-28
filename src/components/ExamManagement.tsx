@@ -12,6 +12,7 @@ import ExamDetailModal from './modals/details/ExamDetailModal';
 import Pagination from './Pagination';
 import toast from 'react-hot-toast';
 import { Plus, FileText, AlertCircle, Search, Filter, RotateCcw } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
 
 const ExamManagement: React.FC = () => {
   const { token } = useAuth();
@@ -25,19 +26,18 @@ const ExamManagement: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(10);
   const [totalRecords, setTotalRecords] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
   
   // Search state
   const [searchValue, setSearchValue] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   
+  // Filter state
+  const [filters, setFilters] = useState<ExamFilters>({
     page: 1,
     limit: 10
-  // Filter state
-  const [filters, setFilters] = useState<ExamFilters>({});
+  });
   
   // Modal state
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -91,7 +91,6 @@ const ExamManagement: React.FC = () => {
       setTotalPages(response.total_pages);
       setCurrentPage(response.current_page);
       setTotalRecords(response.total_items);
-      setTotalPages(response.total_pages);
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch exams';
@@ -141,7 +140,10 @@ const ExamManagement: React.FC = () => {
   }, []);
 
   const handleResetFilters = useCallback(() => {
-    setFilters({});
+    setFilters({
+      page: 1,
+      limit: 10
+    });
     setSearchValue('');
     setDebouncedSearch('');
     setCurrentPage(1);
@@ -150,6 +152,7 @@ const ExamManagement: React.FC = () => {
   const handlePageChange = useCallback((page: number) => {
     if (page >= 1 && page <= totalPages && page !== currentPage) {
       setCurrentPage(page);
+      setFilters(prev => ({ ...prev, page }));
     }
   }, [currentPage, totalPages]);
 
@@ -196,7 +199,6 @@ const ExamManagement: React.FC = () => {
 
   const handleDeleteExam = useCallback((exam: Exam) => {
     setSelectedExam(exam);
-      page: 1
     setDeleteModalOpen(true);
   }, []);
 
@@ -222,22 +224,14 @@ const ExamManagement: React.FC = () => {
   };
 
   const handleFormSuccess = () => {
-      page: 1
     fetchExams();
   };
 
-  const handlePageChange = (page: number) => {
-    setFilters(prev => ({ ...prev, page }));
-  };
   const handleDeleteSuccess = () => {
     fetchExams();
   };
 
   if (error) {
-  const handleEditExam = (exam: Exam) => {
-    setSelectedExam(exam);
-    setShowEditModal(true);
-  };
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -251,8 +245,6 @@ const ExamManagement: React.FC = () => {
             Try Again
           </button>
         </div>
-      page: 1,
-      limit: 10
       </div>
     );
   }
@@ -318,24 +310,8 @@ const ExamManagement: React.FC = () => {
       {/* Search & Filters */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
         <div className="flex items-center justify-between mb-4">
-      <ExamTable
-        exams={exams}
-        loading={loading}
-        onViewExam={handleViewExam}
-        onEditExam={handleEditExam}
-        onDeleteExam={handleDeleteExam}
-      />
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={totalItems}
-          itemsPerPage={filters.limit || 10}
-          onPageChange={handlePageChange}
-        />
-      )}
+        </div>
+      </div>
 
       {/* Exam Table */}
       <ExamTable
@@ -361,7 +337,7 @@ const ExamManagement: React.FC = () => {
       {/* Modals */}
       <ExamFormModal
         exam={selectedExam}
-          mode="create"
+        mode="create"
         isOpen={formModalOpen}
         onClose={handleCloseFormModal}
         onSuccess={handleFormSuccess}
