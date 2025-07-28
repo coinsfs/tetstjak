@@ -230,7 +230,7 @@ body {
 
 /* Responsive table for teacher exam management */
 .teacher-exam-table {
-  table-layout: auto;
+  table-layout: fixed;
   width: 100%;
   border-collapse: collapse;
 }
