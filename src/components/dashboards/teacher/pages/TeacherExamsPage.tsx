@@ -354,38 +354,6 @@ const TeacherExamsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Exams List */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="flex items-center space-x-2">
-              <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-600 border-t-transparent"></div>
-              <span className="text-gray-600">Memuat daftar ujian...</span>
-            </div>
-          </div>
-        ) : exams.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FileText className="h-8 w-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Belum Ada Ujian
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Anda belum membuat ujian apapun. Mulai dengan membuat ujian pertama Anda.
-            </p>
-            <button
-              onClick={handleCreateExam}
-              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors mx-auto"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Buat Ujian Pertama</span>
-            </button>
-          </div>
-        ) : (
-        )}
-      </div>
-
       {/* Modals */}
       {showCreateModal && (
         <TeacherExamFormModal
