@@ -5,7 +5,7 @@ src/components/StudentPerformanceTable.tsx
 src/components/StudentManagement.tsx
 src/components/StudentFilter.tsx
 src/components/Sidebar.tsx
-
+src/components/QuestionDisplay.tsx
 src/components/ProtectedRoute.tsx
 src/components/ProfileManagement.tsx
 src/components/Pagination.tsx
