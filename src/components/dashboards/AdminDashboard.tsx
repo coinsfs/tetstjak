@@ -526,9 +526,9 @@ const AdminDashboard: React.FC = () => {
               
               {/* Profile Picture */}
               <div className="relative flex-shrink-0">
-                {user?.profile_details?.profile_picture_url ? (
+                {user?.profile_details?.profile_picture_key ? (
                   <img
-                    src={getProfileImageUrl(user.profile_details.profile_picture_url) || user.profile_details.profile_picture_url}
+                    src={getProfileImageUrl(user.profile_details.profile_picture_key) || user.profile_details.profile_picture_key}
                     alt="Profile"
                     className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 shadow-sm"
                     onError={(e) => {
