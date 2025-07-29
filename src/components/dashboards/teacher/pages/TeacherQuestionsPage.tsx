@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import { HelpCircle, Plus, Search, Filter, Eye, Edit, Trash2, BookOpen, Tag, User, Package, Grid, List } from 'lucide-react';
   HelpCircle, 
   Plus, 
   Search,
@@ -26,6 +26,7 @@ import {
 import TeacherQuestionFormModal from './modals/TeacherQuestionFormModal';
 import TeacherQuestionDeleteModal from './modals/TeacherQuestionDeleteModal';
 import TeacherQuestionDetailModal from './modals/TeacherQuestionDetailModal';
+import QuestionDisplay from '@/components/QuestionDisplay';
 import toast from 'react-hot-toast';
 
 const TeacherQuestionsPage: React.FC = () => {
@@ -45,6 +46,7 @@ const TeacherQuestionsPage: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  const [viewMode, setViewMode] = useState<'table' | 'exam'>('table');
 
   useEffect(() => {
     fetchInitialData();
@@ -224,6 +226,43 @@ const TeacherQuestionsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* View Mode Toggle */}
+      <div className="bg-white rounded-xl shadow-sm p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">Tampilan Soal</h3>
+          <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'table'
+                  ? 'bg-white text-yellow-700 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <List className="w-4 h-4" />
+              <span>Tabel</span>
+            </button>
+            <button
+              onClick={() => setViewMode('exam')}
+              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'exam'
+                  ? 'bg-white text-yellow-700 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <Grid className="w-4 h-4" />
+              <span>Ujian</span>
+            </button>
+          </div>
+        </div>
+        <p className="text-sm text-gray-600 mt-2">
+          {viewMode === 'table' 
+            ? 'Tampilan tabel untuk melihat ringkasan soal dengan cepat'
+            : 'Tampilan seperti ujian untuk melihat soal secara detail'
+          }
+        </p>
+      </div>
+
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
         <div className="flex items-center space-x-2 mb-4">
@@ -297,7 +336,7 @@ const TeacherQuestionsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Questions Table */}
+      {/* Questions Content */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
@@ -352,130 +391,146 @@ const TeacherQuestionsPage: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Tipe & Kesulitan
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Poin
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Aksi
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredQuestions.map((question) => (
-                  <tr key={question._id} className="hover:bg-gray-50">
-                    {/* Checkbox */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={selectedQuestions.includes(question._id)}
-                        onChange={() => handleQuestionSelect(question._id)}
-                        className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
-                      />
-                    </td>
-                    
-                    {/* Question */}
-                    <td className="px-6 py-4" style={{ maxWidth: '400px' }}>
-                      <div className="space-y-2">
-                        <div className="text-sm font-medium text-gray-900 break-words">
-                          {question.question_text}
-                        </div>
-                        {question.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {question.tags.map((tag, index) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
-                              >
-                                <Tag className="w-3 h-3 mr-1" />
-                                {tag}
-                              </span>
-                            ))}
+          <>
+            {viewMode === 'table' ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Soal
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Tipe
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Kesulitan
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Poin
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Aksi
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredQuestions.map((question) => (
+                      <tr key={question._id} className="hover:bg-gray-50">
+                        {/* Question */}
+                        <td className="px-6 py-4">
+                          <div className="max-w-xs">
+                            <div className="text-sm font-medium text-gray-900 truncate mb-1">
+                              {question.question_text}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              ID: {question._id.slice(-8)}
+                            </div>
+                            {question.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {question.tags.slice(0, 2).map((tag, index) => (
+                                  <span
+                                    key={index}
+                                    className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
+                                  >
+                                    <Tag className="w-3 h-3 mr-1" />
+                                    {tag}
+                                  </span>
+                                ))}
+                                {question.tags.length > 2 && (
+                                  <span className="text-xs text-gray-500">
+                                    +{question.tags.length - 2} lagi
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </td>
-                    
-                    {/* Subject */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
-                        <BookOpen className="w-4 h-4 text-gray-400" />
-                        <div className="text-sm text-gray-900">
-                          {getSubjectName(question.subject_id)}
-                        </div>
-                      </div>
-                    </td>
-                    
-                    {/* Type & Difficulty */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="space-y-1">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {getTypeLabel(question.question_type)}
-                        </span>
-                        <br />
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(question.difficulty)}`}>
-                          {getDifficultyLabel(question.difficulty)}
-                        </span>
-                      </div>
-                    </td>
-                    
-                    {/* Points */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {question.points} poin
-                      </div>
-                    </td>
-                    
-                    {/* Status */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
-                        {getStatusIcon(question.status)}
-                        <span className="text-sm text-gray-700 capitalize">
-                          {question.status === 'private' ? 'Pribadi' : 
-                           question.status === 'public' ? 'Publik' :
-                           question.status === 'under_review' ? 'Review' : question.status}
-                        </span>
-                      </div>
-                    </td>
-                    
-                    {/* Actions */}
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="flex items-center justify-center space-x-2">
-                        {/* View Button */}
-                        <button
-                          onClick={() => handleViewQuestion(question)}
-                          className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
-                          title="Lihat Detail"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
+                        </td>
                         
-                        {/* Edit Button */}
-                        <button
-                          onClick={() => handleEditQuestion(question)}
-                          className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-colors"
-                          title="Edit Soal"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
+                        {/* Type */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {getTypeLabel(question.question_type)}
+                          </span>
+                        </td>
                         
-                        {/* Delete Button */}
-                        <button
-                          onClick={() => handleDeleteQuestion(question)}
-                          className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
-                          title="Hapus Soal"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        {/* Difficulty */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(question.difficulty)}`}>
+                            {getDifficultyLabel(question.difficulty)}
+                          </span>
+                        </td>
+                        
+                        {/* Points */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{question.points}</div>
+                        </td>
+                        
+                        {/* Status */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-1">
+                            {getStatusIcon(question.status)}
+                            <span className="text-sm text-gray-700 capitalize">
+                              {question.status === 'private' ? 'Pribadi' : 
+                               question.status === 'public' ? 'Publik' :
+                               question.status === 'under_review' ? 'Review' : question.status}
+                            </span>
+                          </div>
+                        </td>
+                        
+                        {/* Actions */}
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <div className="flex items-center justify-center space-x-2">
+                            {/* View Detail Button */}
+                            <button
+                              onClick={() => handleViewQuestion(question)}
+                              className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
+                              title="Lihat Detail"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+
+                            {/* Edit Button */}
+                            <button
+                              onClick={() => handleEditQuestion(question)}
+                              className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-colors"
+                              title="Edit Soal"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+
+                            {/* Delete Button */}
+                            <button
+                              onClick={() => handleDeleteQuestion(question)}
+                              className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+                              title="Hapus Soal"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-6">
+                <QuestionDisplay
+                  questions={filteredQuestions}
+                  mode="view"
+                  showActions={true}
+                  onEdit={handleEditQuestion}
+                  onDelete={handleDeleteQuestion}
+                  onView={handleViewQuestion}
+                  className="space-y-6"
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
 
