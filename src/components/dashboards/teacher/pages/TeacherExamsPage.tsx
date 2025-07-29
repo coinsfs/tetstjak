@@ -595,7 +595,6 @@ const TeacherExamsPage: React.FC = () => {
           teachingClasses={teachingClasses}
         />
       )}
-    </div>
       {showStartConfirmationModal && selectedExam && (
         <TeacherExamStartConfirmationModal
           exam={selectedExam}
@@ -611,6 +610,7 @@ const TeacherExamsPage: React.FC = () => {
           }}
         />
       )}
+    </div>
   );
 };
 
