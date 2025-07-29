@@ -117,6 +117,10 @@ class TeacherExamService extends BaseService {
     await this.delete(`/exams/${examId}`, token);
   }
 
+  async startExamManually(token: string, examId: string): Promise<TeacherExam> {
+    return this.post<TeacherExam>(`/exams/${examId}/start-manually`, {}, token);
+  }
+
   async getBasicTeachers(token: string): Promise<BasicTeacher[]> {
     return this.get<BasicTeacher[]>('/users/teachers/basic', token);
   }
