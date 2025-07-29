@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+gimport React, { useState, useEffect } from 'react';
 import { 
   FileText, 
   Plus, 
@@ -347,11 +347,7 @@ const TeacherExamsPage: React.FC = () => {
       )}
 
       {/* Table */}
-      {/* FIX: Terapkan kelas 'teacher-exam-table-container' pada container utama tabel.
-        Ini akan bekerja sama dengan 'overflow-x: hidden' yang ada di index.css
-        untuk memastikan container ini tidak menyebabkan scroll pada page.
-      */}
-      <div className="teacher-exam-table-container">
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="flex items-center space-x-2">
@@ -379,71 +375,76 @@ const TeacherExamsPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          /*
-            FIX: Ganti 'overflow-x-auto' dengan 'teacher-exam-table-scroll'.
-            Ini akan menerapkan style scrollbar kustom dan memastikan perilaku scroll yang benar.
-          */
-          <div className="teacher-exam-table-scroll">
-            {/* FIX: Terapkan kelas 'teacher-exam-table' dan hapus 'min-w-full'.
-              Kelas ini akan mengaktifkan 'table-layout: fixed' dan lebar kolom spesifik
-              dari CSS Anda, yang merupakan kunci untuk kontrol layout tabel.
-            */}
-            <table className="teacher-exam-table">
-              <thead>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  {/* Hapus className dari <th> dan <td> karena sudah diatur di index.css */}
-                  <th>Ujian</th>
-                  <th>Jenis</th>
-                  <th>Status</th>
-                  <th>Jadwal</th>
-                  <th>Durasi</th>
-                  <th>Soal</th>
-                  <th style={{ textAlign: 'center' }}>Aksi</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ujian
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Jenis
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Jadwal
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Durasi
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Soal
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200">
                 {exams.map((exam) => (
                   <tr key={exam._id} className="hover:bg-gray-50">
                     {/* Ujian */}
-                    <td>
-                      <div className="teacher-exam-cell-content" title={exam.title}>
-                        <div className="text-sm font-medium text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="max-w-xs">
+                        <div className="text-sm font-medium text-gray-900 truncate">
                           {exam.title}
                         </div>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500 truncate">
                           ID: {exam._id.slice(-8)}
                         </p>
                       </div>
                     </td>
                     
                     {/* Jenis */}
-                    <td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                         {getExamTypeLabel(exam.exam_type)}
                       </span>
                     </td>
                     
                     {/* Status */}
-                    <td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(exam.status)}
                     </td>
                     
                     {/* Jadwal */}
-                    <td>
+                    <td className="px-6 py-4">
                       <div className="text-sm space-y-1">
                         <div className="flex items-center space-x-1 text-gray-900">
                           <Calendar className="w-3 h-3" />
-                          <span>Mulai: {formatDateTime(exam.availability_start_time)}</span>
+                          <span className="truncate">Mulai: {formatDateTime(exam.availability_start_time)}</span>
                         </div>
                         <div className="flex items-center space-x-1 text-gray-500">
                           <Calendar className="w-3 h-3" />
-                          <span>Selesai: {formatDateTime(exam.availability_end_time)}</span>
+                          <span className="truncate">Selesai: {formatDateTime(exam.availability_end_time)}</span>
                         </div>
                       </div>
                     </td>
                     
                     {/* Durasi */}
-                    <td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-1 text-sm text-gray-900">
                         <Clock className="w-4 h-4 text-gray-400" />
                         <span>{exam.duration_minutes} menit</span>
@@ -451,7 +452,7 @@ const TeacherExamsPage: React.FC = () => {
                     </td>
                     
                     {/* Soal */}
-                    <td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-1 text-sm text-gray-900">
                         <BookOpen className="w-4 h-4 text-gray-400" />
                         <span>{exam.question_ids.length} soal</span>
@@ -459,10 +460,12 @@ const TeacherExamsPage: React.FC = () => {
                     </td>
                     
                     {/* Aksi */}
-                    <td>
-                      <div className="teacher-exam-action-buttons">
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <div className="flex items-center justify-center space-x-2">
+                        {/* Main Action Button */}
                         {getActionButton(exam)}
                         
+                        {/* Edit Button */}
                         <button
                           onClick={() => handleEditExam(exam)}
                           disabled={exam.status === 'active' || exam.status === 'completed'}
@@ -476,6 +479,7 @@ const TeacherExamsPage: React.FC = () => {
                           <Edit className="w-4 h-4" />
                         </button>
                         
+                        {/* Delete Button */}
                         <button
                           onClick={() => handleDeleteExam(exam)}
                           disabled={isDeleteDisabled(exam)}
@@ -503,7 +507,6 @@ const TeacherExamsPage: React.FC = () => {
           </div>
         )}
       </div>
-
 
       {/* Pagination */}
       {totalPages > 1 && (
