@@ -645,6 +645,54 @@ button:focus {
   overflow: hidden;
 }
 
+/* Enhanced animations for view transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Smooth transitions for toggle buttons */
+.view-toggle-button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.view-toggle-button:hover {
+  transform: translateY(-1px);
+}
+
+/* Enhanced card styling for exam view */
+.question-card {
+  transition: all 0.2s ease-in-out;
+  border: 1px solid #e5e7eb;
+}
+
+.question-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-color: #d1d5db;
+}
+
+/* Responsive improvements */
+@media (max-width: 640px) {
+  .view-toggle-button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .question-card {
+    margin-bottom: 1rem;
+  }
+}
+
 /* Ensure main page containers don't overflow */
 .page-container {
   width: 100%;
