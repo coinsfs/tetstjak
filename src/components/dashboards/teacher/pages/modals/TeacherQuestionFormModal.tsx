@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, HelpCircle, Plus, Trash2, BookOpen, Settings } from 'lucide-react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import { useAuth } from '@/contexts/AuthContext';
 import { TeachingClass } from '@/services/teacher';
 import { 
@@ -54,6 +56,25 @@ const TeacherQuestionFormModal: React.FC<TeacherQuestionFormModalProps> = ({
   });
   
   const [newTag, setNewTag] = useState('');
+
+  // Quill editor configuration
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'script': 'sub'}, { 'script': 'super' }],
+      ['blockquote', 'code-block'],
+      ['link', 'image'],
+      ['clean']
+    ],
+  };
+
+  const quillFormats = [
+    'header', 'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet', 'script', 'blockquote', 'code-block',
+    'link', 'image'
+  ];
 
   useEffect(() => {
     if (isEdit && question) {
@@ -398,7 +419,47 @@ const TeacherQuestionFormModal: React.FC<TeacherQuestionFormModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Teks Soal *
               </label>
-              <textarea
+              <div className="border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-yellow-500 focus-within:border-yellow-500">
+                <ReactQuill
+                  theme="snow"
+                  value={resettableFields.question_text}
+                  onChange={(value) => handleResettableFieldChange('question_text', value)}
+                  modules={quillModules}
+                  formats={quillFormats}
+                  placeholder="Masukkan teks soal..."
+                  style={{
+                    minHeight: '120px'
+                  }}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Gunakan toolbar untuk memformat teks soal (bold, italic, list, dll.)
+              </p>
+            </div>
+
+            {/* Preview Question Text */}
+            {resettableFields.question_text && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Preview Soal
+                </label>
+                <div 
+                  className="prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: resettableFields.question_text }}
+                />
+              </div>
+            )}
+
+            {/* Legacy textarea fallback - hidden but kept for validation */}
+            <textarea
+              value={resettableFields.question_text.replace(/<[^>]*>/g, '')} // Strip HTML for validation
+              onChange={() => {}} // Controlled by Quill
+              className="hidden"
+              required
+            />
+
+            {/* Remove old textarea
+            <textarea
                 value={resettableFields.question_text}
                 onChange={(e) => handleResettableFieldChange('question_text', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-sm"
@@ -406,7 +467,7 @@ const TeacherQuestionFormModal: React.FC<TeacherQuestionFormModalProps> = ({
                 placeholder="Masukkan teks soal..."
                 required
               />
-            </div>
+            */}
 
             {/* Options (only for multiple choice) */}
             {persistentFields.question_type === 'multiple_choice' && (

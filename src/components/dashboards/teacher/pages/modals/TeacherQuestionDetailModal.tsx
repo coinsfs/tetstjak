@@ -178,8 +178,17 @@ const TeacherQuestionDetailModal: React.FC<TeacherQuestionDetailModalProps> = ({
             
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <h4 className="text-sm font-medium text-gray-700 mb-2">Teks Soal:</h4>
-              <div className="text-gray-900 whitespace-pre-wrap break-words">
-                {question.question_text}
+              <div 
+                className="prose prose-sm max-w-none text-gray-900"
+                dangerouslySetInnerHTML={{ __html: question.question_text }}
+              />
+              {/* Fallback for plain text */}
+              {!question.question_text.includes('<') && (
+                <div className="text-gray-900 whitespace-pre-wrap break-words">
+                  {question.question_text}
+                </div>
+              )}
+            </div>
               </div>
             </div>
 
