@@ -544,7 +544,7 @@ const AdminDashboard: React.FC = () => {
                 {/* Fallback Avatar */}
                 <div 
                   className={`w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center border-2 border-gray-200 shadow-sm ${
-                    user?.profile_details?.profile_picture_url ? 'hidden' : 'flex'
+                    user?.profile_details?.profile_picture_key ? 'hidden' : 'flex'
                   }`}
                 >
                   <span className="text-white font-semibold text-sm">
