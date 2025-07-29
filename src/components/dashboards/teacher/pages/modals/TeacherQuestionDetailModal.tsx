@@ -245,8 +245,6 @@ const TeacherQuestionDetailModal: React.FC<TeacherQuestionDetailModalProps> = ({
                 </div>
               </div>
             )}
-          </div>
-        </div>
 
         {/* Footer */}
         <div className="flex justify-end space-x-3 p-6 border-t border-gray-200">
