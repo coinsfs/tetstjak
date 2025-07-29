@@ -157,7 +157,7 @@ const ClassDetailModal: React.FC<ClassDetailModalProps> = ({
                       />
                     ) : null}
                     <div className={`w-12 h-12 bg-green-100 rounded-full flex items-center justify-center ${
-                      classData.homeroom_teacher_details.profile_picture_url ? 'hidden' : ''
+                      classData.homeroom_teacher_details.profile_picture_key ? 'hidden' : ''
                     }`}>
                       <User className="w-6 h-6 text-green-600" />
                     </div>
@@ -232,9 +232,9 @@ const ClassDetailModal: React.FC<ClassDetailModalProps> = ({
                   {students.map((student, index) => (
                     <div key={student._id} className="bg-white rounded-lg p-4 border border-gray-200">
                       <div className="flex items-start space-x-3">
-                        {student.profile_details?.profile_picture_url ? (
+                        {student.profile_details?.profile_picture_key ? (
                           <img
-                            src={getProfileImageUrl(student.profile_details.profile_picture_url) || ''}
+                            src={getProfileImageUrl(student.profile_details.profile_picture_key) || ''}
                             alt={student.profile_details.full_name}
                             className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                             onError={(e) => {
@@ -245,7 +245,7 @@ const ClassDetailModal: React.FC<ClassDetailModalProps> = ({
                           />
                         ) : null}
                         <div className={`w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          student.profile_details?.profile_picture_url ? 'hidden' : ''
+                          student.profile_details?.profile_picture_key ? 'hidden' : ''
                         }`}>
                           <span className="text-xs font-bold text-blue-600">{index + 1}</span>
                         </div>
