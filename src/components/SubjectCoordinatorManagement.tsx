@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { 
   Subject, 
   SubjectCoordinator, 
-  CoordinatorMatrix, 
+  CoordinatorMatrix as CoordinatorMatrixType, 
   CoordinatorAction,
   TeachingAssignmentForCoordinator
 } from '@/types/subject';
@@ -26,7 +26,7 @@ const SubjectCoordinatorManagement: React.FC<SubjectCoordinatorManagementProps> 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [coordinators, setCoordinators] = useState<SubjectCoordinator[]>([]);
   const [teachingAssignments, setTeachingAssignments] = useState<TeachingAssignmentForCoordinator[]>([]);
-  const [matrix, setMatrix] = useState<CoordinatorMatrix>({});
+  const [matrix, setMatrix] = useState<CoordinatorMatrixType>({});
   const [availableTeachers, setAvailableTeachers] = useState<{ [gradeLevel: string]: { [subjectId: string]: Teacher[] } }>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -149,7 +149,7 @@ const SubjectCoordinatorManagement: React.FC<SubjectCoordinatorManagementProps> 
   };
 
   const initializeMatrix = (subjectsList: Subject[], coordinatorsList: SubjectCoordinator[]) => {
-    const newMatrix: CoordinatorMatrix = {};
+    const newMatrix: CoordinatorMatrixType = {};
 
     // Initialize matrix structure
     GRADE_LEVELS.forEach(grade => {
