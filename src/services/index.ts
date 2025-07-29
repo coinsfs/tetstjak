@@ -10,3 +10,4 @@ export * from './assignment';
 export * from './expertise';
 export * from './import';
 export * from './teacher';
+export * from './profile';
