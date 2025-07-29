@@ -603,5 +603,3 @@ const TeacherQuestionsPage: React.FC = () => {
 };
 
 export default TeacherQuestionsPage;
-
-        
