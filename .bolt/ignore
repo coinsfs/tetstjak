@@ -15,7 +15,7 @@ src/components/ExpertiseProgramFilter.tsx
 src/components/ExamManagement.tsx
 src/components/ClassManagement.tsx
 src/components/ClassFilter.tsx
-src/components/AssignmentMatrix.tsx
+
 src/components/AssignmentManagement.tsx
 src/components/ActivityFeed.tsx
 src/components/tables/TeacherTable.tsx
