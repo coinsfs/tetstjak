@@ -29,8 +29,8 @@ const ProfileInformation: React.FC = () => {
     );
   }
 
-  const profileImageUrl = user.profile_details?.profile_picture_url 
-    ? getProfileImageUrl(user.profile_details.profile_picture_url)
+  const profileImageUrl = user.profile_details?.profile_picture_key 
+    ? getProfileImageUrl(user.profile_details.profile_picture_key)
     : null;
 
   const formatDate = (dateString: string) => {
