@@ -193,7 +193,7 @@ const TeacherProfilePage: React.FC = () => {
   };
 
   const getCurrentProfileImage = () => {
-    const profileUrl = user?.profile_details?.profile_picture_url;
+    const profileUrl = user?.profile_details?.profile_picture_key;
     if (profileUrl) {
       return getProfileImageUrl(profileUrl);
     }
