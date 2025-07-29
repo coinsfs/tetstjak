@@ -34,6 +34,19 @@ const CoordinatorMatrix: React.FC<CoordinatorMatrixProps> = memo(({
     onCellChange(gradeLevel, subjectId, teacherId);
   };
 
+  // Add safety checks
+  if (!matrix || !subjects || !availableTeachers) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+        <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Memuat Data</h3>
+        <p className="text-gray-500">
+          Sedang memuat data koordinator...
+        </p>
+      </div>
+    );
+  }
+
   if (subjects.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
@@ -131,7 +144,7 @@ const CoordinatorMatrix: React.FC<CoordinatorMatrixProps> = memo(({
                           </option>
                           {availableTeachersForCell.map((teacher) => (
                             <option key={teacher._id} value={teacher._id}>
-                              {teacher.profile_details?.full_name || teacher.login_id}
+                              {teacher.profile_details?.full_name || teacher.login_id || 'Unknown Teacher'}
                             </option>
                           ))}
                         </select>

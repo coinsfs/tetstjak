@@ -192,6 +192,16 @@ const SubjectManagement: React.FC = () => {
           <Plus className="w-4 h-4" />
           <span>Tambah Mata Pelajaran</span>
         </button>
+      </div>
+      
+      <div className="flex items-center space-x-3">
+        <button 
+          onClick={handleAddSubject}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Tambah Mata Pelajaran</span>
+        </button>
         
         <button 
           onClick={() => setShowCoordinatorManagement(true)}

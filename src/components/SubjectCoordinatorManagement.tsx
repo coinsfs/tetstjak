@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { 
   Subject, 
   SubjectCoordinator, 
-  CoordinatorMatrix as CoordinatorMatrixType, 
+  CoordinatorMatrix as CoordinatorMatrixType,
   CoordinatorAction,
   TeachingAssignmentForCoordinator
 } from '@/types/subject';
@@ -99,8 +99,8 @@ const SubjectCoordinatorManagement: React.FC<SubjectCoordinatorManagementProps> 
         // Convert teacher details to Teacher type
         const teacher: Teacher = {
           _id: assignment.teacher_details._id,
-          login_id: assignment.teacher_details.full_name, // Using full_name as login_id for display
-          email: '', // Not available in assignment data
+          login_id: assignment.teacher_details.full_name,
+          email: '',
           is_active: true,
           roles: ['teacher'],
           profile_id: '',
@@ -123,7 +123,7 @@ const SubjectCoordinatorManagement: React.FC<SubjectCoordinatorManagementProps> 
             start_year: null,
             end_year: null,
             profile_picture_url: assignment.teacher_details.profile_picture_url,
-            profile_picture_key: null,
+            profile_picture_key: '',
             created_at: '',
             updated_at: '',
             _id: ''
