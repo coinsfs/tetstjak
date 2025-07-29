@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import { HelpCircle, Plus, Search, Filter, Eye, Edit, Trash2, Tag, CheckCircle, XCircle, AlertCircle, Clock, Grid, List } from 'lucide-react';
   HelpCircle, 
   Plus, 
   Search,
@@ -26,6 +26,7 @@ import {
 import TeacherQuestionFormModal from './modals/TeacherQuestionFormModal';
 import TeacherQuestionDeleteModal from './modals/TeacherQuestionDeleteModal';
 import TeacherQuestionDetailModal from './modals/TeacherQuestionDetailModal';
+import QuestionDisplay from '@/components/QuestionDisplay';
 import toast from 'react-hot-toast';
 
 const TeacherQuestionsPage: React.FC = () => {
@@ -35,6 +36,7 @@ const TeacherQuestionsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'table' | 'exam'>('table');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
@@ -226,9 +228,40 @@ const TeacherQuestionsPage: React.FC = () => {
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <Filter className="w-5 h-5 text-gray-500" />
-          <h3 className="text-lg font-semibold text-gray-900">Filter Soal</h3>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div className="flex items-center space-x-2">
+            <Filter className="w-5 h-5 text-gray-500" />
+            <h3 className="text-lg font-semibold text-gray-900">Filter Soal</h3>
+          </div>
+          
+          {/* View Mode Toggle */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">Tampilan:</span>
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('table')}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'table'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <List className="w-4 h-4" />
+                <span>Tabel</span>
+              </button>
+              <button
+                onClick={() => setViewMode('exam')}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'exam'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Grid className="w-4 h-4" />
+                <span>Ujian</span>
+              </button>
+            </div>
+          </div>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -314,15 +347,33 @@ const TeacherQuestionsPage: React.FC = () => {
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               {questions.length === 0 ? 'Belum Ada Soal' : 'Tidak Ada Soal yang Cocok'}
             </h3>
+      {loading ? (
+        <div className="bg-white rounded-xl shadow-sm">
+          <div className="flex items-center justify-center py-12">
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-yellow-600 border-t-transparent"></div>
+              <span className="text-gray-600">Memuat soal...</span>
+            </div>
+          </div>
+        </div>
+      ) : filteredQuestions.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm">
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <HelpCircle className="h-8 w-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {searchTerm || selectedDifficulty || selectedSubject ? 'Tidak ada soal yang cocok' : 'Belum Ada Soal'}
+            </h3>
             <p className="text-gray-600 mb-4">
-              {questions.length === 0 
-                ? 'Anda belum membuat soal apapun. Mulai dengan membuat soal pertama Anda.'
-                : 'Coba ubah filter atau kata kunci pencarian.'
+              {searchTerm || selectedDifficulty || selectedSubject 
+                ? 'Coba ubah filter pencarian untuk menemukan soal yang Anda cari.'
+                : 'Anda belum membuat soal apapun. Mulai dengan membuat soal pertama Anda.'
               }
             </p>
-            {questions.length === 0 && (
+            {!searchTerm && !selectedDifficulty && !selectedSubject && (
               <button
-                onClick={handleCreateQuestion}
+                onClick={() => setShowCreateModal(true)}
                 className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors mx-auto"
               >
                 <Plus className="w-4 h-4" />
@@ -330,33 +381,30 @@ const TeacherQuestionsPage: React.FC = () => {
               </button>
             )}
           </div>
-        ) : (
+        </div>
+      ) : viewMode === 'table' ? (
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                    <input
-                      type="checkbox"
-                      checked={selectedQuestions.length === filteredQuestions.length && filteredQuestions.length > 0}
-                      onChange={handleSelectAll}
-                      className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
-                    />
-                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Soal
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Mata Pelajaran
+                    Tipe
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tipe & Kesulitan
+                    Kesulitan
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Poin
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tag
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Aksi
@@ -366,77 +414,66 @@ const TeacherQuestionsPage: React.FC = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredQuestions.map((question) => (
                   <tr key={question._id} className="hover:bg-gray-50">
-                    {/* Checkbox */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={selectedQuestions.includes(question._id)}
-                        onChange={() => handleQuestionSelect(question._id)}
-                        className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
-                      />
-                    </td>
-                    
-                    {/* Question */}
-                    <td className="px-6 py-4" style={{ maxWidth: '400px' }}>
-                      <div className="space-y-2">
-                        <div className="text-sm font-medium text-gray-900 break-words">
+                    {/* Question Text */}
+                    <td className="px-6 py-4">
+                      <div className="max-w-xs">
+                        <div className="text-sm text-gray-900 line-clamp-2">
                           {question.question_text}
                         </div>
-                        {question.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {question.tags.map((tag, index) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
-                              >
-                                <Tag className="w-3 h-3 mr-1" />
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                        <p className="text-xs text-gray-500 mt-1">
+                          ID: {question._id.slice(-8)}
+                        </p>
                       </div>
                     </td>
                     
-                    {/* Subject */}
+                    {/* Type */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
-                        <BookOpen className="w-4 h-4 text-gray-400" />
-                        <div className="text-sm text-gray-900">
-                          {getSubjectName(question.subject_id)}
-                        </div>
-                      </div>
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {getTypeLabel(question.question_type)}
+                      </span>
                     </td>
                     
-                    {/* Type & Difficulty */}
+                    {/* Difficulty */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="space-y-1">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {getTypeLabel(question.question_type)}
-                        </span>
-                        <br />
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(question.difficulty)}`}>
-                          {getDifficultyLabel(question.difficulty)}
-                        </span>
-                      </div>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(question.difficulty)}`}>
+                        {getDifficultyLabel(question.difficulty)}
+                      </span>
                     </td>
                     
                     {/* Points */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {question.points} poin
-                      </div>
+                      <div className="text-sm text-gray-900">{question.points}</div>
                     </td>
                     
                     {/* Status */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1">
                         {getStatusIcon(question.status)}
-                        <span className="text-sm text-gray-700 capitalize">
+                        <span className="text-xs text-gray-600 capitalize">
                           {question.status === 'private' ? 'Pribadi' : 
                            question.status === 'public' ? 'Publik' :
                            question.status === 'under_review' ? 'Review' : question.status}
                         </span>
+                      </div>
+                    </td>
+                    
+                    {/* Tags */}
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-1 max-w-xs">
+                        {question.tags.slice(0, 2).map((tag, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
+                          >
+                            <Tag className="w-3 h-3 mr-1" />
+                            {tag}
+                          </span>
+                        ))}
+                        {question.tags.length > 2 && (
+                          <span className="text-xs text-gray-500">
+                            +{question.tags.length - 2} lagi
+                          </span>
+                        )}
                       </div>
                     </td>
                     
@@ -476,8 +513,31 @@ const TeacherQuestionsPage: React.FC = () => {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Tampilan Ujian ({filteredQuestions.length} soal)
+            </h3>
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-600">
+                Total Poin: {filteredQuestions.reduce((sum, q) => sum + q.points, 0)}
+              </div>
+            </div>
+          </div>
+          
+          <QuestionDisplay
+            questions={filteredQuestions}
+            mode="view"
+            showActions={true}
+            onEdit={handleEditQuestion}
+            onDelete={handleDeleteQuestion}
+            onView={handleViewQuestion}
+            className="space-y-6"
+          />
+        </div>
+      )}
 
       {/* Modals */}
       {showCreateModal && (
