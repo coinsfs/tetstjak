@@ -45,10 +45,10 @@ const TeacherQuestionFormModal: React.FC<TeacherQuestionFormModalProps> = ({
   const [resettableFields, setResettableFields] = useState({
     question_text: '',
     options: [
-      { id: '1', text: '', is_correct: false },
-      { id: '2', text: '', is_correct: false },
-      { id: '3', text: '', is_correct: false },
-      { id: '4', text: '', is_correct: false }
+      { text: '', is_correct: false },
+      { text: '', is_correct: false },
+      { text: '', is_correct: false },
+      { text: '', is_correct: false }
     ] as QuestionOption[],
     tags: [] as string[]
   });
@@ -119,7 +119,6 @@ const TeacherQuestionFormModal: React.FC<TeacherQuestionFormModalProps> = ({
 
   const addOption = () => {
     const newOption: QuestionOption = {
-      id: (resettableFields.options.length + 1).toString(),
       text: '',
       is_correct: false
     };
@@ -186,7 +185,10 @@ const TeacherQuestionFormModal: React.FC<TeacherQuestionFormModalProps> = ({
         ...resettableFields,
         created_by_teacher_id: currentUserId,
         options: persistentFields.question_type === 'multiple_choice' 
-          ? resettableFields.options.filter(opt => opt.text.trim())
+          ? resettableFields.options.filter(opt => opt.text.trim()).map(opt => ({
+              text: opt.text,
+              is_correct: opt.is_correct
+            }))
           : []
       };
 
@@ -211,10 +213,10 @@ const TeacherQuestionFormModal: React.FC<TeacherQuestionFormModalProps> = ({
         setResettableFields({
           question_text: '',
           options: [
-            { id: '1', text: '', is_correct: false },
-            { id: '2', text: '', is_correct: false },
-            { id: '3', text: '', is_correct: false },
-            { id: '4', text: '', is_correct: false }
+            { text: '', is_correct: false },
+            { text: '', is_correct: false },
+            { text: '', is_correct: false },
+            { text: '', is_correct: false }
           ],
           tags: []
         });
@@ -425,7 +427,7 @@ const TeacherQuestionFormModal: React.FC<TeacherQuestionFormModalProps> = ({
                 
                 <div className="space-y-3">
                   {resettableFields.options.map((option, index) => (
-                    <div key={option.id} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
+                    <div key={index} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
                       <input
                         type="radio"
                         name="correct_answer"
