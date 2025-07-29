@@ -51,3 +51,4 @@ src/components/dashboards/teacher/pages/TeacherClassesPage.tsx
 src/components/dashboards/teacher/pages/TeacherQuestionsPage.tsx
 src/components/dashboards/teacher/pages/TeacherProfilePage.tsx
 src/components/dashboards/teacher/pages/TeacherAnalyticsPage.tsx
+src/components/dashboards/teacher/*
