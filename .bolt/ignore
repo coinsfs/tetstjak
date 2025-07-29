@@ -1,6 +1,6 @@
 src/components/TeacherManagement.tsx
 src/components/TeacherFilter.tsx
-
+src/components/SubjectManagement.tsx
 src/components/StudentPerformanceTable.tsx
 src/components/StudentManagement.tsx
 src/components/StudentFilter.tsx
@@ -15,7 +15,7 @@ src/components/ExpertiseProgramFilter.tsx
 src/components/ExamManagement.tsx
 src/components/ClassManagement.tsx
 src/components/ClassFilter.tsx
-
+src/components/AssignmentMatrix.tsx
 src/components/AssignmentManagement.tsx
 src/components/ActivityFeed.tsx
 src/components/tables/TeacherTable.tsx
@@ -51,4 +51,3 @@ src/components/dashboards/teacher/pages/TeacherClassesPage.tsx
 src/components/dashboards/teacher/pages/TeacherQuestionsPage.tsx
 src/components/dashboards/teacher/pages/TeacherProfilePage.tsx
 src/components/dashboards/teacher/pages/TeacherAnalyticsPage.tsx
-src/components/dashboards/teacher/*
