@@ -144,9 +144,9 @@ const ClassDetailModal: React.FC<ClassDetailModalProps> = ({
               {classData.homeroom_teacher_details ? (
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3">
-                    {classData.homeroom_teacher_details.profile_picture_url ? (
+                    {classData.homeroom_teacher_details.profile_picture_key ? (
                       <img
-                        src={getProfileImageUrl(classData.homeroom_teacher_details.profile_picture_url) || ''}
+                        src={getProfileImageUrl(classData.homeroom_teacher_details.profile_picture_key) || ''}
                         alt={classData.homeroom_teacher_details.full_name}
                         className="w-12 h-12 rounded-full object-cover"
                         onError={(e) => {
