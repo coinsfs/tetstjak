@@ -9,8 +9,9 @@ import Pagination from './Pagination';
 import SubjectDetailModal from './modals/details/SubjectDetailModal';
 import SubjectFormModal from './modals/forms/SubjectFormModal';
 import SubjectDeleteModal from './modals/SubjectDeleteModal';
+import SubjectCoordinatorManagement from './SubjectCoordinatorManagement';
 import toast from 'react-hot-toast';
-import { Plus, BookOpen, AlertCircle } from 'lucide-react';
+import { Plus, BookOpen, AlertCircle, Users } from 'lucide-react';
 
 const SubjectManagement: React.FC = () => {
   const { token } = useAuth();
@@ -33,6 +34,16 @@ const SubjectManagement: React.FC = () => {
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [showCoordinatorManagement, setShowCoordinatorManagement] = useState(false);
+
+  // Show coordinator management if requested
+  if (showCoordinatorManagement) {
+    return (
+      <SubjectCoordinatorManagement 
+        onBack={() => setShowCoordinatorManagement(false)} 
+      />
+    );
+  }
 
   const fetchSubjects = useCallback(async () => {
     if (!token) return;
@@ -180,6 +191,14 @@ const SubjectManagement: React.FC = () => {
         >
           <Plus className="w-4 h-4" />
           <span>Tambah Mata Pelajaran</span>
+        </button>
+        
+        <button 
+          onClick={() => setShowCoordinatorManagement(true)}
+          className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+        >
+          <Users className="w-4 h-4" />
+          <span>Kelola Koordinator</span>
         </button>
       </div>
 
