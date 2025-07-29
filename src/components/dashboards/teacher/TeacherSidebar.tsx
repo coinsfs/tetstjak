@@ -5,7 +5,7 @@ import {
   Home,
   Users,
   FileText,
-  Database,
+  HelpCircle,
   BarChart3,
   Settings,
   LogOut,
@@ -39,7 +39,7 @@ const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
     { id: 'home', label: 'Home', icon: Home, path: '/teacher' },
     { id: 'classes', label: 'Kelas', icon: Users, path: '/teacher/classes' },
     { id: 'exams', label: 'Ujian', icon: FileText, path: '/teacher/exams' },
-    { id: 'questions', label: 'Bank Soal', icon: Database, path: '/teacher/questions' },
+    { id: 'questions', label: 'Bank Soal', icon: HelpCircle, path: '/teacher/questions' },
     { id: 'analytics', label: 'Analitik', icon: BarChart3, path: '/teacher/analytics' },
   ];
 
