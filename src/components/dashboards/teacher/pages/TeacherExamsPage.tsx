@@ -406,16 +406,22 @@ const TeacherExamsPage: React.FC = () => {
                 {exams.map((exam) => (
                   <tr key={exam._id} className="hover:bg-gray-50">
                     {/* Ujian */}
-                    <td className="px-6 py-4"> {/* Hapus whitespace-nowrap dari sini */}
-                      <div className="teacher-exam-cell-content" title={exam.title}> {/* Terapkan kelas & title */}
-                        <div className="text-sm font-medium text-gray-900">
-                          {exam.title}
-                        </div>
-                        <p className="text-sm text-gray-500">
-                          ID: {exam._id.slice(-8)}
-                        </p>
-                      </div>
-                    </td>
+                    <td className="px-6 py-4"> {/* Hapus kelas 'whitespace-nowrap' dari td di sini */}
+  <div className="max-w-xs">
+    {/* Div ini sekarang akan memungkinkan teks untuk membungkus jika melebihi lebar max-w-xs */}
+    {/* Hapus 'teacher-exam-cell-content' dari div ini jika Anda ingin teks membungkus.
+        Jika 'teacher-exam-cell-content' diperlukan untuk styling lain, pastikan tidak ada 'white-space: nowrap'
+        di CSS untuk kelas tersebut, atau buat kelas baru untuk konten yang membungkus.
+        Asumsi terbaik adalah Anda ingin 'exam.title' membungkus, jadi kita hapus dulu kelas tersebut.
+    */}
+    <div className="text-sm font-medium text-gray-900">
+      {exam.title}
+    </div>
+    <p className="text-sm text-gray-500 truncate">
+      ID: {exam._id.slice(-8)}
+    </p>
+  </div>
+</td>
                     
                     {/* Jenis */}
                     <td className="px-6 py-4 whitespace-nowrap">
