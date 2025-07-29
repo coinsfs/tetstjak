@@ -76,7 +76,7 @@ const TeacherClassesPage: React.FC = () => {
   };
 
   const getProfileImage = (student: ClassStudent) => {
-    const profileUrl = student.profile_details?.profile_picture_url;
+    const profileUrl = student.profile_details?.profile_picture_key;
     if (profileUrl) {
       return getProfileImageUrl(profileUrl);
     }
