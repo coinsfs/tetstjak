@@ -406,12 +406,12 @@ const TeacherExamsPage: React.FC = () => {
                 {exams.map((exam) => (
                   <tr key={exam._id} className="hover:bg-gray-50">
                     {/* Ujian */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="max-w-xs">
-                        <div className="text-sm font-medium text-gray-900 truncate">
+                    <td className="px-6 py-4"> {/* Hapus whitespace-nowrap dari sini */}
+                      <div className="teacher-exam-cell-content" title={exam.title}> {/* Terapkan kelas & title */}
+                        <div className="text-sm font-medium text-gray-900">
                           {exam.title}
                         </div>
-                        <p className="text-sm text-gray-500 truncate">
+                        <p className="text-sm text-gray-500">
                           ID: {exam._id.slice(-8)}
                         </p>
                       </div>
