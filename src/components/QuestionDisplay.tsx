@@ -137,9 +137,16 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
 
           {/* Question Text */}
           <div className="mb-4">
-            <div className="text-gray-900 whitespace-pre-wrap break-words leading-relaxed">
-              {question.question_text}
-            </div>
+            <div 
+              className="prose prose-sm max-w-none text-gray-900 mb-4"
+              dangerouslySetInnerHTML={{ __html: question.question_text }}
+            />
+            {/* Fallback for plain text */}
+            {!question.question_text.includes('<') && (
+              <div className="text-gray-900 mb-4 whitespace-pre-wrap break-words">
+                {question.question_text}
+              </div>
+            )}
           </div>
 
           {/* Options (for multiple choice) */}
