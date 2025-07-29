@@ -36,15 +36,6 @@ const SubjectManagement: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [showCoordinatorManagement, setShowCoordinatorManagement] = useState(false);
 
-  // Show coordinator management if requested
-  if (showCoordinatorManagement) {
-    return (
-      <SubjectCoordinatorManagement 
-        onBack={() => setShowCoordinatorManagement(false)} 
-      />
-    );
-  }
-
   const fetchSubjects = useCallback(async () => {
     if (!token) return;
 
@@ -154,6 +145,15 @@ const SubjectManagement: React.FC = () => {
   const handleDeleteSuccess = () => {
     fetchSubjects();
   };
+
+  // Show coordinator management if requested
+  if (showCoordinatorManagement) {
+    return (
+      <SubjectCoordinatorManagement 
+        onBack={() => setShowCoordinatorManagement(false)} 
+      />
+    );
+  }
 
   if (error) {
     return (
