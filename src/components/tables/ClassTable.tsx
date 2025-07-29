@@ -107,9 +107,9 @@ const ClassTable: React.FC<ClassTableProps> = memo(({
                 {/* Homeroom Teacher */}
                 <td className="col-wide" title={classData.homeroom_teacher_details?.full_name || 'Belum ada wali kelas'}>
                   <div className="flex items-center">
-                    {classData.homeroom_teacher_details?.profile_picture_url ? (
+                    {classData.homeroom_teacher_details?.profile_picture_key ? (
                       <img
-                        src={getProfileImageUrl(classData.homeroom_teacher_details.profile_picture_url) || ''}
+                        src={getProfileImageUrl(classData.homeroom_teacher_details.profile_picture_key) || ''}
                         alt={classData.homeroom_teacher_details.full_name}
                         className="w-8 h-8 rounded-full object-cover mr-3"
                         onError={(e) => {
@@ -120,7 +120,7 @@ const ClassTable: React.FC<ClassTableProps> = memo(({
                       />
                     ) : null}
                     <div className={`w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3 ${
-                      classData.homeroom_teacher_details?.profile_picture_url ? 'hidden' : ''
+                      classData.homeroom_teacher_details?.profile_picture_key ? 'hidden' : ''
                     }`}>
                       <User className="w-4 h-4 text-green-600" />
                     </div>
