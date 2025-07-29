@@ -113,7 +113,7 @@ const TeacherExamQuestionsModal: React.FC<TeacherExamQuestionsModalProps> = ({
 
     setLoading(true);
     try {
-      // Combine current questions with selected questions (avoid duplicates)
+      // Send all selected questions (current + new selections)
       const allQuestionIds = [...new Set([...currentExamQuestions, ...selectedQuestionIds])];
       
       await questionBankService.updateExamQuestions(token, exam._id, allQuestionIds);
@@ -133,6 +133,7 @@ const TeacherExamQuestionsModal: React.FC<TeacherExamQuestionsModalProps> = ({
 
     setLoading(true);
     try {
+      // Remove question from current list and update exam
       const updatedQuestions = currentExamQuestions.filter(id => id !== questionId);
       await questionBankService.updateExamQuestions(token, exam._id, updatedQuestions);
       setCurrentExamQuestions(updatedQuestions);

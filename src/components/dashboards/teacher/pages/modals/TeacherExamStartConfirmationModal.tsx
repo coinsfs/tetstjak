@@ -28,6 +28,7 @@ const TeacherExamStartConfirmationModal: React.FC<TeacherExamStartConfirmationMo
     try {
       await teacherExamService.startExamManually(token, exam._id);
       toast.success('Ujian berhasil dimulai');
+      onClose();
       onSuccess();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Gagal memulai ujian';
