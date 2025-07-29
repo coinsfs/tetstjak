@@ -31,7 +31,7 @@ const ExpertiseProgramTable: React.FC<ExpertiseProgramTableProps> = memo(({
   };
 
   const getHeadOfDepartmentImage = (expertiseProgram: ExpertiseProgram) => {
-    const profilePictureUrl = expertiseProgram.head_of_department_details?.profile_details?.profile_picture_url;
+    const profilePictureUrl = expertiseProgram.head_of_department_details?.profile_details?.profile_picture_key;
     return profilePictureUrl ? getProfileImageUrl(profilePictureUrl) : null;
   };
 
