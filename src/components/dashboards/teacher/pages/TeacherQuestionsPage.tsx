@@ -9,7 +9,9 @@ import {
   BookOpen,
   Eye,
   Edit,
-  Trash2
+  Trash2,
+  User,
+  Users
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { questionBankService, Question } from '@/services/questionBank';
@@ -25,9 +27,14 @@ interface QuestionFilters {
   search?: string;
   difficulty?: string;
   question_type?: string;
+  purpose?: string;
+  include_submitted?: boolean;
+  include_approved?: boolean;
   page: number;
   limit: number;
 }
+
+type QuestionSource = 'my_questions' | 'accessible_questions';
 
 const TeacherQuestionsPage: React.FC = () => {
   const { token, user } = useAuth();
@@ -40,13 +47,19 @@ const TeacherQuestionsPage: React.FC = () => {
   // View state - 'table' or 'exam'
   const [currentView, setCurrentView] = useState<'table' | 'exam'>('table');
   
+  // Question source state - 'my_questions' or 'accessible_questions'
+  const [questionSource, setQuestionSource] = useState<QuestionSource>('my_questions');
+  
   // Filter state
   const [filters, setFilters] = useState<QuestionFilters>({
     page: 1,
     limit: 10,
     search: '',
     difficulty: '',
-    question_type: ''
+    question_type: '',
+    purpose: '',
+    include_submitted: false,
+    include_approved: false
   });
   
   // Modal states
@@ -62,7 +75,7 @@ const TeacherQuestionsPage: React.FC = () => {
 
   useEffect(() => {
     fetchQuestions();
-  }, [filters]);
+  }, [filters, questionSource]);
 
   const fetchInitialData = async () => {
     if (!token) return;
@@ -81,7 +94,18 @@ const TeacherQuestionsPage: React.FC = () => {
 
     setLoading(true);
     try {
-      const allQuestions = await questionBankService.getMyQuestions(token);
+      let allQuestions: Question[];
+      
+      if (questionSource === 'my_questions') {
+        allQuestions = await questionBankService.getMyQuestions(token);
+      } else {
+        allQuestions = await questionBankService.getAccessibleQuestions(
+          token,
+          filters.purpose,
+          filters.include_submitted,
+          filters.include_approved
+        );
+      }
       
       // Apply filters
       let filteredQuestions = allQuestions;
@@ -132,7 +156,10 @@ const TeacherQuestionsPage: React.FC = () => {
       limit: 10,
       search: '',
       difficulty: '',
-      question_type: ''
+      question_type: '',
+      purpose: '',
+      include_submitted: false,
+      include_approved: false
     });
   };
 
@@ -228,9 +255,41 @@ const TeacherQuestionsPage: React.FC = () => {
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+        {/* Question Source Toggle */}
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+          <div className="flex items-center space-x-2">
+            <Filter className="w-5 h-5 text-gray-500" />
+            <h3 className="text-lg font-semibold text-gray-900">Sumber Soal</h3>
+          </div>
+          
+          <div className="flex rounded-lg bg-gray-100 border border-gray-200 p-1">
+            <button
+              onClick={() => setQuestionSource('my_questions')}
+              className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                questionSource === 'my_questions' 
+                  ? 'bg-yellow-600 text-white shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <User className="w-4 h-4" />
+              <span>Soal Saya</span>
+            </button>
+            <button
+              onClick={() => setQuestionSource('accessible_questions')}
+              className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                questionSource === 'accessible_questions' 
+                  ? 'bg-yellow-600 text-white shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Semua Soal</span>
+            </button>
+          </div>
+        </div>
+
         <div className="flex items-center space-x-2 mb-4">
-          <Filter className="w-5 h-5 text-gray-500" />
-          <h3 className="text-lg font-semibold text-gray-900">Filter Soal</h3>
+          <h4 className="text-md font-medium text-gray-700">Filter Pencarian</h4>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -278,6 +337,73 @@ const TeacherQuestionsPage: React.FC = () => {
             <span>Reset</span>
           </button>
         </div>
+
+        {/* Additional Filters for Accessible Questions */}
+        {questionSource === 'accessible_questions' && (
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <h4 className="text-md font-medium text-gray-700 mb-4">Filter Lanjutan</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Purpose Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tujuan
+                </label>
+                <input
+                  type="text"
+                  placeholder="Masukkan tujuan..."
+                  value={filters.purpose || ''}
+                  onChange={(e) => handleFilterChange('purpose', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-sm"
+                />
+              </div>
+
+              {/* Include Submitted Checkbox */}
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="include_submitted"
+                  checked={filters.include_submitted || false}
+                  onChange={(e) => handleFilterChange('include_submitted', e.target.checked)}
+                  className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+                />
+                <label htmlFor="include_submitted" className="text-sm font-medium text-gray-700">
+                  Sertakan Soal yang Diajukan
+                </label>
+              </div>
+
+              {/* Include Approved Checkbox */}
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+        {(filters.search || (questionSource === 'accessible_questions' && (filters.purpose || filters.include_submitted || filters.include_approved))) && (
+                  checked={filters.include_approved || false}
+                  onChange={(e) => handleFilterChange('include_approved', e.target.checked)}
+                  className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+                />
+                {filters.search && (
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md">
+                    Pencarian: "{filters.search}"
+                  </span>
+                )}
+                {questionSource === 'accessible_questions' && filters.purpose && (
+                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md">
+                    Tujuan: "{filters.purpose}"
+                  </span>
+                )}
+                {questionSource === 'accessible_questions' && filters.include_submitted && (
+                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-md">
+                    Soal Diajukan
+                  </span>
+                )}
+                {questionSource === 'accessible_questions' && filters.include_approved && (
+                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-md">
+                    Soal Disetujui
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* View Toggle & Content */}
@@ -332,18 +458,18 @@ const TeacherQuestionsPage: React.FC = () => {
                 <HelpCircle className="h-8 w-8 text-gray-400" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {filters.search || filters.difficulty || filters.question_type 
+                {filters.search || filters.difficulty || filters.question_type || (questionSource === 'accessible_questions' && (filters.purpose || filters.include_submitted || filters.include_approved))
                   ? 'Tidak ada soal yang sesuai filter' 
-                  : 'Belum ada soal'
+                  : questionSource === 'my_questions' ? 'Belum ada soal' : 'Tidak ada soal yang dapat diakses'
                 }
               </h3>
               <p className="text-gray-600 mb-4">
-                {filters.search || filters.difficulty || filters.question_type
+                {filters.search || filters.difficulty || filters.question_type || (questionSource === 'accessible_questions' && (filters.purpose || filters.include_submitted || filters.include_approved))
                   ? 'Coba ubah atau reset filter untuk melihat soal lainnya'
-                  : 'Mulai dengan membuat soal pertama Anda'
+                  : questionSource === 'my_questions' ? 'Mulai dengan membuat soal pertama Anda' : 'Tidak ada soal yang tersedia untuk Anda saat ini'
                 }
               </p>
-              {!(filters.search || filters.difficulty || filters.question_type) && (
+              {!(filters.search || filters.difficulty || filters.question_type || (questionSource === 'accessible_questions' && (filters.purpose || filters.include_submitted || filters.include_approved))) && questionSource === 'my_questions' && (
                 <button
                   onClick={handleCreateQuestion}
                   className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors mx-auto"

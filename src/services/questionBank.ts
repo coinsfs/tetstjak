@@ -53,9 +53,41 @@ export interface QuestionSet {
   };
 }
 
+export interface AccessibleQuestionsParams {
+  purpose?: string;
+  include_submitted?: boolean;
+  include_approved?: boolean;
+}
+
 class QuestionBankService extends BaseService {
   async getMyQuestions(token: string): Promise<Question[]> {
     return this.get<Question[]>('/question-banks/', token);
+  }
+
+  async getAccessibleQuestions(
+    token: string, 
+    purpose?: string, 
+    includeSubmitted?: boolean, 
+    includeApproved?: boolean
+  ): Promise<Question[]> {
+    const params: Record<string, any> = {};
+    
+    if (purpose && purpose.trim() !== '') {
+      params.purpose = purpose.trim();
+    }
+    
+    if (includeSubmitted !== undefined) {
+      params.include_submitted = includeSubmitted;
+    }
+    
+    if (includeApproved !== undefined) {
+      params.include_approved = includeApproved;
+    }
+    
+    const queryString = this.buildQueryParams(params);
+    const endpoint = queryString ? `/question-banks/accessible?${queryString}` : '/question-banks/accessible';
+    
+    return this.get<Question[]>(endpoint, token);
   }
 
   async createQuestion(token: string, data: CreateQuestionRequest): Promise<Question> {
