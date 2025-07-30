@@ -7,7 +7,7 @@ src/components/StudentFilter.tsx
 src/components/Sidebar.tsx
 src/components/QuestionDisplay.tsx
 src/components/ProtectedRoute.tsx
-src/components/ProfileManagement.tsx
+
 src/components/Pagination.tsx
 src/components/LoginForm.tsx
 src/components/ExpertiseProgramManagement.tsx
@@ -24,11 +24,11 @@ src/components/tables/StudentTable.tsx
 src/components/tables/ExpertiseProgramTable.tsx
 src/components/tables/ExamTable.tsx
 src/components/tables/ClassTable.tsx
-src/components/profile/UserActivity.tsx
-src/components/profile/SecuritySettings.tsx
-src/components/profile/ProfileSettings.tsx
-src/components/profile/ProfileInformation.tsx
-src/components/profile/GeneralSettings.tsx
+
+
+
+
+
 src/components/modals/TeacherDeleteModal.tsx
 src/components/modals/SubjectDeleteModal.tsx
 src/components/modals/StudentDeleteModal.tsx
@@ -59,3 +59,11 @@ src/components/dashboards/teacher/pages/modals/TeacherExamStartConfirmationModal
 src/components/dashboards/teacher/pages/modals/TeacherQuestionFormModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherQuestionDetailModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherQuestionDeleteModal.tsx
+src/components/dashboards/teacher/TeacherDepartmentInfo.tsx
+src/components/dashboards/teacher/TeacherHeader.tsx
+src/components/dashboards/teacher/TeacherInfoCard.tsx
+src/components/dashboards/teacher/TeacherMainContent.tsx
+src/components/dashboards/teacher/TeacherSidebar.tsx
+src/components/dashboards/teacher/TeacherStatsGrid.tsx
+src/components/dashboards/teacher/TeacherSubjectsList.tsx
+src/components/dashboards/teacher/TeacherWelcomeCard.tsx
