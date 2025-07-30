@@ -4,7 +4,7 @@ import { Users, Save, RotateCcw, AlertCircle, CheckCircle, BookOpen, GraduationC
 import { useAuth } from '@/contexts/AuthContext';
 import CoordinatorMatrix from './CoordinatorMatrix';
 import { subjectService } from '@/services/subject';
-import { Subject, SubjectCoordinator, type CoordinatorMatrix, CoordinatorAction } from '@/types/subject';
+import { Subject, SubjectCoordinator, type CoordinatorMatrix as CoordinatorMatrixType, CoordinatorAction } from '@/types/subject';
 import { Teacher } from '@/types/user';
 import CoordinatorConfirmationModal from './modals/CoordinatorConfirmationModal';
 import toast from 'react-hot-toast';
