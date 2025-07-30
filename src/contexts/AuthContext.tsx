@@ -10,6 +10,7 @@ interface AuthContextType {
   login: (loginId: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -75,6 +76,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     websocketService.disconnect();
   };
 
+  const refreshUser = async () => {
+    if (!token) return;
+    
+    try {
+      const userProfile = await authService.getUserProfile(token);
+      setUser(userProfile);
+    } catch (error) {
+      console.error('Failed to refresh user profile:', error);
+    }
+  };
+
   const isAuthenticated = !!user && !!token;
 
   return (
@@ -84,7 +96,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       isLoading,
       login,
       logout,
-      isAuthenticated
+      isAuthenticated,
+      refreshUser
     }}>
       {children}
     </AuthContext.Provider>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { getProfileImageUrl } from '@/constants/config';
+import ProfilePictureUpload from './ProfilePictureUpload';
 import { 
   User, 
   Mail, 
@@ -28,10 +28,6 @@ const ProfileInformation: React.FC = () => {
       </div>
     );
   }
-
-  const profileImageUrl = user.profile_details?.profile_picture_key 
-    ? getProfileImageUrl(user.profile_details.profile_picture_key)
-    : null;
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('id-ID', {
@@ -67,17 +63,11 @@ const ProfileInformation: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
             {/* Profile Picture */}
             <div className="relative">
-              {profileImageUrl ? (
-                <img
-                  src={profileImageUrl}
-                  alt="Profile"
-                  className="w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover"
-                />
-              ) : (
-                <div className="w-24 h-24 bg-white rounded-full border-4 border-white shadow-lg flex items-center justify-center">
-                  <User className="w-12 h-12 text-gray-400" />
-                </div>
-              )}
+              <ProfilePictureUpload 
+                size="lg" 
+                showUploadText={false}
+              />
+              {/* Status Badge */}
               <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center ${
                 user.is_active ? 'bg-green-500' : 'bg-red-500'
               }`}>

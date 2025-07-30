@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { userService } from '@/services/user';
 import { UpdateTeacherRequest, UpdateStudentRequest } from '@/types/user';
+import ProfilePictureUpload from './ProfilePictureUpload';
 import { 
   User, 
   Mail, 
@@ -203,6 +204,28 @@ const ProfileSettings: React.FC = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Profile Picture Section */}
+          <div className="border-b border-gray-200 pb-6">
+            <h4 className="text-md font-medium text-gray-900 mb-4">Foto Profil</h4>
+            <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
+              <ProfilePictureUpload 
+                size="lg" 
+                showUploadText={true}
+                className="flex-shrink-0"
+              />
+              <div className="text-center sm:text-left">
+                <p className="text-sm text-gray-600 mb-2">
+                  Foto profil akan ditampilkan di seluruh sistem. Pastikan menggunakan foto yang profesional dan jelas.
+                </p>
+                <div className="text-xs text-gray-500 space-y-1">
+                  <p>• Format yang didukung: JPG, PNG, GIF</p>
+                  <p>• Ukuran maksimal: 2MB</p>
+                  <p>• Resolusi yang disarankan: 400x400 piksel</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Account Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div>
