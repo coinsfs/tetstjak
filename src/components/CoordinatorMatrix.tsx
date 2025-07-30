@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { User, BookOpen, GraduationCap, ChevronDown } from 'lucide-react';
 import { CoordinatorMatrix as CoordinatorMatrixType } from '@/types/subject';
-import { Subject } from '@/types/subject';
+import { Subject, SubjectCoordinator, CoordinatorAction } from '@/types/subject';
 import { Teacher } from '@/types/user';
 
 interface CoordinatorMatrixProps {
