@@ -9,7 +9,9 @@ import {
   BookOpen,
   Eye,
   Edit,
-  Trash2
+  Trash2,
+  User,
+  Users
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { questionBankService, Question } from '@/services/questionBank';
@@ -25,9 +27,14 @@ interface QuestionFilters {
   search?: string;
   difficulty?: string;
   question_type?: string;
+  purpose?: string;
+  include_submitted?: boolean;
+  include_approved?: boolean;
   page: number;
   limit: number;
 }
+
+type QuestionSource = 'my_questions' | 'accessible_questions';
 
 const TeacherQuestionsPage: React.FC = () => {
   const { token, user } = useAuth();
@@ -40,13 +47,19 @@ const TeacherQuestionsPage: React.FC = () => {
   // View state - 'table' or 'exam'
   const [currentView, setCurrentView] = useState<'table' | 'exam'>('table');
   
+  // Question source state - 'my_questions' or 'accessible_questions'
+  const [questionSource, setQuestionSource] = useState<QuestionSource>('my_questions');
+  
   // Filter state
   const [filters, setFilters] = useState<QuestionFilters>({
     page: 1,
     limit: 10,
     search: '',
     difficulty: '',
-    question_type: ''
+    question_type: '',
+    purpose: '',
+    include_submitted: false,
+    include_approved: false
   });
   
   // Modal states
@@ -62,7 +75,7 @@ const TeacherQuestionsPage: React.FC = () => {
 
   useEffect(() => {
     fetchQuestions();
-  }, [filters]);
+  }, [filters, questionSource]);
 
   const fetchInitialData = async () => {
     if (!token) return;
@@ -81,7 +94,18 @@ const TeacherQuestionsPage: React.FC = () => {
 
     setLoading(true);
     try {
-      const allQuestions = await questionBankService.getMyQuestions(token);
+      let allQuestions: Question[];
+      
+      if (questionSource === 'my_questions') {
+        allQuestions = await questionBankService.getMyQuestions(token);
+      } else {
+        allQuestions = await questionBankService.getAccessibleQuestions(
+          token,
+          filters.purpose,
+          filters.include_submitted,
+          filters.include_approved
+        );
+      }
       
       // Apply filters
       let filteredQuestions = allQuestions;
@@ -132,7 +156,10 @@ const TeacherQuestionsPage: React.FC = () => {
       limit: 10,
       search: '',
       difficulty: '',
-      question_type: ''
+      question_type: '',
+      purpose: '',
+      include_submitted: false,
+      include_approved: false
     });
   };
 
@@ -142,6 +169,18 @@ const TeacherQuestionsPage: React.FC = () => {
 
   const handleViewChange = (view: 'table' | 'exam') => {
     setCurrentView(view);
+  };
+
+  const handleQuestionSourceChange = (source: QuestionSource) => {
+    setQuestionSource(source);
+    // Reset filters when changing source
+    setFilters(prev => ({
+      ...prev,
+      page: 1,
+      purpose: '',
+      include_submitted: false,
+      include_approved: false
+    }));
   };
 
   const handleCreateQuestion = () => {
@@ -226,6 +265,45 @@ const TeacherQuestionsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Question Source Toggle */}
+      <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Sumber Soal</h3>
+        </div>
+        
+        <div className="flex rounded-lg bg-gray-100 p-1 max-w-md">
+          <button
+            onClick={() => handleQuestionSourceChange('my_questions')}
+            className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 flex-1 justify-center ${
+              questionSource === 'my_questions' 
+                ? 'bg-yellow-600 text-white shadow-sm' 
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <User className="w-4 h-4" />
+            <span>Soal Saya</span>
+          </button>
+          <button
+            onClick={() => handleQuestionSourceChange('accessible_questions')}
+            className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 flex-1 justify-center ${
+              questionSource === 'accessible_questions' 
+                ? 'bg-yellow-600 text-white shadow-sm' 
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Semua Soal</span>
+          </button>
+        </div>
+        
+        <p className="text-sm text-gray-500 mt-2">
+          {questionSource === 'my_questions' 
+            ? 'Menampilkan soal yang Anda buat'
+            : 'Menampilkan semua soal yang dapat Anda akses, termasuk dari guru lain'
+          }
+        </p>
+      </div>
+
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
         <div className="flex items-center space-x-2 mb-4">
@@ -233,7 +311,7 @@ const TeacherQuestionsPage: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-900">Filter Soal</h3>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -269,6 +347,42 @@ const TeacherQuestionsPage: React.FC = () => {
             <option value="hard">Sulit</option>
           </select>
 
+          {/* Additional filters for accessible questions */}
+          {questionSource === 'accessible_questions' && (
+            <>
+              {/* Purpose Filter */}
+              <input
+                type="text"
+                placeholder="Tujuan..."
+                value={filters.purpose}
+                onChange={(e) => handleFilterChange('purpose', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-sm"
+              />
+
+              {/* Include Submitted Filter */}
+              <label className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={filters.include_submitted}
+                  onChange={(e) => handleFilterChange('include_submitted', e.target.checked)}
+                  className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+                />
+                <span className="text-sm text-gray-700">Terkirim</span>
+              </label>
+
+              {/* Include Approved Filter */}
+              <label className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={filters.include_approved}
+                  onChange={(e) => handleFilterChange('include_approved', e.target.checked)}
+                  className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+                />
+                <span className="text-sm text-gray-700">Disetujui</span>
+              </label>
+            </>
+          )}
+
           {/* Reset Button */}
           <button
             onClick={handleResetFilters}
@@ -278,6 +392,48 @@ const TeacherQuestionsPage: React.FC = () => {
             <span>Reset</span>
           </button>
         </div>
+        
+        {/* Active Filters Display */}
+        {(filters.search || filters.difficulty || filters.question_type || 
+          (questionSource === 'accessible_questions' && (filters.purpose || filters.include_submitted || filters.include_approved))) && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <span className="font-medium">Filter aktif:</span>
+              <div className="flex flex-wrap gap-2">
+                {filters.search && (
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md">
+                    Pencarian: "{filters.search}"
+                  </span>
+                )}
+                {filters.difficulty && (
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md">
+                    Tingkat: {getDifficultyLabel(filters.difficulty)}
+                  </span>
+                )}
+                {filters.question_type && (
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md">
+                    Tipe: {getTypeLabel(filters.question_type)}
+                  </span>
+                )}
+                {questionSource === 'accessible_questions' && filters.purpose && (
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md">
+                    Tujuan: "{filters.purpose}"
+                  </span>
+                )}
+                {questionSource === 'accessible_questions' && filters.include_submitted && (
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md">
+                    Terkirim
+                  </span>
+                )}
+                {questionSource === 'accessible_questions' && filters.include_approved && (
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md">
+                    Disetujui
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* View Toggle & Content */}
@@ -286,7 +442,7 @@ const TeacherQuestionsPage: React.FC = () => {
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600">
-              {totalItems} soal ditemukan
+              {totalItems} soal ditemukan {questionSource === 'accessible_questions' ? '(termasuk dari guru lain)' : '(soal Anda)'}
             </div>
             
             {/* Toggle Buttons */}
@@ -332,18 +488,24 @@ const TeacherQuestionsPage: React.FC = () => {
                 <HelpCircle className="h-8 w-8 text-gray-400" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {filters.search || filters.difficulty || filters.question_type 
+                {filters.search || filters.difficulty || filters.question_type || 
+                 (questionSource === 'accessible_questions' && (filters.purpose || filters.include_submitted || filters.include_approved))
                   ? 'Tidak ada soal yang sesuai filter' 
                   : 'Belum ada soal'
                 }
               </h3>
               <p className="text-gray-600 mb-4">
-                {filters.search || filters.difficulty || filters.question_type
+                {filters.search || filters.difficulty || filters.question_type ||
+                 (questionSource === 'accessible_questions' && (filters.purpose || filters.include_submitted || filters.include_approved))
                   ? 'Coba ubah atau reset filter untuk melihat soal lainnya'
-                  : 'Mulai dengan membuat soal pertama Anda'
+                  : questionSource === 'my_questions' 
+                    ? 'Mulai dengan membuat soal pertama Anda'
+                    : 'Belum ada soal yang dapat diakses'
                 }
               </p>
-              {!(filters.search || filters.difficulty || filters.question_type) && (
+              {!(filters.search || filters.difficulty || filters.question_type ||
+                 (questionSource === 'accessible_questions' && (filters.purpose || filters.include_submitted || filters.include_approved))) && 
+               questionSource === 'my_questions' && (
                 <button
                   onClick={handleCreateQuestion}
                   className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors mx-auto"
@@ -376,6 +538,11 @@ const TeacherQuestionsPage: React.FC = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Status
                         </th>
+                        {questionSource === 'accessible_questions' && (
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Pembuat
+                          </th>
+                        )}
                         <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Aksi
                         </th>
@@ -431,6 +598,17 @@ const TeacherQuestionsPage: React.FC = () => {
                               {question.status === 'public' ? 'Publik' : 'Pribadi'}
                             </span>
                           </td>
+                          {questionSource === 'accessible_questions' && (
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {question.created_by_teacher_id === user?._id ? (
+                                  <span className="text-blue-600 font-medium">Anda</span>
+                                ) : (
+                                  <span className="text-gray-600">Guru lain</span>
+                                )}
+                              </div>
+                            </td>
+                          )}
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <div className="flex items-center justify-center space-x-2">
                               <button
@@ -440,20 +618,25 @@ const TeacherQuestionsPage: React.FC = () => {
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
-                              <button
-                                onClick={() => handleEditQuestion(question)}
-                                className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-colors"
-                                title="Edit Soal"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteQuestion(question)}
-                                className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
-                                title="Hapus Soal"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              {/* Only show edit/delete for own questions */}
+                              {question.created_by_teacher_id === user?._id && (
+                                <>
+                                  <button
+                                    onClick={() => handleEditQuestion(question)}
+                                    className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-colors"
+                                    title="Edit Soal"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteQuestion(question)}
+                                    className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+                                    title="Hapus Soal"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -468,8 +651,8 @@ const TeacherQuestionsPage: React.FC = () => {
                     questions={questions}
                     mode="view"
                     showActions={true}
-                    onEdit={handleEditQuestion}
-                    onDelete={handleDeleteQuestion}
+                    onEdit={question => question.created_by_teacher_id === user?._id ? handleEditQuestion(question) : undefined}
+                    onDelete={question => question.created_by_teacher_id === user?._id ? handleDeleteQuestion(question) : undefined}
                     onView={handleViewQuestion}
                     className="space-y-6"
                   />
