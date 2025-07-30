@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { subjectService } from '@/services/subject';
 import { Subject, SubjectCoordinator, CoordinatorMatrix, CoordinatorAction } from '@/types/subject';
 import { Teacher } from '@/types/user';
-import CoordinatorMatrix from './CoordinatorMatrix';
 import CoordinatorConfirmationModal from './modals/CoordinatorConfirmationModal';
 import toast from 'react-hot-toast';
 
