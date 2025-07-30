@@ -176,7 +176,7 @@ const SubjectManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="flex items-center space-x-3">
           <BookOpen className="w-8 h-8 text-purple-600" />
           <div>
@@ -185,31 +185,24 @@ const SubjectManagement: React.FC = () => {
           </div>
         </div>
         
-        <button 
-          onClick={handleAddSubject}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Tambah Mata Pelajaran</span>
-        </button>
-      </div>
-      
-      <div className="flex items-center space-x-3">
-        <button 
-          onClick={handleAddSubject}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Tambah Mata Pelajaran</span>
-        </button>
-        
-        <button 
-          onClick={() => setShowCoordinatorManagement(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-        >
-          <Users className="w-4 h-4" />
-          <span>Kelola Koordinator</span>
-        </button>
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 lg:flex-shrink-0">
+          <button 
+            onClick={handleAddSubject}
+            className="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Tambah Mata Pelajaran</span>
+          </button>
+          
+          <button 
+            onClick={() => setShowCoordinatorManagement(true)}
+            className="flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            <Users className="w-4 h-4" />
+            <span>Kelola Koordinator</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Summary */}
