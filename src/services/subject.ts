@@ -1,10 +1,11 @@
 import { Subject, SubjectResponse, SubjectFilters, CreateSubjectRequest, UpdateSubjectRequest } from '@/types/subject';
 import { 
   SubjectCoordinator, 
-  CoordinatorBatchRequest, 
+  CoordinatorBatchRequest,
   CoordinatorBatchResponse,
   TeachingAssignmentForCoordinator 
 } from '@/types/subject';
+import { Teacher } from '@/types/user';
 import { BaseService } from './base';
 
 class SubjectService extends BaseService {
@@ -28,17 +29,30 @@ class SubjectService extends BaseService {
 
   // Subject Coordinator methods
   async getSubjectCoordinators(token: string): Promise<SubjectCoordinator[]> {
-    const response = await this.get<{ data: SubjectCoordinator[] }>('/coordination-assignments/', token);
-    return response.data || [];
+    return this.get<SubjectCoordinator[]>('/coordination-assignments/', token);
   }
 
   async batchUpdateCoordinators(token: string, request: CoordinatorBatchRequest): Promise<CoordinatorBatchResponse> {
-    return this.post<CoordinatorBatchResponse>('/coordination-assignments/bulk-update', request, token);
+    return this.post<CoordinatorBatchResponse>('/coordination-assignments/bulk', request, token);
   }
 
   async getTeachingAssignmentsForCoordinator(token: string): Promise<TeachingAssignmentForCoordinator[]> {
     const response = await this.get<{ data: TeachingAssignmentForCoordinator[] }>('/teaching-assignments/?limit=1000', token);
     return response.data || [];
+  }
+
+  async getTeachers(token: string): Promise<Teacher[]> {
+    const response = await this.get<{ data: Teacher[] }>('/users/?role=teacher&limit=1000', token);
+    return response.data || [];
+  }
+
+  async getActiveAcademicPeriod(token: string): Promise<{ _id: string } | null> {
+    try {
+      return await this.get<{ _id: string }>('/academic-periods/active', token);
+    } catch (error) {
+      console.error('No active academic period found:', error);
+      return null;
+    }
   }
 }
 

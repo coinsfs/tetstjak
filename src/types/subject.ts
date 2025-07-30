@@ -26,10 +26,11 @@ export interface UpdateSubjectRequest {
 
 // Subject Coordinator types
 export interface SubjectCoordinator {
-  _id?: string;
+  _id: string;
   subject_id: string;
   grade_level: number;
-  coordinator_teacher_id: string;
+  coordinator_id: string;
+  academic_period_id: string;
   created_at?: string;
   updated_at?: string;
   subject_details?: Subject;
@@ -44,7 +45,7 @@ export interface CoordinatorMatrix {
   [gradeLevel: string]: {
     [subjectId: string]: {
       coordinator?: SubjectCoordinator;
-      selectedTeacherId?: string;
+      selectedCoordinatorId?: string;
       isDirty: boolean;
       originalCoordinatorId?: string;
     };
@@ -53,22 +54,23 @@ export interface CoordinatorMatrix {
 
 export interface CoordinatorAction {
   type: 'create' | 'update' | 'delete';
-  coordinator_id?: string;
+  id?: string;
   data?: {
     subject_id: string;
     grade_level: number;
-    coordinator_teacher_id: string;
+    coordinator_id: string;
   };
 }
 
 export interface CoordinatorBatchRequest {
-  actions: CoordinatorAction[];
+  operations: CoordinatorAction[];
+  academic_period_id: string;
 }
 
 export interface CoordinatorBatchResponse {
-  task_id: string;
+  task_id?: string;
   status: string;
-  result: string;
+  result?: string;
 }
 
 export interface TeachingAssignmentForCoordinator {

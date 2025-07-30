@@ -197,7 +197,7 @@ const CoordinatorConfirmationModal: React.FC<CoordinatorConfirmationModalProps> 
                         </div>
                         <div className="flex items-center space-x-2">
                           <Users className="w-3 h-3" />
-                          <span>Koordinator Baru: {getTeacherName(action.data.coordinator_teacher_id, action.data.grade_level, action.data.subject_id)}</span>
+                          <span>Koordinator Baru: {getTeacherName(action.data.coordinator_id, action.data.grade_level, action.data.subject_id)}</span>
                         </div>
                       </div>
                     )}
@@ -237,7 +237,7 @@ const CoordinatorConfirmationModal: React.FC<CoordinatorConfirmationModalProps> 
                         </div>
                         <div className="flex items-center space-x-2">
                           <Users className="w-3 h-3" />
-                          <span>Koordinator: {getTeacherName(action.data.coordinator_teacher_id, action.data.grade_level, action.data.subject_id)}</span>
+                          <span>Koordinator: {getTeacherName(action.data.coordinator_id, action.data.grade_level, action.data.subject_id)}</span>
                         </div>
                       </div>
                     )}

@@ -1,37 +1,28 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Users, Save, RotateCcw, AlertCircle, CheckCircle, BookOpen, GraduationCap } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Subject, 
-  SubjectCoordinator, 
-  CoordinatorMatrix as CoordinatorMatrixType,
-  CoordinatorAction,
-  TeachingAssignmentForCoordinator
-} from '@/types/subject';
-import { Teacher } from '@/types/user';
 import { subjectService } from '@/services/subject';
-import { userService } from '@/services/user';
+import { Subject, SubjectCoordinator, CoordinatorMatrix, CoordinatorAction } from '@/types/subject';
+import { Teacher } from '@/types/user';
 import CoordinatorMatrix from './CoordinatorMatrix';
 import CoordinatorConfirmationModal from './modals/CoordinatorConfirmationModal';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Save, RotateCcw, Users, AlertCircle, GraduationCap } from 'lucide-react';
 
-interface SubjectCoordinatorManagementProps {
-  onBack: () => void;
-}
-
-const GRADE_LEVELS = [10, 11, 12];
-
-const SubjectCoordinatorManagement: React.FC<SubjectCoordinatorManagementProps> = ({ onBack }) => {
+const SubjectCoordinatorManagement: React.FC = () => {
   const { token } = useAuth();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [coordinators, setCoordinators] = useState<SubjectCoordinator[]>([]);
-  const [teachingAssignments, setTeachingAssignments] = useState<TeachingAssignmentForCoordinator[]>([]);
-  const [matrix, setMatrix] = useState<CoordinatorMatrixType>({});
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [teachingAssignments, setTeachingAssignments] = useState<any[]>([]);
+  const [matrix, setMatrix] = useState<CoordinatorMatrix>({});
   const [availableTeachers, setAvailableTeachers] = useState<{ [gradeLevel: string]: { [subjectId: string]: Teacher[] } }>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [confirmationModalOpen, setConfirmationModalOpen] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingActions, setPendingActions] = useState<CoordinatorAction[]>([]);
+  const [activeAcademicPeriod, setActiveAcademicPeriod] = useState<{ _id: string } | null>(null);
+
+  const GRADE_LEVELS = [10, 11, 12];
 
   // Load initial data
   useEffect(() => {
@@ -41,26 +32,34 @@ const SubjectCoordinatorManagement: React.FC<SubjectCoordinatorManagementProps> 
       try {
         setLoading(true);
         
-        // Load subjects, coordinators, and teaching assignments
-        const [subjectsResponse, coordinatorsData, assignmentsData] = await Promise.all([
+        // Load all required data in parallel
+        const [
+          subjectsResponse,
+          coordinatorsData,
+          teachersData,
+          teachingAssignmentsData,
+          academicPeriodData
+        ] = await Promise.all([
           subjectService.getSubjects(token, { limit: 1000 }),
           subjectService.getSubjectCoordinators(token),
-          subjectService.getTeachingAssignmentsForCoordinator(token)
+          subjectService.getTeachers(token),
+          subjectService.getTeachingAssignmentsForCoordinator(token),
+          subjectService.getActiveAcademicPeriod(token)
         ]);
 
-        setSubjects(subjectsResponse.data);
+        setSubjects(subjectsResponse.data || []);
         setCoordinators(coordinatorsData);
-        setTeachingAssignments(assignmentsData);
+        setTeachers(teachersData);
+        setTeachingAssignments(teachingAssignmentsData);
+        setActiveAcademicPeriod(academicPeriodData);
 
-        // Build available teachers mapping
-        buildAvailableTeachersMapping(assignmentsData);
-
-        // Initialize matrix
-        initializeMatrix(subjectsResponse.data, coordinatorsData);
+        console.log('Loaded coordinators:', coordinatorsData);
+        console.log('Loaded teachers:', teachersData);
+        console.log('Loaded teaching assignments:', teachingAssignmentsData);
 
       } catch (error) {
-        console.error('Error loading coordinator data:', error);
-        toast.error('Gagal memuat data koordinator');
+        console.error('Error loading data:', error);
+        toast.error('Gagal memuat data');
       } finally {
         setLoading(false);
       }
@@ -69,187 +68,160 @@ const SubjectCoordinatorManagement: React.FC<SubjectCoordinatorManagementProps> 
     loadData();
   }, [token]);
 
-  const buildAvailableTeachersMapping = (assignments: TeachingAssignmentForCoordinator[]) => {
-    const mapping: { [gradeLevel: string]: { [subjectId: string]: Teacher[] } } = {};
+  // Build available teachers mapping based on teaching assignments
+  useEffect(() => {
+    const buildAvailableTeachers = () => {
+      const mapping: { [gradeLevel: string]: { [subjectId: string]: Teacher[] } } = {};
 
-    // Initialize mapping structure
-    GRADE_LEVELS.forEach(grade => {
-      mapping[grade.toString()] = {};
-    });
-
-    // Group assignments by grade level and subject
-    assignments.forEach(assignment => {
-      const gradeLevel = assignment.class_details.grade_level.toString();
-      const subjectId = assignment.subject_details._id;
-
-      if (!mapping[gradeLevel]) {
-        mapping[gradeLevel] = {};
-      }
-
-      if (!mapping[gradeLevel][subjectId]) {
-        mapping[gradeLevel][subjectId] = [];
-      }
-
-      // Check if teacher is already in the list for this grade-subject combination
-      const existingTeacher = mapping[gradeLevel][subjectId].find(
-        t => t._id === assignment.teacher_details._id
-      );
-
-      if (!existingTeacher) {
-        // Convert teacher details to Teacher type
-        const teacher: Teacher = {
-          _id: assignment.teacher_details._id,
-          login_id: assignment.teacher_details.full_name,
-          email: '',
-          is_active: true,
-          roles: ['teacher'],
-          profile_id: '',
-          class_id: null,
-          department_id: null,
-          onboarding_completed: true,
-          password_last_changed_at: null,
-          created_at: '',
-          updated_at: '',
-          profile_details: {
-            user_id: assignment.teacher_details._id,
-            full_name: assignment.teacher_details.full_name,
-            gender: '',
-            birth_date: '',
-            birth_place: '',
-            address: '',
-            phone_number: '',
-            class_id: null,
-            department_id: null,
-            start_year: null,
-            end_year: null,
-            profile_picture_url: assignment.teacher_details.profile_picture_url,
-            profile_picture_key: '',
-            created_at: '',
-            updated_at: '',
-            _id: ''
-          },
-          class_details: null,
-          department_details: {
-            _id: '',
-            name: '',
-            abbreviation: '',
-            description: '',
-            head_of_department_id: '',
-            created_at: '',
-            updated_at: ''
-          },
-          teaching_summary: []
-        };
-
-        mapping[gradeLevel][subjectId].push(teacher);
-      }
-    });
-
-    setAvailableTeachers(mapping);
-  };
-
-  const initializeMatrix = (subjectsList: Subject[], coordinatorsList: SubjectCoordinator[]) => {
-    const newMatrix: CoordinatorMatrixType = {};
-
-    // Initialize matrix structure
-    GRADE_LEVELS.forEach(grade => {
-      newMatrix[grade.toString()] = {};
-      subjectsList.forEach(subject => {
-        newMatrix[grade.toString()][subject._id] = {
-          isDirty: false
-        };
+      // Initialize structure
+      GRADE_LEVELS.forEach(gradeLevel => {
+        mapping[gradeLevel.toString()] = {};
+        subjects.forEach(subject => {
+          mapping[gradeLevel.toString()][subject._id] = [];
+        });
       });
-    });
 
-    // Populate existing coordinators
-    coordinatorsList.forEach(coordinator => {
-      const gradeLevel = coordinator.grade_level.toString();
-      const subjectId = coordinator.subject_id;
+      // Fill with teachers based on teaching assignments
+      teachingAssignments.forEach(assignment => {
+        const gradeLevel = assignment.class_details.grade_level;
+        const subjectId = assignment.subject_details._id;
+        const teacherId = assignment.teacher_details._id;
 
-      if (newMatrix[gradeLevel] && newMatrix[gradeLevel][subjectId]) {
-        newMatrix[gradeLevel][subjectId] = {
-          coordinator,
-          selectedTeacherId: coordinator.coordinator_teacher_id,
-          isDirty: false,
-          originalCoordinatorId: coordinator._id
-        };
-      }
-    });
+        if (mapping[gradeLevel.toString()] && mapping[gradeLevel.toString()][subjectId]) {
+          // Find teacher in teachers array
+          const teacher = teachers.find(t => t._id === teacherId);
+          if (teacher) {
+            // Check if teacher is not already added
+            const exists = mapping[gradeLevel.toString()][subjectId].some(t => t._id === teacherId);
+            if (!exists) {
+              mapping[gradeLevel.toString()][subjectId].push(teacher);
+            }
+          }
+        }
+      });
 
-    setMatrix(newMatrix);
-  };
+      console.log('Available teachers mapping:', mapping);
+      setAvailableTeachers(mapping);
+    };
 
-  const handleCellChange = useCallback((gradeLevel: number, subjectId: string, teacherId: string | null) => {
-    setMatrix(prevMatrix => {
-      const newMatrix = { ...prevMatrix };
-      const gradeKey = gradeLevel.toString();
+    if (subjects.length > 0 && teachers.length > 0 && teachingAssignments.length > 0) {
+      buildAvailableTeachers();
+    }
+  }, [subjects, teachers, teachingAssignments]);
 
-      if (!newMatrix[gradeKey]) {
-        newMatrix[gradeKey] = {};
-      }
+  // Build matrix from coordinators data
+  useEffect(() => {
+    const buildMatrix = () => {
+      const newMatrix: CoordinatorMatrix = {};
 
-      if (!newMatrix[gradeKey][subjectId]) {
-        newMatrix[gradeKey][subjectId] = { isDirty: false };
-      }
+      // Initialize matrix structure
+      GRADE_LEVELS.forEach(gradeLevel => {
+        newMatrix[gradeLevel.toString()] = {};
+        subjects.forEach(subject => {
+          newMatrix[gradeLevel.toString()][subject._id] = {
+            isDirty: false
+          };
+        });
+      });
 
-      const cell = newMatrix[gradeKey][subjectId];
-      const originalTeacherId = cell.coordinator?.coordinator_teacher_id;
+      // Fill matrix with existing coordinators
+      coordinators.forEach(coordinator => {
+        const gradeLevel = coordinator.grade_level.toString();
+        const subjectId = coordinator.subject_id;
 
-      newMatrix[gradeKey][subjectId] = {
+        if (newMatrix[gradeLevel] && newMatrix[gradeLevel][subjectId]) {
+          newMatrix[gradeLevel][subjectId] = {
+            coordinator,
+            selectedCoordinatorId: coordinator.coordinator_id,
+            isDirty: false,
+            originalCoordinatorId: coordinator.coordinator_id
+          };
+        }
+      });
+
+      console.log('Built matrix:', newMatrix);
+      setMatrix(newMatrix);
+    };
+
+    if (subjects.length > 0 && coordinators.length > 0) {
+      buildMatrix();
+    }
+  }, [subjects, coordinators]);
+
+  const handleCellChange = useCallback((gradeLevel: number, subjectId: string, coordinatorId: string | null) => {
+    setMatrix(prev => {
+      const newMatrix = { ...prev };
+      const cell = newMatrix[gradeLevel.toString()][subjectId];
+      
+      if (!cell) return prev;
+
+      const originalCoordinatorId = cell.originalCoordinatorId;
+      const hasOriginalCoordinator = !!originalCoordinatorId;
+
+      // Update cell
+      newMatrix[gradeLevel.toString()][subjectId] = {
         ...cell,
-        selectedTeacherId: teacherId || undefined,
-        isDirty: teacherId !== originalTeacherId
+        selectedCoordinatorId: coordinatorId || undefined,
+        isDirty: coordinatorId !== originalCoordinatorId
       };
 
       return newMatrix;
     });
   }, []);
 
-  const generateActions = (): CoordinatorAction[] => {
+  const generateActions = useCallback((): CoordinatorAction[] => {
     const actions: CoordinatorAction[] = [];
 
-    Object.entries(matrix).forEach(([gradeLevel, subjects]) => {
-      Object.entries(subjects).forEach(([subjectId, cell]) => {
+    Object.entries(matrix).forEach(([gradeLevel, subjectMatrix]) => {
+      Object.entries(subjectMatrix).forEach(([subjectId, cell]) => {
         if (!cell.isDirty) return;
 
-        const originalTeacherId = cell.coordinator?.coordinator_teacher_id;
-        const newTeacherId = cell.selectedTeacherId;
+        const originalCoordinatorId = cell.originalCoordinatorId;
+        const selectedCoordinatorId = cell.selectedCoordinatorId;
+        const hasOriginal = !!originalCoordinatorId;
+        const hasSelected = !!selectedCoordinatorId;
 
-        if (originalTeacherId && !newTeacherId) {
-          // Delete coordinator
-          actions.push({
-            type: 'delete',
-            coordinator_id: cell.originalCoordinatorId
-          });
-        } else if (originalTeacherId && newTeacherId && originalTeacherId !== newTeacherId) {
-          // Update coordinator
-          actions.push({
-            type: 'update',
-            coordinator_id: cell.originalCoordinatorId,
-            data: {
-              subject_id: subjectId,
-              grade_level: parseInt(gradeLevel),
-              coordinator_teacher_id: newTeacherId
-            }
-          });
-        } else if (!originalTeacherId && newTeacherId) {
+        if (!hasOriginal && hasSelected) {
           // Create new coordinator
           actions.push({
             type: 'create',
             data: {
               subject_id: subjectId,
               grade_level: parseInt(gradeLevel),
-              coordinator_teacher_id: newTeacherId
+              coordinator_id: selectedCoordinatorId
             }
           });
+        } else if (hasOriginal && hasSelected && originalCoordinatorId !== selectedCoordinatorId) {
+          // Update existing coordinator
+          const coordinator = cell.coordinator;
+          if (coordinator) {
+            actions.push({
+              type: 'update',
+              id: coordinator._id,
+              data: {
+                subject_id: subjectId,
+                grade_level: parseInt(gradeLevel),
+                coordinator_id: selectedCoordinatorId
+              }
+            });
+          }
+        } else if (hasOriginal && !hasSelected) {
+          // Delete coordinator
+          const coordinator = cell.coordinator;
+          if (coordinator) {
+            actions.push({
+              type: 'delete',
+              id: coordinator._id
+            });
+          }
         }
       });
     });
 
     return actions;
-  };
+  }, [matrix]);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     const actions = generateActions();
     if (actions.length === 0) {
       toast.info('Tidak ada perubahan untuk disimpan');
@@ -257,32 +229,37 @@ const SubjectCoordinatorManagement: React.FC<SubjectCoordinatorManagementProps> 
     }
 
     setPendingActions(actions);
-    setConfirmationModalOpen(true);
-  };
+    setShowConfirmation(true);
+  }, [generateActions]);
 
-  const handleConfirmSave = async () => {
-    if (!token || pendingActions.length === 0) return;
+  const handleConfirmSave = useCallback(async () => {
+    if (!token || !activeAcademicPeriod) {
+      toast.error('Academic period tidak ditemukan');
+      return;
+    }
 
     setSaving(true);
     try {
-      const batchRequest = { actions: pendingActions };
-      await subjectService.batchUpdateCoordinators(token, batchRequest);
+      const request = {
+        operations: pendingActions,
+        academic_period_id: activeAcademicPeriod._id
+      };
+
+      console.log('Sending batch request:', request);
       
-      toast.success('Perubahan koordinator berhasil disimpan');
+      await subjectService.batchUpdateCoordinators(token, request);
+      
+      toast.success('Koordinator berhasil diperbarui');
       
       // Reload data
-      const [coordinatorsData, assignmentsData] = await Promise.all([
-        subjectService.getSubjectCoordinators(token),
-        subjectService.getTeachingAssignmentsForCoordinator(token)
+      const [coordinatorsData] = await Promise.all([
+        subjectService.getSubjectCoordinators(token)
       ]);
-
+      
       setCoordinators(coordinatorsData);
-      setTeachingAssignments(assignmentsData);
-      buildAvailableTeachersMapping(assignmentsData);
-      initializeMatrix(subjects, coordinatorsData);
-
-      setConfirmationModalOpen(false);
+      setShowConfirmation(false);
       setPendingActions([]);
+      
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Gagal menyimpan perubahan';
       toast.error(errorMessage);
@@ -290,153 +267,153 @@ const SubjectCoordinatorManagement: React.FC<SubjectCoordinatorManagementProps> 
     } finally {
       setSaving(false);
     }
-  };
+  }, [token, pendingActions, activeAcademicPeriod]);
 
-  const handleReset = () => {
-    initializeMatrix(subjects, coordinators);
-    toast.info('Perubahan telah direset');
-  };
+  const handleReset = useCallback(() => {
+    // Reset matrix to original state
+    const resetMatrix: CoordinatorMatrix = {};
 
-  const hasChanges = () => {
-    return Object.values(matrix).some(subjects =>
-      Object.values(subjects).some(cell => cell.isDirty)
-    );
-  };
+    GRADE_LEVELS.forEach(gradeLevel => {
+      resetMatrix[gradeLevel.toString()] = {};
+      subjects.forEach(subject => {
+        const existingCoordinator = coordinators.find(
+          c => c.grade_level === gradeLevel && c.subject_id === subject._id
+        );
 
-  const getChangesSummary = () => {
-    const actions = generateActions();
-    return {
-      creates: actions.filter(a => a.type === 'create').length,
-      updates: actions.filter(a => a.type === 'update').length,
-      deletes: actions.filter(a => a.type === 'delete').length
-    };
-  };
+        resetMatrix[gradeLevel.toString()][subject._id] = {
+          coordinator: existingCoordinator,
+          selectedCoordinatorId: existingCoordinator?.coordinator_id,
+          isDirty: false,
+          originalCoordinatorId: existingCoordinator?.coordinator_id
+        };
+      });
+    });
+
+    setMatrix(resetMatrix);
+    toast.info('Matrix telah direset ke kondisi awal');
+  }, [subjects, coordinators]);
+
+  const hasChanges = Object.values(matrix).some(subjectMatrix =>
+    Object.values(subjectMatrix).some(cell => cell.isDirty)
+  );
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat data koordinator...</p>
+      <div className="flex items-center justify-center min-h-96">
+        <div className="flex items-center space-x-2">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-600 border-t-transparent"></div>
+          <span className="text-lg font-medium text-gray-700">Memuat data koordinator...</span>
         </div>
       </div>
     );
   }
 
-  const changesSummary = getChangesSummary();
+  if (!activeAcademicPeriod) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+        <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Academic Period Tidak Aktif</h3>
+        <p className="text-gray-500">
+          Tidak ada academic period yang aktif. Silakan aktifkan academic period terlebih dahulu.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={onBack}
-            className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Kembali</span>
-          </button>
-          
-          <div className="flex items-center space-x-3">
-            <GraduationCap className="w-8 h-8 text-purple-600" />
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Koordinator Mata Pelajaran</h1>
-              <p className="text-gray-600">Kelola koordinator untuk setiap jenjang kelas dan mata pelajaran</p>
-            </div>
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+            <Users className="w-5 h-5 text-purple-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Manajemen Koordinator Mata Pelajaran</h1>
+            <p className="text-gray-600">Kelola koordinator untuk setiap mata pelajaran dan jenjang kelas</p>
           </div>
         </div>
 
         <div className="flex items-center space-x-3">
-          {hasChanges() && (
-            <button
-              onClick={handleReset}
-              className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span>Reset</span>
-            </button>
-          )}
-          
+          <button
+            onClick={handleReset}
+            disabled={!hasChanges || saving}
+            className="flex items-center space-x-2 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RotateCcw className="w-4 h-4" />
+            <span>Reset</span>
+          </button>
+
           <button
             onClick={handleSave}
-            disabled={!hasChanges() || saving}
+            disabled={!hasChanges || saving}
             className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <Save className="w-4 h-4" />
-            <span>Simpan Perubahan</span>
+            {saving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                <span>Menyimpan...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Simpan Perubahan</span>
+              </>
+            )}
           </button>
         </div>
       </div>
 
-      {/* Changes Summary */}
-      {hasChanges() && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-            <div>
-              <h4 className="font-medium text-blue-800 mb-1">Ada Perubahan yang Belum Disimpan</h4>
-              <div className="text-sm text-blue-700 space-y-1">
-                <p>
-                  {changesSummary.creates > 0 && `${changesSummary.creates} koordinator baru`}
-                  {changesSummary.creates > 0 && (changesSummary.updates > 0 || changesSummary.deletes > 0) && ', '}
-                  {changesSummary.updates > 0 && `${changesSummary.updates} koordinator diubah`}
-                  {changesSummary.updates > 0 && changesSummary.deletes > 0 && ', '}
-                  {changesSummary.deletes > 0 && `${changesSummary.deletes} koordinator dihapus`}
-                </p>
-                <p className="font-medium">Jangan lupa untuk menyimpan perubahan Anda.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Stats Summary */}
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <BookOpen className="w-8 h-8 text-blue-500" />
             <div>
-              <p className="text-sm text-gray-600">Total Mata Pelajaran</p>
+              <p className="text-sm text-gray-500">Total Mata Pelajaran</p>
               <p className="text-2xl font-bold text-gray-900">{subjects.length}</p>
             </div>
-            <Users className="w-8 h-8 text-purple-500" />
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <GraduationCap className="w-8 h-8 text-green-500" />
             <div>
-              <p className="text-sm text-gray-600">Jenjang Kelas</p>
+              <p className="text-sm text-gray-500">Jenjang Kelas</p>
               <p className="text-2xl font-bold text-gray-900">{GRADE_LEVELS.length}</p>
             </div>
-            <GraduationCap className="w-8 h-8 text-blue-500" />
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Users className="w-8 h-8 text-purple-500" />
             <div>
-              <p className="text-sm text-gray-600">Total Koordinator</p>
+              <p className="text-sm text-gray-500">Koordinator Aktif</p>
               <p className="text-2xl font-bold text-gray-900">{coordinators.length}</p>
             </div>
-            <Users className="w-8 h-8 text-green-500" />
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            {hasChanges ? (
+              <AlertCircle className="w-8 h-8 text-orange-500" />
+            ) : (
+              <CheckCircle className="w-8 h-8 text-green-500" />
+            )}
             <div>
-              <p className="text-sm text-gray-600">Posisi Tersedia</p>
-              <p className="text-2xl font-bold text-gray-900">{GRADE_LEVELS.length * subjects.length}</p>
-            </div>
-            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-              <span className="text-sm font-bold text-orange-600">{GRADE_LEVELS.length * subjects.length}</span>
+              <p className="text-sm text-gray-500">Status</p>
+              <p className="text-lg font-bold text-gray-900">
+                {hasChanges ? 'Ada Perubahan' : 'Tersimpan'}
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Coordinator Matrix */}
+      {/* Matrix */}
       <CoordinatorMatrix
         matrix={matrix}
         subjects={subjects}
@@ -446,8 +423,8 @@ const SubjectCoordinatorManagement: React.FC<SubjectCoordinatorManagementProps> 
 
       {/* Confirmation Modal */}
       <CoordinatorConfirmationModal
-        isOpen={confirmationModalOpen}
-        onClose={() => setConfirmationModalOpen(false)}
+        isOpen={showConfirmation}
+        onClose={() => setShowConfirmation(false)}
         onConfirm={handleConfirmSave}
         actions={pendingActions}
         subjects={subjects}

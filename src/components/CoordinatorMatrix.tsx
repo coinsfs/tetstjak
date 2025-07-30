@@ -8,7 +8,7 @@ interface CoordinatorMatrixProps {
   matrix: CoordinatorMatrixType;
   subjects: Subject[];
   availableTeachers: { [gradeLevel: string]: { [subjectId: string]: Teacher[] } };
-  onCellChange: (gradeLevel: number, subjectId: string, teacherId: string | null) => void;
+  onCellChange: (gradeLevel: number, subjectId: string, coordinatorId: string | null) => void;
 }
 
 const GRADE_LEVELS = [
@@ -23,15 +23,15 @@ const CoordinatorMatrix: React.FC<CoordinatorMatrixProps> = memo(({
   availableTeachers,
   onCellChange
 }) => {
-  const getTeacherName = (teacherId: string, gradeLevel: number, subjectId: string) => {
+  const getTeacherName = (coordinatorId: string, gradeLevel: number, subjectId: string) => {
     const teachers = availableTeachers[gradeLevel.toString()]?.[subjectId] || [];
-    const teacher = teachers.find(t => t._id === teacherId);
-    return teacher?.profile_details?.full_name || 'Unknown Teacher';
+    const teacher = teachers.find(t => t._id === coordinatorId);
+    return teacher?.profile_details?.full_name || teacher?.login_id || 'Unknown Teacher';
   };
 
   const handleCellChange = (gradeLevel: number, subjectId: string, value: string) => {
-    const teacherId = value === '' ? null : value;
-    onCellChange(gradeLevel, subjectId, teacherId);
+    const coordinatorId = value === '' ? null : value;
+    onCellChange(gradeLevel, subjectId, coordinatorId);
   };
 
   // Add safety checks
@@ -115,7 +115,7 @@ const CoordinatorMatrix: React.FC<CoordinatorMatrixProps> = memo(({
                 {/* Subject Coordinators */}
                 {subjects.map((subject) => {
                   const cell = matrix[grade.level.toString()]?.[subject._id];
-                  const currentTeacherId = cell?.selectedTeacherId || '';
+                  const currentCoordinatorId = cell?.selectedCoordinatorId || '';
                   const isDirty = cell?.isDirty || false;
                   const availableTeachersForCell = availableTeachers[grade.level.toString()]?.[subject._id] || [];
 
@@ -126,12 +126,12 @@ const CoordinatorMatrix: React.FC<CoordinatorMatrixProps> = memo(({
                     >
                       <div className="relative">
                         <select
-                          value={currentTeacherId}
+                          value={currentCoordinatorId}
                           onChange={(e) => handleCellChange(grade.level, subject._id, e.target.value)}
                           className={`w-full px-3 py-2 text-sm border rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 appearance-none cursor-pointer transition-colors relative z-10 ${
                             isDirty
                               ? 'border-orange-300 bg-orange-50 text-orange-900'
-                              : currentTeacherId
+                              : currentCoordinatorId
                               ? 'border-green-300 bg-green-50 text-green-900'
                               : availableTeachersForCell.length > 0
                               ? 'border-gray-300 bg-white text-gray-900'
@@ -144,7 +144,7 @@ const CoordinatorMatrix: React.FC<CoordinatorMatrixProps> = memo(({
                           </option>
                           {availableTeachersForCell.map((teacher) => (
                             <option key={teacher._id} value={teacher._id}>
-                              {teacher.profile_details?.full_name || teacher.login_id || 'Unknown Teacher'}
+                              {teacher.profile_details?.full_name || teacher.login_id}
                             </option>
                           ))}
                         </select>
@@ -161,11 +161,11 @@ const CoordinatorMatrix: React.FC<CoordinatorMatrixProps> = memo(({
                       </div>
 
                       {/* Teacher info display */}
-                      {currentTeacherId && (
+                      {currentCoordinatorId && (
                         <div className="mt-2 flex items-center justify-center space-x-1">
                           <User className="w-3 h-3 text-gray-400" />
                           <span className="text-xs text-gray-600 truncate max-w-[180px]">
-                            {getTeacherName(currentTeacherId, grade.level, subject._id)}
+                            {getTeacherName(currentCoordinatorId, grade.level, subject._id)}
                           </span>
                         </div>
                       )}
