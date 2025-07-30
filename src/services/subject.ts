@@ -28,7 +28,7 @@ class SubjectService extends BaseService {
 
   // Subject Coordinator methods
   async getSubjectCoordinators(token: string): Promise<SubjectCoordinator[]> {
-    const response = await this.get<{ data: SubjectCoordinator[] }>('/subject-coordinators/?limit=1000', token);
+    const response = await this.get<{ data: SubjectCoordinator[] }>('/subject-coordinators/', token);
     return response.data || [];
   }
 
