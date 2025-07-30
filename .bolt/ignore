@@ -68,4 +68,3 @@ src/components/dashboards/teacher/TeacherStatsGrid.tsx
 src/components/dashboards/teacher/TeacherSubjectsList.tsx
 src/components/dashboards/teacher/TeacherWelcomeCard.tsx
 src/components/SubjectCoordinatorManagement.tsx
-src/components/CoordinatorMatrix.tsx
