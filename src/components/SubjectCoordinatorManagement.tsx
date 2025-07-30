@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Users, Save, RotateCcw, AlertCircle, CheckCircle, BookOpen, GraduationCap } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import CoordinatorMatrix from './CoordinatorMatrix';
 import { subjectService } from '@/services/subject';
 import { Subject, SubjectCoordinator, type CoordinatorMatrix, CoordinatorAction } from '@/types/subject';
 import { Teacher } from '@/types/user';
