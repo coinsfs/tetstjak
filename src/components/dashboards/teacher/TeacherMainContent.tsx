@@ -46,6 +46,23 @@ const TeacherMainContent: React.FC<TeacherMainContentProps> = ({
       case '/teacher/profile':
         return <TeacherProfilePage />;
       default:
+        // Handle sub-routes or fallback to dashboard
+        if (currentPath.startsWith('/teacher/')) {
+          // For any teacher sub-route that's not explicitly handled, show appropriate content
+          // You can add more specific handling here if needed
+          return (
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Halaman Tidak Ditemukan</h2>
+                <p className="text-gray-600">
+                  Halaman yang Anda cari tidak tersedia. Silakan gunakan menu navigasi untuk mengakses fitur yang tersedia.
+                </p>
+              </div>
+            </div>
+          );
+        }
+        
+        // Default to dashboard content
         return (
           <div className="space-y-6">
             <TeacherStatsGrid stats={dashboardStats} loading={statsLoading} />
