@@ -48,7 +48,7 @@ src/components/modals/details/ExpertiseProgramDetailModal.tsx
 src/components/modals/details/ClassDetailModal.tsx
 src/components/dashboards/AdminDashboard.tsx
 src/components/dashboards/teacher/pages/TeacherClassesPage.tsx
-src/components/dashboards/teacher/pages/TeacherQuestionsPage.tsx
+
 src/components/dashboards/teacher/pages/TeacherProfilePage.tsx
 src/components/dashboards/teacher/pages/TeacherAnalyticsPage.tsx
 src/components/dashboards/teacher/pages/TeacherExamsPage.tsx
@@ -68,3 +68,4 @@ src/components/dashboards/teacher/TeacherStatsGrid.tsx
 src/components/dashboards/teacher/TeacherSubjectsList.tsx
 src/components/dashboards/teacher/TeacherWelcomeCard.tsx
 src/components/SubjectCoordinatorManagement.tsx
+src/components/CoordinatorMatrix.tsx
