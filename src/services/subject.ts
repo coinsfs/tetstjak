@@ -28,12 +28,12 @@ class SubjectService extends BaseService {
 
   // Subject Coordinator methods
   async getSubjectCoordinators(token: string): Promise<SubjectCoordinator[]> {
-    const response = await this.get<{ data: SubjectCoordinator[] }>('/subject-coordinators/', token);
+    const response = await this.get<{ data: SubjectCoordinator[] }>('/coordination-assignments/', token);
     return response.data || [];
   }
 
   async batchUpdateCoordinators(token: string, request: CoordinatorBatchRequest): Promise<CoordinatorBatchResponse> {
-    return this.post<CoordinatorBatchResponse>('/subject-coordinators/bulk-update', request, token);
+    return this.post<CoordinatorBatchResponse>('/coordination-assignments/bulk-update', request, token);
   }
 
   async getTeachingAssignmentsForCoordinator(token: string): Promise<TeachingAssignmentForCoordinator[]> {
