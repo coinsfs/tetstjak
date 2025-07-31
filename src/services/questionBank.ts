@@ -95,11 +95,11 @@ class QuestionBankService extends BaseService {
   }
 
   async updateQuestion(token: string, questionId: string, data: UpdateQuestionRequest): Promise<Question> {
-    return this.put<Question>(`/question-banks/my-questions/${questionId}`, data, token);
+    return this.put<Question>(`/question-banks/${questionId}`, data, token);
   }
 
   async deleteQuestion(token: string, questionId: string): Promise<void> {
-    await this.delete(`/question-banks/my-questions/${questionId}`, token);
+    await this.delete(`/question-banks/${questionId}`, token);
   }
 
   async submitForReview(token: string, questionIds: string[]): Promise<void> {
