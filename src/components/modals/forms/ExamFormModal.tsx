@@ -141,9 +141,9 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
       status: 'draft',
       proctor_ids: [],
       settings: {
-        shuffle_questions: false,
-        shuffle_options: false,
-        show_results_after_submission: true
+        shuffle_questions: true,
+        shuffle_options: true,
+        show_results_after_submission: false
       },
       target_criteria: {
         subject_id: '',
