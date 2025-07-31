@@ -91,7 +91,7 @@ class QuestionBankService extends BaseService {
   }
 
   async createQuestion(token: string, data: CreateQuestionRequest): Promise<Question> {
-    return this.post<Question>('/question-banks/my-questions', data, token);
+    return this.post<Question>('/question-banks/', data, token);
   }
 
   async updateQuestion(token: string, questionId: string, data: UpdateQuestionRequest): Promise<Question> {
