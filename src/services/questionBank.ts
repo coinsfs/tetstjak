@@ -61,7 +61,7 @@ export interface AccessibleQuestionsParams {
 
 class QuestionBankService extends BaseService {
   async getMyQuestions(token: string): Promise<Question[]> {
-    return this.get<Question[]>('/question-banks/', token);
+    return this.get<Question[]>('/question-banks/my-questions', token);
   }
 
   async getAccessibleQuestions(
@@ -91,19 +91,19 @@ class QuestionBankService extends BaseService {
   }
 
   async createQuestion(token: string, data: CreateQuestionRequest): Promise<Question> {
-    return this.post<Question>('/question-banks/', data, token);
+    return this.post<Question>('/question-banks/my-questions', data, token);
   }
 
   async updateQuestion(token: string, questionId: string, data: UpdateQuestionRequest): Promise<Question> {
-    return this.put<Question>(`/question-banks/${questionId}`, data, token);
+    return this.put<Question>(`/question-banks/my-questions/${questionId}`, data, token);
   }
 
   async deleteQuestion(token: string, questionId: string): Promise<void> {
-    await this.delete(`/question-banks/${questionId}`, token);
+    await this.delete(`/question-banks/my-questions/${questionId}`, token);
   }
 
   async submitForReview(token: string, questionIds: string[]): Promise<void> {
-    await this.post('/question-banks/submit-for-review', { question_ids: questionIds }, token);
+    await this.post('/question-banks/my-questions/submit-for-review', { question_ids: questionIds }, token);
   }
   async getQuestionSets(token: string, subjectId: string, gradeLevel: number): Promise<QuestionSet[]> {
     const params = {
