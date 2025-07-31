@@ -43,9 +43,9 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
     status: 'draft',
     proctor_ids: [] as string[],
     settings: {
-      shuffle_questions: false,
-      shuffle_options: false,
-      show_results_after_submission: true
+      shuffle_questions: true,
+      shuffle_options: true,
+      show_results_after_submission: false
     },
     // Only for create mode
     target_criteria: {
