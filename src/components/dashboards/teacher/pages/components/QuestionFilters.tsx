@@ -2,7 +2,7 @@ import React from 'react';
 import { Filter, Search, RotateCcw } from 'lucide-react';
 import { QuestionSubmissionFilters, AcademicPeriod } from '@/services/questionSubmission';
 
-type QuestionSource = 'my_questions' | 'submitted_questions';
+type QuestionSource = 'my_questions' | 'submitted_questions' | 'my_submissions';
 
 interface QuestionFilters {
   search?: string;
@@ -90,8 +90,8 @@ const QuestionFiltersComponent: React.FC<QuestionFiltersProps> = ({
           <option value="hard">Sulit</option>
         </select>
 
-        {/* Additional filters for submitted questions */}
-        {questionSource === 'submitted_questions' && (
+        {/* Additional filters for submitted questions and my submissions */}
+        {(questionSource === 'submitted_questions' || questionSource === 'my_submissions') && (
           <>
             {/* Academic Period Filter */}
             <select
@@ -144,7 +144,7 @@ const QuestionFiltersComponent: React.FC<QuestionFiltersProps> = ({
       
       {/* Active Filters Display */}
       {(filters.search || filters.difficulty || filters.question_type || 
-        (questionSource === 'submitted_questions' && (filters.purpose || filters.academic_period_id || filters.status))) && (
+        ((questionSource === 'submitted_questions' || questionSource === 'my_submissions') && (filters.purpose || filters.academic_period_id || filters.status))) && (
         <div className="mt-4 pt-4 border-t border-gray-200">
           <div className="flex items-center space-x-2 text-sm text-gray-600">
             <span className="font-medium">Filter aktif:</span>
@@ -164,17 +164,17 @@ const QuestionFiltersComponent: React.FC<QuestionFiltersProps> = ({
                   Tipe: {getTypeLabel(filters.question_type)}
                 </span>
               )}
-              {questionSource === 'submitted_questions' && filters.purpose && (
+              {(questionSource === 'submitted_questions' || questionSource === 'my_submissions') && filters.purpose && (
                 <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md">
                   Tujuan: "{filters.purpose}"
                 </span>
               )}
-              {questionSource === 'submitted_questions' && filters.academic_period_id && (
+              {(questionSource === 'submitted_questions' || questionSource === 'my_submissions') && filters.academic_period_id && (
                 <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md">
                   Periode: {academicPeriods.find(p => p._id === filters.academic_period_id)?.year} - {academicPeriods.find(p => p._id === filters.academic_period_id)?.semester}
                 </span>
               )}
-              {questionSource === 'submitted_questions' && filters.status && (
+              {(questionSource === 'submitted_questions' || questionSource === 'my_submissions') && filters.status && (
                 <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md">
                   Status: {filters.status === 'submitted' ? 'Disubmit' : filters.status === 'approved' ? 'Disetujui' : 'Ditolak'}
                 </span>
