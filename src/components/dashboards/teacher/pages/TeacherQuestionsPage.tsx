@@ -14,7 +14,9 @@ import {
   Users,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  Check,
+  X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { questionBankService, Question } from '@/services/questionBank';
@@ -26,6 +28,8 @@ import TeacherQuestionFormModal from './modals/TeacherQuestionFormModal';
 import TeacherQuestionDeleteModal from './modals/TeacherQuestionDeleteModal';
 import TeacherQuestionDetailModal from './modals/TeacherQuestionDetailModal';
 import TeacherSubmissionDetailModal from './modals/TeacherSubmissionDetailModal';
+import TeacherSubmissionApproveModal from './modals/TeacherSubmissionApproveModal';
+import TeacherSubmissionRejectModal from './modals/TeacherSubmissionRejectModal';
 import toast from 'react-hot-toast';
 
 interface QuestionFilters {
@@ -78,6 +82,10 @@ const TeacherQuestionsPage: React.FC = () => {
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [showSubmissionDetailModal, setShowSubmissionDetailModal] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<QuestionSubmission | null>(null);
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [submissionToApprove, setSubmissionToApprove] = useState<QuestionSubmission | null>(null);
+  const [submissionToReject, setSubmissionToReject] = useState<QuestionSubmission | null>(null);
 
   useEffect(() => {
     fetchInitialData();
@@ -263,6 +271,22 @@ const TeacherQuestionsPage: React.FC = () => {
     setShowSubmissionDetailModal(true);
   };
 
+  const handleApproveSubmission = (submission: QuestionSubmission) => {
+    setSubmissionToApprove(submission);
+    setShowApproveModal(true);
+  };
+
+  const handleRejectSubmission = (submission: QuestionSubmission) => {
+    setSubmissionToReject(submission);
+    setShowRejectModal(true);
+  };
+
+  const handleApprovalSuccess = () => {
+    fetchQuestions();
+    setShowApproveModal(false);
+    setShowRejectModal(false);
+  };
+
   const handleModalSuccess = () => {
     if (questionSource === 'my_questions') {
       fetchQuestions();
@@ -276,6 +300,8 @@ const TeacherQuestionsPage: React.FC = () => {
     setShowSubmissionDetailModal(false);
     setSelectedQuestion(null);
     setSelectedSubmission(null);
+    setSubmissionToApprove(null);
+    setSubmissionToReject(null);
   };
 
   const getTypeLabel = (type: string) => {
@@ -467,13 +493,13 @@ const TeacherQuestionsPage: React.FC = () => {
           )}
 
           {/* Reset Button */}
-          <button
+          {questionSource === 'my_questions' && <button
             onClick={handleResetFilters}
             className="flex items-center justify-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Reset</span>
-          </button>
+          </button>}
         </div>
         
         {/* Active Filters Display */}
@@ -715,7 +741,7 @@ const TeacherQuestionsPage: React.FC = () => {
                 ) : (
                   /* Submitted Questions Table View */
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
+                    <table className="min-w-full divide-y divide-gray-200 table-auto">
                       <thead className="bg-gray-50">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -751,7 +777,7 @@ const TeacherQuestionsPage: React.FC = () => {
                               <td className="px-6 py-4">
                                 <div className="max-w-xs">
                                   <div className="text-sm font-medium text-gray-900 truncate">
-                                    <div dangerouslySetInnerHTML={{ __html: submission.question_details.question_text }} />
+                                    <div dangerouslySetInnerHTML={{ __html: submission.question_details.question_text.substring(0, 100) + (submission.question_details.question_text.length > 100 ? '...' : '') }} />
                                   </div>
                                   <div className="text-xs text-gray-500 mt-1">
                                     ID: {submission.question_details._id.slice(-8)}
@@ -801,6 +827,24 @@ const TeacherQuestionsPage: React.FC = () => {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center">
                                 <div className="flex items-center justify-center space-x-2">
+                                  {submission.status === 'submitted' && (
+                                    <>
+                                      <button
+                                        onClick={() => handleApproveSubmission(submission)}
+                                        className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-colors"
+                                        title="Setujui Soal"
+                                      >
+                                        <Check className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleRejectSubmission(submission)}
+                                        className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+                                        title="Tolak Soal"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </>
+                                  )}
                                   <button
                                     onClick={() => handleViewSubmission(submission)}
                                     className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
@@ -819,7 +863,7 @@ const TeacherQuestionsPage: React.FC = () => {
                 )
               ) : (
                 /* Exam View */
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {questionSource === 'my_questions' ? (
                     <QuestionDisplay
                       questions={questions}
@@ -831,58 +875,79 @@ const TeacherQuestionsPage: React.FC = () => {
                       className="space-y-6"
                     />
                   ) : (
-                    <div className="space-y-6">
+                    <div className="space-y-4 sm:space-y-6">
                       {submissions.map((submission) => {
                         const statusInfo = getStatusBadge(submission.status);
                         const StatusIcon = statusInfo.icon;
                         
                         return (
-                          <div key={submission._id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                            <div className="flex items-start justify-between mb-4">
+                          <div key={submission._id} className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                               <div className="flex-1">
-                                <div className="flex items-center space-x-2 mb-2">
+                                <div className="flex flex-wrap items-center gap-2 mb-3">
                                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                     {getTypeLabel(submission.question_details.question_type)}
                                   </span>
                                   <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(submission.question_details.difficulty)}`}>
                                     {getDifficultyLabel(submission.question_details.difficulty)}
                                   </span>
-                                  <span className="text-xs text-gray-500">
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                                     {submission.question_details.points} poin
                                   </span>
-                                </div>
-                                <div className="prose prose-sm max-w-none mb-3">
-                                  <div dangerouslySetInnerHTML={{ __html: submission.question_details.question_text }} />
-                                </div>
-                                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                                  <span>Tujuan: {submission.purpose}</span>
                                   <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
                                     <StatusIcon className="w-3 h-3 mr-1" />
                                     {statusInfo.label}
                                   </span>
                                 </div>
+                                <div className="prose prose-sm max-w-none mb-3 text-sm sm:text-base">
+                                  <div dangerouslySetInnerHTML={{ __html: submission.question_details.question_text }} />
+                                </div>
+                                <div className="text-sm text-gray-600 mb-3">
+                                  <span className="font-medium">Tujuan:</span> {submission.purpose}
+                                </div>
+                                
+                                {submission.question_details.tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {submission.question_details.tags.map((tag, index) => (
+                                      <span
+                                        key={index}
+                                        className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                              <button
-                                onClick={() => handleViewSubmission(submission)}
-                                className="flex items-center space-x-2 px-3 py-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
-                              >
-                                <Eye className="w-4 h-4" />
-                                <span>Detail</span>
-                              </button>
+                              
+                              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 flex-shrink-0">
+                                {submission.status === 'submitted' && (
+                                  <>
+                                    <button
+                                      onClick={() => handleApproveSubmission(submission)}
+                                      className="flex items-center justify-center space-x-2 px-3 py-2 text-sm text-green-700 bg-green-50 hover:bg-green-100 rounded-md transition-colors"
+                                    >
+                                      <Check className="w-4 h-4" />
+                                      <span className="hidden sm:inline">Setujui</span>
+                                    </button>
+                                    <button
+                                      onClick={() => handleRejectSubmission(submission)}
+                                      className="flex items-center justify-center space-x-2 px-3 py-2 text-sm text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                                    >
+                                      <X className="w-4 h-4" />
+                                      <span className="hidden sm:inline">Tolak</span>
+                                    </button>
+                                  </>
+                                )}
+                                <button
+                                  onClick={() => handleViewSubmission(submission)}
+                                  className="flex items-center justify-center space-x-2 px-3 py-2 text-sm text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  <span className="hidden sm:inline">Detail</span>
+                                </button>
+                              </div>
                             </div>
-                            
-                            {submission.question_details.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-2">
-                                {submission.question_details.tags.map((tag, index) => (
-                                  <span
-                                    key={index}
-                                    className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
-                                  >
-                                    {tag}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
                           </div>
                         );
                       })}
@@ -953,6 +1018,24 @@ const TeacherQuestionsPage: React.FC = () => {
           submission={selectedSubmission}
           isOpen={showSubmissionDetailModal}
           onClose={() => setShowSubmissionDetailModal(false)}
+        />
+      )}
+
+      {showApproveModal && submissionToApprove && (
+        <TeacherSubmissionApproveModal
+          submission={submissionToApprove}
+          isOpen={showApproveModal}
+          onClose={() => setShowApproveModal(false)}
+          onSuccess={handleApprovalSuccess}
+        />
+      )}
+
+      {showRejectModal && submissionToReject && (
+        <TeacherSubmissionRejectModal
+          submission={submissionToReject}
+          isOpen={showRejectModal}
+          onClose={() => setShowRejectModal(false)}
+          onSuccess={handleApprovalSuccess}
         />
       )}
     </div>
