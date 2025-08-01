@@ -47,6 +47,12 @@ const TeacherQuestionsPage: React.FC = () => {
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [activeAcademicPeriod, setActiveAcademicPeriod] = useState<AcademicPeriod | null>(null);
   
+  // Selection state for creating question sets
+  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+  const [selectedSubmissions, setSelectedSubmissions] = useState<string[]>([]);
+  const [showCreatePackageButton, setShowCreatePackageButton] = useState(false);
+  const [showCheckboxes, setShowCheckboxes] = useState(false);
+  
   // View state - 'table' or 'exam'
   const [currentView, setCurrentView] = useState<'table' | 'exam'>('table');
   
@@ -85,6 +91,12 @@ const TeacherQuestionsPage: React.FC = () => {
   useEffect(() => {
     fetchQuestions();
   }, [filters, questionSource]);
+
+  // Update create package button visibility
+  useEffect(() => {
+    const hasSelections = selectedQuestions.length > 0 || selectedSubmissions.length > 0;
+    setShowCreatePackageButton(hasSelections);
+  }, [selectedQuestions, selectedSubmissions]);
 
   const fetchInitialData = async () => {
     if (!token) return;
@@ -228,6 +240,9 @@ const TeacherQuestionsPage: React.FC = () => {
     setQuestionSource(source);
     // Reset filters when changing source
     const defaultAcademicPeriodId = activeAcademicPeriod?._id || '';
+    // Reset selections when changing source
+    setSelectedQuestions([]);
+    setSelectedSubmissions([]);
     setFilters(prev => ({
       ...prev,
       page: 1,
@@ -235,6 +250,67 @@ const TeacherQuestionsPage: React.FC = () => {
       academic_period_id: defaultAcademicPeriodId,
       status: ''
     }));
+  };
+
+  const handleQuestionSelect = (questionId: string) => {
+    setSelectedQuestions(prev => 
+      prev.includes(questionId)
+        ? prev.filter(id => id !== questionId)
+        : [...prev, questionId]
+    );
+  };
+
+  const handleSubmissionSelect = (submissionId: string) => {
+    setSelectedSubmissions(prev => 
+      prev.includes(submissionId)
+        ? prev.filter(id => id !== submissionId)
+        : [...prev, submissionId]
+    );
+  };
+
+  const handleSelectAllQuestions = (selectAll: boolean) => {
+    if (selectAll) {
+      setSelectedQuestions(questions.map(q => q._id));
+    } else {
+      setSelectedQuestions([]);
+    }
+  };
+
+  const handleSelectAllSubmissions = (selectAll: boolean) => {
+    if (selectAll) {
+      setSelectedSubmissions(submissions.map(s => s._id));
+    } else {
+      setSelectedSubmissions([]);
+    }
+  };
+
+  const handleToggleCheckboxes = () => {
+    setShowCheckboxes(!showCheckboxes);
+    // Clear selections when hiding checkboxes
+    if (showCheckboxes) {
+      setSelectedQuestions([]);
+      setSelectedSubmissions([]);
+    }
+  };
+
+  const handleCreateQuestionPackage = () => {
+    const selectedItems = questionSource === 'my_questions' ? selectedQuestions : selectedSubmissions;
+    const itemType = questionSource === 'my_questions' ? 'soal' : 'submission';
+    
+    // For now, just show a toast message since API is not implemented
+    toast.success(`Fitur membuat paket soal akan segera tersedia. ${selectedItems.length} ${itemType} dipilih.`);
+    
+    // TODO: Implement API call to create question package
+    // const packageData = {
+    //   title: 'Paket Soal Baru',
+    //   question_ids: questionSource === 'my_questions' ? selectedQuestions : selectedSubmissions.map(s => s.question_id),
+    //   created_by: user?._id
+    // };
+    // await questionPackageService.createPackage(token, packageData);
+    
+    // Reset selections after creating package
+    setSelectedQuestions([]);
+    setSelectedSubmissions([]);
   };
 
   const handleCreateQuestion = () => {
@@ -301,6 +377,68 @@ const TeacherQuestionsPage: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center">
+              <HelpCircle className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Bank Soal</h1>
+              <p className="text-gray-600">Kelola dan tinjau soal pembelajaran</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={handleToggleCheckboxes}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                showCheckboxes 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <span>{showCheckboxes ? 'Sembunyikan Pilihan' : 'Pilih Soal'}</span>
+            </button>
+            
+            <button
+              onClick={handleCreateQuestion}
+              className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Buat Soal Baru</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Create Package Button */}
+      {showCreatePackageButton && (
+      <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {questionSource === 'my_questions' 
+                  ? `${selectedQuestions.length} soal dipilih` 
+                  : `${selectedSubmissions.length} submission dipilih`
+                }
+              </h3>
+              <p className="text-sm text-gray-600">
+                Buat paket soal resmi dari {questionSource === 'my_questions' ? 'soal' : 'submission'} yang dipilih
+              </p>
+            </div>
+            <button
+              onClick={handleCreateQuestionPackage}
+              className="flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Buat Paket Soal</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Original Header - now simplified */}
+      <div className="bg-white rounded-xl shadow-sm p-6" style={{ display: 'none' }}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center">
@@ -396,6 +534,11 @@ const TeacherQuestionsPage: React.FC = () => {
                   /* My Questions Table View */
                   <MyQuestionsTable
                     questions={questions}
+                    showCheckbox={showCheckboxes}
+                    selectedQuestions={selectedQuestions}
+                    onQuestionSelect={handleQuestionSelect}
+                    onSelectAll={handleSelectAllQuestions}
+                    showSelectAll={true}
                     onView={handleViewQuestion}
                     onEdit={handleEditQuestion}
                     onDelete={handleDeleteQuestion}
@@ -404,6 +547,11 @@ const TeacherQuestionsPage: React.FC = () => {
                   /* Submitted Questions Table View */
                   <SubmittedQuestionsTable
                     submissions={submissions}
+                    showCheckbox={showCheckboxes}
+                    selectedSubmissions={selectedSubmissions}
+                    onSubmissionSelect={handleSubmissionSelect}
+                    onSelectAll={handleSelectAllSubmissions}
+                    showSelectAll={true}
                     onView={handleViewSubmission}
                     onApprove={handleApproveSubmission}
                     onReject={handleRejectSubmission}
@@ -415,6 +563,11 @@ const TeacherQuestionsPage: React.FC = () => {
                   {questionSource === 'my_questions' ? (
                     <QuestionDisplay
                       questions={questions}
+                      showCheckbox={showCheckboxes}
+                      selectedQuestions={selectedQuestions}
+                      onQuestionSelect={handleQuestionSelect}
+                      onSelectAll={handleSelectAllQuestions}
+                      showSelectAll={true}
                       mode="view"
                       showActions={true}
                       onEdit={handleEditQuestion}
@@ -425,6 +578,11 @@ const TeacherQuestionsPage: React.FC = () => {
                   ) : (
                     <SubmittedQuestionsExamView
                       submissions={submissions}
+                      showCheckbox={showCheckboxes}
+                      selectedSubmissions={selectedSubmissions}
+                      onSubmissionSelect={handleSubmissionSelect}
+                      onSelectAll={handleSelectAllSubmissions}
+                      showSelectAll={true}
                       onView={handleViewSubmission}
                       onApprove={handleApproveSubmission}
                       onReject={handleRejectSubmission}

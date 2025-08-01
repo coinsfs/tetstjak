@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Edit, Trash2, Tag, CheckCircle, XCircle, AlertCircle, Clock } from 'lucide-react';
+import { Eye, Edit, Trash2, Tag, CheckCircle, XCircle, AlertCircle, Clock, Check } from 'lucide-react';
 import { Question } from '@/services/questionBank';
 
 interface QuestionDisplayProps {
@@ -10,6 +10,11 @@ interface QuestionDisplayProps {
   onDelete?: (question: Question) => void;
   onView?: (question: Question) => void;
   className?: string;
+  showCheckbox?: boolean;
+  selectedQuestions?: string[];
+  onQuestionSelect?: (questionId: string) => void;
+  onSelectAll?: (selectAll: boolean) => void;
+  showSelectAll?: boolean;
 }
 
 const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
@@ -19,7 +24,12 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   onEdit,
   onDelete,
   onView,
-  className = ''
+  className = '',
+  showCheckbox = false,
+  selectedQuestions = [],
+  onQuestionSelect,
+  onSelectAll,
+  showSelectAll = false
 }) => {
   const getTypeLabel = (type: string) => {
     switch (type) {
@@ -56,6 +66,21 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
     }
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    if (onSelectAll) {
+      onSelectAll(checked);
+    }
+  };
+
+  const handleQuestionSelect = (questionId: string) => {
+    if (onQuestionSelect) {
+      onQuestionSelect(questionId);
+    }
+  };
+
+  const isAllSelected = questions.length > 0 && questions.every(q => selectedQuestions.includes(q._id));
+  const isSomeSelected = selectedQuestions.length > 0 && !isAllSelected;
+
   if (questions.length === 0) {
     return (
       <div className={`text-center py-8 ${className}`}>
@@ -66,8 +91,30 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
 
   return (
     <div className={className}>
+      {/* Select All Header */}
+      {showCheckbox && showSelectAll && questions.length > 0 && (
+        <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <label className="flex items-center space-x-3 cursor-pointer">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={isAllSelected}
+                ref={(input) => {
+                  if (input) input.indeterminate = isSomeSelected;
+                }}
+                onChange={(e) => handleSelectAll(e.target.checked)}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+            </div>
+            <span className="text-sm font-medium text-gray-700">
+              Pilih semua soal ({questions.length} soal)
+            </span>
+          </label>
+        </div>
+      )}
+
       {questions.map((question, index) => (
-        <div key={question._id} className="border border-gray-200 rounded-lg p-6 bg-white hover:shadow-md transition-shadow">
+        <div key={question._id} className={`border border-gray-200 rounded-lg p-6 bg-white hover:shadow-md transition-shadow ${selectedQuestions.includes(question._id) ? 'ring-2 ring-blue-500 border-blue-500' : ''}`}>
           {/* Question Header */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
@@ -75,6 +122,17 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                 <span className="text-lg font-semibold text-gray-900">
                   Soal {index + 1}
                 </span>
+                {showCheckbox && (
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedQuestions.includes(question._id)}
+                      onChange={() => handleQuestionSelect(question._id)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-2"
+                    />
+                    <span className="text-sm text-gray-600">Pilih</span>
+                  </label>
+                )}
                 <span className="text-sm text-gray-500">
                   ID: {question._id.slice(-8)}
                 </span>
@@ -152,6 +210,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
           {/* Options (for multiple choice) */}
           {question.question_type === 'multiple_choice' && question.options && question.options.length > 0 && (
             <div className="mb-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Pilihan Jawaban:</h4>
               <div className="space-y-2">
                 {question.options.map((option, optionIndex) => (
                   <div
@@ -160,7 +219,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                       option.is_correct 
                         ? 'border-green-200 bg-green-50' 
                         : 'border-gray-200 bg-gray-50'
-                    }`}
+                    } transition-colors`}
                   >
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
                       option.is_correct 
@@ -170,11 +229,18 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                       {String.fromCharCode(65 + optionIndex)}
                     </div>
                     <div className="flex-1">
-                      <p className={`text-sm ${option.is_correct ? 'text-green-900 font-medium' : 'text-gray-700'}`}>
+                      <div className="flex items-center justify-between">
+                        <p className={`text-sm ${option.is_correct ? 'text-green-900 font-medium' : 'text-gray-700'}`}>
                         {option.text}
                       </p>
+                        {option.is_correct && (
+                          <div className="flex items-center space-x-1 ml-2">
+                            <Check className="w-4 h-4 text-green-600" />
+                          </div>
+                        )}
+                      </div>
                       {option.is_correct && (
-                        <p className="text-xs text-green-600 mt-1 flex items-center">
+                        <p className="text-xs text-green-600 mt-1 flex items-center font-medium">
                           <CheckCircle className="w-3 h-3 mr-1" />
                           Jawaban Benar
                         </p>

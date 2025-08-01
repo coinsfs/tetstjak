@@ -7,13 +7,23 @@ interface SubmittedQuestionsTableProps {
   onView: (submission: QuestionSubmission) => void;
   onApprove: (submission: QuestionSubmission) => void;
   onReject: (submission: QuestionSubmission) => void;
+  showCheckbox?: boolean;
+  selectedSubmissions?: string[];
+  onSubmissionSelect?: (submissionId: string) => void;
+  onSelectAll?: (selectAll: boolean) => void;
+  showSelectAll?: boolean;
 }
 
 const SubmittedQuestionsTable: React.FC<SubmittedQuestionsTableProps> = ({
   submissions,
   onView,
   onApprove,
-  onReject
+  onReject,
+  showCheckbox = false,
+  selectedSubmissions = [],
+  onSubmissionSelect,
+  onSelectAll,
+  showSelectAll = false
 }) => {
   const getTypeLabel = (type: string) => {
     switch (type) {
@@ -54,11 +64,39 @@ const SubmittedQuestionsTable: React.FC<SubmittedQuestionsTableProps> = ({
     }
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    if (onSelectAll) {
+      onSelectAll(checked);
+    }
+  };
+
+  const handleSubmissionSelect = (submissionId: string) => {
+    if (onSubmissionSelect) {
+      onSubmissionSelect(submissionId);
+    }
+  };
+
+  const isAllSelected = submissions.length > 0 && submissions.every(s => selectedSubmissions.includes(s._id));
+  const isSomeSelected = selectedSubmissions.length > 0 && !isAllSelected;
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200 table-auto">
         <thead className="bg-gray-50">
           <tr>
+            {showCheckbox && (
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <input
+                  type="checkbox"
+                  checked={isAllSelected}
+                  ref={(input) => {
+                    if (input) input.indeterminate = isSomeSelected;
+                  }}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+              </th>
+            )}
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Soal
             </th>
@@ -88,7 +126,8 @@ const SubmittedQuestionsTable: React.FC<SubmittedQuestionsTableProps> = ({
             const StatusIcon = statusInfo.icon;
             
             return (
-              <tr key={submission._id} className="hover:bg-gray-50 transition-colors">
+              <tr key={submission._id} className={`hover:bg-gray-50 transition-colors ${selectedSubmissions.includes(submission._id) ? 'bg-blue-50' : ''}`}>
+                {showCheckbox && (
                 <td className="px-6 py-4">
                   <div className="max-w-xs">
                     <div className="text-sm font-medium text-gray-900 truncate">
@@ -141,6 +180,15 @@ const SubmittedQuestionsTable: React.FC<SubmittedQuestionsTableProps> = ({
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedSubmissions.includes(submission._id)}
+                      onChange={() => handleSubmissionSelect(submission._id)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                  </td>
+                )}
+                <td className="px-6 py-4">
                   <div className="flex items-center justify-center space-x-2">
                     {submission.status === 'submitted' && (
                       <>

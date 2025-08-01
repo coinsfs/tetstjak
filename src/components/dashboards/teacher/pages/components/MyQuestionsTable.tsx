@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Edit, Trash2 } from 'lucide-react';
+import { Eye, Edit, Trash2, Check } from 'lucide-react';
 import { Question } from '@/services/questionBank';
 
 interface MyQuestionsTableProps {
@@ -7,13 +7,23 @@ interface MyQuestionsTableProps {
   onView: (question: Question) => void;
   onEdit: (question: Question) => void;
   onDelete: (question: Question) => void;
+  showCheckbox?: boolean;
+  selectedQuestions?: string[];
+  onQuestionSelect?: (questionId: string) => void;
+  onSelectAll?: (selectAll: boolean) => void;
+  showSelectAll?: boolean;
 }
 
 const MyQuestionsTable: React.FC<MyQuestionsTableProps> = ({
   questions,
   onView,
   onEdit,
-  onDelete
+  onDelete,
+  showCheckbox = false,
+  selectedQuestions = [],
+  onQuestionSelect,
+  onSelectAll,
+  showSelectAll = false
 }) => {
   const getTypeLabel = (type: string) => {
     switch (type) {
@@ -41,11 +51,39 @@ const MyQuestionsTable: React.FC<MyQuestionsTableProps> = ({
     }
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    if (onSelectAll) {
+      onSelectAll(checked);
+    }
+  };
+
+  const handleQuestionSelect = (questionId: string) => {
+    if (onQuestionSelect) {
+      onQuestionSelect(questionId);
+    }
+  };
+
+  const isAllSelected = questions.length > 0 && questions.every(q => selectedQuestions.includes(q._id));
+  const isSomeSelected = selectedQuestions.length > 0 && !isAllSelected;
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
+            {showCheckbox && (
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <input
+                  type="checkbox"
+                  checked={isAllSelected}
+                  ref={(input) => {
+                    if (input) input.indeterminate = isSomeSelected;
+                  }}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+              </th>
+            )}
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Soal
             </th>
@@ -68,7 +106,17 @@ const MyQuestionsTable: React.FC<MyQuestionsTableProps> = ({
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {questions.map((question) => (
-            <tr key={question._id} className="hover:bg-gray-50 transition-colors">
+            <tr key={question._id} className={`hover:bg-gray-50 transition-colors ${selectedQuestions.includes(question._id) ? 'bg-blue-50' : ''}`}>
+              {showCheckbox && (
+              <td className="px-6 py-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedQuestions.includes(question._id)}
+                    onChange={() => handleQuestionSelect(question._id)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                </td>
+              )}
               <td className="px-6 py-4">
                 <div className="max-w-xs">
                   <div className="text-sm font-medium text-gray-900 truncate">

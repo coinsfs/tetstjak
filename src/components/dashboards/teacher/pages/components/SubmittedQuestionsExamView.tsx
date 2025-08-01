@@ -7,13 +7,23 @@ interface SubmittedQuestionsExamViewProps {
   onView: (submission: QuestionSubmission) => void;
   onApprove: (submission: QuestionSubmission) => void;
   onReject: (submission: QuestionSubmission) => void;
+  showCheckbox?: boolean;
+  selectedSubmissions?: string[];
+  onSubmissionSelect?: (submissionId: string) => void;
+  onSelectAll?: (selectAll: boolean) => void;
+  showSelectAll?: boolean;
 }
 
 const SubmittedQuestionsExamView: React.FC<SubmittedQuestionsExamViewProps> = ({
   submissions,
   onView,
   onApprove,
-  onReject
+  onReject,
+  showCheckbox = false,
+  selectedSubmissions = [],
+  onSubmissionSelect,
+  onSelectAll,
+  showSelectAll = false
 }) => {
   const getTypeLabel = (type: string) => {
     switch (type) {
@@ -54,16 +64,66 @@ const SubmittedQuestionsExamView: React.FC<SubmittedQuestionsExamViewProps> = ({
     }
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    if (onSelectAll) {
+      onSelectAll(checked);
+    }
+  };
+
+  const handleSubmissionSelect = (submissionId: string) => {
+    if (onSubmissionSelect) {
+      onSubmissionSelect(submissionId);
+    }
+  };
+
+  const isAllSelected = submissions.length > 0 && submissions.every(s => selectedSubmissions.includes(s._id));
+  const isSomeSelected = selectedSubmissions.length > 0 && !isAllSelected;
+
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Select All Header */}
+      {showCheckbox && showSelectAll && submissions.length > 0 && (
+        <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <label className="flex items-center space-x-3 cursor-pointer">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={isAllSelected}
+                ref={(input) => {
+                  if (input) input.indeterminate = isSomeSelected;
+                }}
+                onChange={(e) => handleSelectAll(e.target.checked)}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+            </div>
+            <span className="text-sm font-medium text-gray-700">
+              Pilih semua submission ({submissions.length} submission)
+            </span>
+          </label>
+        </div>
+      )}
+
       {submissions.map((submission) => {
         const statusInfo = getStatusBadge(submission.status);
         const StatusIcon = statusInfo.icon;
         
         return (
-          <div key={submission._id} className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow">
+          <div key={submission._id} className={`bg-white border border-gray-200 rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow ${selectedSubmissions.includes(submission._id) ? 'ring-2 ring-blue-500 border-blue-500' : ''}`}>
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
               <div className="flex-1">
+                {/* Checkbox and Question Info */}
+                <div className="flex items-start space-x-3 mb-3">
+                  {showCheckbox && (
+                    <label className="flex items-center cursor-pointer mt-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedSubmissions.includes(submission._id)}
+                        onChange={() => handleSubmissionSelect(submission._id)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                    </label>
+                  )}
+                  <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     {getTypeLabel(submission.question_details.question_type)}
@@ -79,12 +139,60 @@ const SubmittedQuestionsExamView: React.FC<SubmittedQuestionsExamViewProps> = ({
                     {statusInfo.label}
                   </span>
                 </div>
+                  </div>
+                </div>
+                
                 <div className="prose prose-sm max-w-none mb-3 text-sm sm:text-base">
                   <div dangerouslySetInnerHTML={{ __html: submission.question_details.question_text }} />
                 </div>
                 <div className="text-sm text-gray-600 mb-3">
                   <span className="font-medium">Tujuan:</span> {submission.purpose}
                 </div>
+                
+                {/* Options for Multiple Choice */}
+                {submission.question_details.question_type === 'multiple_choice' && submission.question_details.options && submission.question_details.options.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Pilihan Jawaban:</h4>
+                    <div className="space-y-2">
+                      {submission.question_details.options.map((option, optionIndex) => (
+                        <div
+                          key={option.id}
+                          className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors ${
+                            option.is_correct 
+                              ? 'border-green-200 bg-green-50' 
+                              : 'border-gray-200 bg-gray-50'
+                          }`}
+                        >
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
+                            option.is_correct 
+                              ? 'bg-green-500 text-white' 
+                              : 'bg-gray-300 text-gray-600'
+                          }`}>
+                            {String.fromCharCode(65 + optionIndex)}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <p className={`text-sm ${option.is_correct ? 'text-green-900 font-medium' : 'text-gray-700'}`}>
+                                {option.text}
+                              </p>
+                              {option.is_correct && (
+                                <div className="flex items-center space-x-1 ml-2">
+                                  <Check className="w-4 h-4 text-green-600" />
+                                </div>
+                              )}
+                            </div>
+                            {option.is_correct && (
+                              <p className="text-xs text-green-600 mt-1 flex items-center font-medium">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Jawaban Benar
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 
                 {submission.question_details.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1">
