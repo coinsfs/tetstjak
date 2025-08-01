@@ -83,6 +83,38 @@ class QuestionSubmissionService extends BaseService {
     return this.get<QuestionSubmission[]>(endpoint, token);
   }
 
+  async getMySubmissions(token: string, filters?: QuestionSubmissionFilters): Promise<QuestionSubmission[]> {
+    const params: Record<string, any> = {};
+    
+    if (filters?.academic_period_id) {
+      params.academic_period_id = filters.academic_period_id;
+    }
+    
+    if (filters?.search && filters.search.trim() !== '') {
+      params.search = filters.search.trim();
+    }
+    
+    if (filters?.purpose && filters.purpose.trim() !== '') {
+      params.purpose = filters.purpose.trim();
+    }
+    
+    if (filters?.question_type) {
+      params.question_type = filters.question_type;
+    }
+    
+    if (filters?.difficulty) {
+      params.difficulty = filters.difficulty;
+    }
+    
+    if (filters?.status) {
+      params.status = filters.status;
+    }
+    
+    const queryString = this.buildQueryParams(params);
+    const endpoint = queryString ? `/question-submissions/my-submissions?${queryString}` : '/question-submissions/my-submissions';
+    
+    return this.get<QuestionSubmission[]>(endpoint, token);
+  }
   async getAcademicPeriods(token: string): Promise<AcademicPeriod[]> {
     return this.get<AcademicPeriod[]>('/academic-periods/', token);
   }
