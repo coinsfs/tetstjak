@@ -15,6 +15,8 @@ import QuestionViewToggle from './components/QuestionViewToggle';
 import MyQuestionsTable from './components/MyQuestionsTable';
 import SubmittedQuestionsTable from './components/SubmittedQuestionsTable';
 import SubmittedQuestionsExamView from './components/SubmittedQuestionsExamView';
+import MySubmissionsTable from './components/MySubmissionsTable';
+import MySubmissionsExamView from './components/MySubmissionsExamView';
 import TeacherQuestionFormModal from './modals/TeacherQuestionFormModal';
 import TeacherQuestionDeleteModal from './modals/TeacherQuestionDeleteModal';
 import TeacherQuestionDetailModal from './modals/TeacherQuestionDetailModal';
@@ -35,12 +37,13 @@ interface QuestionFilters {
   limit: number;
 }
 
-type QuestionSource = 'my_questions' | 'submitted_questions';
+type QuestionSource = 'my_questions' | 'submitted_questions' | 'my_submissions';
 
 const TeacherQuestionsPage: React.FC = () => {
   const { token, user } = useAuth();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [submissions, setSubmissions] = useState<QuestionSubmission[]>([]);
+  const [mySubmissions, setMySubmissions] = useState<QuestionSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -96,7 +99,8 @@ const TeacherQuestionsPage: React.FC = () => {
 
   // Update create package button visibility
   useEffect(() => {
-    const hasSelections = selectedQuestions.length > 0 || selectedSubmissions.length > 0;
+    const hasSelections = (questionSource === 'my_questions' && selectedQuestions.length > 0) || 
+                         (questionSource === 'submitted_questions' && selectedSubmissions.length > 0);
     setShowCreatePackageButton(hasSelections);
   }, [selectedQuestions, selectedSubmissions]);
 
@@ -161,8 +165,9 @@ const TeacherQuestionsPage: React.FC = () => {
       
         setQuestions(paginatedQuestions);
         setSubmissions([]);
+        setMySubmissions([]);
         setTotalItems(filteredQuestions.length);
-      } else {
+      } else if (questionSource === 'submitted_questions') {
         // Fetch submitted questions for review
         try {
           const submissionFilters: QuestionSubmissionFilters = {
@@ -183,16 +188,49 @@ const TeacherQuestionsPage: React.FC = () => {
 
           setSubmissions(paginatedSubmissions);
           setQuestions([]);
+          setMySubmissions([]);
           setTotalItems(allSubmissions.length);
         } catch (error: any) {
           if (error.message.includes('403') || error.message.includes('Forbidden')) {
             toast.error('Anda bukan koordinator mata pelajaran');
             setSubmissions([]);
             setQuestions([]);
+            setMySubmissions([]);
             setTotalItems(0);
           } else {
             throw error;
           }
+        }
+      } else if (questionSource === 'my_submissions') {
+        // Fetch my submissions
+        try {
+          const submissionFilters: QuestionSubmissionFilters = {
+            academic_period_id: filters.academic_period_id,
+            search: filters.search,
+            purpose: filters.purpose,
+            question_type: filters.question_type,
+            difficulty: filters.difficulty,
+            status: filters.status
+          };
+          
+          const allMySubmissions = await questionSubmissionService.getMySubmissions(token, submissionFilters);
+          
+          // Apply pagination
+          const startIndex = (filters.page - 1) * filters.limit;
+          const endIndex = startIndex + filters.limit;
+          const paginatedMySubmissions = allMySubmissions.slice(startIndex, endIndex);
+
+          setMySubmissions(paginatedMySubmissions);
+          setQuestions([]);
+          setSubmissions([]);
+          setTotalItems(allMySubmissions.length);
+        } catch (error: any) {
+          console.error('Error fetching my submissions:', error);
+          toast.error('Gagal memuat submission Anda');
+          setMySubmissions([]);
+          setQuestions([]);
+          setSubmissions([]);
+          setTotalItems(0);
         }
       }
 
@@ -311,6 +349,10 @@ const TeacherQuestionsPage: React.FC = () => {
   };
 
   const handleSubmitQuestions = () => {
+    // Only allow submit for my_questions
+    if (questionSource !== 'my_questions') {
+      return;
+    }
     setShowSubmitQuestionsModal(true);
   };
 
@@ -356,11 +398,7 @@ const TeacherQuestionsPage: React.FC = () => {
   };
 
   const handleModalSuccess = () => {
-    if (questionSource === 'my_questions') {
-      fetchQuestions();
-    } else {
-      fetchQuestions(); // This will fetch submissions
-    }
+    fetchQuestions(); // This will fetch the appropriate data based on questionSource
     setShowCreateModal(false);
     setShowEditModal(false);
     setShowDeleteModal(false);
@@ -374,6 +412,9 @@ const TeacherQuestionsPage: React.FC = () => {
   };
 
   const totalPages = Math.ceil(totalItems / filters.limit);
+
+  // Determine if submit button should be shown
+  const shouldShowSubmitButton = questionSource === 'my_questions' && selectedQuestions.length > 0;
 
   return (
     <div className="space-y-6">
@@ -391,16 +432,19 @@ const TeacherQuestionsPage: React.FC = () => {
           </div>
           
           <div className="flex items-center space-x-3">
-            <button
-              onClick={handleToggleCheckboxes}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                showCheckboxes 
-                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <span>{showCheckboxes ? 'Sembunyikan Pilihan' : 'Pilih Soal'}</span>
-            </button>
+            {/* Only show checkbox toggle for my_questions and submitted_questions */}
+            {questionSource !== 'my_submissions' && (
+              <button
+                onClick={handleToggleCheckboxes}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                  showCheckboxes 
+                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <span>{showCheckboxes ? 'Sembunyikan Pilihan' : 'Pilih Soal'}</span>
+              </button>
+            )}
             
             <button
               onClick={handleCreateQuestion}
@@ -425,16 +469,18 @@ const TeacherQuestionsPage: React.FC = () => {
                 }
               </h3>
               <p className="text-sm text-gray-600">
-                Buat paket soal atau submit untuk review dari {questionSource === 'my_questions' ? 'soal' : 'submission'} yang dipilih
+                Buat paket soal{shouldShowSubmitButton ? ' atau submit untuk review' : ''} dari {questionSource === 'my_questions' ? 'soal' : 'submission'} yang dipilih
               </p>
             </div>
             <div className="flex space-x-3">
-              <button
-                onClick={handleSubmitQuestions}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                <span>Submit Soal</span>
-              </button>
+              {shouldShowSubmitButton && (
+                <button
+                  onClick={handleSubmitQuestions}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  <span>Submit Soal</span>
+                </button>
+              )}
               <button
                 onClick={handleCreateQuestionPackage}
                 className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
@@ -504,29 +550,34 @@ const TeacherQuestionsPage: React.FC = () => {
                 <span className="text-gray-600">Memuat data...</span>
               </div>
             </div>
-          ) : (questionSource === 'my_questions' ? questions.length === 0 : submissions.length === 0) ? (
+          ) : (questionSource === 'my_questions' ? questions.length === 0 : 
+                 questionSource === 'submitted_questions' ? submissions.length === 0 : 
+                 mySubmissions.length === 0) ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <HelpCircle className="h-8 w-8 text-gray-400" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 {filters.search || filters.difficulty || filters.question_type || 
-                 (questionSource === 'submitted_questions' && (filters.purpose || filters.academic_period_id || filters.status))
+                 ((questionSource === 'submitted_questions' || questionSource === 'my_submissions') && (filters.purpose || filters.academic_period_id || filters.status))
                   ? `Tidak ada ${questionSource === 'my_questions' ? 'soal' : 'submission'} yang sesuai filter` 
-                  : questionSource === 'my_questions' ? 'Belum ada soal' : 'Belum ada submission'
+                  : questionSource === 'my_questions' ? 'Belum ada soal' : 
+                    questionSource === 'submitted_questions' ? 'Belum ada submission' : 'Belum ada submission Anda'
                 }
               </h3>
               <p className="text-gray-600 mb-4">
                 {filters.search || filters.difficulty || filters.question_type ||
-                 (questionSource === 'submitted_questions' && (filters.purpose || filters.academic_period_id || filters.status))
+                 ((questionSource === 'submitted_questions' || questionSource === 'my_submissions') && (filters.purpose || filters.academic_period_id || filters.status))
                   ? `Coba ubah atau reset filter untuk melihat ${questionSource === 'my_questions' ? 'soal' : 'submission'} lainnya`
                   : questionSource === 'my_questions' 
                     ? 'Mulai dengan membuat soal pertama Anda'
-                    : 'Belum ada soal yang disubmit untuk direview'
+                    : questionSource === 'submitted_questions'
+                    ? 'Belum ada soal yang disubmit untuk direview'
+                    : 'Anda belum pernah submit soal ke koordinator'
                 }
               </p>
               {!(filters.search || filters.difficulty || filters.question_type ||
-                 (questionSource === 'submitted_questions' && (filters.purpose || filters.academic_period_id || filters.status))) && 
+                 ((questionSource === 'submitted_questions' || questionSource === 'my_submissions') && (filters.purpose || filters.academic_period_id || filters.status))) && 
                questionSource === 'my_questions' && (
                 <button
                   onClick={handleCreateQuestion}
@@ -554,18 +605,26 @@ const TeacherQuestionsPage: React.FC = () => {
                     onDelete={handleDeleteQuestion}
                   />
                 ) : (
-                  /* Submitted Questions Table View */
-                  <SubmittedQuestionsTable
-                    submissions={submissions}
-                    showCheckbox={showCheckboxes}
-                    selectedSubmissions={selectedSubmissions}
-                    onSubmissionSelect={handleSubmissionSelect}
-                    onSelectAll={handleSelectAllSubmissions}
-                    showSelectAll={true}
-                    onView={handleViewSubmission}
-                    onApprove={handleApproveSubmission}
-                    onReject={handleRejectSubmission}
-                  />
+                  questionSource === 'submitted_questions' ? (
+                    /* Submitted Questions Table View */
+                    <SubmittedQuestionsTable
+                      submissions={submissions}
+                      showCheckbox={showCheckboxes}
+                      selectedSubmissions={selectedSubmissions}
+                      onSubmissionSelect={handleSubmissionSelect}
+                      onSelectAll={handleSelectAllSubmissions}
+                      showSelectAll={true}
+                      onView={handleViewSubmission}
+                      onApprove={handleApproveSubmission}
+                      onReject={handleRejectSubmission}
+                    />
+                  ) : (
+                    /* My Submissions Table View */
+                    <MySubmissionsTable
+                      submissions={mySubmissions}
+                      onView={handleViewSubmission}
+                    />
+                  )
                 )
               ) : (
                 /* Exam View */
@@ -585,7 +644,7 @@ const TeacherQuestionsPage: React.FC = () => {
                       onView={handleViewQuestion}
                       className="space-y-6"
                     />
-                  ) : (
+                  ) : questionSource === 'submitted_questions' ? (
                     <SubmittedQuestionsExamView
                       submissions={submissions}
                       showCheckbox={showCheckboxes}
@@ -596,6 +655,11 @@ const TeacherQuestionsPage: React.FC = () => {
                       onView={handleViewSubmission}
                       onApprove={handleApproveSubmission}
                       onReject={handleRejectSubmission}
+                    />
+                  ) : (
+                    <MySubmissionsExamView
+                      submissions={mySubmissions}
+                      onView={handleViewSubmission}
                     />
                   )}
                 </div>
@@ -689,7 +753,7 @@ const TeacherQuestionsPage: React.FC = () => {
         isOpen={showSubmitQuestionsModal}
         onClose={() => setShowSubmitQuestionsModal(false)}
         onSuccess={handleModalSuccess}
-        selectedQuestionIds={questionSource === 'my_questions' ? selectedQuestions : selectedSubmissions}
+        selectedQuestionIds={selectedQuestions}
         questionSource={questionSource}
       />
     )}
