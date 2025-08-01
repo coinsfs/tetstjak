@@ -30,12 +30,12 @@ const QuestionViewToggle: React.FC<QuestionViewToggleProps> = ({
         </div>
         
         {/* Toggle Buttons */}
-        <div className="flex rounded-lg bg-white border border-gray-200 p-1">
+        <div className="flex bg-gray-100 rounded-lg p-1">
           <button
             onClick={() => onViewChange('table')}
-            className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+            className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 flex-1 justify-center ${
               currentView === 'table' 
-                ? 'bg-yellow-600 text-white shadow-sm' 
+                ? 'bg-white text-yellow-600 shadow-sm border border-gray-200' 
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
             }`}
           >
@@ -44,9 +44,9 @@ const QuestionViewToggle: React.FC<QuestionViewToggleProps> = ({
           </button>
           <button
             onClick={() => onViewChange('exam')}
-            className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+            className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 flex-1 justify-center ${
               currentView === 'exam' 
-                ? 'bg-yellow-600 text-white shadow-sm' 
+                ? 'bg-white text-yellow-600 shadow-sm border border-gray-200' 
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
             }`}
           >

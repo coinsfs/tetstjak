@@ -19,12 +19,12 @@ const QuestionSourceToggle: React.FC<QuestionSourceToggleProps> = ({
       </div>
       
       {/* Toggle Switch */}
-      <div className="flex rounded-full bg-gray-200 p-1">
+      <div className="flex bg-gray-100 rounded-lg p-1">
         <button
           onClick={() => onSourceChange('my_questions')}
-          className={`flex items-center space-x-2 px-6 py-3 text-sm font-medium rounded-full transition-all duration-200 flex-1 justify-center ${
+          className={`flex items-center space-x-2 px-6 py-3 text-sm font-medium rounded-md transition-all duration-200 flex-1 justify-center ${
             questionSource === 'my_questions' 
-              ? 'bg-white text-yellow-600 shadow-sm' 
+              ? 'bg-white text-yellow-600 shadow-sm border border-gray-200' 
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
@@ -34,9 +34,9 @@ const QuestionSourceToggle: React.FC<QuestionSourceToggleProps> = ({
         
         <button
           onClick={() => onSourceChange('my_submissions')}
-          className={`flex items-center space-x-2 px-6 py-3 text-sm font-medium rounded-full transition-all duration-200 flex-1 justify-center ${
+          className={`flex items-center space-x-2 px-6 py-3 text-sm font-medium rounded-md transition-all duration-200 flex-1 justify-center ${
             questionSource === 'my_submissions' 
-              ? 'bg-white text-blue-600 shadow-sm' 
+              ? 'bg-white text-blue-600 shadow-sm border border-gray-200' 
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
