@@ -96,3 +96,19 @@ export interface TeachingAssignmentForCoordinator {
     profile_picture_url: string | null;
   };
 }
+
+export interface AvailableCoordinator {
+  coordinator_id: string;
+  coordinator_name: string;
+  coordinator_email: string;
+  coordinator_phone: string;
+  coordination_assignment_id: string;
+  subject_id: string;
+  subject_name: string;
+  subject_code: string;
+  grade_level: number;
+  matching_reason: string;
+  user_classes_in_subject: string[];
+  coordinator_responsible_for: string;
+  total_teachers_under_coordination: number;
+}

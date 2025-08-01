@@ -3,7 +3,8 @@ import {
   SubjectCoordinator, 
   CoordinatorBatchRequest,
   CoordinatorBatchResponse,
-  TeachingAssignmentForCoordinator 
+  TeachingAssignmentForCoordinator,
+  AvailableCoordinator
 } from '@/types/subject';
 import { Teacher } from '@/types/user';
 import { BaseService } from './base';
@@ -53,6 +54,10 @@ class SubjectService extends BaseService {
       console.error('No active academic period found:', error);
       return null;
     }
+  }
+
+  async getAvailableCoordinators(token: string): Promise<AvailableCoordinator[]> {
+    return this.get<AvailableCoordinator[]>('/coordination-assignments/available-coordinators', token);
   }
 }
 

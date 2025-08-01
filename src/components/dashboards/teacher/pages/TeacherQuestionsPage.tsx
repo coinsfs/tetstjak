@@ -21,6 +21,7 @@ import TeacherQuestionDetailModal from './modals/TeacherQuestionDetailModal';
 import TeacherSubmissionDetailModal from './modals/TeacherSubmissionDetailModal';
 import TeacherSubmissionApproveModal from './modals/TeacherSubmissionApproveModal';
 import TeacherSubmissionRejectModal from './modals/TeacherSubmissionRejectModal';
+import TeacherSubmitQuestionsModal from './modals/TeacherSubmitQuestionsModal';
 import toast from 'react-hot-toast';
 
 interface QuestionFilters {
@@ -83,6 +84,7 @@ const TeacherQuestionsPage: React.FC = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [submissionToApprove, setSubmissionToApprove] = useState<QuestionSubmission | null>(null);
   const [submissionToReject, setSubmissionToReject] = useState<QuestionSubmission | null>(null);
+  const [showSubmitQuestionsModal, setShowSubmitQuestionsModal] = useState(false);
 
   useEffect(() => {
     fetchInitialData();
@@ -243,6 +245,7 @@ const TeacherQuestionsPage: React.FC = () => {
     // Reset selections when changing source
     setSelectedQuestions([]);
     setSelectedSubmissions([]);
+    setShowSubmitQuestionsModal(false);
     setFilters(prev => ({
       ...prev,
       page: 1,
@@ -301,16 +304,14 @@ const TeacherQuestionsPage: React.FC = () => {
     toast.success(`Fitur membuat paket soal akan segera tersedia. ${selectedItems.length} ${itemType} dipilih.`);
     
     // TODO: Implement API call to create question package
-    // const packageData = {
-    //   title: 'Paket Soal Baru',
-    //   question_ids: questionSource === 'my_questions' ? selectedQuestions : selectedSubmissions.map(s => s.question_id),
-    //   created_by: user?._id
-    // };
-    // await questionPackageService.createPackage(token, packageData);
     
     // Reset selections after creating package
     setSelectedQuestions([]);
     setSelectedSubmissions([]);
+  };
+
+  const handleSubmitQuestions = () => {
+    setShowSubmitQuestionsModal(true);
   };
 
   const handleCreateQuestion = () => {
@@ -365,6 +366,7 @@ const TeacherQuestionsPage: React.FC = () => {
     setShowDeleteModal(false);
     setShowDetailModal(false);
     setShowSubmissionDetailModal(false);
+    setShowSubmitQuestionsModal(false);
     setSelectedQuestion(null);
     setSelectedSubmission(null);
     setSubmissionToApprove(null);
@@ -423,16 +425,24 @@ const TeacherQuestionsPage: React.FC = () => {
                 }
               </h3>
               <p className="text-sm text-gray-600">
-                Buat paket soal resmi dari {questionSource === 'my_questions' ? 'soal' : 'submission'} yang dipilih
+                Buat paket soal atau submit untuk review dari {questionSource === 'my_questions' ? 'soal' : 'submission'} yang dipilih
               </p>
             </div>
-            <button
-              onClick={handleCreateQuestionPackage}
-              className="flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Buat Paket Soal</span>
-            </button>
+            <div className="flex space-x-3">
+              <button
+                onClick={handleSubmitQuestions}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                <span>Submit Soal</span>
+              </button>
+              <button
+                onClick={handleCreateQuestionPackage}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Buat Paket Soal</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -673,6 +683,16 @@ const TeacherQuestionsPage: React.FC = () => {
           onSuccess={handleApprovalSuccess}
         />
       )}
+
+    {showSubmitQuestionsModal && (
+      <TeacherSubmitQuestionsModal
+        isOpen={showSubmitQuestionsModal}
+        onClose={() => setShowSubmitQuestionsModal(false)}
+        onSuccess={handleModalSuccess}
+        selectedQuestionIds={questionSource === 'my_questions' ? selectedQuestions : selectedSubmissions}
+        questionSource={questionSource}
+      />
+    )}
     </div>
   );
 };
