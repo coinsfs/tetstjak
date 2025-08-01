@@ -5,7 +5,7 @@ interface QuestionViewToggleProps {
   currentView: 'table' | 'exam';
   onViewChange: (view: 'table' | 'exam') => void;
   totalItems: number;
-  questionSource: 'my_questions' | 'submitted_questions';
+  questionSource: 'my_questions' | 'submitted_questions' | 'my_submissions';
 }
 
 const QuestionViewToggle: React.FC<QuestionViewToggleProps> = ({
@@ -14,11 +14,20 @@ const QuestionViewToggle: React.FC<QuestionViewToggleProps> = ({
   totalItems,
   questionSource
 }) => {
+  const getSourceLabel = (source: string) => {
+    switch (source) {
+      case 'my_questions': return 'soal (soal Anda)';
+      case 'submitted_questions': return 'submission (dari guru lain)';
+      case 'my_submissions': return 'submission (Anda submit)';
+      default: return 'item';
+    }
+  };
+
   return (
     <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-600">
-          {totalItems} {questionSource === 'my_questions' ? 'soal' : 'submission'} ditemukan {questionSource === 'submitted_questions' ? '(dari guru lain)' : '(soal Anda)'}
+          {totalItems} {getSourceLabel(questionSource)} ditemukan
         </div>
         
         {/* Toggle Buttons */}
