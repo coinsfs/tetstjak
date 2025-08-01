@@ -18,36 +18,31 @@ const QuestionSourceToggle: React.FC<QuestionSourceToggleProps> = ({
         <h3 className="text-lg font-semibold text-gray-900">Sumber Soal</h3>
       </div>
       
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
-        {/* Left Group: My Questions */}
-        <div className="flex rounded-lg bg-gray-100 p-1 flex-1 max-w-xs">
-          <button
-            onClick={() => onSourceChange('my_questions')}
-            className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 flex-1 justify-center ${
-              questionSource === 'my_questions' 
-                ? 'bg-yellow-600 text-white shadow-sm' 
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-            }`}
-          >
-            <User className="w-4 h-4" />
-            <span>Soal Saya</span>
-          </button>
-        </div>
-
-        {/* Right Group: My Submissions */}
-        <div className="flex rounded-lg bg-gray-100 p-1 max-w-xs">
-          <button
-            onClick={() => onSourceChange('my_submissions')}
-            className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 flex-1 justify-center ${
-              questionSource === 'my_submissions' 
-                ? 'bg-blue-600 text-white shadow-sm' 
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-            }`}
-          >
-            <Send className="w-4 h-4" />
-            <span>Submission Saya</span>
-          </button>
-        </div>
+      {/* Toggle Switch */}
+      <div className="flex rounded-full bg-gray-200 p-1">
+        <button
+          onClick={() => onSourceChange('my_questions')}
+          className={`flex items-center space-x-2 px-6 py-3 text-sm font-medium rounded-full transition-all duration-200 flex-1 justify-center ${
+            questionSource === 'my_questions' 
+              ? 'bg-white text-yellow-600 shadow-sm' 
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <User className="w-4 h-4" />
+          <span>Soal Saya</span>
+        </button>
+        
+        <button
+          onClick={() => onSourceChange('my_submissions')}
+          className={`flex items-center space-x-2 px-6 py-3 text-sm font-medium rounded-full transition-all duration-200 flex-1 justify-center ${
+            questionSource === 'my_submissions' 
+              ? 'bg-white text-blue-600 shadow-sm' 
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <Send className="w-4 h-4" />
+          <span>Submission Saya</span>
+        </button>
       </div>
       
       <p className="text-sm text-gray-500 mt-2">
