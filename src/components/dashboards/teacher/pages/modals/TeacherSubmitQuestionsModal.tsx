@@ -11,7 +11,7 @@ interface TeacherSubmitQuestionsModalProps {
   onClose: () => void;
   onSuccess: () => void;
   selectedQuestionIds: string[];
-  questionSource: 'my_questions' | 'submitted_questions';
+  questionSource: 'my_questions' | 'submitted_questions' | 'my_submissions';
 }
 
 const TeacherSubmitQuestionsModal: React.FC<TeacherSubmitQuestionsModalProps> = ({
@@ -125,7 +125,7 @@ const TeacherSubmitQuestionsModal: React.FC<TeacherSubmitQuestionsModalProps> = 
               <div>
                 <h3 className="text-sm font-medium text-blue-900">Soal yang akan disubmit</h3>
                 <p className="text-sm text-blue-700">
-                  {selectedQuestionIds.length} soal dari {questionSource === 'my_questions' ? 'soal Anda' : 'submission'}
+                  {selectedQuestionIds.length} soal dari soal Anda
                 </p>
               </div>
             </div>
@@ -277,3 +277,5 @@ const TeacherSubmitQuestionsModal: React.FC<TeacherSubmitQuestionsModalProps> = 
 };
 
 export default TeacherSubmitQuestionsModal;
+
+
