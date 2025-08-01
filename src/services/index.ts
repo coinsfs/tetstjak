@@ -11,3 +11,4 @@ export * from './expertise';
 export * from './import';
 export * from './teacher';
 export * from './profile';
+export * from './questionSubmission';
