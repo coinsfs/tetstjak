@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   HelpCircle, 
   Plus, 
   Filter, 
@@ -16,7 +16,9 @@ import {
   XCircle,
   Clock,
   Check,
-  X
+  X,
+  Package,
+  Minus
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { questionBankService, Question } from '@/services/questionBank';
@@ -87,6 +89,10 @@ const TeacherQuestionsPage: React.FC = () => {
   const [submissionToApprove, setSubmissionToApprove] = useState<QuestionSubmission | null>(null);
   const [submissionToReject, setSubmissionToReject] = useState<QuestionSubmission | null>(null);
 
+  // Selection state for creating question sets
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+
   useEffect(() => {
     fetchInitialData();
   }, []);
@@ -94,6 +100,12 @@ const TeacherQuestionsPage: React.FC = () => {
   useEffect(() => {
     fetchQuestions();
   }, [filters, questionSource]);
+
+  // Reset selection when changing source or filters
+  useEffect(() => {
+    setSelectedQuestionIds([]);
+    setSelectAll(false);
+  }, [questionSource, filters.page]);
 
   const fetchInitialData = async () => {
     if (!token) return;
@@ -237,6 +249,8 @@ const TeacherQuestionsPage: React.FC = () => {
     setQuestionSource(source);
     // Reset filters when changing source
     const defaultAcademicPeriodId = activeAcademicPeriod?._id || '';
+    setSelectedQuestionIds([]);
+    setSelectAll(false);
     setFilters(prev => ({
       ...prev,
       page: 1,
@@ -244,6 +258,60 @@ const TeacherQuestionsPage: React.FC = () => {
       academic_period_id: defaultAcademicPeriodId,
       status: ''
     }));
+  };
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedQuestionIds([]);
+      setSelectAll(false);
+    } else {
+      if (questionSource === 'my_questions') {
+        setSelectedQuestionIds(questions.map(q => q._id));
+      } else {
+        setSelectedQuestionIds(submissions.map(s => s.question_details._id));
+      }
+      setSelectAll(true);
+    }
+  };
+
+  const handleSelectQuestion = (questionId: string) => {
+    setSelectedQuestionIds(prev => {
+      const newSelection = prev.includes(questionId)
+        ? prev.filter(id => id !== questionId)
+        : [...prev, questionId];
+      
+      // Update select all state
+      const totalItems = questionSource === 'my_questions' ? questions.length : submissions.length;
+      setSelectAll(newSelection.length === totalItems && totalItems > 0);
+      
+      return newSelection;
+    });
+  };
+
+  const handleCreateQuestionSet = () => {
+    if (selectedQuestionIds.length === 0) {
+      toast.error('Pilih minimal satu soal untuk membuat paket soal');
+      return;
+    }
+    
+    // TODO: Implement create question set functionality
+    toast.success(`Akan membuat paket soal dengan ${selectedQuestionIds.length} soal`);
+    console.log('Selected question IDs:', selectedQuestionIds);
+  };
+
+  const clearSelection = () => {
+    setSelectedQuestionIds([]);
+    setSelectAll(false);
+  };
+
+  // Get current items for selection logic
+  const currentItems = questionSource === 'my_questions' ? questions : submissions;
+  const hasSelection = selectedQuestionIds.length > 0;
+  const isPartialSelection = hasSelection && selectedQuestionIds.length < currentItems.length;
+
+  // Helper function to get question ID from submission
+  const getQuestionId = (item: Question | QuestionSubmission): string => {
+    return 'question_details' in item ? item.question_details._id : item._id;
   };
 
   const handleCreateQuestion = () => {
@@ -550,6 +618,47 @@ const TeacherQuestionsPage: React.FC = () => {
         )}
       </div>
 
+      {/* Selection Actions Bar */}
+      {hasSelection && (
+        <div className="bg-white rounded-xl shadow-sm border border-blue-200 p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Package className="w-5 h-5 text-blue-600" />
+                <span className="text-sm font-medium text-gray-900">
+                  {selectedQuestionIds.length} soal dipilih
+                </span>
+              </div>
+              
+              <button
+                onClick={clearSelection}
+                className="flex items-center space-x-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-md transition-colors"
+              >
+                <X className="w-4 h-4" />
+                <span>Batal</span>
+              </button>
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={handleCreateQuestionSet}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Package className="w-4 h-4" />
+                <span>Buat Paket Soal</span>
+              </button>
+            </div>
+          </div>
+          
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <p className="text-xs text-gray-500">
+              Paket soal yang dibuat akan dapat digunakan oleh guru lain untuk ujian. 
+              Pastikan soal yang dipilih sudah sesuai dengan standar kurikulum.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* View Toggle & Content */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {/* View Toggle */}
@@ -589,6 +698,28 @@ const TeacherQuestionsPage: React.FC = () => {
 
         {/* Content Area */}
         <div className="p-6">
+          {/* Selection Header - Only show when there are items */}
+          {currentItems.length > 0 && (
+            <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
+              <div className="flex items-center space-x-3">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectAll}
+                    ref={(input) => {
+                      if (input) input.indeterminate = isPartialSelection;
+                    }}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    {selectAll ? 'Batalkan Semua' : isPartialSelection ? 'Pilih Semua' : 'Pilih Semua'}
+                  </span>
+                </label>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="flex items-center space-x-2">
@@ -638,6 +769,17 @@ const TeacherQuestionsPage: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                            <input
+                              type="checkbox"
+                              checked={selectAll}
+                              ref={(input) => {
+                                if (input) input.indeterminate = isPartialSelection;
+                              }}
+                              onChange={handleSelectAll}
+                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                          </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Soal
                           </th>
@@ -661,6 +803,14 @@ const TeacherQuestionsPage: React.FC = () => {
                       <tbody className="bg-white divide-y divide-gray-200">
                         {questions.map((question, index) => (
                           <tr key={question._id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <input
+                                type="checkbox"
+                                checked={selectedQuestionIds.includes(question._id)}
+                                onChange={() => handleSelectQuestion(question._id)}
+                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                              />
+                            </td>
                             <td className="px-6 py-4">
                               <div className="max-w-xs">
                                 <div className="text-sm font-medium text-gray-900 truncate">
@@ -744,6 +894,17 @@ const TeacherQuestionsPage: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-200 table-auto">
                       <thead className="bg-gray-50">
                         <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                            <input
+                              type="checkbox"
+                              checked={selectAll}
+                              ref={(input) => {
+                                if (input) input.indeterminate = isPartialSelection;
+                              }}
+                              onChange={handleSelectAll}
+                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                          </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Soal
                           </th>
@@ -774,6 +935,14 @@ const TeacherQuestionsPage: React.FC = () => {
                           
                           return (
                             <tr key={submission._id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedQuestionIds.includes(submission.question_details._id)}
+                                  onChange={() => handleSelectQuestion(submission.question_details._id)}
+                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                              </td>
                               <td className="px-6 py-4">
                                 <div className="max-w-xs">
                                   <div className="text-sm font-medium text-gray-900 truncate">
@@ -865,7 +1034,273 @@ const TeacherQuestionsPage: React.FC = () => {
                 /* Exam View */
                 <div className="space-y-4 sm:space-y-6">
                   {questionSource === 'my_questions' ? (
-                    <QuestionDisplay
+                    <div className="space-y-4 sm:space-y-6">
+                      {questions.map((question) => (
+                        <div key={question._id} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                          <div className="p-4 sm:p-6">
+                            <div className="flex items-start space-x-4">
+                              <input
+                                type="checkbox"
+                                checked={selectedQuestionIds.includes(question._id)}
+                                onChange={() => handleSelectQuestion(question._id)}
+                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1 flex-shrink-0"
+                              />
+                              <div className="flex-1">
+                                <QuestionDisplay
+                                  questions={[question]}
+                                  mode="view"
+                                  showActions={true}
+                                  onEdit={handleEditQuestion}
+                                  onDelete={handleDeleteQuestion}
+                                  onView={handleViewQuestion}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-4 sm:space-y-6">
+                      {submissions.map((submission) => {
+                        const statusInfo = getStatusBadge(submission.status);
+                        const StatusIcon = statusInfo.icon;
+                        
+                        return (
+                          <div key={submission._id} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                            <div className="p-4 sm:p-6">
+                              <div className="flex items-start space-x-4">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedQuestionIds.includes(submission.question_details._id)}
+                                  onChange={() => handleSelectQuestion(submission.question_details._id)}
+                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1 flex-shrink-0"
+                                />
+                                <div className="flex-1">
+                                  {/* Question Header */}
+                                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                                    <div className="flex-1">
+                                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                          {getTypeLabel(submission.question_details.question_type)}
+                                        </span>
+                                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(submission.question_details.difficulty)}`}>
+                                          {getDifficultyLabel(submission.question_details.difficulty)}
+                                        </span>
+                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                          {submission.question_details.points} poin
+                                        </span>
+                                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                                          <StatusIcon className="w-3 h-3 mr-1" />
+                                          {statusInfo.label}
+                                        </span>
+                                      </div>
+                                      <div className="text-sm text-gray-600 mb-3">
+                                        <span className="font-medium">Tujuan:</span> {submission.purpose}
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 flex-shrink-0">
+                                      {submission.status === 'submitted' && (
+                                        <>
+                                          <button
+                                            onClick={() => handleApproveSubmission(submission)}
+                                            className="flex items-center justify-center space-x-2 px-3 py-2 text-sm text-green-700 bg-green-50 hover:bg-green-100 rounded-md transition-colors"
+                                          >
+                                            <Check className="w-4 h-4" />
+                                            <span className="hidden sm:inline">Setujui</span>
+                                          </button>
+                                          <button
+                                            onClick={() => handleRejectSubmission(submission)}
+                                            className="flex items-center justify-center space-x-2 px-3 py-2 text-sm text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                                          >
+                                            <X className="w-4 h-4" />
+                                            <span className="hidden sm:inline">Tolak</span>
+                                          </button>
+                                        </>
+                                      )}
+                                      <button
+                                        onClick={() => handleViewSubmission(submission)}
+                                        className="flex items-center justify-center space-x-2 px-3 py-2 text-sm text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                                      >
+                                        <Eye className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Detail</span>
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Question Content */}
+                                  <div className="mb-4">
+                                    <div 
+                                      className="prose prose-sm max-w-none text-gray-900 mb-4"
+                                      dangerouslySetInnerHTML={{ __html: submission.question_details.question_text }}
+                                    />
+                                  </div>
+
+                                  {/* Options (for multiple choice) */}
+                                  {submission.question_details.question_type === 'multiple_choice' && submission.question_details.options && submission.question_details.options.length > 0 && (
+                                    <div className="mb-4">
+                                      <div className="space-y-2">
+                                        {submission.question_details.options.map((option, optionIndex) => (
+                                          <div
+                                            key={option.id || optionIndex}
+                                            className={`flex items-start space-x-3 p-3 rounded-lg border ${
+                                              option.is_correct 
+                                                ? 'border-green-200 bg-green-50' 
+                                                : 'border-gray-200 bg-gray-50'
+                                            }`}
+                                          >
+                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
+                                              option.is_correct 
+                                                ? 'bg-green-500 text-white' 
+                                                : 'bg-gray-300 text-gray-600'
+                                            }`}>
+                                              {String.fromCharCode(65 + optionIndex)}
+                                            </div>
+                                            <div className="flex-1">
+                                              <p className={`text-sm ${option.is_correct ? 'text-green-900 font-medium' : 'text-gray-700'}`}>
+                                                {option.text}
+                                              </p>
+                                              {option.is_correct && (
+                                                <p className="text-xs text-green-600 mt-1 flex items-center">
+                                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                                  Jawaban Benar
+                                                </p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Essay note */}
+                                  {submission.question_details.question_type === 'essay' && (
+                                    <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                      <div className="flex items-start space-x-2">
+                                        <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                                        <div>
+                                          <p className="text-sm font-medium text-blue-800">Soal Essay</p>
+                                          <p className="text-xs text-blue-700 mt-1">
+                                            Soal ini memerlukan jawaban dalam bentuk teks panjang dan akan dinilai secara manual.
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Tags */}
+                                  {submission.question_details.tags && submission.question_details.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                      {submission.question_details.tags.map((tag, tagIndex) => (
+                                        <span
+                                          key={tagIndex}
+                                          className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
+                                        >
+                                          <Tag className="w-3 h-3 mr-1" />
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              totalItems={totalItems}
+              itemsPerPage={filters.limit}
+              itemName="soal"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
+      {showCreateModal && (
+        <TeacherQuestionFormModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={handleModalSuccess}
+          teachingClasses={teachingClasses}
+          currentUserId={user?._id || ''}
+        />
+      )}
+
+      {showEditModal && selectedQuestion && (
+        <TeacherQuestionFormModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={handleModalSuccess}
+          teachingClasses={teachingClasses}
+          currentUserId={user?._id || ''}
+          question={selectedQuestion}
+        />
+      )}
+
+      {showDeleteModal && selectedQuestion && (
+        <TeacherQuestionDeleteModal
+          question={selectedQuestion}
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onSuccess={handleModalSuccess}
+        />
+      )}
+
+      {showDetailModal && selectedQuestion && (
+        <TeacherQuestionDetailModal
+          question={selectedQuestion}
+          isOpen={showDetailModal}
+          onClose={() => setShowDetailModal(false)}
+          teachingClasses={teachingClasses}
+        />
+      )}
+      {showSubmissionDetailModal && selectedSubmission && (
+        <TeacherSubmissionDetailModal
+          submission={selectedSubmission}
+          isOpen={showSubmissionDetailModal}
+          onClose={() => setShowSubmissionDetailModal(false)}
+        />
+      )}
+
+      {showApproveModal && submissionToApprove && (
+        <TeacherSubmissionApproveModal
+          submission={submissionToApprove}
+          isOpen={showApproveModal}
+          onClose={() => setShowApproveModal(false)}
+          onSuccess={handleApprovalSuccess}
+        />
+      )}
+
+      {showRejectModal && submissionToReject && (
+        <TeacherSubmissionRejectModal
+          submission={submissionToReject}
+          isOpen={showRejectModal}
+          onClose={() => setShowRejectModal(false)}
+          onSuccess={handleApprovalSuccess}
+        />
+      )}
+    </div>
+  );
+};
+
+export default TeacherQuestionsPage;
                       questions={questions}
                       mode="view"
                       showActions={true}
