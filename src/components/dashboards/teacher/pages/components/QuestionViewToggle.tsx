@@ -5,7 +5,7 @@ interface QuestionViewToggleProps {
   currentView: 'table' | 'exam';
   onViewChange: (view: 'table' | 'exam') => void;
   totalItems: number;
-  questionSource: 'my_questions' | 'submitted_questions' | 'my_submissions';
+  questionSource: 'my_questions' | 'my_submissions';
 }
 
 const QuestionViewToggle: React.FC<QuestionViewToggleProps> = ({
@@ -17,7 +17,6 @@ const QuestionViewToggle: React.FC<QuestionViewToggleProps> = ({
   const getSourceLabel = (source: string) => {
     switch (source) {
       case 'my_questions': return 'soal (soal Anda)';
-      case 'submitted_questions': return 'submission (dari guru lain)';
       case 'my_submissions': return 'submission (Anda submit)';
       default: return 'item';
     }
