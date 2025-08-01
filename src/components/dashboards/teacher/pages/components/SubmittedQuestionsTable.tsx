@@ -128,6 +128,15 @@ const SubmittedQuestionsTable: React.FC<SubmittedQuestionsTableProps> = ({
             return (
               <tr key={submission._id} className={`hover:bg-gray-50 transition-colors ${selectedSubmissions.includes(submission._id) ? 'bg-blue-50' : ''}`}>
                 {showCheckbox && (
+                  <td className="px-6 py-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedSubmissions.includes(submission._id)}
+                      onChange={() => handleSubmissionSelect(submission._id)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                  </td>
+                )}
                 <td className="px-6 py-4">
                   <div className="max-w-xs">
                     <div className="text-sm font-medium text-gray-900 truncate">
@@ -179,15 +188,6 @@ const SubmittedQuestionsTable: React.FC<SubmittedQuestionsTableProps> = ({
                     {statusInfo.label}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedSubmissions.includes(submission._id)}
-                      onChange={() => handleSubmissionSelect(submission._id)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                  </td>
-                )}
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-center space-x-2">
                     {submission.status === 'submitted' && (
