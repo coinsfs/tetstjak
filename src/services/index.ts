@@ -12,3 +12,4 @@ export * from './import';
 export * from './teacher';
 export * from './profile';
 export * from './questionSubmission';
+export * from './questionSet';
