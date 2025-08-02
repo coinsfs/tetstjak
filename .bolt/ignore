@@ -58,10 +58,10 @@ src/components/dashboards/teacher/pages/modals/TeacherExamStartConfirmationModal
 src/components/dashboards/teacher/pages/modals/TeacherQuestionFormModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherQuestionDetailModal.tsx
 src/components/dashboards/teacher/TeacherDepartmentInfo.tsx
-src/components/dashboards/teacher/TeacherHeader.tsx
+
 src/components/dashboards/teacher/TeacherInfoCard.tsx
 src/components/dashboards/teacher/TeacherMainContent.tsx
-src/components/dashboards/teacher/TeacherSidebar.tsx
+
 src/components/dashboards/teacher/TeacherStatsGrid.tsx
 src/components/dashboards/teacher/TeacherSubjectsList.tsx
 src/components/dashboards/teacher/TeacherWelcomeCard.tsx
@@ -74,7 +74,7 @@ src/components/dashboards/StudentDashboard.tsx
 src/components/dashboards/TeacherDashboard.tsx
 src/components/dashboards/teacher/pages/TeacherQuestionSetsPage.tsx
 src/components/dashboards/teacher/pages/TeacherQuestionsPage.tsx
-src/components/dashboards/teacher/pages/components/MyQuestionsTable.tsx
+
 src/components/dashboards/teacher/pages/components/MySubmissionsExamView.tsx
 src/components/dashboards/teacher/pages/components/MySubmissionsTable.tsx
 src/components/dashboards/teacher/pages/components/QuestionFilters.tsx
