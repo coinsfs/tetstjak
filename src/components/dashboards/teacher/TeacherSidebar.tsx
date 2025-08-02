@@ -9,7 +9,8 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  BookOpen
+  BookOpen,
+  Package
 } from 'lucide-react';
 
 interface MenuItem {
@@ -40,6 +41,7 @@ const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
     { id: 'classes', label: 'Kelas', icon: Users, path: '/teacher/classes' },
     { id: 'exams', label: 'Ujian', icon: FileText, path: '/teacher/exams' },
     { id: 'questions', label: 'Bank Soal', icon: HelpCircle, path: '/teacher/questions' },
+    { id: 'question-sets', label: 'Paket Soal', icon: Package, path: '/teacher/question-sets' },
     { id: 'analytics', label: 'Analitik', icon: BarChart3, path: '/teacher/analytics' },
   ];
 
