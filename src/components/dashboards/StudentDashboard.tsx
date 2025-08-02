@@ -28,8 +28,6 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
-  const { user, logout } = useAuth();
-
   const stats = [
     { title: 'Mata Pelajaran', value: '12', icon: BookOpen, color: 'bg-blue-500' },
     { title: 'Tugas Pending', value: '3', icon: Calendar, color: 'bg-orange-500' },
