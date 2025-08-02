@@ -4,7 +4,6 @@ import { useRouter } from '@/hooks/useRouter';
 import StudentSidebar from './student/StudentSidebar';
 import StudentHeader from './student/StudentHeader';
 import StudentMainContent from './student/StudentMainContent';
-import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, User, BookOpen, Calendar, Award } from 'lucide-react';
 
 const StudentDashboard: React.FC = () => {
