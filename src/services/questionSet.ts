@@ -43,6 +43,17 @@ class QuestionSetService extends BaseService {
   async deleteQuestionSet(token: string, questionSetId: string): Promise<void> {
     await this.delete(`/question-sets/${questionSetId}`, token);
   }
+
+  async addQuestionsToSet(token: string, questionSetId: string, questionIds: string[]): Promise<void> {
+    await this.post(`/question-sets/${questionSetId}/questions`, { question_ids: questionIds }, token);
+  }
+
+  async removeQuestionsFromSet(token: string, questionSetId: string, questionIds: string[]): Promise<void> {
+    await this.request(`/question-sets/${questionSetId}/questions`, {
+      method: 'DELETE',
+      body: JSON.stringify({ question_ids: questionIds })
+    }, token);
+  }
 }
 
 export const questionSetService = new QuestionSetService();

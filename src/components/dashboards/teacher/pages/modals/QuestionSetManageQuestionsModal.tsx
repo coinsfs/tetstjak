@@ -229,13 +229,11 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
 
     setLoading(true);
     try {
-      // Add selected questions to current question set
+      // Use new API endpoint to add questions
+      await questionSetService.addQuestionsToSet(token, questionSet._id, selectedQuestionIds);
+      
+      // Update local state
       const updatedQuestionIds = [...new Set([...currentQuestionIds, ...selectedQuestionIds])];
-      
-      await questionSetService.updateQuestionSet(token, questionSet._id, {
-        question_ids: updatedQuestionIds
-      });
-      
       setCurrentQuestionIds(updatedQuestionIds);
       setSelectedQuestionIds([]);
       toast.success(`Berhasil menambahkan ${selectedQuestionIds.length} soal ke paket`);
@@ -253,12 +251,11 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
 
     setLoading(true);
     try {
+      // Use new API endpoint to remove questions
+      await questionSetService.removeQuestionsFromSet(token, questionSet._id, [questionId]);
+      
+      // Update local state
       const updatedQuestionIds = currentQuestionIds.filter(id => id !== questionId);
-      
-      await questionSetService.updateQuestionSet(token, questionSet._id, {
-        question_ids: updatedQuestionIds
-      });
-      
       setCurrentQuestionIds(updatedQuestionIds);
       toast.success('Soal berhasil dihapus dari paket');
     } catch (error) {

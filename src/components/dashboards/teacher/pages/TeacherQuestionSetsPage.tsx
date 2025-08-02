@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Package, Plus, Search, Filter, RotateCcw, Eye, Edit, Settings, BookOpen, Users, Calendar, Tag, Globe, Lock } from 'lucide-react';
+import { Package, Plus, Search, Filter, RotateCcw, Eye, Edit, Settings, BookOpen, Users, Calendar, Tag, Globe, Lock, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { questionSetService, QuestionSet, QuestionSetFilters, CoordinationAssignment } from '@/services/questionSet';
 import Pagination from '@/components/Pagination';
@@ -23,7 +23,7 @@ const TeacherQuestionSetsPage: React.FC = () => {
   // Filter state
   const [filters, setFilters] = useState<QuestionSetFilters>({
     page: 1,
-    limit: 12,
+    limit: 20,
     search: '',
     grade_level: '',
     subject_id: '',
@@ -117,7 +117,7 @@ const TeacherQuestionSetsPage: React.FC = () => {
   const handleResetFilters = () => {
     setFilters({
       page: 1,
-      limit: 12,
+      limit: 20,
       search: '',
       grade_level: '',
       subject_id: '',
@@ -190,7 +190,7 @@ const TeacherQuestionSetsPage: React.FC = () => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('id-ID', {
       year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric'
     });
   };
@@ -213,26 +213,26 @@ const TeacherQuestionSetsPage: React.FC = () => {
   const availableGradeLevels = [...new Set(myCoordinations.map(coord => coord.grade_level))].sort();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <Package className="w-6 h-6 text-white" />
+      <div className="bg-white rounded-lg shadow-sm p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <Package className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Paket Soal</h1>
-              <p className="text-gray-600">Kelola dan tinjau paket soal pembelajaran</p>
+              <h1 className="text-xl font-bold text-gray-900">Paket Soal</h1>
+              <p className="text-sm text-gray-600">Kelola dan tinjau paket soal pembelajaran</p>
             </div>
           </div>
           
           {canCreateQuestionSet && (
             <button
               onClick={handleCreateQuestionSet}
-              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="flex items-center space-x-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
               <span>Buat Paket Soal</span>
             </button>
           )}
@@ -240,13 +240,13 @@ const TeacherQuestionSetsPage: React.FC = () => {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <Filter className="w-5 h-5 text-gray-500" />
-          <h3 className="text-lg font-semibold text-gray-900">Filter Paket Soal</h3>
+      <div className="bg-white rounded-lg shadow-sm p-4">
+        <div className="flex items-center space-x-2 mb-3">
+          <Filter className="w-4 h-4 text-gray-500" />
+          <h3 className="text-sm font-semibold text-gray-900">Filter Paket Soal</h3>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -304,6 +304,17 @@ const TeacherQuestionSetsPage: React.FC = () => {
             <option value="archived">Archived</option>
           </select>
 
+          {/* Visibility Filter */}
+          <select
+            value={filters.is_public === undefined ? '' : filters.is_public.toString()}
+            onChange={(e) => handleFilterChange('is_public', e.target.value === '' ? undefined : e.target.value === 'true')}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-sm"
+          >
+            <option value="">Semua Visibilitas</option>
+            <option value="true">Publik</option>
+            <option value="false">Pribadi</option>
+          </select>
+
           {/* Reset Button */}
           <button
             onClick={handleResetFilters}
@@ -315,29 +326,34 @@ const TeacherQuestionSetsPage: React.FC = () => {
         </div>
         
         {/* Active Filters Display */}
-        {(filters.search || filters.grade_level || filters.subject_id || filters.status) && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
+        {(filters.search || filters.grade_level || filters.subject_id || filters.status || filters.is_public !== undefined) && (
+          <div className="mt-3 pt-3 border-t border-gray-200">
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <span className="font-medium">Filter aktif:</span>
               <div className="flex flex-wrap gap-2">
                 {filters.search && (
-                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md">
+                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md text-xs">
                     Pencarian: "{filters.search}"
                   </span>
                 )}
                 {filters.grade_level && (
-                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md">
+                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md text-xs">
                     Kelas: {getGradeLabel(parseInt(filters.grade_level))}
                   </span>
                 )}
                 {filters.subject_id && (
-                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md">
+                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md text-xs">
                     Mata Pelajaran: {availableSubjects.find(s => s.id === filters.subject_id)?.name}
                   </span>
                 )}
                 {filters.status && (
-                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md">
+                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md text-xs">
                     Status: {getStatusBadge(filters.status).label}
+                  </span>
+                )}
+                {filters.is_public !== undefined && (
+                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md text-xs">
+                    Visibilitas: {filters.is_public ? 'Publik' : 'Pribadi'}
                   </span>
                 )}
               </div>
@@ -346,36 +362,36 @@ const TeacherQuestionSetsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Question Sets Grid */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="p-6">
+      {/* Question Sets Table */}
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="p-4">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-8">
               <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-600 border-t-transparent"></div>
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-purple-600 border-t-transparent"></div>
                 <span className="text-gray-600">Memuat paket soal...</span>
               </div>
             </div>
           ) : questionSets.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Package className="h-8 w-8 text-gray-400" />
+            <div className="text-center py-8">
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Package className="h-6 w-6 text-gray-400" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {filters.search || filters.grade_level || filters.subject_id || filters.status
+                {filters.search || filters.grade_level || filters.subject_id || filters.status || filters.is_public !== undefined
                   ? 'Tidak ada paket soal yang sesuai filter'
                   : 'Belum ada paket soal'
                 }
               </h3>
-              <p className="text-gray-600 mb-4">
-                {filters.search || filters.grade_level || filters.subject_id || filters.status
+              <p className="text-gray-600 mb-3">
+                {filters.search || filters.grade_level || filters.subject_id || filters.status || filters.is_public !== undefined
                   ? 'Coba ubah atau reset filter untuk melihat paket soal lainnya'
                   : canCreateQuestionSet 
                     ? 'Mulai dengan membuat paket soal pertama Anda'
                     : 'Belum ada paket soal yang tersedia untuk Anda'
                 }
               </p>
-              {!(filters.search || filters.grade_level || filters.subject_id || filters.status) && canCreateQuestionSet && (
+              {!(filters.search || filters.grade_level || filters.subject_id || filters.status || filters.is_public !== undefined) && canCreateQuestionSet && (
                 <button
                   onClick={handleCreateQuestionSet}
                   className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors mx-auto"
@@ -386,188 +402,236 @@ const TeacherQuestionSetsPage: React.FC = () => {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {questionSets.map((questionSet) => {
-                const statusInfo = getStatusBadge(questionSet.status);
-                const profileImageUrl = questionSet.created_by.profile_picture_key 
-                  ? getProfileImageUrl(questionSet.created_by.profile_picture_key)
-                  : null;
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Paket Soal
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Mata Pelajaran
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Kelas
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Soal
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Pembuat
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tanggal
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Aksi
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {questionSets.map((questionSet) => {
+                    const statusInfo = getStatusBadge(questionSet.status);
+                    const profileImageUrl = questionSet.created_by.profile_picture_key 
+                      ? getProfileImageUrl(questionSet.created_by.profile_picture_key)
+                      : null;
 
-                return (
-                  <div
-                    key={questionSet._id}
-                    className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-all duration-200 hover:border-purple-300"
-                  >
-                    {/* Header */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-gray-900 truncate mb-1">
-                          {questionSet.name}
-                        </h3>
-                        <p className="text-sm text-gray-600 line-clamp-2 mb-2">
-                          {questionSet.description}
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-1 ml-2">
-                        {questionSet.is_public ? (
-                          <Globe className="w-4 h-4 text-green-500" title="Publik" />
-                        ) : (
-                          <Lock className="w-4 h-4 text-gray-400" title="Pribadi" />
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Subject and Grade */}
-                    <div className="flex items-center space-x-4 mb-4">
-                      <div className="flex items-center space-x-2">
-                        <BookOpen className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-700">
-                          {questionSet.subject.name} ({questionSet.subject.code})
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Users className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-700">
-                          Kelas {getGradeLabel(questionSet.grade_level)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Status and Metadata */}
-                    <div className="flex items-center justify-between mb-4">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
-                        {statusInfo.label}
-                      </span>
-                      <div className="text-sm text-gray-500">
-                        {questionSet.metadata.total_questions} soal • {questionSet.metadata.total_points} poin
-                      </div>
-                    </div>
-
-                    {/* Difficulty Distribution */}
-                    {questionSet.metadata.total_questions > 0 && (
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                          <span>Distribusi Kesulitan</span>
-                        </div>
-                        <div className="flex space-x-1">
-                          <div 
-                            className="bg-green-200 h-2 rounded-l"
-                            style={{ 
-                              width: `${(questionSet.metadata.difficulty_distribution.easy / questionSet.metadata.total_questions) * 100}%`,
-                              minWidth: questionSet.metadata.difficulty_distribution.easy > 0 ? '8px' : '0'
-                            }}
-                            title={`Mudah: ${questionSet.metadata.difficulty_distribution.easy}`}
-                          ></div>
-                          <div 
-                            className="bg-yellow-200 h-2"
-                            style={{ 
-                              width: `${(questionSet.metadata.difficulty_distribution.medium / questionSet.metadata.total_questions) * 100}%`,
-                              minWidth: questionSet.metadata.difficulty_distribution.medium > 0 ? '8px' : '0'
-                            }}
-                            title={`Sedang: ${questionSet.metadata.difficulty_distribution.medium}`}
-                          ></div>
-                          <div 
-                            className="bg-red-200 h-2 rounded-r"
-                            style={{ 
-                              width: `${(questionSet.metadata.difficulty_distribution.hard / questionSet.metadata.total_questions) * 100}%`,
-                              minWidth: questionSet.metadata.difficulty_distribution.hard > 0 ? '8px' : '0'
-                            }}
-                            title={`Sulit: ${questionSet.metadata.difficulty_distribution.hard}`}
-                          ></div>
-                        </div>
-                        <div className="flex justify-between text-xs text-gray-500 mt-1">
-                          <span>Mudah: {questionSet.metadata.difficulty_distribution.easy}</span>
-                          <span>Sedang: {questionSet.metadata.difficulty_distribution.medium}</span>
-                          <span>Sulit: {questionSet.metadata.difficulty_distribution.hard}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Tags */}
-                    {questionSet.metadata.tags.length > 0 && (
-                      <div className="mb-4">
-                        <div className="flex flex-wrap gap-1">
-                          {questionSet.metadata.tags.slice(0, 3).map((tag, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
-                            >
-                              <Tag className="w-3 h-3 mr-1" />
-                              {tag}
-                            </span>
-                          ))}
-                          {questionSet.metadata.tags.length > 3 && (
-                            <span className="text-xs text-gray-500">
-                              +{questionSet.metadata.tags.length - 3} lagi
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Creator and Date */}
-                    <div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100">
-                      <div className="flex items-center space-x-2">
-                        {profileImageUrl ? (
-                          <img
-                            src={profileImageUrl}
-                            alt={questionSet.created_by.full_name}
-                            className="w-6 h-6 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                            <Users className="w-3 h-3 text-gray-500" />
+                    return (
+                      <tr key={questionSet._id} className="hover:bg-gray-50 transition-colors">
+                        {/* Paket Soal */}
+                        <td className="px-4 py-3">
+                          <div className="max-w-xs">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <h3 className="text-sm font-medium text-gray-900 truncate">
+                                {questionSet.name}
+                              </h3>
+                              {questionSet.is_public ? (
+                                <Globe className="w-3 h-3 text-green-500 flex-shrink-0" title="Publik" />
+                              ) : (
+                                <Lock className="w-3 h-3 text-gray-400 flex-shrink-0" title="Pribadi" />
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-600 line-clamp-2">
+                              {questionSet.description}
+                            </p>
+                            {questionSet.metadata.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {questionSet.metadata.tags.slice(0, 2).map((tag, index) => (
+                                  <span
+                                    key={index}
+                                    className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-700"
+                                  >
+                                    <Tag className="w-2.5 h-2.5 mr-1" />
+                                    {tag}
+                                  </span>
+                                ))}
+                                {questionSet.metadata.tags.length > 2 && (
+                                  <span className="text-xs text-gray-500">
+                                    +{questionSet.metadata.tags.length - 2}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
-                        )}
-                        <span className="text-sm text-gray-600">
-                          {questionSet.created_by.full_name}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-1 text-xs text-gray-500">
-                        <Calendar className="w-3 h-3" />
-                        <span>{formatDate(questionSet.created_at)}</span>
-                      </div>
-                    </div>
+                        </td>
 
-                    {/* Actions */}
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleViewQuestionSet(questionSet)}
-                        className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 text-sm text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
-                      >
-                        <Eye className="w-4 h-4" />
-                        <span>Detail</span>
-                      </button>
-                      
-                      {questionSet.can_manage_questions && (
-                        <button
-                          onClick={() => handleManageQuestions(questionSet)}
-                          className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 text-sm text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-md transition-colors"
-                        >
-                          <Settings className="w-4 h-4" />
-                          <span>Kelola Soal</span>
-                        </button>
-                      )}
-                      
-                      {questionSet.can_edit && (
-                        <button
-                          onClick={() => handleEditQuestionSet(questionSet)}
-                          className="flex items-center justify-center px-3 py-2 text-sm text-green-700 bg-green-50 hover:bg-green-100 rounded-md transition-colors"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                        {/* Mata Pelajaran */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center space-x-2">
+                            <BookOpen className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium text-gray-900 truncate">
+                                {questionSet.subject.name}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {questionSet.subject.code}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Kelas */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center space-x-2">
+                            <Users className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span className="text-sm text-gray-900">
+                              Kelas {getGradeLabel(questionSet.grade_level)}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Soal */}
+                        <td className="px-4 py-3">
+                          <div className="text-sm">
+                            <div className="font-medium text-gray-900">
+                              {questionSet.metadata.total_questions} soal
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {questionSet.metadata.total_points} poin
+                            </div>
+                            {questionSet.metadata.total_questions > 0 && (
+                              <div className="flex space-x-1 mt-1">
+                                <div 
+                                  className="bg-green-200 h-1.5 rounded-l"
+                                  style={{ 
+                                    width: `${(questionSet.metadata.difficulty_distribution.easy / questionSet.metadata.total_questions) * 100}%`,
+                                    minWidth: questionSet.metadata.difficulty_distribution.easy > 0 ? '4px' : '0'
+                                  }}
+                                  title={`Mudah: ${questionSet.metadata.difficulty_distribution.easy}`}
+                                ></div>
+                                <div 
+                                  className="bg-yellow-200 h-1.5"
+                                  style={{ 
+                                    width: `${(questionSet.metadata.difficulty_distribution.medium / questionSet.metadata.total_questions) * 100}%`,
+                                    minWidth: questionSet.metadata.difficulty_distribution.medium > 0 ? '4px' : '0'
+                                  }}
+                                  title={`Sedang: ${questionSet.metadata.difficulty_distribution.medium}`}
+                                ></div>
+                                <div 
+                                  className="bg-red-200 h-1.5 rounded-r"
+                                  style={{ 
+                                    width: `${(questionSet.metadata.difficulty_distribution.hard / questionSet.metadata.total_questions) * 100}%`,
+                                    minWidth: questionSet.metadata.difficulty_distribution.hard > 0 ? '4px' : '0'
+                                  }}
+                                  title={`Sulit: ${questionSet.metadata.difficulty_distribution.hard}`}
+                                ></div>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                            {statusInfo.label}
+                          </span>
+                        </td>
+
+                        {/* Pembuat */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center space-x-2">
+                            {profileImageUrl ? (
+                              <img
+                                src={profileImageUrl}
+                                alt={questionSet.created_by.full_name}
+                                className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                                <Users className="w-3 h-3 text-gray-500" />
+                              </div>
+                            )}
+                            <span className="text-sm text-gray-900 truncate">
+                              {questionSet.created_by.full_name}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Tanggal */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center space-x-1 text-xs text-gray-500">
+                            <Calendar className="w-3 h-3 flex-shrink-0" />
+                            <span>{formatDate(questionSet.created_at)}</span>
+                          </div>
+                        </td>
+
+                        {/* Aksi */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-center space-x-1">
+                            <button
+                              onClick={() => handleViewQuestionSet(questionSet)}
+                              className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
+                              title="Detail"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            
+                            {questionSet.can_manage_questions && (
+                              <button
+                                onClick={() => handleManageQuestions(questionSet)}
+                                className="p-1.5 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-md transition-colors"
+                                title="Kelola Soal"
+                              >
+                                <Settings className="w-4 h-4" />
+                              </button>
+                            )}
+                            
+                            {questionSet.can_edit && (
+                              <button
+                                onClick={() => handleEditQuestionSet(questionSet)}
+                                className="p-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-colors"
+                                title="Edit"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                            )}
+
+                            {questionSet.is_creator && (
+                              <button
+                                onClick={() => handleDeleteQuestionSet(questionSet)}
+                                className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+                                title="Hapus"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
