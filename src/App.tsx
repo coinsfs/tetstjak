@@ -83,7 +83,11 @@ const AppContent: React.FC = () => {
     ];
 
     const studentPaths = [
-      '/student'
+      '/student',
+      '/student/exams',
+      '/student/results',
+      '/student/evaluation',
+      '/student/profile'
     ];
 
     switch (role) {
@@ -142,6 +146,15 @@ const AppContent: React.FC = () => {
         </ProtectedRoute>
       );
     case '/student':
+      return (
+        <ProtectedRoute requiredRole="student">
+          <StudentDashboard />
+        </ProtectedRoute>
+      );
+    case '/student/exams':
+    case '/student/results':
+    case '/student/evaluation':
+    case '/student/profile':
       return (
         <ProtectedRoute requiredRole="student">
           <StudentDashboard />

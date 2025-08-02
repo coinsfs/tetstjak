@@ -1,8 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from '@/hooks/useRouter';
+import StudentSidebar from './student/StudentSidebar';
+import StudentHeader from './student/StudentHeader';
+import StudentMainContent from './student/StudentMainContent';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, User, BookOpen, Calendar, Award } from 'lucide-react';
 
 const StudentDashboard: React.FC = () => {
+  const { user, logout } = useAuth();
+  const { currentPath, navigate } = useRouter();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const getPageTitle = () => {
+    switch (currentPath) {
+      case '/student':
+        return 'Dashboard';
+      case '/student/exams':
+        return 'Ujian';
+      case '/student/results':
+        return 'Hasil Ujian';
+      case '/student/evaluation':
+        return 'Evaluasi';
+      case '/student/profile':
+        return 'Profile';
+      default:
+        return 'Dashboard';
+    }
+  };
+
   const { user, logout } = useAuth();
 
   const stats = [
@@ -13,10 +39,30 @@ const StudentDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar Component */}
+      <StudentSidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        currentPath={currentPath}
+        navigate={navigate}
+        logout={logout}
+      />
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col lg:ml-64 overflow-hidden">
+        {/* Header Component */}
+        <StudentHeader
+          user={user}
+          setSidebarOpen={setSidebarOpen}
+          title={getPageTitle()}
+        />
+
+        {/* Main Content Component */}
+        <StudentMainContent
+          user={user}
+          currentPath={currentPath}
+        />
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <User className="h-8 w-8 text-purple-600 mr-3" />
