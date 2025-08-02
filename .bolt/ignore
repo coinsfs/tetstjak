@@ -71,7 +71,7 @@ src/components/charts/BrowserUsageChart.tsx
 src/components/charts/StudentGrowthChart.tsx
 src/components/charts/StudentsByMajorChart.tsx
 src/components/dashboards/StudentDashboard.tsx
-src/components/dashboards/TeacherDashboard.tsx
+
 src/components/dashboards/teacher/pages/TeacherQuestionSetsPage.tsx
 src/components/dashboards/teacher/pages/TeacherQuestionsPage.tsx
 
