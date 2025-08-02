@@ -77,6 +77,7 @@ const AppContent: React.FC = () => {
       '/teacher/classes',
       '/teacher/exams',
       '/teacher/questions',
+      '/teacher/question-sets',
       '/teacher/analytics',
       '/teacher/profile'
     ];
@@ -132,6 +133,7 @@ const AppContent: React.FC = () => {
     case '/teacher/classes':
     case '/teacher/exams':
     case '/teacher/questions':
+    case '/teacher/question-sets':
     case '/teacher/analytics':
     case '/teacher/profile':
       return (
