@@ -1,4 +1,3 @@
-import React from 'react';
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '@/types/auth';
 import { BookOpen, Clock, TrendingUp, Award } from 'lucide-react';
