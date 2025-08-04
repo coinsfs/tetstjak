@@ -348,7 +348,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
                     <tr key={exam._id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
                         <div>
-                          <div className="student-exam-cell-content clamp-2" title={exam.title}>
+                          <div className="student-exam-cell-content multi-line" title={exam.title}>
                             <h4 className="text-sm font-medium text-gray-900">
                               {exam.title}
                             </h4>
@@ -370,14 +370,18 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">
+                          <div className="student-exam-cell-content" title={`Mulai: ${formatDateTime(exam.availability_start_time)}\nSelesai: ${formatDateTime(exam.availability_end_time)}`}>
                         <div className="student-exam-cell-content" title={`Mulai: ${formatDateTime(exam.availability_start_time)} | Selesai: ${formatDateTime(exam.availability_end_time)}`}>
-                          <div className="text-xs text-gray-900 leading-relaxed space-y-1">
-                            <p>
+                          <div className="text-xs text-gray-900 leading-relaxed">
+                            <p className="mb-1">
                               <span className="font-medium text-gray-700">Mulai:</span> {formatDateTime(exam.availability_start_time)}
                             </p>
                             <p>
                               <span className="font-medium text-gray-700">Selesai:</span> {formatDateTime(exam.availability_end_time)}
                             </p>
+                          </div>
+                        </div>
                           </div>
                         </div>
                       </td>
