@@ -309,105 +309,110 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
             </span>
           </div>
         </div>
-        <div className="p-6">
+        <div className="overflow-x-auto">
           {loading ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 px-6">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
               <p className="text-gray-500">Memuat ujian...</p>
             </div>
           ) : exams.length > 0 ? (
-            <>
-              <div className="space-y-4">
-                {exams.map((exam) => (
-                  <div key={exam._id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="text-lg font-medium text-gray-900 mb-2">{exam.title}</h4>
-                        <div className="flex items-center space-x-4 mb-3">
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {getExamTypeLabel(exam.exam_type)}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            <Clock className="w-4 h-4 inline mr-1" />
-                            {exam.duration_minutes} menit
-                          </span>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(exam.status)}`}>
-                            {getStatusLabel(exam.status)}
-                          </span>
+            <div className="min-w-full">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ujian
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tipe
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Durasi
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Jadwal
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Aksi
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {exams.map((exam) => (
+                    <tr key={exam._id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="max-w-xs">
+                          <h4 className="text-sm font-medium text-gray-900 truncate" title={exam.title}>
+                            {exam.title}
+                          </h4>
+                          <p className="text-xs text-gray-500 mt-1">
+                            ID: {exam._id.slice(-8)}
+                          </p>
                         </div>
-                        <div className="text-sm text-gray-600">
-                          <p>Mulai: {formatDateTime(exam.availability_start_time)}</p>
-                          <p>Selesai: {formatDateTime(exam.availability_end_time)}</p>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {getExamTypeLabel(exam.exam_type)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-900">
+                          <Clock className="w-4 h-4 mr-2 text-gray-400" />
+                          {exam.duration_minutes} menit
                         </div>
-                      </div>
-                      <div className="ml-4">
-                        {exam.status === 'ready' && (
-                          <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-                            Mulai Ujian
-                          </button>
-                        )}
-                        {exam.status === 'active' && (
-                          <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
-                            Lanjutkan
-                          </button>
-                        )}
-                        {exam.status === 'completed' && (
-                          <button className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors">
-                            Lihat Hasil
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
-                  <div className="text-sm text-gray-500">
-                    Halaman {currentPage} dari {totalPages} ({totalItems} total ujian)
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handleFilterChange('page', currentPage - 1)}
-                      disabled={currentPage <= 1}
-                      className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Sebelumnya
-                    </button>
-                    
-                    {/* Page numbers */}
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => handleFilterChange('page', pageNum)}
-                          className={`px-3 py-2 text-sm border rounded-md transition-colors ${
-                            pageNum === currentPage
-                              ? 'bg-blue-600 text-white border-blue-600'
-                              : 'border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                    
-                    <button
-                      onClick={() => handleFilterChange('page', currentPage + 1)}
-                      disabled={currentPage >= totalPages}
-                      className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Selanjutnya
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">
+                          <p className="font-medium">Mulai:</p>
+                          <p className="text-xs text-gray-500">{formatDateTime(exam.availability_start_time)}</p>
+                          <p className="font-medium mt-1">Selesai:</p>
+                          <p className="text-xs text-gray-500">{formatDateTime(exam.availability_end_time)}</p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(exam.status)}`}>
+                          {getStatusLabel(exam.status)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center space-x-2">
+                          {exam.status === 'ready' && (
+                            <button className="px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors">
+                              Mulai Ujian
+                            </button>
+                          )}
+                          {exam.status === 'active' && (
+                            <button className="px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors">
+                              Lanjutkan
+                            </button>
+                          )}
+                          {exam.status === 'completed' && (
+                            <button className="px-3 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition-colors">
+                              Lihat Hasil
+                            </button>
+                          )}
+                          {exam.status === 'pending_questions' && (
+                            <span className="px-3 py-2 bg-yellow-100 text-yellow-800 text-sm rounded-md">
+                              Menunggu Soal
+                            </span>
+                          )}
+                          {exam.status === 'cancelled' && (
+                            <span className="px-3 py-2 bg-red-100 text-red-800 text-sm rounded-md">
+                              Dibatalkan
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
-            <div className="text-center py-12">
+            <div className="text-center py-12 px-6">
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h4 className="text-lg font-medium text-gray-900 mb-2">Tidak Ada Ujian</h4>
               <p className="text-gray-500 mb-4">
@@ -416,6 +421,52 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && exams.length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-500">
+                Halaman {currentPage} dari {totalPages} ({totalItems} total ujian)
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => handleFilterChange('page', currentPage - 1)}
+                  disabled={currentPage <= 1}
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Sebelumnya
+                </button>
+                
+                {/* Page numbers */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handleFilterChange('page', pageNum)}
+                      className={`px-3 py-2 text-sm border rounded-md transition-colors ${
+                        pageNum === currentPage
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                
+                <button
+                  onClick={() => handleFilterChange('page', currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Selanjutnya
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
