@@ -347,9 +347,9 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
                   {exams.map((exam) => (
                     <tr key={exam._id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
-                        <div className="max-w-xs">
-                          <div className="student-exam-cell-content" title={exam.title}>
-                            <h4 className="text-sm font-medium text-gray-900 truncate">
+                        <div>
+                          <div className="student-exam-cell-content multi-line" title={exam.title}>
+                            <h4 className="text-sm font-medium text-gray-900">
                               {exam.title}
                             </h4>
                           </div>
@@ -371,11 +371,17 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900">
-                          <div className="student-exam-cell-content" title={`Mulai: ${formatDateTime(exam.availability_start_time)} - Selesai: ${formatDateTime(exam.availability_end_time)}`}>
-                            <p className="font-medium text-xs">Mulai:</p>
-                            <p className="text-xs text-gray-500 truncate">{formatDateTime(exam.availability_start_time)}</p>
-                            <p className="font-medium text-xs mt-1">Selesai:</p>
-                            <p className="text-xs text-gray-500 truncate">{formatDateTime(exam.availability_end_time)}</p>
+                          <div className="student-exam-cell-content" title={`Mulai: ${formatDateTime(exam.availability_start_time)}\nSelesai: ${formatDateTime(exam.availability_end_time)}`}>
+                            <div className="space-y-1">
+                              <div>
+                                <p className="font-medium text-xs text-gray-700">Mulai:</p>
+                                <p className="text-xs text-gray-600">{formatDateTime(exam.availability_start_time)}</p>
+                              </div>
+                              <div>
+                                <p className="font-medium text-xs text-gray-700">Selesai:</p>
+                                <p className="text-xs text-gray-600">{formatDateTime(exam.availability_end_time)}</p>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -387,27 +393,27 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="student-exam-action-buttons">
                           {exam.status === 'ready' && (
-                            <button className="student-exam-action-button px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors">
+                            <button className="student-exam-action-button bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
                               Mulai Ujian
                             </button>
                           )}
                           {exam.status === 'active' && (
-                            <button className="student-exam-action-button px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors">
+                            <button className="student-exam-action-button bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
                               Lanjutkan
                             </button>
                           )}
                           {exam.status === 'completed' && (
-                            <button className="student-exam-action-button px-3 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition-colors">
+                            <button className="student-exam-action-button bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors">
                               Lihat Hasil
                             </button>
                           )}
                           {exam.status === 'pending_questions' && (
-                            <span className="student-exam-action-button px-3 py-2 bg-yellow-100 text-yellow-800 text-sm rounded-md">
+                            <span className="student-exam-action-button bg-yellow-100 text-yellow-800 rounded-md">
                               Menunggu Soal
                             </span>
                           )}
                           {exam.status === 'cancelled' && (
-                            <span className="student-exam-action-button px-3 py-2 bg-red-100 text-red-800 text-sm rounded-md">
+                            <span className="student-exam-action-button bg-red-100 text-red-800 rounded-md">
                               Dibatalkan
                             </span>
                           )}
