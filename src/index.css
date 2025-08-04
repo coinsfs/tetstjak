@@ -759,6 +759,229 @@ button:focus {
   }
 }
 
+/* STUDENT EXAM TABLE - Responsive Design */
+.student-exam-table-container {
+  /* Container should not cause main page to scroll */
+  width: 100%;
+  max-width: 100%;
+  background: white;
+  border-radius: 0;
+}
+
+/* Table Scroll Wrapper - Only this scrolls horizontally */
+.student-exam-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  /* Smooth scrolling */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Table Inner Container */
+.student-exam-table-inner {
+  /* Fixed minimum width for table content */
+  min-width: 1200px;
+  width: 100%;
+}
+
+/* Enhanced Table Styling */
+.student-exam-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: white;
+}
+
+.student-exam-table thead {
+  background-color: #f9fafb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.student-exam-table th {
+  padding: 0.75rem 1.5rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.student-exam-table td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: top;
+  background: white;
+}
+
+.student-exam-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.student-exam-table tbody tr:hover td {
+  background-color: #f9fafb;
+}
+
+/* Specific Column Widths - Fixed Layout */
+.student-exam-table th:nth-child(1),
+.student-exam-table td:nth-child(1) { 
+  width: 250px;
+  min-width: 250px;
+  max-width: 250px;
+}
+
+.student-exam-table th:nth-child(2),
+.student-exam-table td:nth-child(2) { 
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+
+.student-exam-table th:nth-child(3),
+.student-exam-table td:nth-child(3) { 
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+}
+
+.student-exam-table th:nth-child(4),
+.student-exam-table td:nth-child(4) { 
+  width: 280px;
+  min-width: 280px;
+  max-width: 280px;
+}
+
+.student-exam-table th:nth-child(5),
+.student-exam-table td:nth-child(5) { 
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+
+.student-exam-table th:nth-child(6),
+.student-exam-table td:nth-child(6) { 
+  width: 180px;
+  min-width: 180px;
+  max-width: 180px;
+  text-align: center;
+}
+
+/* Text Truncation and Tooltips */
+.student-exam-cell-content {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  position: relative;
+}
+
+.student-exam-cell-content[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  white-space: normal;
+  max-width: 300px;
+  z-index: 1000;
+  pointer-events: none;
+  word-wrap: break-word;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced Scrollbar for Table */
+.student-exam-table-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.student-exam-table-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.student-exam-table-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.student-exam-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.student-exam-table-scroll::-webkit-scrollbar-corner {
+  background: #f1f5f9;
+}
+
+/* Action Buttons Styling */
+.student-exam-action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+.student-exam-action-button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Responsive Behavior */
+@media (max-width: 1536px) {
+  .student-exam-table-inner {
+    min-width: 1100px;
+  }
+}
+
+@media (max-width: 1280px) {
+  .student-exam-table-inner {
+    min-width: 1000px;
+  }
+  
+  .student-exam-table th,
+  .student-exam-table td {
+    padding: 0.75rem 1rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .student-exam-table-inner {
+    min-width: 900px;
+  }
+  
+  .student-exam-table th,
+  .student-exam-table td {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .student-exam-table-inner {
+    min-width: 800px;
+  }
+  
+  .student-exam-table th,
+  .student-exam-table td {
+    padding: 0.5rem;
+    font-size: 0.8125rem;
+  }
+  
+  .student-exam-table th {
+    font-size: 0.6875rem;
+  }
+}
+
 /* Ensure main page containers don't overflow */
 .page-container {
   width: 100%;

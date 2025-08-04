@@ -300,7 +300,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
       </div>
 
       {/* Exam List */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Daftar Ujian</h3>
@@ -309,33 +309,36 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
             </span>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        
+        {/* Table Container with Responsive Scroll */}
+        <div className="student-exam-table-container">
+          <div className="student-exam-table-scroll">
+            <div className="student-exam-table-inner">
           {loading ? (
-            <div className="text-center py-12 px-6">
+              <div className="text-center py-12 px-6">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
               <p className="text-gray-500">Memuat ujian...</p>
             </div>
           ) : exams.length > 0 ? (
-            <div className="min-w-full overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+              <table className="student-exam-table">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                       Ujian
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                       Tipe
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                       Durasi
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                       Jadwal
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                       Aksi
                     </th>
                   </tr>
@@ -344,9 +347,12 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
                   {exams.map((exam) => (
                     <tr key={exam._id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900" title={exam.title}>
-                            {exam.title}
+                        <div className="max-w-xs">
+                          <div className="student-exam-cell-content" title={exam.title}>
+                            <h4 className="text-sm font-medium text-gray-900 truncate">
+                              {exam.title}
+                            </h4>
+                          </div>
                           </h4>
                           <p className="text-xs text-gray-500 mt-1">
                             ID: {exam._id.slice(-8)}
@@ -366,10 +372,12 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900">
-                          <p className="font-medium">Mulai:</p>
-                          <p className="text-xs text-gray-500">{formatDateTime(exam.availability_start_time)}</p>
-                          <p className="font-medium mt-1">Selesai:</p>
-                          <p className="text-xs text-gray-500">{formatDateTime(exam.availability_end_time)}</p>
+                          <div className="student-exam-cell-content" title={`Mulai: ${formatDateTime(exam.availability_start_time)} - Selesai: ${formatDateTime(exam.availability_end_time)}`}>
+                            <p className="font-medium text-xs">Mulai:</p>
+                            <p className="text-xs text-gray-500 truncate">{formatDateTime(exam.availability_start_time)}</p>
+                            <p className="font-medium text-xs mt-1">Selesai:</p>
+                            <p className="text-xs text-gray-500 truncate">{formatDateTime(exam.availability_end_time)}</p>
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -378,29 +386,29 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <div className="flex items-center justify-center space-x-2">
+                        <div className="student-exam-action-buttons">
                           {exam.status === 'ready' && (
-                            <button className="px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors">
+                            <button className="student-exam-action-button px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors">
                               Mulai Ujian
                             </button>
                           )}
                           {exam.status === 'active' && (
-                            <button className="px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors">
+                            <button className="student-exam-action-button px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors">
                               Lanjutkan
                             </button>
                           )}
                           {exam.status === 'completed' && (
-                            <button className="px-3 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition-colors">
+                            <button className="student-exam-action-button px-3 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition-colors">
                               Lihat Hasil
                             </button>
                           )}
                           {exam.status === 'pending_questions' && (
-                            <span className="px-3 py-2 bg-yellow-100 text-yellow-800 text-sm rounded-md">
+                            <span className="student-exam-action-button px-3 py-2 bg-yellow-100 text-yellow-800 text-sm rounded-md">
                               Menunggu Soal
                             </span>
                           )}
                           {exam.status === 'cancelled' && (
-                            <span className="px-3 py-2 bg-red-100 text-red-800 text-sm rounded-md">
+                            <span className="student-exam-action-button px-3 py-2 bg-red-100 text-red-800 text-sm rounded-md">
                               Dibatalkan
                             </span>
                           )}
@@ -410,7 +418,6 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
                   ))}
                 </tbody>
               </table>
-            </div>
           ) : (
             <div className="text-center py-12 px-6">
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -420,6 +427,8 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
               </p>
             </div>
           )}
+            </div>
+          </div>
         </div>
 
         {/* Pagination */}
