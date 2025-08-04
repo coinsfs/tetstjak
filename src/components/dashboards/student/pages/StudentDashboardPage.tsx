@@ -1,12 +1,47 @@
 import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile } from '@/types/auth';
 import { BookOpen, Clock, TrendingUp, Award } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { studentExamService, StudentExam } from '@/services/studentExam';
+import toast from 'react-hot-toast';
 
 interface StudentDashboardPageProps {
   user: UserProfile | null;
 }
 
 const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => {
+  const { token } = useAuth();
+  const [upcomingExams, setUpcomingExams] = useState<StudentExam[]>([]);
+  const [loadingUpcoming, setLoadingUpcoming] = useState(true);
+
+  useEffect(() => {
+    const fetchUpcomingExams = async () => {
+      if (!token) return;
+
+      try {
+        setLoadingUpcoming(true);
+        const activeAcademicPeriod = await studentExamService.getActiveAcademicPeriod(token);
+        
+        if (activeAcademicPeriod) {
+          const response = await studentExamService.getStudentExams(token, {
+            academic_period_id: activeAcademicPeriod._id,
+            status: 'ready',
+            limit: 5
+          });
+          setUpcomingExams(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching upcoming exams:', error);
+        toast.error('Gagal memuat ujian mendatang');
+      } finally {
+        setLoadingUpcoming(false);
+      }
+    };
+
+    fetchUpcomingExams();
+  }, [token]);
+
   const getWelcomeMessage = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Selamat Pagi';
@@ -18,7 +53,7 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
   const statsCards = [
     {
       title: 'Ujian Tersedia',
-      value: '0',
+      value: upcomingExams.length.toString(),
       icon: BookOpen,
       color: 'bg-blue-500',
       bgColor: 'bg-blue-50',
@@ -49,6 +84,26 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
       textColor: 'text-orange-600'
     }
   ];
+
+  const getExamTypeLabel = (type: string) => {
+    switch (type) {
+      case 'official_uts': return 'UTS';
+      case 'official_uas': return 'UAS';
+      case 'quiz': return 'Kuis';
+      case 'daily_test': return 'Ulangan Harian';
+      default: return type;
+    }
+  };
+
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -99,11 +154,43 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
         {/* Upcoming Exams */}
         <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Ujian Mendatang</h3>
-          <div className="text-center py-8">
-            <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">Tidak ada ujian yang dijadwalkan</p>
-            <p className="text-sm text-gray-400 mt-1">Coming Soon</p>
-          </div>
+          {loadingUpcoming ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+              <p className="text-gray-500">Memuat ujian...</p>
+            </div>
+          ) : upcomingExams.length > 0 ? (
+            <div className="space-y-3">
+              {upcomingExams.map((exam) => (
+                <div key={exam._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">{exam.title}</h4>
+                    <div className="flex items-center space-x-4 mt-1">
+                      <span className="text-sm text-gray-500">
+                        {getExamTypeLabel(exam.exam_type)}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {exam.duration_minutes} menit
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {formatDateTime(exam.availability_start_time)} - {formatDateTime(exam.availability_end_time)}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Siap
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500">Tidak ada ujian yang dijadwalkan</p>
+            </div>
+          )}
         </div>
 
         {/* Recent Results */}
