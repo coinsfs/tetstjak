@@ -353,7 +353,6 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
                               {exam.title}
                             </h4>
                           </div>
-                          </h4>
                           <p className="text-xs text-gray-500 mt-1">
                             ID: {exam._id.slice(-8)}
                           </p>
