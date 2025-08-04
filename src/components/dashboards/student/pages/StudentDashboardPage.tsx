@@ -209,6 +209,9 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
                         </button>
                       )}
                     </div>
+                  </div>
+                </div>
+              ))}
               
               {/* View All Button */}
               <div className="pt-4 border-t border-gray-200">
