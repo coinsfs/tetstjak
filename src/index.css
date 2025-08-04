@@ -613,132 +613,27 @@ button:focus {
 }
 
 /* Enhanced Scrollbar for Table */
-.teacher-exam-table-scroll::-webkit-scrollbar,
-.overflow-x-auto::-webkit-scrollbar {
+.teacher-exam-table-scroll::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-.teacher-exam-table-scroll::-webkit-scrollbar-track,
-.overflow-x-auto::-webkit-scrollbar-track {
+.teacher-exam-table-scroll::-webkit-scrollbar-track {
   background: #f1f5f9;
   border-radius: 4px;
 }
 
-.teacher-exam-table-scroll::-webkit-scrollbar-thumb,
-.overflow-x-auto::-webkit-scrollbar-thumb {
+.teacher-exam-table-scroll::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 4px;
 }
 
-.teacher-exam-table-scroll::-webkit-scrollbar-thumb:hover,
-.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+.teacher-exam-table-scroll::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 
-.teacher-exam-table-scroll::-webkit-scrollbar-corner,
-.overflow-x-auto::-webkit-scrollbar-corner {
+.teacher-exam-table-scroll::-webkit-scrollbar-corner {
   background: #f1f5f9;
-}
-
-/* Student Exam Table Responsive Styles */
-.student-exam-table-container {
-  width: 100%;
-  max-width: 100%;
-  background: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  overflow: hidden;
-}
-
-.student-exam-table-scroll {
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: visible;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-}
-
-.student-exam-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 1200px;
-  background: white;
-}
-
-.student-exam-table thead {
-  background-color: #f9fafb;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.student-exam-table th {
-  padding: 0.75rem 1.5rem;
-  text-align: left;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid #e5e7eb;
-  white-space: nowrap;
-  background-color: #f9fafb;
-}
-
-.student-exam-table td {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  vertical-align: top;
-  background: white;
-}
-
-.student-exam-table tbody tr:hover {
-  background-color: #f9fafb;
-}
-
-.student-exam-table tbody tr:hover td {
-  background-color: #f9fafb;
-}
-
-/* Responsive behavior for student exam table */
-@media (max-width: 1280px) {
-  .student-exam-table {
-    min-width: 1100px;
-  }
-  
-  .student-exam-table th,
-  .student-exam-table td {
-    padding: 0.75rem 1rem;
-  }
-}
-
-@media (max-width: 1024px) {
-  .student-exam-table {
-    min-width: 1000px;
-  }
-  
-  .student-exam-table th,
-  .student-exam-table td {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .student-exam-table {
-    min-width: 900px;
-  }
-  
-  .student-exam-table th,
-  .student-exam-table td {
-    padding: 0.5rem;
-    font-size: 0.8125rem;
-  }
-  
-  .student-exam-table th {
-    font-size: 0.6875rem;
-  }
 }
 
 /* Action Buttons Styling */
