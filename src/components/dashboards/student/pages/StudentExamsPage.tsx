@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserProfile } from '@/types/auth';
-import { FileText, Clock, AlertCircle, Search, Filter, RotateCcw } from 'lucide-react';
+import { FileText, Clock, AlertCircle, Search, Filter, RotateCcw, Play, BarChart3, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { studentExamService, StudentExam, StudentExamFilters, AcademicPeriod } from '@/services/studentExam';
 import toast from 'react-hot-toast';
@@ -155,6 +155,82 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleExamAction = (exam: StudentExam) => {
+    // TODO: Implement exam actions based on status
+    switch (exam.status) {
+      case 'ready':
+        toast.success(`Memulai ujian: ${exam.title}`);
+        break;
+      case 'active':
+        toast.success(`Melanjutkan ujian: ${exam.title}`);
+        break;
+      case 'completed':
+        toast.success(`Melihat analitik ujian: ${exam.title}`);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const getActionButton = (exam: StudentExam) => {
+    switch (exam.status) {
+      case 'pending_questions':
+        return (
+          <button
+            disabled
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-400 bg-gray-100 rounded-md cursor-not-allowed"
+          >
+            <AlertTriangle className="w-4 h-4 mr-2" />
+            Menunggu Soal
+          </button>
+        );
+      case 'ready':
+        return (
+          <button
+            onClick={() => handleExamAction(exam)}
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+          >
+            <Play className="w-4 h-4 mr-2" />
+            Mulai Ujian
+          </button>
+        );
+      case 'active':
+        return (
+          <button
+            onClick={() => handleExamAction(exam)}
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors"
+          >
+            <Play className="w-4 h-4 mr-2" />
+            Lanjutkan
+          </button>
+        );
+      case 'completed':
+        return (
+          <button
+            onClick={() => handleExamAction(exam)}
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-colors"
+          >
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Analitik
+          </button>
+        );
+      case 'cancelled':
+        return (
+          <span className="inline-flex items-center px-3 py-2 text-sm font-medium text-red-800 bg-red-100 rounded-md">
+            <AlertCircle className="w-4 h-4 mr-2" />
+            Dibatalkan
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-800 bg-gray-100 rounded-md">
+            <AlertCircle className="w-4 h-4 mr-2" />
+            {getStatusLabel(exam.status)}
+          </span>
+        );
+    }
   };
 
   // Count exams by status
@@ -314,124 +390,98 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
         <div className="student-exam-table-container">
           <div className="student-exam-table-scroll">
             <div className="student-exam-table-inner">
-          {loading ? (
-              <div className="text-center py-12 px-6">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
-              <p className="text-gray-500">Memuat ujian...</p>
-            </div>
-          ) : exams.length > 0 ? (
-              <table className="student-exam-table">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      Ujian
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      Tipe
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      Durasi
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      Jadwal
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      Aksi
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {exams.map((exam) => (
-                    <tr key={exam._id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div>
-                          <div className="student-exam-cell-content multi-line" title={exam.title}>
-                            <h4 className="text-sm font-medium text-gray-900">
-                              {exam.title}
-                            </h4>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            ID: {exam._id.slice(-8)}
-                          </p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {getExamTypeLabel(exam.exam_type)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center text-sm text-gray-900">
-                          <Clock className="w-4 h-4 mr-2 text-gray-400" />
-                          {exam.duration_minutes} menit
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">
-                          <div className="student-exam-cell-content" title={`Mulai: ${formatDateTime(exam.availability_start_time)}\nSelesai: ${formatDateTime(exam.availability_end_time)}`}>
-                        <div className="student-exam-cell-content" title={`Mulai: ${formatDateTime(exam.availability_start_time)} | Selesai: ${formatDateTime(exam.availability_end_time)}`}>
-                          <div className="text-xs text-gray-900 leading-relaxed">
-                            <p className="mb-1">
-                              <span className="font-medium text-gray-700">Mulai:</span> {formatDateTime(exam.availability_start_time)}
-                            </p>
-                            <p>
-                              <span className="font-medium text-gray-700">Selesai:</span> {formatDateTime(exam.availability_end_time)}
-                            </p>
-                          </div>
-                        </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(exam.status)}`}>
-                          {getStatusLabel(exam.status)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <div className="student-exam-action-buttons">
-                          {exam.status === 'ready' && (
-                            <button className="student-exam-action-button bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-                              Mulai Ujian
-                            </button>
-                          )}
-                          {exam.status === 'active' && (
-                            <button className="student-exam-action-button bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
-                              Lanjutkan
-                            </button>
-                          )}
-                          {exam.status === 'completed' && (
-                            <button className="student-exam-action-button bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors">
-                              Lihat Hasil
-                            </button>
-                          )}
-                          {exam.status === 'pending_questions' && (
-                            <span className="student-exam-action-button bg-yellow-100 text-yellow-800 rounded-md">
-                              Menunggu Soal
-                            </span>
-                          )}
-                          {exam.status === 'cancelled' && (
-                            <span className="student-exam-action-button bg-red-100 text-red-800 rounded-md">
-                              Dibatalkan
-                            </span>
-                          )}
-                        </div>
-                      </td>
+              {loading ? (
+                <div className="text-center py-12 px-6">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+                  <p className="text-gray-500">Memuat ujian...</p>
+                </div>
+              ) : exams.length > 0 ? (
+                <table className="student-exam-table">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        Ujian
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        Tipe
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        Durasi
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        Jadwal
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        Aksi
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-          ) : (
-            <div className="text-center py-12 px-6">
-              <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h4 className="text-lg font-medium text-gray-900 mb-2">Tidak Ada Ujian</h4>
-              <p className="text-gray-500 mb-4">
-                Tidak ada ujian yang sesuai dengan filter yang dipilih.
-              </p>
-            </div>
-          )}
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {exams.map((exam) => (
+                      <tr key={exam._id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div>
+                            <div className="student-exam-cell-content" title={exam.title}>
+                              <h4 className="text-sm font-medium text-gray-900 line-clamp-2">
+                                {exam.title}
+                              </h4>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                              ID: {exam._id.slice(-8)}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {getExamTypeLabel(exam.exam_type)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center text-sm text-gray-900">
+                            <Clock className="w-4 h-4 mr-2 text-gray-400" />
+                            {exam.duration_minutes} menit
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">
+                            <div className="student-exam-cell-content clamp-3" title={`Mulai: ${formatDateTime(exam.availability_start_time)} | Selesai: ${formatDateTime(exam.availability_end_time)}`}>
+                              <div className="text-xs text-gray-900 leading-relaxed">
+                                <p className="mb-1">
+                                  <span className="font-medium text-gray-700">Mulai:</span> {formatDateTime(exam.availability_start_time)}
+                                </p>
+                                <p>
+                                  <span className="font-medium text-gray-700">Selesai:</span> {formatDateTime(exam.availability_end_time)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(exam.status)}`}>
+                            {getStatusLabel(exam.status)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <div className="student-exam-action-buttons">
+                            {getActionButton(exam)}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="text-center py-12 px-6">
+                  <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">Tidak Ada Ujian</h4>
+                  <p className="text-gray-500 mb-4">
+                    Tidak ada ujian yang sesuai dengan filter yang dipilih.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -441,7 +491,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
           <div className="px-6 py-4 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-500">
-                Halaman {currentPage} dari {totalPages} ({totalItems} total ujian)
+                Menampilkan {((currentPage - 1) * filters.limit!) + 1} - {Math.min(currentPage * filters.limit!, totalItems)} dari {totalItems} ujian
               </div>
               <div className="flex items-center space-x-2">
                 <button
@@ -455,6 +505,8 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
                 {/* Page numbers */}
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                  if (pageNum > totalPages) return null;
+                  
                   return (
                     <button
                       key={pageNum}
