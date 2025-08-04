@@ -760,251 +760,249 @@ button:focus {
 }
 
 /* STUDENT EXAM TABLE - Responsive Design */
-.student-exam-table-container {
-  /* Container should not cause main page to scroll */
-  width: 100%;
-  max-width: 100%;
+/* Enhanced Student Exam Page Styles */
+.student-exam-page {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  min-height: 100vh;
+}
+
+/* Professional Card Hover Effects */
+.exam-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid #e2e8f0;
   background: white;
-  border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
+}
+
+.exam-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border-color: #cbd5e1;
+}
+
+/* Enhanced Table Styles */
+.exam-table {
+  background: white;
+  border-radius: 0.75rem;
+  overflow: hidden;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
-/* Table Scroll Wrapper - Only this scrolls horizontally */
-.student-exam-table-scroll {
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: visible;
-  /* Smooth scrolling */
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
+.exam-table thead th {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  font-weight: 600;
+  color: #374151;
+  padding: 1rem 1.5rem;
+  border-bottom: 2px solid #e5e7eb;
+  position: relative;
 }
 
-/* Table Inner Container */
-.student-exam-table-inner {
-  /* More flexible minimum width for table content */
-  min-width: 800px;
-  width: 100%;
+.exam-table thead th:hover {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
 }
 
-/* Enhanced Table Styling */
-.student-exam-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  background: white;
+.exam-table tbody tr {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #f3f4f6;
 }
 
-.student-exam-table thead {
-  background-color: #f9fafb;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+.exam-table tbody tr:hover {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  transform: scale(1.01);
 }
 
-.student-exam-table th {
-  padding: 0.75rem 1.5rem;
-  text-align: left;
+.exam-table tbody td {
+  padding: 1rem 1.5rem;
+  vertical-align: middle;
+}
+
+/* Status Badge Enhancements */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 500;
-  color: #6b7280;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 1px solid #e5e7eb;
-  white-space: nowrap;
-  background-color: #f9fafb;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
-.student-exam-table td {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e5e7eb;
-  vertical-align: top;
+/* Action Button Enhancements */
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: none;
+  cursor: pointer;
+}
+
+.action-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.action-button:active {
+  transform: translateY(0);
+}
+
+/* Pagination Enhancements */
+.pagination-container {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-top: 1px solid #e5e7eb;
+  padding: 1rem 1.5rem;
+}
+
+.pagination-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  margin: 0 0.125rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
   background: white;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
-.student-exam-table tbody tr:hover {
-  background-color: #f9fafb;
+.pagination-button:hover:not(:disabled) {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  transform: translateY(-1px);
 }
 
-.student-exam-table tbody tr:hover td {
-  background-color: #f9fafb;
-}
-
-/* Optimized Column Widths - More flexible approach */
-.student-exam-table th:nth-child(1),
-.student-exam-table td:nth-child(1) { 
-  width: 25%;
-  min-width: 180px;
-}
-
-.student-exam-table th:nth-child(2),
-.student-exam-table td:nth-child(2) { 
-  width: 12%;
-  min-width: 80px;
-}
-
-.student-exam-table th:nth-child(3),
-.student-exam-table td:nth-child(3) { 
-  width: 12%;
-  min-width: 80px;
-}
-
-.student-exam-table th:nth-child(4),
-.student-exam-table td:nth-child(4) { 
-  width: 28%;
-  min-width: 200px;
-}
-
-.student-exam-table th:nth-child(5),
-.student-exam-table td:nth-child(5) { 
-  width: 10%;
-  min-width: 80px;
-}
-
-.student-exam-table th:nth-child(6),
-.student-exam-table td:nth-child(6) { 
-  width: 13%;
-  min-width: 100px;
-  text-align: center;
-}
-
-/* Text Truncation and Tooltips */
-.student-exam-cell-content {
-  position: relative;
-  word-wrap: break-word;
-  line-height: 1.4;
-  overflow-wrap: break-word;
-}
-
-/* For single line content */
-.student-exam-cell-content.truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* For multi-line content with line clamping */
-.student-exam-cell-content.clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.student-exam-cell-content.clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.student-exam-cell-content[title]:hover::after {
-  content: attr(title);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.9);
+.pagination-button.active {
+  background: #2563eb;
+  border-color: #2563eb;
   color: white;
-  padding: 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  white-space: normal;
-  max-width: 300px;
-  z-index: 1000;
-  pointer-events: none;
-  word-wrap: break-word;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
-/* Enhanced Scrollbar for Table */
-.student-exam-table-scroll::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.student-exam-table-scroll::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 4px;
+/* Loading State Enhancements */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 0.75rem;
 }
 
-.student-exam-table-scroll::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+.loading-spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
 }
 
-.student-exam-table-scroll::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-.student-exam-table-scroll::-webkit-scrollbar-corner {
-  background: #f1f5f9;
+/* Empty State Enhancements */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 0.75rem;
 }
 
-/* Action Buttons Styling */
-.student-exam-action-buttons {
+.empty-state-icon {
+  width: 6rem;
+  height: 6rem;
+  margin: 0 auto 1.5rem;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
 }
 
-.student-exam-action-button {
-  flex-shrink: 0;
-  white-space: nowrap;
+/* Filter Section Enhancements */
+.filter-section {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.filter-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem 1.5rem;
+}
+
+.filter-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
   font-size: 0.875rem;
-  padding: 0.5rem 0.75rem;
+  transition: all 0.2s ease;
+  background: white;
 }
 
-/* Responsive Behavior */
+.filter-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Responsive Improvements */
 @media (max-width: 1024px) {
-  .student-exam-table-inner {
-    min-width: 750px;
-  }
-  
-  .student-exam-table th,
-  .student-exam-table td {
-    padding: 0.5rem 0.75rem;
+  .exam-table thead th,
+  .exam-table tbody td {
+    padding: 0.75rem 1rem;
     font-size: 0.875rem;
   }
 }
 
 @media (max-width: 768px) {
-  .student-exam-table-inner {
-    min-width: 700px;
-  }
-  
-  .student-exam-table th,
-  .student-exam-table td {
-    padding: 0.5rem;
+  .exam-table thead th,
+  .exam-table tbody td {
+    padding: 0.5rem 0.75rem;
     font-size: 0.8125rem;
   }
   
-  .student-exam-table th {
-    font-size: 0.6875rem;
+  .action-button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
   }
   
-  .student-exam-action-button {
+  .pagination-button {
+    padding: 0.375rem 0.75rem;
     font-size: 0.75rem;
-    padding: 0.375rem 0.5rem;
   }
 }
 
 @media (max-width: 640px) {
-  .student-exam-table th,
-  .student-exam-table td {
+  .exam-table thead th,
+  .exam-table tbody td {
     padding: 0.375rem 0.5rem;
     font-size: 0.75rem;
   }
   
-  .student-exam-table th {
-    font-size: 0.625rem;
-  }
-  
-  .student-exam-action-button {
+  .action-button {
+    padding: 0.25rem 0.5rem;
     font-size: 0.6875rem;
-    padding: 0.25rem 0.375rem;
   }
 }
 
