@@ -1,4 +1,3 @@
-import React from 'react';
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserProfile } from '@/types/auth';
 import { FileText, Clock, AlertCircle, Search, Filter, RotateCcw } from 'lucide-react';
