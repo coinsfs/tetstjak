@@ -300,7 +300,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
       </div>
 
       {/* Exam List */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Daftar Ujian</h3>
@@ -316,7 +316,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
               <p className="text-gray-500">Memuat ujian...</p>
             </div>
           ) : exams.length > 0 ? (
-            <div className="min-w-full">
+            <div className="min-w-full overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -344,8 +344,8 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
                   {exams.map((exam) => (
                     <tr key={exam._id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
-                        <div className="max-w-xs">
-                          <h4 className="text-sm font-medium text-gray-900 truncate" title={exam.title}>
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-900" title={exam.title}>
                             {exam.title}
                           </h4>
                           <p className="text-xs text-gray-500 mt-1">
