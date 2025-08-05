@@ -114,6 +114,10 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
 
       try {
         console.log('📡 Loading exam questions for session:', sessionId);
+        
+        // Add loading state
+        setLoading(true);
+        
         // Load questions using session ID
         const examQuestions = await studentExamService.getExamQuestions(token, sessionId);
         console.log('✅ Exam questions loaded successfully:', {
@@ -131,9 +135,14 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
         setQuestions(examQuestions);
         console.log('✅ Questions set in state, count:', examQuestions.length);
         
-        // Get exam duration from first question or use default
-        // In a real implementation, this should come from the exam session data
-        const initialTime = 90 * 60; // 90 minutes in seconds - should be dynamic
+        // Try to get exam duration from session or use default
+        // This should ideally come from the exam session data
+        let initialTime = 90 * 60; // Default 90 minutes in seconds
+        
+        // If we have exam session data with duration, use it
+        // This would require an additional API call to get session details
+        // For now, we'll use the default
+        
         setTimeRemaining(initialTime);
         examStateRef.current.timeRemaining = initialTime;
         console.log('⏰ Timer set to:', initialTime, 'seconds');
@@ -149,12 +158,20 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
             if (parsedState.sessionId === sessionId) {
               setAnswers(parsedState.answers || {});
               setCurrentQuestionIndex(parsedState.currentQuestionIndex || 0);
-              setTimeRemaining(parsedState.timeRemaining || initialTime);
+              // Only restore time if it's reasonable (not expired)
+              const savedTime = parsedState.timeRemaining || initialTime;
+              if (savedTime > 0 && savedTime <= initialTime) {
+                setTimeRemaining(savedTime);
+                examStateRef.current.timeRemaining = savedTime;
+              } else {
+                setTimeRemaining(initialTime);
+                examStateRef.current.timeRemaining = initialTime;
+              }
               examStateRef.current = parsedState;
               console.log('✅ Saved state restored:', {
                 answersCount: Object.keys(parsedState.answers || {}).length,
                 currentQuestion: parsedState.currentQuestionIndex || 0,
-                timeRemaining: parsedState.timeRemaining || initialTime
+                timeRemaining: examStateRef.current.timeRemaining
               });
             } else {
               console.warn('⚠️ Saved state session ID mismatch, ignoring saved state');
@@ -183,6 +200,14 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
             try {
               const data = JSON.parse(event.data);
               console.log('📨 WebSocket message received:', data);
+              
+              // Handle specific WebSocket messages
+              if (data.type === 'EXAM_TIME_UPDATE' && data.remaining_time !== undefined) {
+                setTimeRemaining(data.remaining_time);
+                examStateRef.current.timeRemaining = data.remaining_time;
+              } else if (data.type === 'EXAM_FORCE_SUBMIT') {
+                handleSubmitExam();
+              }
             } catch (parseError) {
               console.error('❌ Error parsing WebSocket message:', parseError);
             }
@@ -215,7 +240,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
         }
 
         console.log('✅ Exam initialization completed successfully');
-        setLoading(false);
       } catch (error) {
         console.error('❌ Error initializing exam:', error);
         console.error('❌ Initialization error details:', {
@@ -230,6 +254,8 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
           : 'Gagal memuat soal ujian. Silakan coba lagi.';
         toast.error(errorMessage);
         navigate('/student/exams');
+      } finally {
+        setLoading(false);
       }
     };
 

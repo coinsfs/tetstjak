@@ -198,7 +198,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
     }
 
     // Validasi status ujian sebelum memulai
-    if (exam.status !== 'ongoing' && exam.status !== 'ready') {
+    if (exam.status !== 'ongoing' && exam.status !== 'ready' && exam.status !== 'active') {
       console.log('❌ Exam status not valid for starting:', exam.status);
       toast.error('Ujian tidak dapat dimulai. Status ujian tidak valid.');
       return;
@@ -229,6 +229,8 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
       if (!token) {
         console.error('❌ No authentication token available');
         toast.error('Sesi login telah berakhir. Silakan login kembali.');
+        // Redirect to login
+        navigate('/login');
         return;
       }
       
@@ -243,7 +245,11 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
       }
       
       console.log('🔄 Navigating to exam taking page with session ID:', session._id);
+      
+      // Add small delay to ensure state is updated
+      setTimeout(() => {
       navigate(`/student/exam-taking/${session._id}`);
+      }, 100);
       
       console.log('✅ Navigation completed successfully');
       
@@ -263,12 +269,26 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
       if (error instanceof Error) {
         if (error.message.includes('401') || error.message.includes('unauthorized')) {
           errorMessage = 'Sesi login telah berakhir. Silakan login kembali.';
+          // Redirect to login after showing error
+          setTimeout(() => {
+            navigate('/login');
+          }, 2000);
         } else if (error.message.includes('403') || error.message.includes('forbidden')) {
           errorMessage = 'Anda tidak memiliki akses untuk mengikuti ujian ini.';
         } else if (error.message.includes('404')) {
           errorMessage = 'Ujian tidak ditemukan atau telah dihapus.';
         } else if (error.message.includes('409') || error.message.includes('conflict')) {
           errorMessage = 'Anda sudah memiliki sesi ujian yang aktif.';
+          // Try to find existing session and redirect
+          const existingSessionMatch = error.message.match(/session_id:\s*([a-f0-9]+)/);
+          if (existingSessionMatch) {
+            const existingSessionId = existingSessionMatch[1];
+            toast.success('Melanjutkan sesi ujian yang sudah ada...');
+            setTimeout(() => {
+              navigate(`/student/exam-taking/${existingSessionId}`);
+            }, 1000);
+            return;
+          }
         } else if (error.message.includes('network') || error.message.includes('fetch')) {
           errorMessage = 'Koneksi internet bermasalah. Periksa koneksi Anda.';
         } else {
@@ -292,7 +312,15 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
     
     switch (exam.status) {
       case 'pending_questions':
+        return (
+          <div className="inline-flex items-center px-4 py-2 bg-yellow-100 text-yellow-800 text-sm font-medium rounded-lg">
+            <Clock className="w-4 h-4 mr-2" />
+            Menunggu Soal
+          </div>
+        );
+        
       case 'ready':
+      case 'active':
         if (!isTimeValid) {
           const timeMessage = now < startTime ? 'Belum Waktunya' : 'Waktu Berakhir';
           return (
@@ -310,7 +338,11 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
           <button 
             onClick={() => handleStartExam(exam)}
             disabled={isStarting}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`inline-flex items-center px-4 py-2 text-white text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              exam.status === 'active' 
+                ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500' 
+                : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+            }`}
           >
             {isStarting ? (
               <>
@@ -320,7 +352,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
             ) : (
               <>
                 <Play className="w-4 h-4 mr-2" />
-                Mulai Ujian
+                {exam.status === 'active' ? 'Lanjutkan Ujian' : 'Mulai Ujian'}
               </>
             )}
           </button>
@@ -354,7 +386,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
             ) : (
               <>
                 <Play className="w-4 h-4 mr-2" />
-                Mulai Ujian
+                Lanjutkan Ujian
               </>
             )}
           </button>

@@ -53,6 +53,20 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
       return; // Prevent multiple clicks
     }
     
+    // Additional validation
+    if (!token) {
+      console.error('❌ No authentication token available');
+      toast.error('Sesi login telah berakhir. Silakan login kembali.');
+      return;
+    }
+    
+    // Validate exam status
+    if (!['ready', 'ongoing', 'active'].includes(exam.status)) {
+      console.log('❌ Exam status not valid for starting:', exam.status);
+      toast.error('Ujian tidak dapat dimulai. Status ujian tidak valid.');
+      return;
+    }
+    
     try {
       setStartingExamId(exam._id);
       console.log('📡 Calling studentExamService.startExam with token and exam ID');
@@ -60,8 +74,19 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
       const session = await studentExamService.startExam(token!, exam._id);
       console.log('✅ Exam session created successfully:', session);
       
+      // Validate session response
+      if (!session || !session._id) {
+        console.error('❌ Invalid session response:', session);
+        toast.error('Gagal membuat sesi ujian. Silakan coba lagi.');
+        return;
+      }
+      
       console.log('🔄 Navigating to exam taking page with session ID:', session._id);
-      navigate(`/student/exam-taking/${session._id}`);
+      
+      // Add small delay to ensure state is properly set
+      setTimeout(() => {
+        navigate(`/student/exam-taking/${session._id}`);
+      }, 100);
       
       console.log('✅ Navigation completed successfully');
     } catch (error) {
@@ -74,9 +99,24 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
         errorStack: error instanceof Error ? error.stack : undefined
       });
       
-      const errorMessage = error instanceof Error 
-        ? `Gagal memulai ujian: ${error.message}` 
-        : 'Gagal memulai ujian. Silakan coba lagi.';
+      let errorMessage = 'Gagal memulai ujian. Silakan coba lagi.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('401') || error.message.includes('unauthorized')) {
+          errorMessage = 'Sesi login telah berakhir. Silakan login kembali.';
+        } else if (error.message.includes('403') || error.message.includes('forbidden')) {
+          errorMessage = 'Anda tidak memiliki akses untuk mengikuti ujian ini.';
+        } else if (error.message.includes('404')) {
+          errorMessage = 'Ujian tidak ditemukan atau telah dihapus.';
+        } else if (error.message.includes('409') || error.message.includes('conflict')) {
+          errorMessage = 'Anda sudah memiliki sesi ujian yang aktif.';
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Koneksi internet bermasalah. Periksa koneksi Anda.';
+        } else {
+          errorMessage = `Gagal memulai ujian: ${error.message}`;
+        }
+      }
+      
       toast.error(errorMessage);
     } finally {
       setStartingExamId(null);
