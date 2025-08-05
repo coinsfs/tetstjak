@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { studentExamService, StudentExam, StudentExamFilters, AcademicPeriod } from '@/services/studentExam';
 import { websocketService } from '@/services/websocket';
 import { useRouter } from '@/hooks/useRouter';
+import { formatDateTimeWithTimezone } from '@/utils/timezone';
 import toast from 'react-hot-toast';
 
 interface StudentExamsPageProps {
@@ -294,13 +295,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
   };
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('id-ID', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatDateTimeWithTimezone(dateString);
   };
 
   // Count exams by status

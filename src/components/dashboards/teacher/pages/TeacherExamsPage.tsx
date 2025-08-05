@@ -32,6 +32,7 @@ import TeacherExamEditModal from './modals/TeacherExamEditModal';
 import TeacherExamQuestionsModal from './modals/TeacherExamQuestionsModal';
 import TeacherExamStartConfirmationModal from './modals/TeacherExamStartConfirmationModal';
 import Pagination from '@/components/Pagination';
+import { formatDateTimeWithTimezone } from '@/utils/timezone';
 import toast from 'react-hot-toast';
 
 const TeacherExamsPage: React.FC = () => {
@@ -253,13 +254,7 @@ const TeacherExamsPage: React.FC = () => {
   };
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('id-ID', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatDateTimeWithTimezone(dateString);
   };
 
   const isDeleteDisabled = (exam: TeacherExam) => {

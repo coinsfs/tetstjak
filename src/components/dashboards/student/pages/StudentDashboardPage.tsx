@@ -3,6 +3,7 @@ import { UserProfile } from '@/types/auth';
 import { BookOpen, Clock, TrendingUp, Award } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { studentExamService, StudentExam } from '@/services/studentExam';
+import { formatDateTimeWithTimezone } from '@/utils/timezone';
 import toast from 'react-hot-toast';
 
 interface StudentDashboardPageProps {
@@ -95,13 +96,7 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
   };
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('id-ID', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatDateTimeWithTimezone(dateString);
   };
 
   return (
