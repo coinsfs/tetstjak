@@ -155,6 +155,7 @@ const AppContent: React.FC = () => {
     case '/student/results':
     case '/student/evaluation':
     case '/student/profile':
+    case (currentPath.startsWith('/student/exam-taking/') ? currentPath : ''):
       return (
         <ProtectedRoute requiredRole="student">
           <StudentDashboard />

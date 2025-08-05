@@ -46,11 +46,63 @@ export interface AcademicPeriod {
   end_date: string;
 }
 
+export interface ExamSession {
+  exam_id: string;
+  student_id: string;
+  status: string;
+  started_at: string;
+  submitted_at: string | null;
+  score: number | null;
+  answers: Record<string, any>;
+  question_map: QuestionMap[];
+  interaction_logs: any[];
+  _id: string;
+}
+
+export interface QuestionMap {
+  position: number;
+  question_id: string;
+  shuffled_option_ids: string[] | null;
+}
+
+export interface ExamQuestion {
+  id: string;
+  position: number;
+  question_text: string;
+  question_type: 'multiple_choice' | 'essay';
+  points: number;
+  options: ExamQuestionOption[];
+}
+
+export interface ExamQuestionOption {
+  id: string;
+  text: string;
+}
+
 class StudentExamService extends BaseService {
   async getStudentExams(token: string, filters: StudentExamFilters): Promise<StudentExamResponse> {
     const queryString = this.buildQueryParams(filters);
     const endpoint = `/exams/student?${queryString}`;
     return this.get<StudentExamResponse>(endpoint, token);
+  }
+
+  async startExam(token: string, examId: string): Promise<ExamSession> {
+    return this.post<ExamSession>(`/exams/${examId}/start`, {}, token);
+  }
+
+  async getExamQuestions(token: string, sessionId: string): Promise<ExamQuestion[]> {
+    return this.get<ExamQuestion[]>(`/exam-sessions/${sessionId}/questions`, token);
+  }
+
+  async submitAnswer(token: string, sessionId: string, questionId: string, answer: any): Promise<void> {
+    return this.post(`/exam-sessions/${sessionId}/answers`, {
+      question_id: questionId,
+      answer: answer
+    }, token);
+  }
+
+  async submitExam(token: string, sessionId: string): Promise<void> {
+    return this.post(`/exam-sessions/${sessionId}/submit`, {}, token);
   }
 
   async getAcademicPeriods(token: string): Promise<AcademicPeriod[]> {

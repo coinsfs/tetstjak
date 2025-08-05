@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserProfile } from '@/types/auth';
-import { FileText, Clock, AlertCircle, Search, Filter, RotateCcw, ChevronUp, ChevronDown, Calendar, BookOpen } from 'lucide-react';
+import { FileText, Clock, AlertCircle, Search, Filter, RotateCcw, ChevronUp, ChevronDown, Calendar, BookOpen, Play, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { studentExamService, StudentExam, StudentExamFilters, AcademicPeriod } from '@/services/studentExam';
+import { websocketService } from '@/services/websocket';
+import { useRouter } from '@/hooks/useRouter';
 import toast from 'react-hot-toast';
 
 interface StudentExamsPageProps {
@@ -11,6 +13,7 @@ interface StudentExamsPageProps {
 
 const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
   const { token } = useAuth();
+  const { navigate } = useRouter();
   const [exams, setExams] = useState<StudentExam[]>([]);
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +22,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [startingExam, setStartingExam] = useState<string | null>(null);
   
   // Filter states
   const [filters, setFilters] = useState<StudentExamFilters>({
@@ -29,6 +33,26 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
     limit: 10
   });
   const [searchValue, setSearchValue] = useState('');
+
+  // WebSocket setup for exam status updates
+  useEffect(() => {
+    const handleExamStarted = (data: any) => {
+      if (data.type === 'EXAM_STARTED' && data.exam_id) {
+        // Update the specific exam status to allow starting
+        setExams(prevExams => 
+          prevExams.map(exam => 
+            exam._id === data.exam_id 
+              ? { ...exam, status: 'active' }
+              : exam
+          )
+        );
+        toast.success('Ujian sudah dapat dimulai!');
+      }
+    };
+
+    websocketService.onMessage('EXAM_STARTED', handleExamStarted);
+    return () => websocketService.offMessage('EXAM_STARTED');
+  }, []);
 
   // Initialize with active academic period
   useEffect(() => {
@@ -162,6 +186,77 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
     return sortDirection === 'asc' ? 
       <ChevronUp className="w-4 h-4 text-blue-600" /> : 
       <ChevronDown className="w-4 h-4 text-blue-600" />;
+  };
+
+  const handleStartExam = async (exam: StudentExam) => {
+    if (startingExam) return; // Prevent multiple clicks
+    
+    try {
+      setStartingExam(exam._id);
+      const session = await studentExamService.startExam(token!, exam._id);
+      
+      // Navigate to exam taking page with session ID
+      navigate(`/student/exam-taking/${session._id}`);
+    } catch (error) {
+      console.error('Error starting exam:', error);
+      toast.error('Gagal memulai ujian. Silakan coba lagi.');
+    } finally {
+      setStartingExam(null);
+    }
+  };
+
+  const renderActionButton = (exam: StudentExam) => {
+    const isStarting = startingExam === exam._id;
+    
+    switch (exam.status) {
+      case 'pending_questions':
+      case 'ready':
+        return (
+          <button 
+            disabled
+            className="inline-flex items-center px-4 py-2 bg-gray-300 text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed"
+          >
+            <Play className="w-4 h-4 mr-2" />
+            Menunggu
+          </button>
+        );
+      
+      case 'active':
+        return (
+          <button 
+            onClick={() => handleStartExam(exam)}
+            disabled={isStarting}
+            className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
+          >
+            {isStarting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Memulai...
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 mr-2" />
+                Mulai Ujian
+              </>
+            )}
+          </button>
+        );
+      
+      case 'completed':
+        return (
+          <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 text-sm font-medium rounded-lg">
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Selesai
+          </div>
+        );
+      
+      default:
+        return (
+          <span className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-lg">
+            {getStatusLabel(exam.status)}
+          </span>
+        );
+    }
   };
 
   const getExamTypeLabel = (type: string) => {
@@ -389,7 +484,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
             </div>
           ) : sortedExams.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+              <table className="student-exam-table min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th 
@@ -441,7 +536,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
                     <tr key={exam._id} className={`hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                       <td className="px-6 py-4 max-w-xs">
                         <div>
-                          <div className="text-sm font-medium text-gray-900 truncate" title={exam.title}>
+                          <div className="student-exam-cell-content text-sm font-medium text-gray-900" title={exam.title}>
                               {exam.title}
                           </div>
                           <div className="text-xs text-gray-500 mt-1 flex items-center space-x-2">
@@ -488,36 +583,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center space-x-2">
-                          {exam.status === 'ready' && (
-                            <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
-                              <FileText className="w-4 h-4 mr-2" />
-                              Mulai Ujian
-                            </button>
-                          )}
-                          {exam.status === 'active' && (
-                            <button className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors">
-                              <Clock className="w-4 h-4 mr-2" />
-                              Lanjutkan
-                            </button>
-                          )}
-                          {exam.status === 'completed' && (
-                            <button className="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors">
-                              <AlertCircle className="w-4 h-4 mr-2" />
-                              Lihat Hasil
-                            </button>
-                          )}
-                          {exam.status === 'pending_questions' && (
-                            <span className="inline-flex items-center px-4 py-2 bg-yellow-100 text-yellow-800 text-sm font-medium rounded-lg">
-                              <Clock className="w-4 h-4 mr-2" />
-                              Menunggu Soal
-                            </span>
-                          )}
-                          {exam.status === 'cancelled' && (
-                            <span className="inline-flex items-center px-4 py-2 bg-red-100 text-red-800 text-sm font-medium rounded-lg">
-                              <AlertCircle className="w-4 h-4 mr-2" />
-                              Dibatalkan
-                            </span>
-                          )}
+                          {renderActionButton(exam)}
                         </div>
                       </td>
                     </tr>
