@@ -16,6 +16,7 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
   const { navigate } = useRouter();
   const [upcomingExams, setUpcomingExams] = useState<StudentExam[]>([]);
   const [loadingUpcoming, setLoadingUpcoming] = useState(true);
+  const [startingExamId, setStartingExamId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUpcomingExams = async () => {
@@ -45,13 +46,41 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
   }, [token]);
 
   const handleStartExam = async (exam: StudentExam) => {
+    console.log('🚀 Starting exam process for exam:', exam._id, exam.title);
+    
+    if (startingExamId) {
+      console.log('⚠️ Another exam is already being started, ignoring click');
+      return; // Prevent multiple clicks
+    }
+    
     try {
+      setStartingExamId(exam._id);
+      console.log('📡 Calling studentExamService.startExam with token and exam ID');
+      
       const session = await studentExamService.startExam(token!, exam._id);
+      console.log('✅ Exam session created successfully:', session);
+      
+      console.log('🔄 Navigating to exam taking page with session ID:', session._id);
       navigate(`/student/exam-taking/${session._id}`);
+      
+      console.log('✅ Navigation completed successfully');
     } catch (error) {
-      console.error('Error starting exam:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Gagal memulai ujian';
+      console.error('❌ Error starting exam:', error);
+      console.error('❌ Error details:', {
+        examId: exam._id,
+        examTitle: exam.title,
+        errorType: typeof error,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorStack: error instanceof Error ? error.stack : undefined
+      });
+      
+      const errorMessage = error instanceof Error 
+        ? `Gagal memulai ujian: ${error.message}` 
+        : 'Gagal memulai ujian. Silakan coba lagi.';
       toast.error(errorMessage);
+    } finally {
+      setStartingExamId(null);
+      console.log('🔄 Reset startingExamId state');
     }
   };
 
@@ -209,17 +238,33 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
                       {exam.status === 'ready' && (
                         <button 
                           onClick={() => handleStartExam(exam)}
-                          className="px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+                          disabled={startingExamId === exam._id}
+                          className="px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Mulai Ujian
+                          {startingExamId === exam._id ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2 inline-block"></div>
+                              Memulai...
+                            </>
+                          ) : (
+                            'Mulai Ujian'
+                          )}
                         </button>
                       )}
                       {exam.status === 'ongoing' && (
                         <button 
                           onClick={() => handleStartExam(exam)}
-                          className="px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
+                          disabled={startingExamId === exam._id}
+                          className="px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Lanjutkan
+                          {startingExamId === exam._id ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2 inline-block"></div>
+                              Memulai...
+                            </>
+                          ) : (
+                            'Lanjutkan'
+                          )}
                         </button>
                       )}
                     </div>

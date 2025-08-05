@@ -103,73 +103,108 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
   // Initialize exam and security measures
   useEffect(() => {
     const initializeExam = async () => {
+      console.log('🎯 Initializing exam with sessionId:', sessionId);
+      
       if (!token || !sessionId) {
+        console.error('❌ Missing token or sessionId:', { token: !!token, sessionId });
         toast.error('Session tidak valid');
         navigate('/student/exams');
         return;
       }
 
       try {
+        console.log('📡 Loading exam questions for session:', sessionId);
         // Load questions using session ID
         const examQuestions = await studentExamService.getExamQuestions(token, sessionId);
+        console.log('✅ Exam questions loaded successfully:', {
+          questionCount: examQuestions?.length || 0,
+          questions: examQuestions
+        });
         
         if (!examQuestions || examQuestions.length === 0) {
+          console.error('❌ No questions available for exam session:', sessionId);
           toast.error('Tidak ada soal yang tersedia untuk ujian ini');
           navigate('/student/exams');
           return;
         }
         
         setQuestions(examQuestions);
+        console.log('✅ Questions set in state, count:', examQuestions.length);
         
         // TODO: Get exam duration from exam data
         // For now, set default 90 minutes
         const initialTime = 90 * 60; // 90 minutes in seconds
         setTimeRemaining(initialTime);
         examStateRef.current.timeRemaining = initialTime;
+        console.log('⏰ Timer set to:', initialTime, 'seconds');
 
         // Load saved state if exists
         const savedState = localStorage.getItem(`exam_${sessionId}`);
         if (savedState) {
+          console.log('💾 Found saved exam state, restoring...');
           const parsedState: ExamState = JSON.parse(savedState);
           setAnswers(parsedState.answers);
           setCurrentQuestionIndex(parsedState.currentQuestionIndex);
           setTimeRemaining(parsedState.timeRemaining);
           examStateRef.current = parsedState;
+          console.log('✅ Saved state restored:', {
+            answersCount: Object.keys(parsedState.answers).length,
+            currentQuestion: parsedState.currentQuestionIndex,
+            timeRemaining: parsedState.timeRemaining
+          });
+        } else {
+          console.log('📝 No saved state found, starting fresh');
         }
 
         // Initialize WebSocket connection to exam room
         const wsUrl = `ws://127.0.0.1:8000/api/v1/ws/exam-room/${sessionId}`;
+        console.log('🔌 Connecting to WebSocket:', wsUrl);
         const ws = new WebSocket(wsUrl);
         
         ws.onopen = () => {
-          console.log('Connected to exam room');
+          console.log('✅ WebSocket connected to exam room');
           setExamWebSocket(ws);
         };
 
         ws.onmessage = (event) => {
           const data = JSON.parse(event.data);
-          console.log('Exam room message:', data);
+          console.log('📨 WebSocket message received:', data);
         };
 
         ws.onclose = () => {
-          console.log('Disconnected from exam room');
+          console.log('🔌 WebSocket disconnected from exam room');
         };
 
         ws.onerror = (error) => {
-          console.error('Exam room WebSocket error:', error);
+          console.error('❌ WebSocket error:', error);
         };
 
         // Request fullscreen
+        console.log('🖥️ Requesting fullscreen mode...');
         if (document.documentElement.requestFullscreen) {
           document.documentElement.requestFullscreen().catch(() => {
+            console.warn('⚠️ Fullscreen request denied');
             handleSecurityViolation('FULLSCREEN_DENIED', 'Fullscreen mode ditolak');
           });
+        } else {
+          console.warn('⚠️ Fullscreen API not supported');
         }
 
+        console.log('✅ Exam initialization completed successfully');
         setLoading(false);
       } catch (error) {
-        console.error('Error initializing exam:', error);
-        toast.error('Gagal memuat soal ujian');
+        console.error('❌ Error initializing exam:', error);
+        console.error('❌ Initialization error details:', {
+          sessionId,
+          errorType: typeof error,
+          errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          errorStack: error instanceof Error ? error.stack : undefined
+        });
+        
+        const errorMessage = error instanceof Error 
+          ? `Gagal memuat soal ujian: ${error.message}` 
+          : 'Gagal memuat soal ujian. Silakan coba lagi.';
+        toast.error(errorMessage);
         navigate('/student/exams');
       }
     };
