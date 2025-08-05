@@ -190,23 +190,42 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
   };
 
   const handleStartExam = async (exam: StudentExam) => {
-    if (startingExam) return; // Prevent multiple clicks
+    console.log('🚀 Starting exam process for exam:', exam._id, exam.title);
+    
+    if (startingExam) {
+      console.log('⚠️ Another exam is already being started, ignoring click');
+      return; // Prevent multiple clicks
+    }
     
     try {
       setStartingExam(exam._id);
+      console.log('📡 Calling studentExamService.startExam with token and exam ID');
       
-      // Start the exam and get session data
       const session = await studentExamService.startExam(token!, exam._id);
+      console.log('✅ Exam session created successfully:', session);
       
-      // Navigate to exam taking page with session ID
+      console.log('🔄 Navigating to exam taking page with session ID:', session._id);
       navigate(`/student/exam-taking/${session._id}`);
+      
+      console.log('✅ Navigation completed successfully');
       
     } catch (error) {
       console.error('Error starting exam:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Gagal memulai ujian';
+      console.error('❌ Error details:', {
+        examId: exam._id,
+        examTitle: exam.title,
+        errorType: typeof error,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorStack: error instanceof Error ? error.stack : undefined
+      });
+      
+      const errorMessage = error instanceof Error 
+        ? `Gagal memulai ujian: ${error.message}` 
+        : 'Gagal memulai ujian. Silakan coba lagi.';
       toast.error(errorMessage);
     } finally {
       setStartingExam(null);
+      console.log('🔄 Reset startingExamId state');
     }
   };
 

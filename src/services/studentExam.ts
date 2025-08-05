@@ -96,9 +96,30 @@ class StudentExamService extends BaseService {
       console.error('❌ StudentExamService.startExam failed:', error);
       throw error;
     }
+    console.log('🔧 StudentExamService.startExam called with examId:', examId);
+    try {
+      const result = await this.post<ExamSession>(`/exams/${examId}/start`, {}, token);
+      console.log('✅ StudentExamService.startExam successful:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ StudentExamService.startExam failed:', error);
+      throw error;
+    }
   }
 
   async getExamQuestions(token: string, sessionId: string): Promise<ExamQuestion[]> {
+    console.log('🔧 StudentExamService.getExamQuestions called with sessionId:', sessionId);
+    try {
+      const result = await this.get<ExamQuestion[]>(`/exam-sessions/${sessionId}/questions`, token);
+      console.log('✅ StudentExamService.getExamQuestions successful:', {
+        sessionId,
+        questionCount: result?.length || 0
+      });
+      return result;
+    } catch (error) {
+      console.error('❌ StudentExamService.getExamQuestions failed:', error);
+      throw error;
+    }
     console.log('🔧 StudentExamService.getExamQuestions called with sessionId:', sessionId);
     try {
       const result = await this.get<ExamQuestion[]>(`/exam-sessions/${sessionId}/questions`, token);
