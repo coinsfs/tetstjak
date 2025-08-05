@@ -9,13 +9,11 @@ export const WIB_OFFSET = 7; // UTC+7
 export const convertWIBToUTC = (wibDatetime: string): string => {
   if (!wibDatetime) return '';
   
-  // Parse datetime sebagai WIB (UTC+7)
+  // Parse datetime - browser akan menginterpretasi sebagai waktu lokal
   const wibDate = new Date(wibDatetime);
   
-  // Kurangi 7 jam untuk konversi ke UTC
-  const utcDate = new Date(wibDate.getTime() - (WIB_OFFSET * 60 * 60 * 1000));
-  
-  return utcDate.toISOString();
+  // toISOString() otomatis mengkonversi ke UTC
+  return wibDate.toISOString();
 };
 
 /**
@@ -29,11 +27,12 @@ export const convertUTCToWIB = (utcDatetime: string): string => {
   // Parse UTC datetime
   const utcDate = new Date(utcDatetime);
   
-  // Tambah 7 jam untuk konversi ke WIB
-  const wibDate = new Date(utcDate.getTime() + (WIB_OFFSET * 60 * 60 * 1000));
+  // Untuk input datetime-local, kita perlu mendapatkan waktu lokal
+  // Gunakan offset timezone browser untuk konversi yang akurat
+  const timezoneOffset = utcDate.getTimezoneOffset() * 60 * 1000;
+  const localDate = new Date(utcDate.getTime() - timezoneOffset);
   
-  // Format untuk datetime-local input (YYYY-MM-DDTHH:mm)
-  return formatDateTimeLocal(wibDate);
+  return formatDateTimeLocal(localDate);
 };
 
 /**
@@ -57,9 +56,8 @@ export const formatDateTimeLocal = (date: Date): string => {
  */
 export const getCurrentWIBDateTime = (): string => {
   const now = new Date();
-  // Tambah offset WIB untuk mendapatkan waktu lokal
-  const wibNow = new Date(now.getTime() + (WIB_OFFSET * 60 * 60 * 1000));
-  return formatDateTimeLocal(wibNow);
+  // Gunakan waktu lokal langsung untuk datetime-local input
+  return formatDateTimeLocal(now);
 };
 
 /**
@@ -71,9 +69,9 @@ export const formatDateTimeWithTimezone = (utcDatetime: string): string => {
   if (!utcDatetime) return '-';
   
   const utcDate = new Date(utcDatetime);
-  const wibDate = new Date(utcDate.getTime() + (WIB_OFFSET * 60 * 60 * 1000));
   
-  return wibDate.toLocaleString('id-ID', {
+  // Gunakan toLocaleString dengan timezone untuk konversi otomatis
+  return utcDate.toLocaleString('id-ID', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
