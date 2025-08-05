@@ -88,21 +88,81 @@ class StudentExamService extends BaseService {
 
   async startExam(token: string, examId: string): Promise<ExamSession> {
     console.log('🔧 StudentExamService.startExam called with examId:', examId);
+    
+    // Validasi input parameters
+    if (!token) {
+      console.error('❌ Token is required');
+      throw new Error('Authentication token is required');
+    }
+    
+    if (!examId) {
+      console.error('❌ ExamId is required');
+      throw new Error('Exam ID is required');
+    }
+    
     try {
       const result = await this.post<ExamSession>(`/exams/${examId}/start`, {}, token);
       console.log('✅ StudentExamService.startExam successful:', result);
+      
+      // Validasi response
+      if (!result || !result._id) {
+        console.error('❌ Invalid response from startExam:', result);
+        throw new Error('Invalid response from server');
+      }
+      
       return result;
     } catch (error) {
       console.error('❌ StudentExamService.startExam failed:', error);
+      
+      // Enhanced error handling
+      if (error instanceof Error) {
+        // Re-throw with more context if needed
+        throw error;
+      } else {
+        throw new Error('Unknown error occurred while starting exam');
+      }
+    }
+  }
+
+  async getExamQuestions(token: string, sessionId: string): Promise<ExamQuestion[]> {
+    console.log('🔧 StudentExamService.getExamQuestions called with sessionId:', sessionId);
+    
+    // Validasi input parameters
+    if (!token) {
+      console.error('❌ Token is required');
+      throw new Error('Authentication token is required');
+    }
+    
+    if (!sessionId) {
+      console.error('❌ SessionId is required');
       throw error;
     }
-    console.log('🔧 StudentExamService.startExam called with examId:', examId);
+    
     try {
-      const result = await this.post<ExamSession>(`/exams/${examId}/start`, {}, token);
-      console.log('✅ StudentExamService.startExam successful:', result);
+      const result = await this.get<ExamQuestion[]>(`/exam-sessions/${sessionId}/questions`, token);
+      console.log('✅ StudentExamService.getExamQuestions successful:', {
+        sessionId,
+        questionCount: result?.length || 0
+      });
+      
+      // Validasi response
+      if (!Array.isArray(result)) {
+        console.error('❌ Invalid response format from getExamQuestions:', result);
+        throw new Error('Invalid response format from server');
+      }
+      
       return result;
     } catch (error) {
-      console.error('❌ StudentExamService.startExam failed:', error);
+      console.error('❌ StudentExamService.getExamQuestions failed:', error);
+      
+      // Enhanced error handling
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error('Unknown error occurred while fetching exam questions');
+      }
+    }
+  }
       throw error;
     }
   }

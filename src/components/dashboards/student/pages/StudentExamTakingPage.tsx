@@ -105,10 +105,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
     const initializeExam = async () => {
       console.log('🎯 Initializing exam with sessionId:', sessionId);
       
-      console.log('🎯 Initializing exam with sessionId:', sessionId);
-      
       if (!token || !sessionId) {
-        console.error('❌ Missing token or sessionId:', { token: !!token, sessionId });
         console.error('❌ Missing token or sessionId:', { token: !!token, sessionId });
         toast.error('Session tidak valid');
         navigate('/student/exams');
@@ -116,7 +113,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
       }
 
       try {
-        console.log('📡 Loading exam questions for session:', sessionId);
         console.log('📡 Loading exam questions for session:', sessionId);
         // Load questions using session ID
         const examQuestions = await studentExamService.getExamQuestions(token, sessionId);
@@ -135,9 +131,9 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
         setQuestions(examQuestions);
         console.log('✅ Questions set in state, count:', examQuestions.length);
         
-        // TODO: Get exam duration from exam data
-        // For now, set default 90 minutes
-        const initialTime = 90 * 60; // 90 minutes in seconds
+        // Get exam duration from first question or use default
+        // In a real implementation, this should come from the exam session data
+        const initialTime = 90 * 60; // 90 minutes in seconds - should be dynamic
         setTimeRemaining(initialTime);
         examStateRef.current.timeRemaining = initialTime;
         console.log('⏰ Timer set to:', initialTime, 'seconds');
@@ -146,52 +142,76 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
         const savedState = localStorage.getItem(`exam_${sessionId}`);
         if (savedState) {
           console.log('💾 Found saved exam state, restoring...');
-          const parsedState: ExamState = JSON.parse(savedState);
-          setAnswers(parsedState.answers);
-          setCurrentQuestionIndex(parsedState.currentQuestionIndex);
-          setTimeRemaining(parsedState.timeRemaining);
-          examStateRef.current = parsedState;
-          console.log('✅ Saved state restored:', {
-            answersCount: Object.keys(parsedState.answers).length,
-            currentQuestion: parsedState.currentQuestionIndex,
-            timeRemaining: parsedState.timeRemaining
-          });
+          try {
+            const parsedState: ExamState = JSON.parse(savedState);
+            
+            // Validasi saved state
+            if (parsedState.sessionId === sessionId) {
+              setAnswers(parsedState.answers || {});
+              setCurrentQuestionIndex(parsedState.currentQuestionIndex || 0);
+              setTimeRemaining(parsedState.timeRemaining || initialTime);
+              examStateRef.current = parsedState;
+              console.log('✅ Saved state restored:', {
+                answersCount: Object.keys(parsedState.answers || {}).length,
+                currentQuestion: parsedState.currentQuestionIndex || 0,
+                timeRemaining: parsedState.timeRemaining || initialTime
+              });
+            } else {
+              console.warn('⚠️ Saved state session ID mismatch, ignoring saved state');
+              localStorage.removeItem(`exam_${sessionId}`);
+            }
+          } catch (parseError) {
+            console.error('❌ Error parsing saved state:', parseError);
+            localStorage.removeItem(`exam_${sessionId}`);
+          }
         } else {
           console.log('📝 No saved state found, starting fresh');
         }
 
-        // Initialize WebSocket connection to exam room
-        const wsUrl = `ws://127.0.0.1:8000/api/v1/ws/exam-room/${sessionId}`;
-        console.log('🔌 Connecting to WebSocket:', wsUrl);
-        const ws = new WebSocket(wsUrl);
-        
-        ws.onopen = () => {
-          console.log('✅ WebSocket connected to exam room');
-          setExamWebSocket(ws);
-        };
+        // Initialize WebSocket connection to exam room with proper error handling
+        try {
+          const wsUrl = `wss://smkmudakalirejo.pagekite.me/api/v1/ws/exam-room/${sessionId}`;
+          console.log('🔌 Connecting to WebSocket:', wsUrl);
+          const ws = new WebSocket(wsUrl);
+          
+          ws.onopen = () => {
+            console.log('✅ WebSocket connected to exam room');
+            setExamWebSocket(ws);
+          };
 
-        ws.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          console.log('📨 WebSocket message received:', data);
-        };
+          ws.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              console.log('📨 WebSocket message received:', data);
+            } catch (parseError) {
+              console.error('❌ Error parsing WebSocket message:', parseError);
+            }
+          };
 
-        ws.onclose = () => {
-          console.log('🔌 WebSocket disconnected from exam room');
-        };
+          ws.onclose = (event) => {
+            console.log('🔌 WebSocket disconnected from exam room:', event.code, event.reason);
+          };
 
-        ws.onerror = (error) => {
-          console.error('❌ WebSocket error:', error);
-        };
+          ws.onerror = (error) => {
+            console.error('❌ WebSocket error:', error);
+          };
+        } catch (wsError) {
+          console.error('❌ Failed to initialize WebSocket:', wsError);
+          // Continue without WebSocket - exam can still function
+        }
 
         // Request fullscreen
         console.log('🖥️ Requesting fullscreen mode...');
-        if (document.documentElement.requestFullscreen) {
-          document.documentElement.requestFullscreen().catch(() => {
+        try {
+          if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+          }
+        } catch (fullscreenError) {
+          console.warn('⚠️ Fullscreen request failed:', fullscreenError);
+          if (!loading) {
             console.warn('⚠️ Fullscreen request denied');
             handleSecurityViolation('FULLSCREEN_DENIED', 'Fullscreen mode ditolak');
-          });
-        } else {
-          console.warn('⚠️ Fullscreen API not supported');
+          }
         }
 
         console.log('✅ Exam initialization completed successfully');
@@ -374,19 +394,45 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
   const handleSubmitExam = useCallback(async () => {
     if (isSubmitting) return;
     
+    // Konfirmasi sebelum submit
+    const confirmSubmit = window.confirm(
+      `Apakah Anda yakin ingin menyelesaikan ujian?\n\n` +
+      `Soal terjawab: ${Object.keys(answers).length} dari ${questions.length}\n` +
+      `Waktu tersisa: ${formatTime(timeRemaining)}\n\n` +
+      `Setelah dikonfirmasi, Anda tidak dapat mengubah jawaban lagi.`
+    );
+    
+    if (!confirmSubmit) {
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
-      // Save final answers
-      for (const [questionId, answer] of Object.entries(answers)) {
-        await studentExamService.submitAnswer(token!, sessionId, questionId, answer.answer);
+      console.log('📤 Starting exam submission process');
+      
+      // Save final answers with error handling
+      const answerEntries = Object.entries(answers);
+      console.log(`💾 Saving ${answerEntries.length} answers`);
+      
+      for (const [questionId, answer] of answerEntries) {
+        try {
+          await studentExamService.submitAnswer(token!, sessionId, questionId, answer.answer);
+          console.log(`✅ Answer saved for question ${questionId}`);
+        } catch (answerError) {
+          console.error(`❌ Failed to save answer for question ${questionId}:`, answerError);
+          // Continue with other answers even if one fails
+        }
       }
       
       // Submit exam
+      console.log('📤 Submitting exam session');
       await studentExamService.submitExam(token!, sessionId);
+      console.log('✅ Exam submitted successfully');
       
       // Clear saved state
       localStorage.removeItem(`exam_${sessionId}`);
+      console.log('🗑️ Cleared saved exam state');
       
       // Send completion to proctor
       if (examWebSocket && examWebSocket.readyState === WebSocket.OPEN) {
@@ -398,13 +444,32 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
             total_answers: Object.keys(answers).length
           }
         }));
+        console.log('📡 Notified proctor of exam completion');
       }
       
       toast.success('Ujian berhasil diselesaikan!');
-      navigate('/student/results');
+      
+      // Small delay before navigation to ensure toast is visible
+      setTimeout(() => {
+        navigate('/student/results');
+      }, 1500);
+      
     } catch (error) {
       console.error('Error submitting exam:', error);
-      toast.error('Gagal menyelesaikan ujian. Silakan coba lagi.');
+      
+      let errorMessage = 'Gagal menyelesaikan ujian. Silakan coba lagi.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Koneksi internet bermasalah. Periksa koneksi dan coba lagi.';
+        } else if (error.message.includes('401') || error.message.includes('unauthorized')) {
+          errorMessage = 'Sesi login telah berakhir. Ujian akan disimpan otomatis.';
+        } else {
+          errorMessage = `Gagal menyelesaikan ujian: ${error.message}`;
+        }
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

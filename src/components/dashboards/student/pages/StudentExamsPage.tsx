@@ -196,13 +196,51 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
       console.log('⚠️ Another exam is already being started, ignoring click');
       return; // Prevent multiple clicks
     }
+
+    // Validasi status ujian sebelum memulai
+    if (exam.status !== 'ongoing' && exam.status !== 'ready') {
+      console.log('❌ Exam status not valid for starting:', exam.status);
+      toast.error('Ujian tidak dapat dimulai. Status ujian tidak valid.');
+      return;
+    }
+
+    // Validasi waktu ujian
+    const now = new Date();
+    const startTime = new Date(exam.availability_start_time);
+    const endTime = new Date(exam.availability_end_time);
+    
+    if (now < startTime) {
+      console.log('❌ Exam has not started yet');
+      toast.error('Ujian belum dimulai. Silakan tunggu hingga waktu yang ditentukan.');
+      return;
+    }
+    
+    if (now > endTime) {
+      console.log('❌ Exam has ended');
+      toast.error('Waktu ujian telah berakhir.');
+      return;
+    }
     
     try {
       setStartingExam(exam._id);
       console.log('📡 Calling studentExamService.startExam with token and exam ID');
       
+      // Tambahkan validasi token
+      if (!token) {
+        console.error('❌ No authentication token available');
+        toast.error('Sesi login telah berakhir. Silakan login kembali.');
+        return;
+      }
+      
       const session = await studentExamService.startExam(token!, exam._id);
       console.log('✅ Exam session created successfully:', session);
+      
+      // Validasi response session
+      if (!session || !session._id) {
+        console.error('❌ Invalid session response:', session);
+        toast.error('Gagal membuat sesi ujian. Silakan coba lagi.');
+        return;
+      }
       
       console.log('🔄 Navigating to exam taking page with session ID:', session._id);
       navigate(`/student/exam-taking/${session._id}`);
@@ -219,9 +257,25 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
         errorStack: error instanceof Error ? error.stack : undefined
       });
       
-      const errorMessage = error instanceof Error 
-        ? `Gagal memulai ujian: ${error.message}` 
-        : 'Gagal memulai ujian. Silakan coba lagi.';
+      // Improved error handling dengan pesan yang lebih spesifik
+      let errorMessage = 'Gagal memulai ujian. Silakan coba lagi.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('401') || error.message.includes('unauthorized')) {
+          errorMessage = 'Sesi login telah berakhir. Silakan login kembali.';
+        } else if (error.message.includes('403') || error.message.includes('forbidden')) {
+          errorMessage = 'Anda tidak memiliki akses untuk mengikuti ujian ini.';
+        } else if (error.message.includes('404')) {
+          errorMessage = 'Ujian tidak ditemukan atau telah dihapus.';
+        } else if (error.message.includes('409') || error.message.includes('conflict')) {
+          errorMessage = 'Anda sudah memiliki sesi ujian yang aktif.';
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Koneksi internet bermasalah. Periksa koneksi Anda.';
+        } else {
+          errorMessage = `Gagal memulai ujian: ${error.message}`;
+        }
+      }
+      
       toast.error(errorMessage);
     } finally {
       setStartingExam(null);
@@ -231,21 +285,61 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
 
   const renderActionButton = (exam: StudentExam) => {
     const isStarting = startingExam === exam._id;
+    const now = new Date();
+    const startTime = new Date(exam.availability_start_time);
+    const endTime = new Date(exam.availability_end_time);
+    const isTimeValid = now >= startTime && now <= endTime;
     
     switch (exam.status) {
       case 'pending_questions':
       case 'ready':
+        if (!isTimeValid) {
+          const timeMessage = now < startTime ? 'Belum Waktunya' : 'Waktu Berakhir';
+          return (
+            <button 
+              disabled
+              className="inline-flex items-center px-4 py-2 bg-gray-300 text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed"
+              title={now < startTime ? `Ujian dimulai pada ${formatDateTime(exam.availability_start_time)}` : 'Waktu ujian telah berakhir'}
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              {timeMessage}
+            </button>
+          );
+        }
         return (
           <button 
-            disabled
-            className="inline-flex items-center px-4 py-2 bg-gray-300 text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed"
+            onClick={() => handleStartExam(exam)}
+            disabled={isStarting}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Play className="w-4 h-4 mr-2" />
-            Menunggu
+            {isStarting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Memulai...
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 mr-2" />
+                Mulai Ujian
+              </>
+            )}
           </button>
         );
       
       case 'ongoing':
+        if (!isTimeValid) {
+          const timeMessage = now < startTime ? 'Belum Waktunya' : 'Waktu Berakhir';
+          return (
+            <button 
+              disabled
+              className="inline-flex items-center px-4 py-2 bg-gray-300 text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed"
+              title={now < startTime ? `Ujian dimulai pada ${formatDateTime(exam.availability_start_time)}` : 'Waktu ujian telah berakhir'}
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              {timeMessage}
+            </button>
+          );
+        }
         return (
           <button 
             onClick={() => handleStartExam(exam)}
