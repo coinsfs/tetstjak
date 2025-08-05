@@ -25,7 +25,7 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
         if (activeAcademicPeriod) {
           const response = await studentExamService.getStudentExams(token, {
             academic_period_id: activeAcademicPeriod._id,
-            status: 'ready',
+            status: 'ongoing',
             limit: 5
           });
           setUpcomingExams(response.data);
@@ -203,7 +203,7 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
                           Mulai Ujian
                         </button>
                       )}
-                      {exam.status === 'active' && (
+                      {exam.status === 'ongoing' && (
                         <button className="px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors">
                           Lanjutkan
                         </button>

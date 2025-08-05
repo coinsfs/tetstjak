@@ -221,7 +221,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
           </button>
         );
       
-      case 'active':
+      case 'ongoing':
         return (
           <button 
             onClick={() => handleStartExam(exam)}
@@ -274,7 +274,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
       case 'draft': return 'Draft';
       case 'pending_questions': return 'Menunggu Soal';
       case 'ready': return 'Siap';
-      case 'active': return 'Aktif';
+      case 'ongoing': return 'Berlangsung';
       case 'completed': return 'Selesai';
       case 'cancelled': return 'Dibatalkan';
       default: return status;
@@ -286,7 +286,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
       case 'draft': return 'bg-gray-100 text-gray-800';
       case 'pending_questions': return 'bg-yellow-100 text-yellow-800';
       case 'ready': return 'bg-blue-100 text-blue-800';
-      case 'active': return 'bg-green-100 text-green-800';
+      case 'ongoing': return 'bg-green-100 text-green-800';
       case 'completed': return 'bg-purple-100 text-purple-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
@@ -306,7 +306,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
   // Count exams by status
   const examCounts = {
     available: getSortedExams().filter(exam => exam.status === 'ready').length,
-    ongoing: getSortedExams().filter(exam => exam.status === 'active').length,
+    ongoing: getSortedExams().filter(exam => exam.status === 'ongoing').length,
     completed: getSortedExams().filter(exam => exam.status === 'completed').length
   };
 
@@ -429,7 +429,7 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
                 >
                   <option value="">Semua Status</option>
                   <option value="ready">Siap</option>
-                  <option value="active">Aktif</option>
+                  <option value="ongoing">Berlangsung</option>
                   <option value="completed">Selesai</option>
                   <option value="pending_questions">Menunggu Soal</option>
                   <option value="cancelled">Dibatalkan</option>
