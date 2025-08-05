@@ -194,13 +194,17 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
     
     try {
       setStartingExam(exam._id);
+      
+      // Start the exam and get session data
       const session = await studentExamService.startExam(token!, exam._id);
       
       // Navigate to exam taking page with session ID
       navigate(`/student/exam-taking/${session._id}`);
+      
     } catch (error) {
       console.error('Error starting exam:', error);
-      toast.error('Gagal memulai ujian. Silakan coba lagi.');
+      const errorMessage = error instanceof Error ? error.message : 'Gagal memulai ujian';
+      toast.error(errorMessage);
     } finally {
       setStartingExam(null);
     }

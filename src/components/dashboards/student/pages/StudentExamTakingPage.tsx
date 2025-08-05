@@ -104,16 +104,25 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
   useEffect(() => {
     const initializeExam = async () => {
       if (!token || !sessionId) {
+        toast.error('Session tidak valid');
         navigate('/student/exams');
         return;
       }
 
       try {
-        // Load questions
+        // Load questions using session ID
         const examQuestions = await studentExamService.getExamQuestions(token, sessionId);
+        
+        if (!examQuestions || examQuestions.length === 0) {
+          toast.error('Tidak ada soal yang tersedia untuk ujian ini');
+          navigate('/student/exams');
+          return;
+        }
+        
         setQuestions(examQuestions);
         
-        // Set initial time (assuming 90 minutes for now, should come from exam data)
+        // TODO: Get exam duration from exam data
+        // For now, set default 90 minutes
         const initialTime = 90 * 60; // 90 minutes in seconds
         setTimeRemaining(initialTime);
         examStateRef.current.timeRemaining = initialTime;
@@ -160,7 +169,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
         setLoading(false);
       } catch (error) {
         console.error('Error initializing exam:', error);
-        toast.error('Gagal memuat ujian');
+        toast.error('Gagal memuat soal ujian');
         navigate('/student/exams');
       }
     };
