@@ -5,6 +5,7 @@ import LoginForm from './components/LoginForm';
 import AdminDashboard from './components/dashboards/AdminDashboard';
 import TeacherDashboard from './components/dashboards/TeacherDashboard';
 import StudentDashboard from './components/dashboards/StudentDashboard';
+import StudentExamTakingPage from './components/dashboards/student/pages/StudentExamTakingPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const AppContent: React.FC = () => {
@@ -117,6 +118,18 @@ const AppContent: React.FC = () => {
     return <LoginForm />;
   }
 
+  // Handle student exam-taking route separately
+  if (currentPath.startsWith('/student/exam-taking/')) {
+    const sessionId = currentPath.split('/').pop();
+    if (sessionId) {
+      return (
+        <ProtectedRoute requiredRole="student">
+          <StudentExamTakingPage user={user} sessionId={sessionId} />
+        </ProtectedRoute>
+      );
+    }
+  }
+
   // Route based on current path
   switch (currentPath) {
     case '/admin':
@@ -155,7 +168,6 @@ const AppContent: React.FC = () => {
     case '/student/results':
     case '/student/evaluation':
     case '/student/profile':
-    case (currentPath.startsWith('/student/exam-taking/') ? currentPath : ''):
       return (
         <ProtectedRoute requiredRole="student">
           <StudentDashboard />
