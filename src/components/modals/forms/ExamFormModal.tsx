@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, Users, Settings, Save, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { examService } from '@/services/exam';
+import { convertWIBToUTC, convertUTCToWIB, getCurrentWIBDateTime, validateTimeRange } from '@/utils/timezone';
 import { 
   Exam, 
   CreateExamRequest, 
@@ -103,15 +104,12 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
   };
 
   const populateFormData = (examData: Exam) => {
-    const startTime = new Date(examData.availability_start_time);
-    const endTime = new Date(examData.availability_end_time);
-
     setFormData({
       title: examData.title,
       exam_type: examData.exam_type,
       duration_minutes: examData.duration_minutes,
-      availability_start_time: formatDateTimeLocal(startTime),
-      availability_end_time: formatDateTimeLocal(endTime),
+      availability_start_time: convertUTCToWIB(examData.availability_start_time),
+      availability_end_time: convertUTCToWIB(examData.availability_end_time),
       status: examData.status,
       proctor_ids: examData.proctor_ids || [],
       settings: {
@@ -129,15 +127,17 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
   };
 
   const resetForm = () => {
-    const now = new Date();
-    const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+    const now = getCurrentWIBDateTime();
+    const nowDate = new Date(now);
+    const oneHourLater = new Date(nowDate.getTime() + 60 * 60 * 1000);
+    const oneHourLaterFormatted = convertUTCToWIB(oneHourLater.toISOString());
 
     setFormData({
       title: '',
       exam_type: '',
       duration_minutes: 60,
-      availability_start_time: formatDateTimeLocal(now),
-      availability_end_time: formatDateTimeLocal(oneHourLater),
+      availability_start_time: now,
+      availability_end_time: oneHourLaterFormatted,
       status: 'draft',
       proctor_ids: [],
       settings: {
@@ -152,15 +152,6 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
         class_id: ''
       }
     });
-  };
-
-  const formatDateTimeLocal = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
   const handleInputChange = (field: string, value: any) => {
@@ -225,10 +216,7 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
       return false;
     }
 
-    const startTime = new Date(formData.availability_start_time);
-    const endTime = new Date(formData.availability_end_time);
-
-    if (endTime <= startTime) {
+    if (!validateTimeRange(formData.availability_start_time, formData.availability_end_time)) {
       toast.error('Waktu selesai harus setelah waktu mulai');
       return false;
     }
@@ -258,8 +246,8 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
           title: formData.title,
           exam_type: formData.exam_type,
           duration_minutes: formData.duration_minutes,
-          availability_start_time: formData.availability_start_time,
-          availability_end_time: formData.availability_end_time,
+          availability_start_time: convertWIBToUTC(formData.availability_start_time),
+          availability_end_time: convertWIBToUTC(formData.availability_end_time),
           status: formData.status,
           proctor_ids: formData.proctor_ids,
           settings: formData.settings
@@ -273,8 +261,8 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
           title: formData.title,
           exam_type: formData.exam_type,
           duration_minutes: formData.duration_minutes,
-          availability_start_time: formData.availability_start_time,
-          availability_end_time: formData.availability_end_time,
+          availability_start_time: convertWIBToUTC(formData.availability_start_time),
+          availability_end_time: convertWIBToUTC(formData.availability_end_time),
           settings: formData.settings,
           target_criteria: formData.target_criteria,
           proctor_ids: formData.proctor_ids
@@ -394,6 +382,7 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Waktu Mulai *
                     </label>
+                    <div className="text-xs text-gray-500 mb-1">Waktu dalam zona WIB (UTC+7)</div>
                     <input
                       type="datetime-local"
                       value={formData.availability_start_time}
@@ -407,6 +396,7 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Waktu Selesai *
                     </label>
+                    <div className="text-xs text-gray-500 mb-1">Waktu dalam zona WIB (UTC+7)</div>
                     <input
                       type="datetime-local"
                       value={formData.availability_end_time}
