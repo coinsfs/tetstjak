@@ -39,7 +39,7 @@ src/components/modals/forms/TeacherFormModal.tsx
 src/components/modals/forms/SubjectFormModal.tsx
 src/components/modals/forms/StudentFormModal.tsx
 src/components/modals/forms/ExpertiseProgramFormModal.tsx
-src/components/modals/forms/ExamFormModal.tsx
+
 src/components/modals/forms/ClassFormModal.tsx
 src/components/modals/details/TeacherDetailModal.tsx
 src/components/modals/details/SubjectDetailModal.tsx
