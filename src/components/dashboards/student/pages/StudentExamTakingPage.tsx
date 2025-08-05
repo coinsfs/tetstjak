@@ -44,6 +44,18 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
   const [examWebSocket, setExamWebSocket] = useState<WebSocket | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   
+  // Debug state untuk tracking
+  const [debugInfo, setDebugInfo] = useState({
+    questionsRequested: false,
+    questionsLoaded: false,
+    securityViolations: [] as Array<{
+      type: string;
+      message: string;
+      timestamp: string;
+      count: number;
+    }>
+  });
+  
   const pageRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const visibilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -71,6 +83,22 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
   const handleSecurityViolation = useCallback((type: string, message: string) => {
     const newCount = warningCount + 1;
     setWarningCount(newCount);
+    
+    // Debug log untuk pelanggaran keamanan
+    const violation = {
+      type,
+      message,
+      timestamp: new Date().toISOString(),
+      count: newCount
+    };
+    
+    console.log('🚨 SECURITY VIOLATION DETECTED:', violation);
+    
+    // Update debug state
+    setDebugInfo(prev => ({
+      ...prev,
+      securityViolations: [...prev.securityViolations, violation]
+    }));
     
     // Send to proctor via WebSocket
     if (examWebSocket && examWebSocket.readyState === WebSocket.OPEN) {
@@ -115,6 +143,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
       try {
         console.log('📡 Loading exam questions for session:', sessionId);
         
+        // Debug: Mark bahwa kita akan request questions
+        setDebugInfo(prev => ({
+          ...prev,
+          questionsRequested: true
+        }));
+        console.log('🔍 DEBUG: Questions request initiated for session:', sessionId);
+        
         // Add loading state
         setLoading(true);
         
@@ -124,6 +159,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
           questionCount: examQuestions?.length || 0,
           questions: examQuestions
         });
+        
+        // Debug: Mark bahwa questions sudah berhasil dimuat
+        setDebugInfo(prev => ({
+          ...prev,
+          questionsLoaded: true
+        }));
+        console.log('🔍 DEBUG: Questions loaded successfully. Count:', examQuestions?.length || 0);
         
         if (!examQuestions || examQuestions.length === 0) {
           console.error('❌ No questions available for exam session:', sessionId);
@@ -521,6 +563,24 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
   const currentQuestion = questions[currentQuestionIndex];
   const currentAnswer = currentQuestion ? answers[currentQuestion.id] : null;
 
+  // Debug: Log current state setiap render
+  console.log('🔍 DEBUG STATE:', {
+    sessionId,
+    questionsRequested: debugInfo.questionsRequested,
+    questionsLoaded: debugInfo.questionsLoaded,
+    questionsCount: questions.length,
+    securityViolationsCount: debugInfo.securityViolations.length,
+    currentQuestionIndex,
+    answersCount: Object.keys(answers).length,
+    timeRemaining,
+    warningCount
+  });
+
+  // Debug: Log semua pelanggaran keamanan
+  if (debugInfo.securityViolations.length > 0) {
+    console.log('🚨 ALL SECURITY VIOLATIONS:', debugInfo.securityViolations);
+  }
+
   if (loading) {
     return (
       <div className="exam-taking-page">
@@ -588,6 +648,38 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
         {/* Content */}
         <div className="exam-content">
           <div className="max-w-4xl mx-auto">
+            {/* Debug Panel - Only show in development */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="bg-gray-900 text-white p-4 rounded-lg mb-6 text-sm font-mono">
+                <h3 className="text-yellow-400 font-bold mb-2">🔍 DEBUG INFO</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p>Session ID: {sessionId}</p>
+                    <p>Questions Requested: {debugInfo.questionsRequested ? '✅' : '❌'}</p>
+                    <p>Questions Loaded: {debugInfo.questionsLoaded ? '✅' : '❌'}</p>
+                    <p>Questions Count: {questions.length}</p>
+                    <p>Answers Count: {Object.keys(answers).length}</p>
+                  </div>
+                  <div>
+                    <p>Time Remaining: {formatTime(timeRemaining)}</p>
+                    <p>Warning Count: {warningCount}/3</p>
+                    <p>Security Violations: {debugInfo.securityViolations.length}</p>
+                    <p>Fullscreen: {isFullscreen ? '✅' : '❌'}</p>
+                  </div>
+                </div>
+                {debugInfo.securityViolations.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-700">
+                    <p className="text-red-400 font-bold">Recent Violations:</p>
+                    {debugInfo.securityViolations.slice(-3).map((violation, index) => (
+                      <p key={index} className="text-red-300 text-xs">
+                        [{violation.timestamp.split('T')[1].split('.')[0]}] {violation.type}: {violation.message}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            
             {/* Question */}
             <div className="exam-question-card">
               <div className="flex items-start justify-between mb-6">
