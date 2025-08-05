@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile } from '@/types/auth';
 import { BookOpen, Clock, TrendingUp, Award } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from '@/hooks/useRouter';
 import { studentExamService, StudentExam } from '@/services/studentExam';
 import { formatDateTimeWithTimezone } from '@/utils/timezone';
 import toast from 'react-hot-toast';
@@ -12,6 +13,7 @@ interface StudentDashboardPageProps {
 
 const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => {
   const { token } = useAuth();
+  const { navigate } = useRouter();
   const [upcomingExams, setUpcomingExams] = useState<StudentExam[]>([]);
   const [loadingUpcoming, setLoadingUpcoming] = useState(true);
 
@@ -41,6 +43,17 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
 
     fetchUpcomingExams();
   }, [token]);
+
+  const handleStartExam = async (exam: StudentExam) => {
+    try {
+      const session = await studentExamService.startExam(token!, exam._id);
+      navigate(`/student/exam-taking/${session._id}`);
+    } catch (error) {
+      console.error('Error starting exam:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Gagal memulai ujian';
+      toast.error(errorMessage);
+    }
+  };
 
   const getWelcomeMessage = () => {
     const hour = new Date().getHours();
@@ -194,12 +207,18 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
                     
                     <div className="ml-4 flex flex-col space-y-2">
                       {exam.status === 'ready' && (
-                        <button className="px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors">
+                        <button 
+                          onClick={() => handleStartExam(exam)}
+                          className="px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+                        >
                           Mulai Ujian
                         </button>
                       )}
                       {exam.status === 'ongoing' && (
-                        <button className="px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors">
+                        <button 
+                          onClick={() => handleStartExam(exam)}
+                          className="px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
+                        >
                           Lanjutkan
                         </button>
                       )}
@@ -211,7 +230,7 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
               {/* View All Button */}
               <div className="pt-4 border-t border-gray-200">
                 <button 
-                  onClick={() => window.history.pushState({}, '', '/student/exams')}
+                  onClick={() => navigate('/student/exams')}
                   className="w-full px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors text-sm font-medium"
                 >
                   Lihat Semua Ujian →
@@ -223,7 +242,7 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
               <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500">Tidak ada ujian yang dijadwalkan</p>
               <button 
-                onClick={() => window.history.pushState({}, '', '/student/exams')}
+                onClick={() => navigate('/student/exams')}
                 className="mt-3 px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors text-sm"
               >
                 Cek Halaman Ujian
