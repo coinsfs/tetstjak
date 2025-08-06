@@ -32,8 +32,43 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState<number>(3600); // Default 1 hour
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [examStarted, setExamStarted] = useState(false);
+  const [examTitle, setExamTitle] = useState<string>('');
+  const [examDuration, setExamDuration] = useState<number>(0);
+
+  // Parse URL parameters for exam timing
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sParam = urlParams.get('s');
+    const eParam = urlParams.get('e');
+    const dParam = urlParams.get('d');
+
+    if (sParam && eParam && dParam) {
+      try {
+        // Decode parameters
+        const startTime = parseInt(atob(sParam + '=='));
+        const endTime = parseInt(atob(eParam + '=='));
+        const duration = parseInt(atob(dParam + '=='));
+        
+        const now = Date.now();
+        const timeLeft = Math.max(0, Math.floor((endTime - now) / 1000));
+        
+        setTimeRemaining(timeLeft);
+        setExamDuration(Math.floor(duration / 1000 / 60)); // Convert to minutes
+        
+        // Auto start if within exam time window
+        if (now >= startTime && now <= endTime && timeLeft > 0) {
+          setExamStarted(true);
+        }
+      } catch (error) {
+        console.error('Error parsing URL parameters:', error);
+        setError('Parameter ujian tidak valid');
+      }
+    } else {
+      setError('Parameter ujian tidak ditemukan');
+    }
+  }, []);
 
   // Load exam questions
   useEffect(() => {
@@ -47,9 +82,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         // Get exam questions using session ID
         const questionsData = await studentExamService.getExamQuestions(token, sessionId);
         setQuestions(questionsData);
-        
-        // Start the exam automatically
-        setExamStarted(true);
         
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Gagal memuat soal ujian';
@@ -66,7 +98,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
   // Timer countdown
   useEffect(() => {
-    if (!examStarted || timeRemaining <= 0) return;
+    if (timeRemaining <= 0) return;
 
     const timer = setInterval(() => {
       setTimeRemaining(prev => {
@@ -81,11 +113,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
     return () => clearInterval(timer);
   }, [examStarted, timeRemaining]);
-
-  const handleStartExam = () => {
-    setExamStarted(true);
-    toast.success('Ujian dimulai! Selamat mengerjakan.');
-  };
 
   const handleAnswerChange = (questionId: string, answer: any) => {
     setAnswers(prev => ({
@@ -120,7 +147,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   };
 
   const handleBackToExams = () => {
-    if (examStarted) {
+    if (examStarted && timeRemaining > 0) {
       const confirmLeave = window.confirm(
         'Anda sedang mengerjakan ujian. Apakah Anda yakin ingin keluar? Jawaban yang belum disimpan akan hilang.'
       );
@@ -158,13 +185,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     );
   }
 
-  if (error || questions.length === 0) {
+  if (error || (questions.length === 0 && !loading)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Gagal Memuat Soal Ujian
+            {error ? 'Gagal Memuat Soal Ujian' : 'Soal Ujian Tidak Tersedia'}
           </h2>
           <p className="text-gray-600 mb-6">
             {error || 'Soal ujian tidak ditemukan atau tidak dapat diakses.'}
@@ -175,6 +202,76 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Kembali ke Daftar Ujian
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show waiting screen if exam hasn't started yet
+  if (!examStarted && timeRemaining > 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Clock className="w-10 h-10 text-blue-600" />
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+            Ujian Siap Dimulai
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Anda memiliki waktu <span className="font-semibold text-blue-600">{examDuration} menit</span> untuk menyelesaikan ujian ini.
+          </p>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center space-x-2 text-yellow-800">
+              <AlertCircle className="w-5 h-5" />
+              <span className="font-medium">Sisa waktu ujian:</span>
+            </div>
+            <div className="text-2xl font-bold text-yellow-900 mt-2">
+              {formatTime(timeRemaining)}
+            </div>
+          </div>
+          <div className="space-y-3">
+            <button
+              onClick={() => setExamStarted(true)}
+              className="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            >
+              <Play className="w-5 h-5 mr-2" />
+              Mulai Ujian Sekarang
+            </button>
+            <button
+              onClick={handleBackToExams}
+              className="w-full inline-flex items-center justify-center px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Kembali ke Daftar Ujian
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show time up screen if time has expired
+  if (timeRemaining <= 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertCircle className="w-10 h-10 text-red-600" />
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+            Waktu Ujian Habis
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Waktu untuk mengerjakan ujian telah berakhir. Jawaban Anda akan otomatis dikumpulkan.
+          </p>
+          <button
+            onClick={handleFinishExam}
+            className="w-full inline-flex items-center justify-center px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+          >
+            <CheckCircle className="w-5 h-5 mr-2" />
+            Kumpulkan Jawaban
           </button>
         </div>
       </div>
@@ -203,6 +300,11 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
               }`}>
                 <Clock className="w-5 h-5" />
                 <span>{formatTime(timeRemaining)}</span>
+                {timeRemaining <= 300 && (
+                  <span className="text-xs font-normal ml-2">
+                    (Waktu hampir habis!)
+                  </span>
+                )}
               </div>
             )}
 
@@ -223,7 +325,12 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
           {/* Progress Bar */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">Progress Ujian</span>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm font-medium text-gray-700">Progress Ujian</span>
+                <span className="text-xs text-gray-500">
+                  Durasi: {examDuration} menit
+                </span>
+              </div>
               <span className="text-sm text-gray-500">{answeredQuestions} / {totalQuestions} soal dijawab</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
@@ -232,6 +339,11 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
                 style={{ width: `${(answeredQuestions / totalQuestions) * 100}%` }}
               ></div>
             </div>
+            {timeRemaining <= 600 && timeRemaining > 0 && (
+              <div className="mt-2 text-xs text-orange-600 font-medium">
+                ⚠️ Sisa waktu kurang dari 10 menit!
+              </div>
+            )}
           </div>
 
           {/* Question Navigation */}

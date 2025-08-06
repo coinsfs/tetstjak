@@ -196,8 +196,18 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
       // Start the exam and get session
       const examSession = await studentExamService.startExam(token!, exam._id);
       
-      // Navigate to exam taking page with session ID using full page reload
-      window.location.href = `/exam-taking/${examSession._id}`;
+      // Calculate timestamps for URL parameters (using base64 encoding for obfuscation)
+      const startTime = new Date(exam.availability_start_time).getTime();
+      const endTime = new Date(exam.availability_end_time).getTime();
+      const duration = exam.duration_minutes * 60 * 1000; // Convert to milliseconds
+      
+      // Encode parameters to make them less obvious
+      const s = btoa(startTime.toString()).replace(/[+=]/g, ''); // Remove padding chars
+      const e = btoa(endTime.toString()).replace(/[+=]/g, '');
+      const d = btoa(duration.toString()).replace(/[+=]/g, '');
+      
+      // Navigate to exam taking page with session ID and time parameters
+      window.location.href = `/exam-taking/${examSession._id}?s=${s}&e=${e}&d=${d}`;
       
       toast.success('Ujian berhasil dimulai!');
     } catch (error) {
