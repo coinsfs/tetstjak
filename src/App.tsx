@@ -6,7 +6,6 @@ import LoginForm from './components/LoginForm';
 import AdminDashboard from './components/dashboards/AdminDashboard';
 import TeacherDashboard from './components/dashboards/TeacherDashboard';
 import StudentDashboard from './components/dashboards/StudentDashboard';
-import StudentExamTakingPage from './components/dashboards/student/pages/StudentExamTakingPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const AppContent: React.FC = () => {
@@ -55,18 +54,6 @@ const AppContent: React.FC = () => {
   // Show login form if not authenticated
   if (!isAuthenticated) {
     return <LoginForm />;
-  }
-
-  // Handle student exam-taking route
-  if (currentPath.startsWith('/student/exam-taking/')) {
-    const sessionId = currentPath.split('/').pop();
-    if (sessionId) {
-      return (
-        <ProtectedRoute requiredRole="student">
-          <StudentExamTakingPage user={user} sessionId={sessionId} />
-        </ProtectedRoute>
-      );
-    }
   }
 
   // Route based on current path

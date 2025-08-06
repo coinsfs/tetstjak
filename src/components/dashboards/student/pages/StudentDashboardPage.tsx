@@ -46,55 +46,9 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
   }, [token]);
 
   const handleStartExam = async (exam: StudentExam) => {
-    if (startingExamId) {
-      return;
-    }
-    
-    if (!token) {
-      toast.error('Sesi login telah berakhir. Silakan login kembali.');
-      return;
-    }
-    
-    if (!['ready', 'ongoing', 'active'].includes(exam.status)) {
-      toast.error('Ujian tidak dapat dimulai. Status ujian tidak valid.');
-      return;
-    }
-    
-    try {
-      setStartingExamId(exam._id);
-      
-      const session = await studentExamService.startExam(token!, exam._id);
-      
-      if (!session || !session._id) {
-        toast.error('Gagal membuat sesi ujian. Silakan coba lagi.');
-        return;
-      }
-      
-      const examUrl = `/student/exam-taking/${session._id}`;
-      navigate(examUrl);
-    } catch (error) {
-      let errorMessage = 'Gagal memulai ujian. Silakan coba lagi.';
-      
-      if (error instanceof Error) {
-        if (error.message.includes('401') || error.message.includes('unauthorized')) {
-          errorMessage = 'Sesi login telah berakhir. Silakan login kembali.';
-        } else if (error.message.includes('403') || error.message.includes('forbidden')) {
-          errorMessage = 'Anda tidak memiliki akses untuk mengikuti ujian ini.';
-        } else if (error.message.includes('404')) {
-          errorMessage = 'Ujian tidak ditemukan atau telah dihapus.';
-        } else if (error.message.includes('409') || error.message.includes('conflict')) {
-          errorMessage = 'Anda sudah memiliki sesi ujian yang aktif.';
-        } else if (error.message.includes('network') || error.message.includes('fetch')) {
-          errorMessage = 'Koneksi internet bermasalah. Periksa koneksi Anda.';
-        } else {
-          errorMessage = `Gagal memulai ujian: ${error.message}`;
-        }
-      }
-      
-      toast.error(errorMessage);
-    } finally {
-      setStartingExamId(null);
-    }
+    // Redirect to dashboard home when exam is started
+    navigate('/student');
+    toast.success('Ujian dimulai! Anda akan diarahkan ke dashboard.');
   };
 
   const getWelcomeMessage = () => {

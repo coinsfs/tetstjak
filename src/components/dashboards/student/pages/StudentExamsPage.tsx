@@ -190,83 +190,9 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
   };
 
   const handleStartExam = async (exam: StudentExam) => {
-    if (startingExam) {
-      return;
-    }
-
-    if (exam.status !== 'ongoing' && exam.status !== 'ready' && exam.status !== 'active') {
-      toast.error('Ujian tidak dapat dimulai. Status ujian tidak valid.');
-      return;
-    }
-
-    const now = new Date();
-    const startTime = new Date(exam.availability_start_time);
-    const endTime = new Date(exam.availability_end_time);
-    
-    if (now < startTime) {
-      toast.error('Ujian belum dimulai. Silakan tunggu hingga waktu yang ditentukan.');
-      return;
-    }
-    
-    if (now > endTime) {
-      toast.error('Waktu ujian telah berakhir.');
-      return;
-    }
-    
-    try {
-      setStartingExam(exam._id);
-      
-      if (!token) {
-        toast.error('Sesi login telah berakhir. Silakan login kembali.');
-        navigate('/login');
-        return;
-      }
-      
-      const session = await studentExamService.startExam(token!, exam._id);
-      
-      if (!session || !session._id) {
-        toast.error('Gagal membuat sesi ujian. Silakan coba lagi.');
-        return;
-      }
-      
-      const examUrl = `/student/exam-taking/${session._id}`;
-      navigate(examUrl);
-      
-    } catch (error) {
-      let errorMessage = 'Gagal memulai ujian. Silakan coba lagi.';
-      
-      if (error instanceof Error) {
-        if (error.message.includes('401') || error.message.includes('unauthorized')) {
-          errorMessage = 'Sesi login telah berakhir. Silakan login kembali.';
-          setTimeout(() => {
-            navigate('/login');
-          }, 2000);
-        } else if (error.message.includes('403') || error.message.includes('forbidden')) {
-          errorMessage = 'Anda tidak memiliki akses untuk mengikuti ujian ini.';
-        } else if (error.message.includes('404')) {
-          errorMessage = 'Ujian tidak ditemukan atau telah dihapus.';
-        } else if (error.message.includes('409') || error.message.includes('conflict')) {
-          errorMessage = 'Anda sudah memiliki sesi ujian yang aktif.';
-          const existingSessionMatch = error.message.match(/session_id:\s*([a-f0-9]+)/);
-          if (existingSessionMatch) {
-            const existingSessionId = existingSessionMatch[1];
-            toast.success('Melanjutkan sesi ujian yang sudah ada...');
-            setTimeout(() => {
-              navigate(`/student/exam-taking/${existingSessionId}`);
-            }, 1000);
-            return;
-          }
-        } else if (error.message.includes('network') || error.message.includes('fetch')) {
-          errorMessage = 'Koneksi internet bermasalah. Periksa koneksi Anda.';
-        } else {
-          errorMessage = `Gagal memulai ujian: ${error.message}`;
-        }
-      }
-      
-      toast.error(errorMessage);
-    } finally {
-      setStartingExam(null);
-    }
+    // Redirect to dashboard home when exam is started
+    navigate('/student');
+    toast.success('Ujian dimulai! Anda akan diarahkan ke dashboard.');
   };
 
   const renderActionButton = (exam: StudentExam) => {
