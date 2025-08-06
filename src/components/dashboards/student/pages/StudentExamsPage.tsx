@@ -190,9 +190,9 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
   };
 
   const handleStartExam = async (exam: StudentExam) => {
-    // Redirect to dashboard home when exam is started
-    navigate('/student');
-    toast.success('Ujian dimulai! Anda akan diarahkan ke dashboard.');
+    // Redirect to exam taking page when exam is started
+    navigate(`/student/exam-taking/${exam._id}`);
+    toast.success('Ujian dimulai! Anda akan diarahkan ke halaman pengerjaan ujian.');
   };
 
   const renderActionButton = (exam: StudentExam) => {
