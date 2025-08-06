@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { UserProfile } from '@/types/auth';
 import { FileText, Clock, AlertCircle, Search, Filter, RotateCcw, ChevronUp, ChevronDown, Calendar, BookOpen, Play, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { studentExamService, StudentExam, StudentExamFilters, AcademicPeriod } from '@/services/studentExam';
+import { studentExamService, StudentExam, StudentExamFilters, AcademicPeriod, ExamSession } from '@/services/studentExam';
 import { websocketService } from '@/services/websocket';
 import { useRouter } from '@/hooks/useRouter';
 import { formatDateTimeWithTimezone } from '@/utils/timezone';
@@ -193,13 +193,17 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
     try {
       setStartingExam(exam._id);
       
-      // Redirect to exam taking page
-      navigate(`/student/exam-taking/${exam._id}`);
+      // Start the exam and get session
+      const examSession = await studentExamService.startExam(token!, exam._id);
       
-      toast.success('Memuat sesi ujian...');
+      // Navigate to exam taking page with session ID
+      navigate(`/student/exam-taking/${examSession._id}`);
+      
+      toast.success('Ujian berhasil dimulai!');
     } catch (error) {
       console.error('Error starting exam:', error);
-      toast.error('Gagal memulai ujian. Silakan coba lagi.');
+      const errorMessage = error instanceof Error ? error.message : 'Gagal memulai ujian';
+      toast.error(errorMessage);
     } finally {
       setStartingExam(null);
     }

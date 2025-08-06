@@ -47,11 +47,46 @@ export interface AcademicPeriod {
   end_date: string;
 }
 
+export interface ExamSession {
+  exam_id: string;
+  student_id: string;
+  status: string;
+  started_at: string;
+  submitted_at: string | null;
+  score: number;
+  answers: Record<string, any>;
+  question_map: any[];
+  interaction_logs: any[];
+  _id: string;
+}
+
+export interface ExamQuestion {
+  id: string;
+  position: number;
+  question_text: string;
+  question_type: 'essay' | 'multiple_choice';
+  points: number;
+  options: ExamQuestionOption[];
+}
+
+export interface ExamQuestionOption {
+  id: string;
+  text: string;
+}
+
 class StudentExamService extends BaseService {
   async getStudentExams(token: string, filters: StudentExamFilters): Promise<StudentExamResponse> {
     const queryString = this.buildQueryParams(filters);
     const endpoint = `/exams/student?${queryString}`;
     return this.get<StudentExamResponse>(endpoint, token);
+  }
+
+  async startExam(token: string, examId: string): Promise<ExamSession> {
+    return this.post<ExamSession>(`/exams/${examId}/start`, {}, token);
+  }
+
+  async getExamQuestions(token: string, sessionId: string): Promise<ExamQuestion[]> {
+    return this.get<ExamQuestion[]>(`/exam-sessions/${sessionId}/questions`, token);
   }
 
   async getAcademicPeriods(token: string): Promise<AcademicPeriod[]> {
