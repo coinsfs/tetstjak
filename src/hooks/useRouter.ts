@@ -22,11 +22,10 @@ export const useRouter = () => {
   }, []);
 
 const navigate = (path: string) => {
-  if (window.location.pathname !== path) {
-    window.history.pushState({}, '', path);
-    setCurrentPath(path); // ini oke, karena kamu bandingin langsung ke real path
-  }
+  window.history.pushState({}, '', path);
+  setCurrentPath(window.location.pathname); // ambil langsung dari window, bukan dari state lama
 };
+
 
 
   const replace = (path: string) => {
