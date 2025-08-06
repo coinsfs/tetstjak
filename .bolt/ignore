@@ -1,6 +1,6 @@
 src/components/TeacherManagement.tsx
 src/components/TeacherFilter.tsx
-src/components/SubjectManagement.tsx
+
 src/components/StudentPerformanceTable.tsx
 src/components/StudentManagement.tsx
 src/components/StudentFilter.tsx
@@ -65,8 +65,8 @@ src/components/dashboards/teacher/TeacherSidebar.tsx
 src/components/dashboards/teacher/TeacherStatsGrid.tsx
 src/components/dashboards/teacher/TeacherSubjectsList.tsx
 src/components/dashboards/teacher/TeacherWelcomeCard.tsx
-src/components/CoordinatorMatrix.tsx
-src/components/SubjectCoordinatorManagement.tsx
+
+
 src/components/charts/BrowserUsageChart.tsx
 src/components/charts/StudentGrowthChart.tsx
 src/components/charts/StudentsByMajorChart.tsx
