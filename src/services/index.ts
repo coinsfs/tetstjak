@@ -14,3 +14,4 @@ export * from './profile';
 export * from './questionSubmission';
 export * from './questionSet';
 export * from './studentExam';
+export * from './examSecurity';

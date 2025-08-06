@@ -3,6 +3,8 @@ import { UserProfile } from '@/types/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
 import { studentExamService, ExamQuestion } from '@/services/studentExam';
+import { SecurityCheck, ExamMonitoring } from '@/components/security';
+import { examSecurityService } from '@/services/examSecurity';
 import { 
   FileText, 
   Clock, 
@@ -42,6 +44,9 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const [examDuration, setExamDuration] = useState<number>(0);
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [securityPassed, setSecurityPassed] = useState(false);
+  const [violationCount, setViolationCount] = useState(0);
+  const [examStartTime, setExamStartTime] = useState<number>(0);
 
   // Parse URL parameters for exam timing
   useEffect(() => {
@@ -157,16 +162,59 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
   const handleTimeUp = () => {
     toast.error('Waktu ujian telah habis! Jawaban akan otomatis dikumpulkan.');
-    handleFinishExam();
+    
+    // Generate security report for time up
+    const securityReport = examSecurityService.generateSecurityReport(
+      sessionId,
+      user?._id || '',
+      sessionId,
+      examStartTime
+    );
+
+    // Submit exam with time up
+    examSecurityService.submitExamWithSecurity(token!, {
+      examId: sessionId,
+      sessionId: sessionId,
+      answers: answers,
+      securityReport: securityReport,
+      submissionType: 'auto_time'
+    }).then(() => {
+      // Clean up and redirect
+      examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
+      window.location.href = '/student/exams';
+    }).catch((error) => {
+      console.error('Error submitting exam after time up:', error);
+      // Force redirect even if submission fails
+      window.location.href = '/student/exams';
+    });
   };
 
   const handleFinishExam = async () => {
     try {
       // Save final answers before submitting
       await handleSaveAnswers();
+      
+      // Generate security report
+      const securityReport = examSecurityService.generateSecurityReport(
+        sessionId,
+        user?._id || '',
+        sessionId,
+        examStartTime
+      );
+
+      // Submit exam with security data
+      await examSecurityService.submitExamWithSecurity(token!, {
+        examId: sessionId,
+        sessionId: sessionId,
+        answers: answers,
+        securityReport: securityReport,
+        submissionType: 'manual'
+      });
+
+      // Clean up security data
+      examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
+      
       toast.success('Ujian telah selesai dikerjakan.');
-      // TODO: Submit exam answers to backend
-      // Navigate back to exam list using full page reload
       window.location.href = '/student/exams';
     } catch (error) {
       console.error('Error finishing exam:', error);
@@ -182,6 +230,55 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       if (!confirmLeave) return;
     }
     window.location.href = '/student/exams';
+  };
+
+  const handleSecurityPassed = () => {
+    setSecurityPassed(true);
+    setExamStartTime(Date.now());
+  };
+
+  const handleSecurityFailed = (reason: string) => {
+    toast.error(reason);
+    setTimeout(() => {
+      window.location.href = '/student';
+    }, 3000);
+  };
+
+  const handleCriticalViolation = (reason: string) => {
+    toast.error(reason);
+    
+    // Generate security report for critical violation
+    const securityReport = examSecurityService.generateSecurityReport(
+      sessionId,
+      user?._id || '',
+      sessionId,
+      examStartTime
+    );
+
+    // Submit exam with critical violation
+    examSecurityService.submitExamWithSecurity(token!, {
+      examId: sessionId,
+      sessionId: sessionId,
+      answers: answers,
+      securityReport: securityReport,
+      submissionType: 'auto_violation'
+    }).then(() => {
+      // Clean up and redirect
+      examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
+      setTimeout(() => {
+        window.location.href = '/student';
+      }, 2000);
+    }).catch((error) => {
+      console.error('Error submitting exam after violation:', error);
+      // Force redirect even if submission fails
+      setTimeout(() => {
+        window.location.href = '/student';
+      }, 2000);
+    });
+  };
+
+  const handleViolationUpdate = (count: number) => {
+    setViolationCount(count);
   };
 
   const formatTime = (seconds: number): string => {
@@ -205,6 +302,18 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const totalQuestions = questions.length;
   const answeredQuestions = Object.keys(answers).length;
   const progressPercentage = totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
+
+  // Show security check first
+  if (!securityPassed) {
+    return (
+      <SecurityCheck
+        onSecurityPassed={handleSecurityPassed}
+        onSecurityFailed={handleSecurityFailed}
+        examId={sessionId}
+        studentId={user?._id || ''}
+      />
+    );
+  }
 
   if (loading) {
     return (
@@ -317,6 +426,14 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      {/* Security Monitoring */}
+      <ExamMonitoring
+        examId={sessionId}
+        studentId={user?._id || ''}
+        onCriticalViolation={handleCriticalViolation}
+        onViolationUpdate={handleViolationUpdate}
+      />
+
       {/* Sticky Header */}
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -347,6 +464,14 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
             {/* User Info */}
             <div className="flex items-center space-x-3">
+              {/* Violation Counter */}
+              {violationCount > 0 && (
+                <div className="flex items-center space-x-2 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-lg text-sm">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>{violationCount} peringatan</span>
+                </div>
+              )}
+              
               <div className="hidden sm:flex items-center space-x-2">
                 <User className="w-5 h-5 text-gray-400" />
                 <span className="text-sm font-medium text-gray-700">
