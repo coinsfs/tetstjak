@@ -21,12 +21,12 @@ export const useRouter = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-const navigate = (path: string) => {
-  window.history.pushState({}, '', path);
-  setCurrentPath(window.location.pathname); // ambil langsung dari window, bukan dari state lama
-};
-
-
+  const navigate = (path: string) => {
+    if (path !== currentPath) {
+      window.history.pushState({}, '', path);
+      setCurrentPath(path);
+    }
+  };
 
   const replace = (path: string) => {
     window.history.replaceState({}, '', path);
