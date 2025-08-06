@@ -46,59 +46,33 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
   }, [token]);
 
   const handleStartExam = async (exam: StudentExam) => {
-    console.log('🚀 Starting exam process for exam:', exam._id, exam.title);
-    
     if (startingExamId) {
-      console.log('⚠️ Another exam is already being started, ignoring click');
-      return; // Prevent multiple clicks
+      return;
     }
     
-    // Additional validation
     if (!token) {
-      console.error('❌ No authentication token available');
       toast.error('Sesi login telah berakhir. Silakan login kembali.');
       return;
     }
     
-    // Validate exam status
     if (!['ready', 'ongoing', 'active'].includes(exam.status)) {
-      console.log('❌ Exam status not valid for starting:', exam.status);
       toast.error('Ujian tidak dapat dimulai. Status ujian tidak valid.');
       return;
     }
     
     try {
       setStartingExamId(exam._id);
-      console.log('📡 Calling studentExamService.startExam with token and exam ID');
       
       const session = await studentExamService.startExam(token!, exam._id);
-      console.log('✅ Exam session created successfully:', session);
       
-      // Validate session response
       if (!session || !session._id) {
-        console.error('❌ Invalid session response:', session);
         toast.error('Gagal membuat sesi ujian. Silakan coba lagi.');
         return;
       }
       
-      console.log('🔄 Navigating to exam taking page with session ID:', session._id);
-      
-      // Navigate immediately with proper URL construction
       const examUrl = `/student/exam-taking/${session._id}`;
-      console.log('🔄 NAVIGATION DEBUG - Navigating to:', examUrl);
       navigate(examUrl);
-      
-      console.log('✅ Navigation completed successfully');
     } catch (error) {
-      console.error('❌ Error starting exam:', error);
-      console.error('❌ Error details:', {
-        examId: exam._id,
-        examTitle: exam.title,
-        errorType: typeof error,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        errorStack: error instanceof Error ? error.stack : undefined
-      });
-      
       let errorMessage = 'Gagal memulai ujian. Silakan coba lagi.';
       
       if (error instanceof Error) {
@@ -120,7 +94,6 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
       toast.error(errorMessage);
     } finally {
       setStartingExamId(null);
-      console.log('🔄 Reset startingExamId state');
     }
   };
 

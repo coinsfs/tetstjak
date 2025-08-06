@@ -190,86 +190,54 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
   };
 
   const handleStartExam = async (exam: StudentExam) => {
-    console.log('🚀 Starting exam process for exam:', exam._id, exam.title);
-    
     if (startingExam) {
-      console.log('⚠️ Another exam is already being started, ignoring click');
-      return; // Prevent multiple clicks
+      return;
     }
 
-    // Validasi status ujian sebelum memulai
     if (exam.status !== 'ongoing' && exam.status !== 'ready' && exam.status !== 'active') {
-      console.log('❌ Exam status not valid for starting:', exam.status);
       toast.error('Ujian tidak dapat dimulai. Status ujian tidak valid.');
       return;
     }
 
-    // Validasi waktu ujian
     const now = new Date();
     const startTime = new Date(exam.availability_start_time);
     const endTime = new Date(exam.availability_end_time);
     
     if (now < startTime) {
-      console.log('❌ Exam has not started yet');
       toast.error('Ujian belum dimulai. Silakan tunggu hingga waktu yang ditentukan.');
       return;
     }
     
     if (now > endTime) {
-      console.log('❌ Exam has ended');
       toast.error('Waktu ujian telah berakhir.');
       return;
     }
     
     try {
       setStartingExam(exam._id);
-      console.log('📡 Calling studentExamService.startExam with token and exam ID');
       
-      // Tambahkan validasi token
       if (!token) {
-        console.error('❌ No authentication token available');
         toast.error('Sesi login telah berakhir. Silakan login kembali.');
-        // Redirect to login
         navigate('/login');
         return;
       }
       
       const session = await studentExamService.startExam(token!, exam._id);
-      console.log('✅ Exam session created successfully:', session);
       
-      // Validasi response session
       if (!session || !session._id) {
-        console.error('❌ Invalid session response:', session);
         toast.error('Gagal membuat sesi ujian. Silakan coba lagi.');
         return;
       }
       
-      console.log('🔄 Navigating to exam taking page with session ID:', session._id);
-      
-      // Navigate immediately with proper URL construction
       const examUrl = `/student/exam-taking/${session._id}`;
-      console.log('🔄 NAVIGATION DEBUG - Navigating to:', examUrl);
       navigate(examUrl);
       
-      console.log('✅ Navigation completed successfully');
-      
     } catch (error) {
-      console.error('Error starting exam:', error);
-      console.error('❌ Error details:', {
-        examId: exam._id,
-        examTitle: exam.title,
-        errorType: typeof error,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        errorStack: error instanceof Error ? error.stack : undefined
-      });
-      
-      // Improved error handling dengan pesan yang lebih spesifik
       let errorMessage = 'Gagal memulai ujian. Silakan coba lagi.';
       
       if (error instanceof Error) {
         if (error.message.includes('401') || error.message.includes('unauthorized')) {
           errorMessage = 'Sesi login telah berakhir. Silakan login kembali.';
-          // Redirect to login after showing error
           setTimeout(() => {
             navigate('/login');
           }, 2000);
@@ -279,7 +247,6 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
           errorMessage = 'Ujian tidak ditemukan atau telah dihapus.';
         } else if (error.message.includes('409') || error.message.includes('conflict')) {
           errorMessage = 'Anda sudah memiliki sesi ujian yang aktif.';
-          // Try to find existing session and redirect
           const existingSessionMatch = error.message.match(/session_id:\s*([a-f0-9]+)/);
           if (existingSessionMatch) {
             const existingSessionId = existingSessionMatch[1];
@@ -299,7 +266,6 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
       toast.error(errorMessage);
     } finally {
       setStartingExam(null);
-      console.log('🔄 Reset startingExamId state');
     }
   };
 

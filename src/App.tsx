@@ -14,14 +14,6 @@ const AppContent: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    console.log('🔄 App useEffect triggered:', { 
-      isAuthenticated, 
-      user: !!user, 
-      currentPath, 
-      isLoading,
-      userRole: user?.roles[0] 
-    });
-
     if (isAuthenticated && user) {
       const userRole = user.roles[0];
       
@@ -40,32 +32,6 @@ const AppContent: React.FC = () => {
           default:
             navigate('/login');
         }
-      } else {
-        // ✅ PERBAIKAN: Skip validation untuk exam-taking paths
-        if (currentPath.startsWith('/student/exam-taking/') && userRole === 'student') {
-          console.log('✅ Allowing exam-taking path:', currentPath);
-          return; // Skip validation untuk exam paths
-        }
-        
-        // Validate if current path is accessible for user role
-        const isValidPath = validatePathForRole(currentPath, userRole);
-        if (!isValidPath) {
-          console.log('❌ Invalid path for role:', { currentPath, userRole });
-          // Redirect to appropriate dashboard if path is not valid for role
-          switch (userRole) {
-            case 'admin':
-              navigate('/admin');
-              break;
-            case 'teacher':
-              navigate('/teacher');
-              break;
-            case 'student':
-              navigate('/student');
-              break;
-            default:
-              navigate('/login');
-          }
-        }
       }
     } else if (!isAuthenticated && !isLoading) {
       // Redirect to login if not authenticated and not on login page
@@ -74,54 +40,6 @@ const AppContent: React.FC = () => {
       }
     }
   }, [isAuthenticated, user, currentPath, navigate, isLoading]);
-
-  // Function to validate if a path is accessible for a given role
-  const validatePathForRole = (path: string, role: string): boolean => {
-    const adminPaths = [
-      '/admin',
-      '/manage/teachers',
-      '/manage/students', 
-      '/manage/expertise-programs',
-      '/manage/exams',
-      '/manage/subjects',
-      '/manage/classes',
-      '/manage/assignments',
-      '/manage/analytics'
-    ];
-
-    const teacherPaths = [
-      '/teacher',
-      '/teacher/classes',
-      '/teacher/exams',
-      '/teacher/questions',
-      '/teacher/question-sets',
-      '/teacher/analytics',
-      '/teacher/profile'
-    ];
-
-    const studentPaths = [
-      '/student',
-      '/student/exams',
-      '/student/results',
-      '/student/evaluation',
-      '/student/profile'
-    ];
-
-    switch (role) {
-      case 'admin':
-        return adminPaths.some(adminPath => path.startsWith(adminPath));
-      case 'teacher':
-        return teacherPaths.some(teacherPath => path.startsWith(teacherPath));
-      case 'student':
-        // ✅ PERBAIKAN: Handle exam-taking paths secara khusus
-        if (path.startsWith('/student/exam-taking/')) {
-          return true; // Always allow exam-taking paths for students
-        }
-        return studentPaths.some(studentPath => path.startsWith(studentPath));
-      default:
-        return false;
-    }
-  };
 
   if (isLoading) {
     return (
@@ -139,10 +57,9 @@ const AppContent: React.FC = () => {
     return <LoginForm />;
   }
 
-  // ✅ PERBAIKAN: Handle student exam-taking route dengan priority tinggi
+  // Handle student exam-taking route
   if (currentPath.startsWith('/student/exam-taking/')) {
     const sessionId = currentPath.split('/').pop();
-    console.log('🎯 Rendering StudentExamTakingPage with sessionId:', sessionId);
     if (sessionId) {
       return (
         <ProtectedRoute requiredRole="student">
@@ -153,7 +70,6 @@ const AppContent: React.FC = () => {
   }
 
   // Route based on current path
-  // ✅ PERBAIKAN: Gunakan startsWith untuk routing yang lebih fleksibel
   if (currentPath.startsWith('/admin') || currentPath.startsWith('/manage/')) {
     return (
       <ProtectedRoute requiredRole="admin">
@@ -173,28 +89,27 @@ const AppContent: React.FC = () => {
       </ProtectedRoute>
     );
   } else {
-    // ✅ PERBAIKAN: Handle unknown routes dengan logic yang lebih aman
+    // Handle unknown routes
     if (user) {
       const userRole = user.roles[0];
       
-      console.log('🔄 Unknown route, redirecting based on role:', { currentPath, userRole });
       switch (userRole) {
         case 'admin':
-          setTimeout(() => navigate('/admin'), 0); // Async redirect
+          setTimeout(() => navigate('/admin'), 0);
           return (
             <ProtectedRoute requiredRole="admin">
               <AdminDashboard />
             </ProtectedRoute>
           );
         case 'teacher':
-          setTimeout(() => navigate('/teacher'), 0); // Async redirect
+          setTimeout(() => navigate('/teacher'), 0);
           return (
             <ProtectedRoute requiredRole="teacher">
               <TeacherDashboard />
             </ProtectedRoute>
           );
         case 'student':
-          setTimeout(() => navigate('/student'), 0); // Async redirect
+          setTimeout(() => navigate('/student'), 0);
           return (
             <ProtectedRoute requiredRole="student">
               <StudentDashboard />

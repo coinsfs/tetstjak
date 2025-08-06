@@ -88,35 +88,24 @@ class StudentExamService extends BaseService {
   }
 
   async startExam(token: string, examId: string): Promise<ExamSession> {
-    console.log('🔧 StudentExamService.startExam called with examId:', examId);
-    
     if (!token) {
-      console.error('❌ No authentication token provided');
       throw new Error('Authentication token is required');
     }
     
     if (!examId) {
-      console.error('❌ No exam ID provided');
       throw new Error('Exam ID is required');
     }
     
     try {
       const result = await this.post<ExamSession>(`/exams/${examId}/start`, {}, token);
-      console.log('✅ StudentExamService.startExam successful:', result);
       
-      // Validate response structure
       if (!result || !result._id) {
-        console.error('❌ Invalid response structure:', result);
         throw new Error('Invalid response from server');
       }
       
       return result;
     } catch (error) {
-      console.error('❌ StudentExamService.startExam failed:', error);
-      
-      // Enhanced error handling
       if (error instanceof Error) {
-        // Check for specific error patterns
         if (error.message.includes('401')) {
           throw new Error('Authentication failed. Please login again.');
         } else if (error.message.includes('403')) {
@@ -135,34 +124,23 @@ class StudentExamService extends BaseService {
   }
 
   async getExamQuestions(token: string, sessionId: string): Promise<ExamQuestion[]> {
-    console.log('🔧 StudentExamService.getExamQuestions called with sessionId:', sessionId);
-    
     if (!token) {
-      console.error('❌ No authentication token provided');
       throw new Error('Authentication token is required');
     }
     
     if (!sessionId) {
-      console.error('❌ No session ID provided');
       throw new Error('Session ID is required');
     }
     
     try {
       const result = await this.get<ExamQuestion[]>(`/exam-sessions/${sessionId}/questions`, token);
-      console.log('✅ StudentExamService.getExamQuestions successful:', {
-        sessionId,
-        questionCount: result?.length || 0
-      });
       
-      // Validate response
       if (!Array.isArray(result)) {
-        console.error('❌ Invalid response format - expected array:', result);
         throw new Error('Invalid response format from server');
       }
       
       return result;
     } catch (error) {
-      console.error('❌ StudentExamService.getExamQuestions failed:', error);
       throw error;
     }
   }
