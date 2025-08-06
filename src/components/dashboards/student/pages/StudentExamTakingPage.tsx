@@ -115,8 +115,8 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const handleFinishExam = () => {
     toast.success('Ujian telah selesai dikerjakan.');
     // TODO: Submit exam answers to backend
-    // Navigate back to exam list or results page
-    navigate('/student/exams');
+    // Navigate back to exam list using full page reload
+    window.location.href = '/student/exams';
   };
 
   const handleBackToExams = () => {
@@ -126,7 +126,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       );
       if (!confirmLeave) return;
     }
-    navigate('/student/exams');
+    window.location.href = '/student/exams';
   };
 
   const formatTime = (seconds: number): string => {

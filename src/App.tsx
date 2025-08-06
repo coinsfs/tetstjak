@@ -58,7 +58,7 @@ const AppContent: React.FC = () => {
   }
 
   // Handle student exam-taking route
-  if (currentPath.startsWith('/student/exam-taking/')) {
+  if (currentPath.startsWith('/exam-taking/')) {
     const sessionId = currentPath.split('/').pop();
     if (sessionId) {
       return (

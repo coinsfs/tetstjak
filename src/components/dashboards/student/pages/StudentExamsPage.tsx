@@ -196,8 +196,8 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
       // Start the exam and get session
       const examSession = await studentExamService.startExam(token!, exam._id);
       
-      // Navigate to exam taking page with session ID
-      navigate(`/student/exam-taking/${examSession._id}`);
+      // Navigate to exam taking page with session ID using full page reload
+      window.location.href = `/exam-taking/${examSession._id}`;
       
       toast.success('Ujian berhasil dimulai!');
     } catch (error) {
