@@ -31,141 +31,115 @@ interface ExamState {
 const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, sessionId }) => {
   const { token, logout } = useAuth();
   const { navigate } = useRouter();
+  
+  // Core state
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, ExamAnswer>>({});
   const [timeRemaining, setTimeRemaining] = useState(0);
-  const [examStartTime] = useState(new Date().toISOString());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  // Security state
   const [showSecurityWarning, setShowSecurityWarning] = useState(false);
   const [securityWarningMessage, setSecurityWarningMessage] = useState('');
   const [warningCount, setWarningCount] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [examWebSocket, setExamWebSocket] = useState<WebSocket | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   
-  // Debug state untuk tracking
-  const [debugInfo, setDebugInfo] = useState({
-    questionsRequested: false,
-    questionsLoaded: false,
-    securityViolations: [] as Array<{
-      type: string;
-      message: string;
-      timestamp: string;
-      count: number;
-    }>
-  });
-  
-  const pageRef = useRef<HTMLDivElement>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const visibilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Refs for stable references
   const examStateRef = useRef<ExamState>({
     sessionId,
     answers: {},
     currentQuestionIndex: 0,
     timeRemaining: 0,
-    startTime: examStartTime,
+    startTime: new Date().toISOString(),
     lastSaved: new Date().toISOString(),
     suspiciousActivities: []
   });
-
-  // Anti-cheating detection
-  const detectDevTools = useCallback(() => {
-    const threshold = 160;
-    const widthThreshold = window.outerWidth - window.innerWidth > threshold;
-    const heightThreshold = window.outerHeight - window.innerHeight > threshold;
-    
-    if (widthThreshold || heightThreshold) {
-      handleSecurityViolation('DEVTOOLS_DETECTED', 'Developer tools terdeteksi');
-    }
-  }, []);
-
+  
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const examWebSocketRef = useRef<WebSocket | null>(null);
+  const initializationRef = useRef(false);
+  const securityDetectionRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSecurityViolationRef = useRef<{ [key: string]: number }>({});
+  
+  // Stable security violation handler
   const handleSecurityViolation = useCallback((type: string, message: string) => {
-    const newCount = warningCount + 1;
-    setWarningCount(newCount);
+    const now = Date.now();
+    const lastViolation = lastSecurityViolationRef.current[type] || 0;
     
-    // Debug log untuk pelanggaran keamanan
-    const violation = {
-      type,
-      message,
-      timestamp: new Date().toISOString(),
-      count: newCount
-    };
-    
-    console.log('🚨 SECURITY VIOLATION DETECTED:', violation);
-    
-    // Update debug state
-    setDebugInfo(prev => ({
-      ...prev,
-      securityViolations: [...prev.securityViolations, violation]
-    }));
-    
-    // Send to proctor via WebSocket
-    if (examWebSocket && examWebSocket.readyState === WebSocket.OPEN) {
-      examWebSocket.send(JSON.stringify({
-        type: "SECURITY_VIOLATION",
-        details: { 
-          violation_type: type, 
-          message: message,
-          timestamp: new Date().toISOString(),
-          warning_count: newCount
-        }
-      }));
-    }
-
-    // Add to suspicious activities
-    examStateRef.current.suspiciousActivities.push(`${type}: ${message} at ${new Date().toISOString()}`);
-    saveExamState();
-
-    if (newCount >= 3) {
-      // Redirect to dashboard after 3 warnings
-      toast.error('Terlalu banyak pelanggaran keamanan. Ujian dihentikan.');
-      navigate('/student');
+    // Debounce same violation type (minimum 5 seconds apart)
+    if (now - lastViolation < 5000) {
       return;
     }
+    
+    lastSecurityViolationRef.current[type] = now;
+    
+    setWarningCount(prev => {
+      const newCount = prev + 1;
+      
+      // Send to proctor via WebSocket
+      if (examWebSocketRef.current && examWebSocketRef.current.readyState === WebSocket.OPEN) {
+        examWebSocketRef.current.send(JSON.stringify({
+          type: "SECURITY_VIOLATION",
+          details: { 
+            violation_type: type, 
+            message: message,
+            timestamp: new Date().toISOString(),
+            warning_count: newCount
+          }
+        }));
+      }
 
-    setSecurityWarningMessage(message);
-    setShowSecurityWarning(true);
-  }, [warningCount, examWebSocket, navigate]);
+      // Add to suspicious activities
+      examStateRef.current.suspiciousActivities.push(`${type}: ${message} at ${new Date().toISOString()}`);
+      saveExamState();
 
-  // Initialize exam and security measures
+      if (newCount >= 3) {
+        toast.error('Terlalu banyak pelanggaran keamanan. Ujian dihentikan.');
+        navigate('/student');
+        return newCount;
+      }
+
+      setSecurityWarningMessage(message);
+      setShowSecurityWarning(true);
+      return newCount;
+    });
+  }, [navigate]);
+
+  // Stable save function
+  const saveExamState = useCallback(() => {
+    const state: ExamState = {
+      ...examStateRef.current,
+      answers,
+      currentQuestionIndex,
+      timeRemaining,
+      lastSaved: new Date().toISOString()
+    };
+    
+    localStorage.setItem(`exam_${sessionId}`, JSON.stringify(state));
+    examStateRef.current = state;
+  }, [answers, currentQuestionIndex, timeRemaining, sessionId]);
+
+  // Initialize exam - runs only once
   useEffect(() => {
+    if (initializationRef.current || !token || !sessionId) {
+      return;
+    }
+    
+    initializationRef.current = true;
+    
     const initializeExam = async () => {
       console.log('🎯 Initializing exam with sessionId:', sessionId);
       
-      if (!token || !sessionId) {
-        console.error('❌ Missing token or sessionId:', { token: !!token, sessionId });
-        toast.error('Session tidak valid');
-        navigate('/student/exams');
-        return;
-      }
-
       try {
-        console.log('📡 Loading exam questions for session:', sessionId);
-        
-        // Debug: Mark bahwa kita akan request questions
-        setDebugInfo(prev => ({
-          ...prev,
-          questionsRequested: true
-        }));
-        console.log('🔍 DEBUG: Questions request initiated for session:', sessionId);
-        
-        // Add loading state
         setLoading(true);
         
         // Load questions using session ID
         const examQuestions = await studentExamService.getExamQuestions(token, sessionId);
         console.log('✅ Exam questions loaded successfully:', {
-          questionCount: examQuestions?.length || 0,
-          questions: examQuestions
+          questionCount: examQuestions?.length || 0
         });
-        
-        // Debug: Mark bahwa questions sudah berhasil dimuat
-        setDebugInfo(prev => ({
-          ...prev,
-          questionsLoaded: true
-        }));
-        console.log('🔍 DEBUG: Questions loaded successfully. Count:', examQuestions?.length || 0);
         
         if (!examQuestions || examQuestions.length === 0) {
           console.error('❌ No questions available for exam session:', sessionId);
@@ -175,19 +149,11 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
         }
         
         setQuestions(examQuestions);
-        console.log('✅ Questions set in state, count:', examQuestions.length);
         
-        // Try to get exam duration from session or use default
-        // This should ideally come from the exam session data
-        let initialTime = 90 * 60; // Default 90 minutes in seconds
-        
-        // If we have exam session data with duration, use it
-        // This would require an additional API call to get session details
-        // For now, we'll use the default
-        
+        // Set initial time (90 minutes default)
+        let initialTime = 90 * 60;
         setTimeRemaining(initialTime);
         examStateRef.current.timeRemaining = initialTime;
-        console.log('⏰ Timer set to:', initialTime, 'seconds');
 
         // Load saved state if exists
         const savedState = localStorage.getItem(`exam_${sessionId}`);
@@ -196,38 +162,25 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
           try {
             const parsedState: ExamState = JSON.parse(savedState);
             
-            // Validasi saved state
             if (parsedState.sessionId === sessionId) {
               setAnswers(parsedState.answers || {});
               setCurrentQuestionIndex(parsedState.currentQuestionIndex || 0);
-              // Only restore time if it's reasonable (not expired)
+              
               const savedTime = parsedState.timeRemaining || initialTime;
               if (savedTime > 0 && savedTime <= initialTime) {
                 setTimeRemaining(savedTime);
                 examStateRef.current.timeRemaining = savedTime;
-              } else {
-                setTimeRemaining(initialTime);
-                examStateRef.current.timeRemaining = initialTime;
               }
               examStateRef.current = parsedState;
-              console.log('✅ Saved state restored:', {
-                answersCount: Object.keys(parsedState.answers || {}).length,
-                currentQuestion: parsedState.currentQuestionIndex || 0,
-                timeRemaining: examStateRef.current.timeRemaining
-              });
-            } else {
-              console.warn('⚠️ Saved state session ID mismatch, ignoring saved state');
-              localStorage.removeItem(`exam_${sessionId}`);
+              console.log('✅ Saved state restored');
             }
           } catch (parseError) {
             console.error('❌ Error parsing saved state:', parseError);
             localStorage.removeItem(`exam_${sessionId}`);
           }
-        } else {
-          console.log('📝 No saved state found, starting fresh');
         }
 
-        // Initialize WebSocket connection to exam room with proper error handling
+        // Initialize WebSocket connection
         try {
           const wsUrl = `wss://smkmudakalirejo.pagekite.me/api/v1/ws/exam-room/${sessionId}`;
           console.log('🔌 Connecting to WebSocket:', wsUrl);
@@ -235,7 +188,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
           
           ws.onopen = () => {
             console.log('✅ WebSocket connected to exam room');
-            setExamWebSocket(ws);
+            examWebSocketRef.current = ws;
           };
 
           ws.onmessage = (event) => {
@@ -243,7 +196,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
               const data = JSON.parse(event.data);
               console.log('📨 WebSocket message received:', data);
               
-              // Handle specific WebSocket messages
               if (data.type === 'EXAM_TIME_UPDATE' && data.remaining_time !== undefined) {
                 setTimeRemaining(data.remaining_time);
                 examStateRef.current.timeRemaining = data.remaining_time;
@@ -264,31 +216,20 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
           };
         } catch (wsError) {
           console.error('❌ Failed to initialize WebSocket:', wsError);
-          // Continue without WebSocket - exam can still function
         }
 
         // Request fullscreen
-        console.log('🖥️ Requesting fullscreen mode...');
         try {
           if (document.documentElement.requestFullscreen) {
             await document.documentElement.requestFullscreen();
           }
         } catch (fullscreenError) {
           console.warn('⚠️ Fullscreen request failed:', fullscreenError);
-          // Don't trigger security violation on initial load
-          console.warn('⚠️ Fullscreen request denied on initial load');
         }
 
         console.log('✅ Exam initialization completed successfully');
       } catch (error) {
         console.error('❌ Error initializing exam:', error);
-        console.error('❌ Initialization error details:', {
-          sessionId,
-          errorType: typeof error,
-          errorMessage: error instanceof Error ? error.message : 'Unknown error',
-          errorStack: error instanceof Error ? error.stack : undefined
-        });
-        
         const errorMessage = error instanceof Error 
           ? `Gagal memuat soal ujian: ${error.message}` 
           : 'Gagal memuat soal ujian. Silakan coba lagi.';
@@ -300,112 +241,11 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
     };
 
     initializeExam();
+  }, []); // Empty dependency array - runs only once
 
-    // Cleanup
-    return () => {
-      if (examWebSocket) {
-        examWebSocket.close();
-      }
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-      if (visibilityTimeoutRef.current) {
-        clearTimeout(visibilityTimeoutRef.current);
-      }
-    };
-  }, [token, sessionId, navigate, handleSecurityViolation]);
-
-  // Security event listeners
+  // Timer effect - separate from initialization
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      // Don't trigger security violations during initial load
-      if (loading) return;
-      
-      if (document.hidden) {
-        visibilityTimeoutRef.current = setTimeout(() => {
-          handleSecurityViolation('TAB_SWITCH', 'Berpindah tab atau minimize window');
-        }, 2000);
-      } else {
-        if (visibilityTimeoutRef.current) {
-          clearTimeout(visibilityTimeoutRef.current);
-        }
-      }
-    };
-
-    const handleContextMenu = (e: MouseEvent) => {
-      // Don't trigger security violations during initial load
-      if (loading) return;
-      
-      e.preventDefault();
-      handleSecurityViolation('RIGHT_CLICK', 'Mencoba membuka context menu');
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger security violations during initial load
-      if (loading) return;
-      
-      // Prevent F12, Ctrl+Shift+I, Ctrl+U, etc.
-      if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && e.key === 'I') ||
-        (e.ctrlKey && e.shiftKey && e.key === 'C') ||
-        (e.ctrlKey && e.key === 'u') ||
-        (e.ctrlKey && e.key === 's') ||
-        (e.ctrlKey && e.key === 'a') ||
-        (e.ctrlKey && e.key === 'p')
-      ) {
-        e.preventDefault();
-        handleSecurityViolation('KEYBOARD_SHORTCUT', 'Mencoba menggunakan shortcut terlarang');
-      }
-    };
-
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Don't trigger security violations during initial load
-      if (loading) return;
-      
-      e.preventDefault();
-      e.returnValue = 'Yakin ingin meninggalkan ujian?';
-      handleSecurityViolation('PAGE_UNLOAD', 'Mencoba meninggalkan halaman ujian');
-    };
-
-    const handleFullscreenChange = () => {
-      const isCurrentlyFullscreen = !!document.fullscreenElement;
-      setIsFullscreen(isCurrentlyFullscreen);
-      
-      // Don't trigger security violations during initial load or if questions aren't loaded yet
-      if (!isCurrentlyFullscreen && !loading && questions.length > 0) {
-        handleSecurityViolation('FULLSCREEN_EXIT', 'Keluar dari fullscreen mode');
-      }
-    };
-
-    // Add event listeners
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    document.addEventListener('contextmenu', handleContextMenu);
-    document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    // DevTools detection interval
-    const devToolsInterval = setInterval(() => {
-      // Don't trigger security violations during initial load
-      if (!loading && questions.length > 0) {
-        detectDevTools();
-      }
-    }, 1000);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      document.removeEventListener('contextmenu', handleContextMenu);
-      document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      clearInterval(devToolsInterval);
-    };
-  }, [handleSecurityViolation, detectDevTools, loading, questions.length]);
-
-  // Timer
-  useEffect(() => {
-    if (timeRemaining > 0 && !loading) {
+    if (timeRemaining > 0 && !loading && questions.length > 0) {
       timerRef.current = setInterval(() => {
         setTimeRemaining(prev => {
           const newTime = prev - 1;
@@ -431,20 +271,105 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
         clearInterval(timerRef.current);
       }
     };
-  }, [timeRemaining, loading]);
+  }, [timeRemaining, loading, questions.length, saveExamState]);
 
-  const saveExamState = useCallback(() => {
-    const state: ExamState = {
-      ...examStateRef.current,
-      answers,
-      currentQuestionIndex,
-      timeRemaining,
-      lastSaved: new Date().toISOString()
+  // Security detection - separate effect with debouncing
+  useEffect(() => {
+    if (loading || questions.length === 0) return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTimeout(() => {
+          if (document.hidden) {
+            handleSecurityViolation('TAB_SWITCH', 'Berpindah tab atau minimize window');
+          }
+        }, 2000);
+      }
     };
-    
-    localStorage.setItem(`exam_${sessionId}`, JSON.stringify(state));
-    examStateRef.current = state;
-  }, [answers, currentQuestionIndex, timeRemaining, sessionId]);
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      handleSecurityViolation('RIGHT_CLICK', 'Mencoba membuka context menu');
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+        (e.ctrlKey && e.shiftKey && e.key === 'C') ||
+        (e.ctrlKey && e.key === 'u') ||
+        (e.ctrlKey && e.key === 's') ||
+        (e.ctrlKey && e.key === 'a') ||
+        (e.ctrlKey && e.key === 'p')
+      ) {
+        e.preventDefault();
+        handleSecurityViolation('KEYBOARD_SHORTCUT', 'Mencoba menggunakan shortcut terlarang');
+      }
+    };
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = 'Yakin ingin meninggalkan ujian?';
+      handleSecurityViolation('PAGE_UNLOAD', 'Mencoba meninggalkan halaman ujian');
+    };
+
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!document.fullscreenElement;
+      setIsFullscreen(isCurrentlyFullscreen);
+      
+      if (!isCurrentlyFullscreen) {
+        handleSecurityViolation('FULLSCREEN_EXIT', 'Keluar dari fullscreen mode');
+      }
+    };
+
+    // DevTools detection with debouncing (every 5 seconds instead of 1)
+    const detectDevTools = () => {
+      const threshold = 160;
+      const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+      const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+      
+      if (widthThreshold || heightThreshold) {
+        handleSecurityViolation('DEVTOOLS_DETECTED', 'Developer tools terdeteksi');
+      }
+    };
+
+    // Add event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // DevTools detection with reduced frequency
+    securityDetectionRef.current = setInterval(detectDevTools, 5000);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      if (securityDetectionRef.current) {
+        clearInterval(securityDetectionRef.current);
+      }
+    };
+  }, [loading, questions.length, handleSecurityViolation]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (examWebSocketRef.current) {
+        examWebSocketRef.current.close();
+      }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      if (securityDetectionRef.current) {
+        clearInterval(securityDetectionRef.current);
+      }
+    };
+  }, []);
 
   const handleAnswerChange = useCallback((questionId: string, answer: string | string[]) => {
     const newAnswer: ExamAnswer = {
@@ -460,8 +385,8 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
     }));
 
     // Send to proctor via WebSocket
-    if (examWebSocket && examWebSocket.readyState === WebSocket.OPEN) {
-      examWebSocket.send(JSON.stringify({
+    if (examWebSocketRef.current && examWebSocketRef.current.readyState === WebSocket.OPEN) {
+      examWebSocketRef.current.send(JSON.stringify({
         type: "ANSWER_CHANGED",
         details: { 
           question_id: questionId, 
@@ -471,14 +396,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
       }));
     }
 
-    // Auto-save
+    // Auto-save with debouncing
     setTimeout(saveExamState, 100);
-  }, [answers, currentQuestionIndex, examWebSocket, saveExamState]);
+  }, [answers, currentQuestionIndex, saveExamState]);
 
   const handleSubmitExam = useCallback(async () => {
     if (isSubmitting) return;
     
-    // Konfirmasi sebelum submit
     const confirmSubmit = window.confirm(
       `Apakah Anda yakin ingin menyelesaikan ujian?\n\n` +
       `Soal terjawab: ${Object.keys(answers).length} dari ${questions.length}\n` +
@@ -495,7 +419,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
     try {
       console.log('📤 Starting exam submission process');
       
-      // Save final answers with error handling
+      // Save final answers
       const answerEntries = Object.entries(answers);
       console.log(`💾 Saving ${answerEntries.length} answers`);
       
@@ -505,7 +429,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
           console.log(`✅ Answer saved for question ${questionId}`);
         } catch (answerError) {
           console.error(`❌ Failed to save answer for question ${questionId}:`, answerError);
-          // Continue with other answers even if one fails
         }
       }
       
@@ -519,8 +442,8 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
       console.log('🗑️ Cleared saved exam state');
       
       // Send completion to proctor
-      if (examWebSocket && examWebSocket.readyState === WebSocket.OPEN) {
-        examWebSocket.send(JSON.stringify({
+      if (examWebSocketRef.current && examWebSocketRef.current.readyState === WebSocket.OPEN) {
+        examWebSocketRef.current.send(JSON.stringify({
           type: "EXAM_SUBMITTED",
           details: { 
             session_id: sessionId,
@@ -533,7 +456,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
       
       toast.success('Ujian berhasil diselesaikan!');
       
-      // Small delay before navigation to ensure toast is visible
       setTimeout(() => {
         navigate('/student/results');
       }, 1500);
@@ -557,7 +479,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting, answers, token, sessionId, examWebSocket, navigate]);
+  }, [isSubmitting, answers, token, sessionId, navigate, questions.length, timeRemaining]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -571,31 +493,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
   };
 
   const getTimerClass = () => {
-    if (timeRemaining <= 300) return 'exam-timer critical'; // 5 minutes
-    if (timeRemaining <= 900) return 'exam-timer warning'; // 15 minutes
+    if (timeRemaining <= 300) return 'exam-timer critical';
+    if (timeRemaining <= 900) return 'exam-timer warning';
     return 'exam-timer';
   };
 
   const currentQuestion = questions[currentQuestionIndex];
   const currentAnswer = currentQuestion ? answers[currentQuestion.id] : null;
-
-  // Debug: Log current state setiap render
-  console.log('🔍 DEBUG STATE:', {
-    sessionId,
-    questionsRequested: debugInfo.questionsRequested,
-    questionsLoaded: debugInfo.questionsLoaded,
-    questionsCount: questions.length,
-    securityViolationsCount: debugInfo.securityViolations.length,
-    currentQuestionIndex,
-    answersCount: Object.keys(answers).length,
-    timeRemaining,
-    warningCount
-  });
-
-  // Debug: Log semua pelanggaran keamanan
-  if (debugInfo.securityViolations.length > 0) {
-    console.log('🚨 ALL SECURITY VIOLATIONS:', debugInfo.securityViolations);
-  }
 
   if (loading) {
     return (
@@ -631,7 +535,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
   }
 
   return (
-    <div className="exam-taking-page" ref={pageRef}>
+    <div className="exam-taking-page">
       <div className="exam-container">
         {/* Header */}
         <div className="exam-header">
@@ -664,38 +568,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
         {/* Content */}
         <div className="exam-content">
           <div className="max-w-4xl mx-auto">
-            {/* Debug Panel - Only show in development */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="bg-gray-900 text-white p-4 rounded-lg mb-6 text-sm font-mono">
-                <h3 className="text-yellow-400 font-bold mb-2">🔍 DEBUG INFO</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p>Session ID: {sessionId}</p>
-                    <p>Questions Requested: {debugInfo.questionsRequested ? '✅' : '❌'}</p>
-                    <p>Questions Loaded: {debugInfo.questionsLoaded ? '✅' : '❌'}</p>
-                    <p>Questions Count: {questions.length}</p>
-                    <p>Answers Count: {Object.keys(answers).length}</p>
-                  </div>
-                  <div>
-                    <p>Time Remaining: {formatTime(timeRemaining)}</p>
-                    <p>Warning Count: {warningCount}/3</p>
-                    <p>Security Violations: {debugInfo.securityViolations.length}</p>
-                    <p>Fullscreen: {isFullscreen ? '✅' : '❌'}</p>
-                  </div>
-                </div>
-                {debugInfo.securityViolations.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-700">
-                    <p className="text-red-400 font-bold">Recent Violations:</p>
-                    {debugInfo.securityViolations.slice(-3).map((violation, index) => (
-                      <p key={index} className="text-red-300 text-xs">
-                        [{violation.timestamp.split('T')[1].split('.')[0]}] {violation.type}: {violation.message}
-                      </p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-            
             {/* Question */}
             <div className="exam-question-card">
               <div className="flex items-start justify-between mb-6">

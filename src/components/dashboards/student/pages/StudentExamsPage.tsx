@@ -246,10 +246,10 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
       
       console.log('🔄 Navigating to exam taking page with session ID:', session._id);
       
-      // Add small delay to ensure state is updated
-      setTimeout(() => {
-      navigate(`/student/exam-taking/${session._id}`);
-      }, 100);
+      // Navigate immediately with proper URL construction
+      const examUrl = `/student/exam-taking/${session._id}`;
+      console.log('🔄 NAVIGATION DEBUG - Navigating to:', examUrl);
+      navigate(examUrl);
       
       console.log('✅ Navigation completed successfully');
       
