@@ -101,7 +101,7 @@ src/components/profile/ProfilePictureUpload.tsx
 src/components/profile/SubjectFilter.tsx
 src/components/SubjectFilter.tsx
 src/components/dashboards/student/StudentHeader.tsx
-src/components/dashboards/student/StudentMainContent.tsx
+
 src/components/dashboards/student/StudentSidebar.tsx
 src/components/dashboards/student/pages/StudentDashboardPage.tsx
 src/components/dashboards/student/pages/StudentEvaluationPage.tsx
