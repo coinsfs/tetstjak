@@ -88,7 +88,8 @@ const AppContent: React.FC = () => {
       '/student/exams',
       '/student/results',
       '/student/evaluation',
-      '/student/profile'
+      '/student/profile',
+      '/student/exam-taking'
     ];
 
     switch (role) {
@@ -177,6 +178,16 @@ const AppContent: React.FC = () => {
       // Handle unknown routes - redirect based on user role
       if (user) {
         const userRole = user.roles[0];
+        
+        // Don't redirect if we're on a valid exam-taking path
+        if (currentPath.startsWith('/student/exam-taking/') && userRole === 'student') {
+          return (
+            <ProtectedRoute requiredRole="student">
+              <StudentDashboard />
+            </ProtectedRoute>
+          );
+        }
+        
         switch (userRole) {
           case 'admin':
             navigate('/admin');

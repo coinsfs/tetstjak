@@ -275,10 +275,8 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
           }
         } catch (fullscreenError) {
           console.warn('⚠️ Fullscreen request failed:', fullscreenError);
-          if (!loading) {
-            console.warn('⚠️ Fullscreen request denied');
-            handleSecurityViolation('FULLSCREEN_DENIED', 'Fullscreen mode ditolak');
-          }
+          // Don't trigger security violation on initial load
+          console.warn('⚠️ Fullscreen request denied on initial load');
         }
 
         console.log('✅ Exam initialization completed successfully');
@@ -315,11 +313,14 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
         clearTimeout(visibilityTimeoutRef.current);
       }
     };
-  }, [token, sessionId, navigate]);
+  }, [token, sessionId, navigate, handleSecurityViolation]);
 
   // Security event listeners
   useEffect(() => {
     const handleVisibilityChange = () => {
+      // Don't trigger security violations during initial load
+      if (loading) return;
+      
       if (document.hidden) {
         visibilityTimeoutRef.current = setTimeout(() => {
           handleSecurityViolation('TAB_SWITCH', 'Berpindah tab atau minimize window');
@@ -332,11 +333,17 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
     };
 
     const handleContextMenu = (e: MouseEvent) => {
+      // Don't trigger security violations during initial load
+      if (loading) return;
+      
       e.preventDefault();
       handleSecurityViolation('RIGHT_CLICK', 'Mencoba membuka context menu');
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger security violations during initial load
+      if (loading) return;
+      
       // Prevent F12, Ctrl+Shift+I, Ctrl+U, etc.
       if (
         e.key === 'F12' ||
@@ -353,6 +360,9 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
     };
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Don't trigger security violations during initial load
+      if (loading) return;
+      
       e.preventDefault();
       e.returnValue = 'Yakin ingin meninggalkan ujian?';
       handleSecurityViolation('PAGE_UNLOAD', 'Mencoba meninggalkan halaman ujian');
@@ -362,7 +372,8 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
       const isCurrentlyFullscreen = !!document.fullscreenElement;
       setIsFullscreen(isCurrentlyFullscreen);
       
-      if (!isCurrentlyFullscreen && !loading) {
+      // Don't trigger security violations during initial load or if questions aren't loaded yet
+      if (!isCurrentlyFullscreen && !loading && questions.length > 0) {
         handleSecurityViolation('FULLSCREEN_EXIT', 'Keluar dari fullscreen mode');
       }
     };
@@ -375,7 +386,12 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     // DevTools detection interval
-    const devToolsInterval = setInterval(detectDevTools, 1000);
+    const devToolsInterval = setInterval(() => {
+      // Don't trigger security violations during initial load
+      if (!loading && questions.length > 0) {
+        detectDevTools();
+      }
+    }, 1000);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -385,7 +401,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ user, ses
       window.removeEventListener('beforeunload', handleBeforeUnload);
       clearInterval(devToolsInterval);
     };
-  }, [handleSecurityViolation, detectDevTools, loading]);
+  }, [handleSecurityViolation, detectDevTools, loading, questions.length]);
 
   // Timer
   useEffect(() => {
