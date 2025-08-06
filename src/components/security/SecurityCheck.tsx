@@ -1,645 +1,185 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { AlertTriangle, Shield, Wifi, Monitor, Lock, Eye } from 'lucide-react';
+// Fixed DevTools Detection
+const checkDevTools = (): SecurityCheckResult => {
+  let devtools = false;
+  let detectionCount = 0;
 
-interface SecurityCheckProps {
-  onSecurityPassed: () => void;
-  onSecurityFailed: (reason: string) => void;
-  examId: string;
-  studentId: string;
-}
-
-interface SecurityCheckResult {
-  passed: boolean;
-  reason?: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-}
-
-const SecurityCheck: React.FC<SecurityCheckProps> = ({
-  onSecurityPassed,
-  onSecurityFailed,
-  examId,
-  studentId
-}) => {
-  const [currentCheck, setCurrentCheck] = useState<string>('Memulai pemeriksaan keamanan...');
-  const [progress, setProgress] = useState(0);
-  const [isChecking, setIsChecking] = useState(true);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const checksCompleted = useRef(0);
-  const totalChecks = 6;
-
-  useEffect(() => {
-    performSecurityChecks();
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, []);
-
-  const updateProgress = (checkName: string) => {
-    checksCompleted.current += 1;
-    const newProgress = (checksCompleted.current / totalChecks) * 100;
-    setCurrentCheck(checkName);
-    setProgress(newProgress);
+  // Method 1: Window Size Check (IMPROVED)
+  const checkWindowSize = () => {
+    const threshold = 200; // Increased threshold
+    const widthDiff = window.outerWidth - window.innerWidth;
+    const heightDiff = window.outerHeight - window.innerHeight;
+    
+    // More lenient check - both dimensions must be suspicious
+    if (widthDiff > threshold && heightDiff > threshold) {
+      detectionCount++;
+      return true;
+    }
+    
+    // Check for docked devtools (common pattern)
+    if (widthDiff > 300 || heightDiff > 300) {
+      detectionCount++;
+      return true;
+    }
+    
+    return false;
   };
 
-  const performSecurityChecks = async () => {
+  // Method 2: Console Detection (SAFER)
+  const checkConsoleAccess = () => {
     try {
-      // 1. DevTools Detection
-      updateProgress('Memeriksa Developer Tools...');
-      await sleep(500);
-      const devToolsCheck = checkDevTools();
-      if (!devToolsCheck.passed) {
-        onSecurityFailed(devToolsCheck.reason!);
-        return;
-      }
-
-      // 2. WebDriver Detection
-      updateProgress('Mendeteksi Automated Browser...');
-      await sleep(500);
-      const webDriverCheck = checkWebDriver();
-      if (!webDriverCheck.passed) {
-        onSecurityFailed(webDriverCheck.reason!);
-        return;
-      }
-
-      // 3. Multiple Sessions Check
-      updateProgress('Memeriksa Sesi Ganda...');
-      await sleep(500);
-      const multiSessionCheck = checkMultipleSessions();
-      if (!multiSessionCheck.passed) {
-        onSecurityFailed(multiSessionCheck.reason!);
-        return;
-      }
-
-      // 4. Device Fingerprinting
-      updateProgress('Membuat Sidik Jari Perangkat...');
-      await sleep(500);
-      const fingerprintCheck = await generateDeviceFingerprint();
-      if (!fingerprintCheck.passed) {
-        onSecurityFailed(fingerprintCheck.reason!);
-        return;
-      }
-
-      // 5. Network Stability Check
-      updateProgress('Menguji Stabilitas Jaringan...');
-      await sleep(500);
-      const networkCheck = await checkNetworkStability();
-      if (!networkCheck.passed) {
-        onSecurityFailed(networkCheck.reason!);
-        return;
-      }
-
-      // 6. Final Security Setup
-      updateProgress('Menyelesaikan Konfigurasi Keamanan...');
-      await sleep(500);
-      const setupCheck = setupSecurityEnvironment();
-      if (!setupCheck.passed) {
-        onSecurityFailed(setupCheck.reason!);
-        return;
-      }
-
-      // All checks passed
-      setCurrentCheck('Pemeriksaan keamanan selesai!');
-      setProgress(100);
-      await sleep(1000);
-      setIsChecking(false);
-      onSecurityPassed();
-
-    } catch (error) {
-      console.error('Security check error:', error);
-      onSecurityFailed('Terjadi kesalahan dalam pemeriksaan keamanan');
+      let element = document.createElement('div');
+      let consoleOpened = false;
+      
+      Object.defineProperty(element, 'id', {
+        get: function() {
+          consoleOpened = true;
+          return 'devtools-check';
+        }
+      });
+      
+      // Use console.dir instead of console.log (less intrusive)
+      console.dir(element);
+      
+      // Small delay to let getter execute
+      setTimeout(() => {
+        if (consoleOpened) {
+          detectionCount++;
+        }
+      }, 10);
+      
+      return consoleOpened;
+    } catch (e) {
+      return false;
     }
   };
 
-  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-  // 1. DevTools Detection
-  const checkDevTools = (): SecurityCheckResult => {
-    let devtools = false;
-
-    // Method 1: Console detection
-    const threshold = 160;
-    if (window.outerHeight - window.innerHeight > threshold || 
-        window.outerWidth - window.innerWidth > threshold) {
-      devtools = true;
-    }
-
-    // Method 2: Debugger detection
-    let start = performance.now();
-    debugger;
-    let end = performance.now();
-    if (end - start > 100) {
-      devtools = true;
-    }
-
-    // Method 3: Console.clear detection
-    const originalClear = console.clear;
-    let clearCalled = false;
-    console.clear = function() {
-      clearCalled = true;
-      return originalClear.apply(console, arguments as any);
-    };
-    console.clear();
-    if (clearCalled) {
-      devtools = true;
-    }
-    console.clear = originalClear;
-
-    // Method 4: toString detection
-    let element = new Image();
-    Object.defineProperty(element, 'id', {
-      get: function() {
-        devtools = true;
-        return 'devtools-detected';
+  // Method 3: Timing-based Detection (IMPROVED)
+  const checkDebuggerTiming = () => {
+    try {
+      let start = performance.now();
+      
+      // Use eval to avoid direct debugger statement
+      eval('debugger');
+      
+      let end = performance.now();
+      
+      // Higher threshold to avoid false positives
+      if (end - start > 200) { // Increased from 100 to 200
+        detectionCount++;
+        return true;
       }
-    });
-    console.log(element);
-
-    if (devtools) {
-      return {
-        passed: false,
-        reason: 'Developer Tools terdeteksi terbuka. Ujian tidak dapat dilanjutkan untuk menjaga integritas.',
-        severity: 'critical'
-      };
+      return false;
+    } catch (e) {
+      return false;
     }
-
-    return { passed: true, severity: 'low' };
   };
 
-  // 2. WebDriver Detection
-  const checkWebDriver = (): SecurityCheckResult => {
-    // Check for webdriver properties
-    if (navigator.webdriver) {
-      return {
-        passed: false,
-        reason: 'Automated browser terdeteksi. Ujian harus dilakukan dengan browser manual.',
-        severity: 'critical'
-      };
-    }
-
-    // Check for common automation frameworks
-    const automationIndicators = [
-      'webdriver',
-      'driver-evaluate',
-      'webdriver-evaluate',
-      'selenium',
-      'webdriver-evaluate-response',
-      '__webdriver_script_fn',
-      '__selenium_unwrapped',
-      '__webdriver_unwrapped',
-      '__driver_evaluate',
-      '__webdriver_evaluate',
-      '__selenium_evaluate',
-      '__fxdriver_evaluate',
-      '__driver_unwrapped',
-      '__fxdriver_unwrapped',
-      '_Selenium_IDE_Recorder',
-      '_selenium',
-      'calledSelenium',
-      '$cdc_asdjflasutopfhvcZLmcfl_',
-      '$chrome_asyncScriptInfo',
-      '__$webdriverAsyncExecutor'
+  // Method 4: Check for DevTools-specific properties
+  const checkDevToolsProperties = () => {
+    const devToolsProps = [
+      'webkitStorageInfo',
+      'webkitIndexedDB',
+      '__REACT_DEVTOOLS_GLOBAL_HOOK__',
+      '__VUE_DEVTOOLS_GLOBAL_HOOK__',
+      'devtools'
     ];
-
-    for (const indicator of automationIndicators) {
-      if (window.hasOwnProperty(indicator) || document.hasOwnProperty(indicator)) {
-        return {
-          passed: false,
-          reason: 'Automated browser terdeteksi. Ujian harus dilakukan dengan browser manual.',
-          severity: 'critical'
-        };
+    
+    let foundProps = 0;
+    devToolsProps.forEach(prop => {
+      if (window.hasOwnProperty(prop)) {
+        foundProps++;
       }
-    }
-
-    // Check for phantom.js
-    if (window.callPhantom || window._phantom) {
-      return {
-        passed: false,
-        reason: 'Headless browser terdeteksi. Ujian tidak dapat dilanjutkan.',
-        severity: 'critical'
-      };
-    }
-
-    // Check for unusual navigator properties
-    if (navigator.languages && navigator.languages.length === 0) {
-      return {
-        passed: false,
-        reason: 'Browser environment tidak valid.',
-        severity: 'critical'
-      };
-    }
-
-    return { passed: true, severity: 'low' };
-  };
-
-  // 3. Multiple Sessions Check
-  const checkMultipleSessions = (): SecurityCheckResult => {
-    const sessionKey = `exam_session_${examId}_${studentId}`;
-    const currentTime = Date.now();
-    const sessionTimeout = 5 * 60 * 1000; // 5 minutes
-
-    // Check localStorage for existing session
-    const existingSession = localStorage.getItem(sessionKey);
-    if (existingSession) {
-      const sessionData = JSON.parse(existingSession);
-      const timeDiff = currentTime - sessionData.timestamp;
-      
-      if (timeDiff < sessionTimeout) {
-        return {
-          passed: false,
-          reason: 'Ujian sudah dibuka di tab atau browser lain. Tutup semua tab ujian lain terlebih dahulu.',
-          severity: 'critical'
-        };
-      }
-    }
-
-    // Create new session
-    const sessionData = {
-      timestamp: currentTime,
-      tabId: Math.random().toString(36).substr(2, 9),
-      examId,
-      studentId
-    };
-    localStorage.setItem(sessionKey, JSON.stringify(sessionData));
-
-    // Set up session monitoring
-    const checkInterval = setInterval(() => {
-      const currentSession = localStorage.getItem(sessionKey);
-      if (currentSession) {
-        const current = JSON.parse(currentSession);
-        if (current.tabId !== sessionData.tabId) {
-          clearInterval(checkInterval);
-          window.location.href = '/student';
-        }
-      }
-    }, 1000);
-
-    // Clean up on page unload
-    window.addEventListener('beforeunload', () => {
-      localStorage.removeItem(sessionKey);
-      clearInterval(checkInterval);
     });
-
-    return { passed: true, severity: 'low' };
-  };
-
-  // 4. Device Fingerprinting
-  const generateDeviceFingerprint = async (): SecurityCheckResult => {
-    try {
-      const fingerprint = {
-        userAgent: navigator.userAgent,
-        language: navigator.language,
-        languages: navigator.languages,
-        platform: navigator.platform,
-        cookieEnabled: navigator.cookieEnabled,
-        doNotTrack: navigator.doNotTrack,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        screen: {
-          width: screen.width,
-          height: screen.height,
-          colorDepth: screen.colorDepth,
-          pixelDepth: screen.pixelDepth
-        },
-        viewport: {
-          width: window.innerWidth,
-          height: window.innerHeight
-        },
-        hardwareConcurrency: navigator.hardwareConcurrency,
-        deviceMemory: (navigator as any).deviceMemory,
-        connection: (navigator as any).connection?.effectiveType,
-        canvas: await getCanvasFingerprint(),
-        webgl: getWebGLFingerprint(),
-        audio: await getAudioFingerprint()
-      };
-
-      const fingerprintString = JSON.stringify(fingerprint);
-      const fingerprintHash = await hashString(fingerprintString);
-
-      // Store fingerprint
-      const deviceKey = `device_fingerprint_${examId}_${studentId}`;
-      const existingFingerprint = localStorage.getItem(deviceKey);
-
-      if (existingFingerprint && existingFingerprint !== fingerprintHash) {
-        return {
-          passed: false,
-          reason: 'Perubahan perangkat terdeteksi. Ujian harus dilakukan dari perangkat yang sama.',
-          severity: 'critical'
-        };
-      }
-
-      localStorage.setItem(deviceKey, fingerprintHash);
-      return { passed: true, severity: 'low' };
-
-    } catch (error) {
-      console.error('Fingerprinting error:', error);
-      return {
-        passed: false,
-        reason: 'Gagal memverifikasi perangkat. Pastikan browser mendukung fitur keamanan yang diperlukan.',
-        severity: 'critical'
-      };
+    
+    // Only flag if multiple properties found
+    if (foundProps >= 2) {
+      detectionCount++;
+      return true;
     }
+    return false;
   };
 
-  const getCanvasFingerprint = async (): Promise<string> => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return '';
-
-    ctx.textBaseline = 'top';
-    ctx.font = '14px Arial';
-    ctx.fillText('Security Check Canvas', 2, 2);
-    return canvas.toDataURL();
-  };
-
-  const getWebGLFingerprint = (): string => {
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-    if (!gl) return '';
-
-    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-    if (!debugInfo) return '';
-
-    return gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) + '~' + 
-           gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-  };
-
-  const getAudioFingerprint = async (): Promise<string> => {
-    try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const analyser = audioContext.createAnalyser();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(analyser);
-      analyser.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      oscillator.frequency.value = 1000;
-      gainNode.gain.value = 0;
-      oscillator.start();
-
-      const frequencyData = new Uint8Array(analyser.frequencyBinCount);
-      analyser.getByteFrequencyData(frequencyData);
-
-      oscillator.stop();
-      audioContext.close();
-
-      return Array.from(frequencyData).join(',');
-    } catch {
-      return '';
+  // Method 5: Check screen availability vs window size
+  const checkScreenRatio = () => {
+    const availableRatio = screen.availWidth / screen.availHeight;
+    const windowRatio = window.innerWidth / window.innerHeight;
+    const ratioDiff = Math.abs(availableRatio - windowRatio);
+    
+    // If window is significantly smaller than available screen
+    if (ratioDiff > 0.5 && (window.innerWidth < screen.availWidth * 0.7 || 
+        window.innerHeight < screen.availHeight * 0.7)) {
+      detectionCount++;
+      return true;
     }
+    return false;
   };
 
-  const hashString = async (str: string): Promise<string> => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(str);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  };
-
-  // 5. Network Stability Check
-  const checkNetworkStability = async (): SecurityCheckResult => {
-    try {
-      const startTime = performance.now();
-      
-      // Ping test to our API
-      const response = await fetch('/api/v1/ping', {
-        method: 'GET',
-        cache: 'no-cache'
-      });
-
-      const endTime = performance.now();
-      const latency = endTime - startTime;
-
-      if (!response.ok) {
-        return {
-          passed: false,
-          reason: 'Koneksi ke server tidak stabil. Pastikan koneksi internet Anda stabil.',
-          severity: 'critical'
-        };
-      }
-
-      if (latency > 5000) { // 5 seconds
-        return {
-          passed: false,
-          reason: 'Koneksi internet terlalu lambat. Ujian memerlukan koneksi yang stabil.',
-          severity: 'critical'
-        };
-      }
-
-      // Check connection type
-      const connection = (navigator as any).connection;
-      if (connection && connection.effectiveType === 'slow-2g') {
-        return {
-          passed: false,
-          reason: 'Koneksi internet terlalu lambat untuk ujian online.',
-          severity: 'critical'
-        };
-      }
-
-      return { passed: true, severity: 'low' };
-
-    } catch (error) {
-      return {
-        passed: false,
-        reason: 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
-        severity: 'critical'
-      };
+  // Run all checks
+  try {
+    checkWindowSize();
+    checkConsoleAccess();
+    
+    // Only run timing check if other methods haven't detected anything
+    if (detectionCount === 0) {
+      checkDebuggerTiming();
     }
-  };
-
-  // 6. Security Environment Setup
-  const setupSecurityEnvironment = (): SecurityCheckResult => {
-    try {
-      // Force fullscreen
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(() => {
-          return {
-            passed: false,
-            reason: 'Ujian harus dilakukan dalam mode fullscreen. Izinkan fullscreen untuk melanjutkan.',
-            severity: 'critical'
-          };
-        });
-      }
-
-      // Disable context menu
-      document.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        logViolation('context_menu_attempt', 'medium');
-      });
-
-      // Disable text selection
-      document.addEventListener('selectstart', (e) => {
-        e.preventDefault();
-        logViolation('text_selection_attempt', 'low');
-      });
-
-      // Disable drag and drop
-      document.addEventListener('dragstart', (e) => {
-        e.preventDefault();
-        logViolation('drag_attempt', 'medium');
-      });
-
-      // Disable keyboard shortcuts
-      document.addEventListener('keydown', (e) => {
-        const forbiddenKeys = [
-          'F12', // DevTools
-          'F5',  // Refresh
-          'F11', // Fullscreen toggle
-        ];
-
-        const forbiddenCombinations = [
-          { ctrl: true, shift: true, key: 'I' }, // DevTools
-          { ctrl: true, shift: true, key: 'J' }, // Console
-          { ctrl: true, shift: true, key: 'C' }, // Inspector
-          { ctrl: true, key: 'U' }, // View Source
-          { ctrl: true, key: 'S' }, // Save
-          { ctrl: true, key: 'A' }, // Select All
-          { ctrl: true, key: 'C' }, // Copy
-          { ctrl: true, key: 'V' }, // Paste
-          { ctrl: true, key: 'X' }, // Cut
-          { ctrl: true, key: 'Z' }, // Undo
-          { ctrl: true, key: 'Y' }, // Redo
-          { ctrl: true, key: 'R' }, // Refresh
-          { alt: true, key: 'Tab' }, // Alt+Tab
-          { alt: true, key: 'F4' },  // Alt+F4
-        ];
-
-        if (forbiddenKeys.includes(e.key)) {
-          e.preventDefault();
-          logViolation('forbidden_key', 'high', { key: e.key });
-          return false;
-        }
-
-        for (const combo of forbiddenCombinations) {
-          if (
-            (combo.ctrl === undefined || combo.ctrl === e.ctrlKey) &&
-            (combo.shift === undefined || combo.shift === e.shiftKey) &&
-            (combo.alt === undefined || combo.alt === e.altKey) &&
-            combo.key.toLowerCase() === e.key.toLowerCase()
-          ) {
-            e.preventDefault();
-            logViolation('forbidden_combination', 'high', { 
-              combination: `${combo.ctrl ? 'Ctrl+' : ''}${combo.shift ? 'Shift+' : ''}${combo.alt ? 'Alt+' : ''}${combo.key}` 
-            });
-            return false;
-          }
-        }
-      });
-
-      // Prevent zoom
-      document.addEventListener('wheel', (e) => {
-        if (e.ctrlKey) {
-          e.preventDefault();
-          logViolation('zoom_attempt', 'medium');
-        }
-      });
-
-      return { passed: true, severity: 'low' };
-
-    } catch (error) {
-      console.error('Security setup error:', error);
-      return {
-        passed: false,
-        reason: 'Gagal mengatur lingkungan keamanan ujian.',
-        severity: 'critical'
-      };
-    }
-  };
-
-  const logViolation = (type: string, severity: string, details?: any) => {
-    const violation = {
-      type,
-      severity,
-      timestamp: Date.now(),
-      examId,
-      studentId,
-      details: details || {},
-      userAgent: navigator.userAgent,
-      url: window.location.href
-    };
-
-    // Store in localStorage
-    const violationsKey = `exam_violations_${examId}_${studentId}`;
-    const existingViolations = JSON.parse(localStorage.getItem(violationsKey) || '[]');
-    existingViolations.push(violation);
-    localStorage.setItem(violationsKey, JSON.stringify(existingViolations));
-
-    // Also store in sessionStorage as backup
-    const sessionViolationsKey = `session_violations_${examId}_${studentId}`;
-    const sessionViolations = JSON.parse(sessionStorage.getItem(sessionViolationsKey) || '[]');
-    sessionViolations.push(violation);
-    sessionStorage.setItem(sessionViolationsKey, JSON.stringify(sessionViolations));
-
-    console.warn('Security violation logged:', violation);
-  };
-
-  if (!isChecking) {
-    return null;
+    
+    checkDevToolsProperties();
+    checkScreenRatio();
+    
+    // Require at least 2 positive detections to minimize false positives
+    devtools = detectionCount >= 2;
+    
+  } catch (error) {
+    console.warn('DevTools detection error:', error);
+    // If detection fails, assume safe
+    devtools = false;
   }
 
-  return (
-    <div className="fixed inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
-        <div className="text-center">
-          {/* Security Icon */}
-          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Shield className="w-10 h-10 text-blue-600 animate-pulse" />
-          </div>
+  if (devtools) {
+    return {
+      passed: false,
+      reason: `Developer Tools terdeteksi terbuka (confidence: ${detectionCount}/5). Ujian tidak dapat dilanjutkan untuk menjaga integritas.`,
+      severity: 'critical'
+    };
+  }
 
-          {/* Title */}
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Pemeriksaan Keamanan
-          </h2>
-          <p className="text-gray-600 mb-8">
-            Memverifikasi lingkungan ujian untuk memastikan integritas
-          </p>
-
-          {/* Progress Bar */}
-          <div className="mb-6">
-            <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>Progress</span>
-              <span>{Math.round(progress)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div 
-                className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-          </div>
-
-          {/* Current Check */}
-          <div className="flex items-center justify-center space-x-3 mb-8">
-            <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
-            <span className="text-gray-700 font-medium">{currentCheck}</span>
-          </div>
-
-          {/* Security Features List */}
-          <div className="grid grid-cols-2 gap-4 text-xs text-gray-500">
-            <div className="flex items-center space-x-2">
-              <Monitor className="w-4 h-4" />
-              <span>DevTools Block</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Lock className="w-4 h-4" />
-              <span>Session Lock</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Wifi className="w-4 h-4" />
-              <span>Network Check</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Eye className="w-4 h-4" />
-              <span>Monitoring</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return { passed: true, severity: 'low' };
 };
 
-export default SecurityCheck;
+// Alternative: Less Aggressive Detection (RECOMMENDED)
+const checkDevToolsLenient = (): SecurityCheckResult => {
+  // Only check for obvious signs
+  const isDevToolsOpen = () => {
+    // Check for extreme window size differences
+    const widthDiff = window.outerWidth - window.innerWidth;
+    const heightDiff = window.outerHeight - window.innerHeight;
+    
+    // Very conservative thresholds
+    if (widthDiff > 500 || heightDiff > 500) {
+      return true;
+    }
+    
+    // Check for development mode indicators
+    if (process.env.NODE_ENV === 'development') {
+      return false; // Skip in development
+    }
+    
+    // Check for React DevTools specifically
+    if (window.__REACT_DEVTOOLS_GLOBAL_HOOK__?.isDisabled === false) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  if (isDevToolsOpen()) {
+    return {
+      passed: false,
+      reason: 'Developer Tools terdeteksi. Mohon tutup Developer Tools untuk melanjutkan ujian.',
+      severity: 'critical'
+    };
+  }
+
+  return { passed: true, severity: 'low' };
+};
