@@ -13,6 +13,14 @@ const AppContent: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
+    console.log('🔄 App useEffect triggered:', { 
+      isAuthenticated, 
+      user: !!user, 
+      currentPath, 
+      isLoading,
+      userRole: user?.roles[0] 
+    });
+
     if (isAuthenticated && user) {
       const userRole = user.roles[0];
       
@@ -32,9 +40,16 @@ const AppContent: React.FC = () => {
             navigate('/login');
         }
       } else {
+        // ✅ PERBAIKAN: Skip validation untuk exam-taking paths
+        if (currentPath.startsWith('/student/exam-taking/') && userRole === 'student') {
+          console.log('✅ Allowing exam-taking path:', currentPath);
+          return; // Skip validation untuk exam paths
+        }
+        
         // Validate if current path is accessible for user role
         const isValidPath = validatePathForRole(currentPath, userRole);
         if (!isValidPath) {
+          console.log('❌ Invalid path for role:', { currentPath, userRole });
           // Redirect to appropriate dashboard if path is not valid for role
           switch (userRole) {
             case 'admin':
@@ -88,8 +103,8 @@ const AppContent: React.FC = () => {
       '/student/exams',
       '/student/results',
       '/student/evaluation',
-      '/student/profile',
-      '/student/exam-taking'
+      '/student/profile'
+      // ✅ PERBAIKAN: Remove '/student/exam-taking' dari sini karena akan dihandle terpisah
     ];
 
     switch (role) {
@@ -120,9 +135,10 @@ const AppContent: React.FC = () => {
     return <LoginForm />;
   }
 
-  // Handle student exam-taking route separately
+  // ✅ PERBAIKAN: Handle student exam-taking route dengan priority tinggi
   if (currentPath.startsWith('/student/exam-taking/')) {
     const sessionId = currentPath.split('/').pop();
+    console.log('🎯 Rendering StudentExamTakingPage with sessionId:', sessionId);
     if (sessionId) {
       return (
         <ProtectedRoute requiredRole="student">
@@ -176,36 +192,42 @@ const AppContent: React.FC = () => {
         </ProtectedRoute>
       );
     default:
-      // Handle unknown routes - redirect based on user role
+      // ✅ PERBAIKAN: Handle unknown routes dengan logic yang lebih aman
       if (user) {
         const userRole = user.roles[0];
         
-        // Don't redirect if we're on a valid exam-taking path
+        // Double check untuk exam-taking paths (safety net)
         if (currentPath.startsWith('/student/exam-taking/') && userRole === 'student') {
-          return (
-            <ProtectedRoute requiredRole="student">
-              <StudentDashboard />
-            </ProtectedRoute>
-          );
+          const sessionId = currentPath.split('/').pop();
+          console.log('🎯 Safety net: Rendering StudentExamTakingPage with sessionId:', sessionId);
+          if (sessionId) {
+            return (
+              <ProtectedRoute requiredRole="student">
+                <StudentExamTakingPage user={user} sessionId={sessionId} />
+              </ProtectedRoute>
+            );
+          }
         }
         
+        // ✅ PERBAIKAN: Tidak langsung navigate, tapi render dashboard dulu
+        console.log('🔄 Unknown route, redirecting based on role:', { currentPath, userRole });
         switch (userRole) {
           case 'admin':
-            navigate('/admin');
+            setTimeout(() => navigate('/admin'), 0); // Async redirect
             return (
               <ProtectedRoute requiredRole="admin">
                 <AdminDashboard />
               </ProtectedRoute>
             );
           case 'teacher':
-            navigate('/teacher');
+            setTimeout(() => navigate('/teacher'), 0); // Async redirect
             return (
               <ProtectedRoute requiredRole="teacher">
                 <TeacherDashboard />
               </ProtectedRoute>
             );
           case 'student':
-            navigate('/student');
+            setTimeout(() => navigate('/student'), 0); // Async redirect
             return (
               <ProtectedRoute requiredRole="student">
                 <StudentDashboard />
