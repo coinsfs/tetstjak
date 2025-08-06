@@ -5,7 +5,6 @@ import StudentExamsPage from './pages/StudentExamsPage';
 import StudentResultsPage from './pages/StudentResultsPage';
 import StudentEvaluationPage from './pages/StudentEvaluationPage';
 import StudentProfilePage from './pages/StudentProfilePage';
-import StudentExamTakingPage from './pages/StudentExamTakingPage';
 
 interface StudentMainContentProps {
   user: UserProfile | null;
@@ -17,14 +16,6 @@ const StudentMainContent: React.FC<StudentMainContentProps> = ({
   currentPath
 }) => {
   const renderContent = () => {
-    // Handle exam taking route with session ID
-    if (currentPath.startsWith('/student/exam-taking/')) {
-      const sessionId = currentPath.split('/').pop();
-      if (sessionId) {
-        return <StudentExamTakingPage user={user} sessionId={sessionId} />;
-      }
-    }
-    
     switch (currentPath) {
       case '/student':
         return <StudentDashboardPage user={user} />;
