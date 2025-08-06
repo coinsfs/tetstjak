@@ -190,9 +190,19 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
   };
 
   const handleStartExam = async (exam: StudentExam) => {
-    // Redirect to exam taking page when exam is started
-    navigate(`/student/exam-taking/${exam._id}`);
-    toast.success('Ujian dimulai! Anda akan diarahkan ke halaman pengerjaan ujian.');
+    try {
+      setStartingExam(exam._id);
+      
+      // Redirect to exam taking page
+      navigate(`/student/exam-taking/${exam._id}`);
+      
+      toast.success('Memuat sesi ujian...');
+    } catch (error) {
+      console.error('Error starting exam:', error);
+      toast.error('Gagal memulai ujian. Silakan coba lagi.');
+    } finally {
+      setStartingExam(null);
+    }
   };
 
   const renderActionButton = (exam: StudentExam) => {

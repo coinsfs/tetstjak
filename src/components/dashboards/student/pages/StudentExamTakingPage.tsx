@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile } from '@/types/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
+import { examService } from '@/services/exam';
+import { questionBankService, Question } from '@/services/questionBank';
 import { 
   FileText, 
   Clock, 
@@ -55,6 +57,8 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const [examSession, setExamSession] = useState<ExamSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [examStarted, setExamStarted] = useState(false);
 
@@ -67,39 +71,39 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         setLoading(true);
         setError(null);
         
-        // TODO: Replace with actual API call to get exam session details
-        // const response = await examSessionService.getExamSession(token, sessionId);
-        // setExamSession(response);
+        // Get exam session details from backend
+        const examData = await examService.getExamById(token, sessionId);
         
-        // Placeholder data for now
-        const mockExamSession: ExamSession = {
-          _id: sessionId,
-          title: "Ujian Tengah Semester - Matematika",
-          exam_type: "official_uts",
-          duration_minutes: 90,
-          availability_start_time: new Date().toISOString(),
-          availability_end_time: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-          status: "active",
-          settings: {
-            shuffle_questions: true,
-            shuffle_options: true,
-            show_results_after_submission: false
-          },
-          teaching_assignment_details: {
-            subject_details: {
-              name: "Matematika",
-              code: "MTK"
-            },
-            class_details: {
-              name: "XII RPL 1",
-              grade_level: 12
-            }
-          },
-          question_ids: ["q1", "q2", "q3", "q4", "q5"]
+        // Convert exam data to ExamSession format
+        const examSession: ExamSession = {
+          _id: examData._id,
+          title: examData.title,
+          exam_type: examData.exam_type,
+          duration_minutes: examData.duration_minutes,
+          availability_start_time: examData.availability_start_time,
+          availability_end_time: examData.availability_end_time,
+          status: examData.status,
+          settings: examData.settings,
+          teaching_assignment_details: examData.teaching_assignment_details,
+          question_ids: examData.questions || []
         };
         
-        setExamSession(mockExamSession);
-        setTimeRemaining(mockExamSession.duration_minutes * 60); // Convert to seconds
+        setExamSession(examSession);
+        setTimeRemaining(examSession.duration_minutes * 60); // Convert to seconds
+        
+        // Load questions if available
+        if (examSession.question_ids && examSession.question_ids.length > 0) {
+          setLoadingQuestions(true);
+          try {
+            const questionsData = await questionBankService.getQuestionsByIds(token, examSession.question_ids);
+            setQuestions(questionsData);
+          } catch (questionError) {
+            console.error('Error loading questions:', questionError);
+            toast.error('Gagal memuat soal ujian');
+          } finally {
+            setLoadingQuestions(false);
+          }
+        }
         
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Gagal memuat sesi ujian';
@@ -186,7 +190,9 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Memuat sesi ujian...</p>
+          <p className="text-gray-600 text-lg">
+            {loadingQuestions ? 'Memuat soal ujian...' : 'Memuat sesi ujian...'}
+          </p>
           <p className="text-gray-400 text-sm mt-1">Mohon tunggu sebentar</p>
         </div>
       </div>
@@ -311,7 +317,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
                     <div>
                       <p className="text-sm text-gray-500">Jumlah Soal</p>
                       <p className="font-medium text-gray-900">
-                        {examSession.question_ids.length} soal
+                        {questions.length > 0 ? questions.length : examSession.question_ids.length} soal
                       </p>
                     </div>
                   </div>
@@ -336,14 +342,48 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
                 </ul>
               </div>
 
+              {/* Questions Status */}
+              {loadingQuestions && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                    <p className="text-blue-800 font-medium">Memuat soal ujian...</p>
+                  </div>
+                </div>
+              )}
+
+              {questions.length === 0 && !loadingQuestions && examSession.question_ids.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <p className="text-red-800 font-medium">Soal ujian belum tersedia atau gagal dimuat.</p>
+                </div>
+              )}
+
+              {questions.length > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                  <p className="text-green-800 font-medium">
+                    ✓ {questions.length} soal berhasil dimuat dan siap dikerjakan
+                  </p>
+                </div>
+              )}
+
               {/* Start Exam Button */}
               <div className="text-center">
                 <button
                   onClick={handleStartExam}
-                  className="inline-flex items-center px-8 py-3 bg-green-600 text-white text-lg font-semibold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+                  disabled={loadingQuestions || (examSession.question_ids.length > 0 && questions.length === 0)}
+                  className="inline-flex items-center px-8 py-3 bg-green-600 text-white text-lg font-semibold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Play className="w-5 h-5 mr-2" />
-                  Mulai Ujian
+                  {loadingQuestions ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Memuat Soal...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-5 h-5 mr-2" />
+                      Mulai Ujian
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -355,7 +395,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">Progress Ujian</span>
-                <span className="text-sm text-gray-500">0 / {examSession.question_ids.length} soal</span>
+                <span className="text-sm text-gray-500">0 / {questions.length} soal</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div className="bg-blue-600 h-2 rounded-full" style={{ width: '0%' }}></div>
@@ -364,25 +404,89 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
             {/* Question Area */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="text-center py-12">
-                <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Antarmuka Pengerjaan Ujian
-                </h3>
-                <p className="text-gray-500 mb-6">
-                  Ini adalah placeholder untuk antarmuka pengerjaan ujian.<br />
-                  Di sini akan ditampilkan soal-soal ujian dan form jawaban.
-                </p>
-                
-                {/* Placeholder Finish Button */}
-                <button
-                  onClick={handleFinishExam}
-                  className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                >
-                  <CheckCircle className="w-5 h-5 mr-2" />
-                  Selesai Ujian (Demo)
-                </button>
-              </div>
+              {questions.length > 0 ? (
+                <div className="space-y-6">
+                  <div className="border-b border-gray-200 pb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Soal 1 dari {questions.length}
+                    </h3>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div 
+                        className="prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: questions[0]?.question_text || 'Memuat soal...' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Answer Options (for multiple choice) */}
+                  {questions[0]?.question_type === 'multiple_choice' && questions[0]?.options && (
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-gray-900">Pilih jawaban:</h4>
+                      {questions[0].options.map((option, index) => (
+                        <label key={option.id || index} className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="answer"
+                            value={option.id || index}
+                            className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          />
+                          <div 
+                            className="flex-1 text-sm text-gray-900"
+                            dangerouslySetInnerHTML={{ __html: option.text }}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Essay Answer (for essay questions) */}
+                  {questions[0]?.question_type === 'essay' && (
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-gray-900">Jawaban:</h4>
+                      <textarea
+                        rows={6}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Tulis jawaban Anda di sini..."
+                      />
+                    </div>
+                  )}
+
+                  {/* Navigation and Submit */}
+                  <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+                    <button
+                      disabled
+                      className="inline-flex items-center px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed"
+                    >
+                      ← Soal Sebelumnya
+                    </button>
+                    
+                    <div className="flex items-center space-x-3">
+                      <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+                        Soal Selanjutnya →
+                      </button>
+                      
+                      <button
+                        onClick={handleFinishExam}
+                        className="inline-flex items-center px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+                      >
+                        <CheckCircle className="w-5 h-5 mr-2" />
+                        Selesai Ujian
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Soal Ujian Tidak Tersedia
+                  </h3>
+                  <p className="text-gray-500 mb-6">
+                    Soal ujian belum dimuat atau tidak tersedia.<br />
+                    Silakan hubungi pengawas ujian jika masalah berlanjut.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
