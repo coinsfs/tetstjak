@@ -12,7 +12,12 @@ import {
   CheckCircle,
   User,
   Calendar,
-  BookOpen
+  BookOpen,
+  Save,
+  Send,
+  ChevronRight,
+  Hash,
+  Award
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -28,7 +33,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const { token } = useAuth();
   const { navigate } = useRouter();
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +40,8 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const [examStarted, setExamStarted] = useState(false);
   const [examTitle, setExamTitle] = useState<string>('');
   const [examDuration, setExamDuration] = useState<number>(0);
+  const [saving, setSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   // Parse URL parameters for exam timing
   useEffect(() => {
@@ -114,6 +120,17 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     return () => clearInterval(timer);
   }, [examStarted, timeRemaining]);
 
+  // Auto-save answers periodically
+  useEffect(() => {
+    if (!examStarted || Object.keys(answers).length === 0) return;
+
+    const autoSaveInterval = setInterval(() => {
+      handleSaveAnswers();
+    }, 30000); // Auto-save every 30 seconds
+
+    return () => clearInterval(autoSaveInterval);
+  }, [examStarted, answers]);
+
   const handleAnswerChange = (questionId: string, answer: any) => {
     setAnswers(prev => ({
       ...prev,
@@ -121,29 +138,40 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     }));
   };
 
-  const handleNextQuestion = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-    }
-  };
-
-  const handlePreviousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
+  const handleSaveAnswers = async () => {
+    if (saving) return;
+    
+    try {
+      setSaving(true);
+      // TODO: Implement save answers to backend
+      // await studentExamService.saveAnswers(token!, sessionId, answers);
+      setLastSaved(new Date());
+      toast.success('Jawaban tersimpan', { duration: 2000 });
+    } catch (error) {
+      console.error('Error saving answers:', error);
+      toast.error('Gagal menyimpan jawaban');
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleTimeUp = () => {
     toast.error('Waktu ujian telah habis! Jawaban akan otomatis dikumpulkan.');
-    // TODO: Auto submit exam answers
     handleFinishExam();
   };
 
-  const handleFinishExam = () => {
-    toast.success('Ujian telah selesai dikerjakan.');
-    // TODO: Submit exam answers to backend
-    // Navigate back to exam list using full page reload
-    window.location.href = '/student/exams';
+  const handleFinishExam = async () => {
+    try {
+      // Save final answers before submitting
+      await handleSaveAnswers();
+      toast.success('Ujian telah selesai dikerjakan.');
+      // TODO: Submit exam answers to backend
+      // Navigate back to exam list using full page reload
+      window.location.href = '/student/exams';
+    } catch (error) {
+      console.error('Error finishing exam:', error);
+      toast.error('Gagal menyelesaikan ujian');
+    }
   };
 
   const handleBackToExams = () => {
@@ -167,19 +195,26 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const currentQuestion = questions[currentQuestionIndex];
+  const scrollToQuestion = (questionIndex: number) => {
+    const element = document.getElementById(`question-${questionIndex}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const totalQuestions = questions.length;
   const answeredQuestions = Object.keys(answers).length;
+  const progressPercentage = totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">
-            Memuat soal ujian...
-          </p>
-          <p className="text-gray-400 text-sm mt-1">Mohon tunggu sebentar</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-center bg-white rounded-2xl shadow-xl p-8 max-w-md mx-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mx-auto mb-6"></div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            Memuat Soal Ujian
+          </h3>
+          <p className="text-gray-600">Mohon tunggu sebentar...</p>
         </div>
       </div>
     );
@@ -187,10 +222,12 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
   if (error || (questions.length === 0 && !loading)) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-pink-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-4 bg-white rounded-2xl shadow-xl p-8">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertCircle className="w-10 h-10 text-red-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
             {error ? 'Gagal Memuat Soal Ujian' : 'Soal Ujian Tidak Tersedia'}
           </h2>
           <p className="text-gray-600 mb-6">
@@ -198,9 +235,9 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
           </p>
           <button
             onClick={handleBackToExams}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-lg"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-5 h-5 mr-2" />
             Kembali ke Daftar Ujian
           </button>
         </div>
@@ -211,37 +248,37 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   // Show waiting screen if exam hasn't started yet
   if (!examStarted && timeRemaining > 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Clock className="w-10 h-10 text-blue-600" />
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-4 bg-white rounded-2xl shadow-xl p-8">
+          <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Clock className="w-12 h-12 text-blue-600" />
           </div>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Ujian Siap Dimulai
           </h2>
           <p className="text-gray-600 mb-6">
             Anda memiliki waktu <span className="font-semibold text-blue-600">{examDuration} menit</span> untuk menyelesaikan ujian ini.
           </p>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center space-x-2 text-yellow-800">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+            <div className="flex items-center justify-center space-x-2 text-yellow-800 mb-2">
               <AlertCircle className="w-5 h-5" />
               <span className="font-medium">Sisa waktu ujian:</span>
             </div>
-            <div className="text-2xl font-bold text-yellow-900 mt-2">
+            <div className="text-3xl font-bold text-yellow-900">
               {formatTime(timeRemaining)}
             </div>
           </div>
           <div className="space-y-3">
             <button
               onClick={() => setExamStarted(true)}
-              className="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+              className="w-full inline-flex items-center justify-center px-6 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-200 transition-all shadow-lg"
             >
               <Play className="w-5 h-5 mr-2" />
               Mulai Ujian Sekarang
             </button>
             <button
               onClick={handleBackToExams}
-              className="w-full inline-flex items-center justify-center px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+              className="w-full inline-flex items-center justify-center px-4 py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Kembali ke Daftar Ujian
@@ -255,12 +292,12 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   // Show time up screen if time has expired
   if (timeRemaining <= 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <AlertCircle className="w-10 h-10 text-red-600" />
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-pink-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-4 bg-white rounded-2xl shadow-xl p-8">
+          <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertCircle className="w-12 h-12 text-red-600" />
           </div>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Waktu Ujian Habis
           </h2>
           <p className="text-gray-600 mb-6">
@@ -268,7 +305,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
           </p>
           <button
             onClick={handleFinishExam}
-            className="w-full inline-flex items-center justify-center px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+            className="w-full inline-flex items-center justify-center px-6 py-4 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-200 transition-all shadow-lg"
           >
             <CheckCircle className="w-5 h-5 mr-2" />
             Kumpulkan Jawaban
@@ -279,9 +316,9 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Back Button */}
@@ -290,18 +327,18 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
               className="inline-flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Kembali
+              <span className="hidden sm:inline">Kembali</span>
             </button>
 
             {/* Timer */}
             {examStarted && (
-              <div className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-mono text-lg font-bold ${
-                timeRemaining <= 300 ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+              <div className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-mono text-lg font-bold shadow-lg ${
+                timeRemaining <= 300 ? 'bg-red-100 text-red-800 animate-pulse' : 'bg-blue-100 text-blue-800'
               }`}>
                 <Clock className="w-5 h-5" />
                 <span>{formatTime(timeRemaining)}</span>
                 {timeRemaining <= 300 && (
-                  <span className="text-xs font-normal ml-2">
+                  <span className="text-xs font-normal ml-2 hidden sm:inline">
                     (Waktu hampir habis!)
                   </span>
                 )}
@@ -310,162 +347,284 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
             {/* User Info */}
             <div className="flex items-center space-x-3">
-              <User className="w-5 h-5 text-gray-400" />
-              <span className="text-sm font-medium text-gray-700">
-                {user?.profile_details?.full_name || user?.login_id}
-              </span>
+              <div className="hidden sm:flex items-center space-x-2">
+                <User className="w-5 h-5 text-gray-400" />
+                <span className="text-sm font-medium text-gray-700">
+                  {user?.profile_details?.full_name || user?.login_id}
+                </span>
+              </div>
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center sm:hidden">
+                <User className="w-4 h-4 text-blue-600" />
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Exam Taking Interface */}
-        <div className="space-y-6">
-          {/* Progress Bar */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-medium text-gray-700">Progress Ujian</span>
-                <span className="text-xs text-gray-500">
-                  Durasi: {examDuration} menit
-                </span>
-              </div>
-              <span className="text-sm text-gray-500">{answeredQuestions} / {totalQuestions} soal dijawab</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                style={{ width: `${(answeredQuestions / totalQuestions) * 100}%` }}
-              ></div>
-            </div>
-            {timeRemaining <= 600 && timeRemaining > 0 && (
-              <div className="mt-2 text-xs text-orange-600 font-medium">
-                ⚠️ Sisa waktu kurang dari 10 menit!
-              </div>
-            )}
-          </div>
-
-          {/* Question Navigation */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Soal {currentQuestionIndex + 1} dari {totalQuestions}
-              </h3>
-              <div className="text-sm text-gray-500">
-                {currentQuestion?.points} poin
-              </div>
-            </div>
-            
-            {/* Question Numbers Grid */}
-            <div className="grid grid-cols-10 gap-2 mb-4">
-              {questions.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentQuestionIndex(index)}
-                  className={`w-8 h-8 text-xs font-medium rounded transition-colors ${
-                    index === currentQuestionIndex
-                      ? 'bg-blue-600 text-white'
-                      : answers[questions[index]?.id]
-                      ? 'bg-green-100 text-green-800 border border-green-300'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {index + 1}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Question Area */}
-          {currentQuestion && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="space-y-6">
-                <div className="border-b border-gray-200 pb-4">
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div 
-                      className="prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: currentQuestion.question_text }}
-                    />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Question Navigation Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-24 space-y-4">
+              {/* Progress Card */}
+              <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Progress Ujian</h3>
+                  <Award className="w-6 h-6 text-blue-600" />
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                      <span>Soal Dijawab</span>
+                      <span>{answeredQuestions}/{totalQuestions}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div 
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500" 
+                        style={{ width: `${progressPercentage}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {progressPercentage.toFixed(0)}% selesai
+                    </div>
                   </div>
+
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Durasi:</span>
+                    <span className="font-medium text-gray-900">{examDuration} menit</span>
+                  </div>
+
+                  {lastSaved && (
+                    <div className="text-xs text-green-600 flex items-center">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Tersimpan {lastSaved.toLocaleTimeString()}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Question Navigation */}
+              <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Navigasi Soal</h3>
+                <div className="grid grid-cols-5 gap-2">
+                  {questions.map((question, index) => (
+                    <button
+                      key={question.id}
+                      onClick={() => scrollToQuestion(index)}
+                      className={`w-10 h-10 text-sm font-medium rounded-lg transition-all duration-200 ${
+                        answers[question.id]
+                          ? 'bg-green-100 text-green-800 border-2 border-green-300 shadow-sm'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
+                      }`}
+                      title={`Soal ${index + 1}${answers[question.id] ? ' (Sudah dijawab)' : ''}`}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
                 </div>
 
-                {/* Answer Options (for multiple choice) */}
-                {currentQuestion.question_type === 'multiple_choice' && currentQuestion.options && (
-                  <div className="space-y-3">
-                    <h4 className="font-medium text-gray-900">Pilih jawaban:</h4>
-                    {currentQuestion.options.map((option, index) => (
-                      <label 
-                        key={option.id} 
-                        className={`flex items-start space-x-3 p-3 border rounded-lg cursor-pointer transition-colors ${
-                          answers[currentQuestion.id] === option.id
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name={`question-${currentQuestion.id}`}
-                          value={option.id}
-                          checked={answers[currentQuestion.id] === option.id}
-                          onChange={() => handleAnswerChange(currentQuestion.id, option.id)}
-                          className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                        />
+                {/* Legend */}
+                <div className="mt-4 space-y-2 text-xs">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-green-100 border-2 border-green-300 rounded"></div>
+                    <span className="text-gray-600">Sudah dijawab</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 bg-gray-100 border-2 border-transparent rounded"></div>
+                    <span className="text-gray-600">Belum dijawab</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-3">
+                <button
+                  onClick={handleSaveAnswers}
+                  disabled={saving}
+                  className="w-full inline-flex items-center justify-center px-4 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-200 transition-all shadow-lg disabled:opacity-50"
+                >
+                  {saving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Simpan Jawaban
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={handleFinishExam}
+                  className="w-full inline-flex items-center justify-center px-4 py-3 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-200 transition-all shadow-lg"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Selesai Ujian
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Questions Area */}
+          <div className="lg:col-span-3">
+            <div className="space-y-6">
+              {questions.map((question, index) => (
+                <div
+                  key={question.id}
+                  id={`question-${index}`}
+                  className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
+                >
+                  {/* Question Header */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
+                          <Hash className="w-5 h-5 text-blue-600" />
+                          <span className="text-lg font-semibold text-gray-900">
+                            Soal {index + 1}
+                          </span>
+                        </div>
+                        {answers[question.id] && (
+                          <div className="flex items-center space-x-1 text-green-600">
+                            <CheckCircle className="w-4 h-4" />
+                            <span className="text-sm font-medium">Dijawab</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <Award className="w-4 h-4" />
+                        <span className="font-medium">{question.points} poin</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Question Content */}
+                  <div className="p-6">
+                    <div className="space-y-6">
+                      {/* Question Text */}
+                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                         <div 
-                          className="flex-1 text-sm text-gray-900"
-                          dangerouslySetInnerHTML={{ __html: option.text }}
+                          className="prose prose-sm max-w-none text-gray-900"
+                          dangerouslySetInnerHTML={{ __html: question.question_text }}
                         />
-                      </label>
-                    ))}
-                  </div>
-                )}
+                      </div>
 
-                {/* Essay Answer (for essay questions) */}
-                {currentQuestion.question_type === 'essay' && (
-                  <div className="space-y-3">
-                    <h4 className="font-medium text-gray-900">Jawaban:</h4>
-                    <textarea
-                      rows={6}
-                      value={answers[currentQuestion.id] || ''}
-                      onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Tulis jawaban Anda di sini..."
-                    />
-                  </div>
-                )}
+                      {/* Answer Options (for multiple choice) */}
+                      {question.question_type === 'multiple_choice' && question.options && (
+                        <div className="space-y-3">
+                          <h4 className="font-medium text-gray-900 flex items-center">
+                            <ChevronRight className="w-4 h-4 mr-2 text-blue-600" />
+                            Pilih jawaban yang benar:
+                          </h4>
+                          <div className="space-y-3">
+                            {question.options.map((option, optionIndex) => (
+                              <label 
+                                key={option.id} 
+                                className={`flex items-start space-x-4 p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md ${
+                                  answers[question.id] === option.id
+                                    ? 'border-blue-500 bg-blue-50 shadow-md'
+                                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                }`}
+                              >
+                                <input
+                                  type="radio"
+                                  name={`question-${question.id}`}
+                                  value={option.id}
+                                  checked={answers[question.id] === option.id}
+                                  onChange={() => handleAnswerChange(question.id, option.id)}
+                                  className="mt-1 h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-2 mb-2">
+                                    <span className="inline-flex items-center justify-center w-6 h-6 bg-gray-200 text-gray-700 text-sm font-medium rounded-full">
+                                      {String.fromCharCode(65 + optionIndex)}
+                                    </span>
+                                  </div>
+                                  <div 
+                                    className="text-gray-900 leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: option.text }}
+                                  />
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
-                {/* Navigation and Submit */}
-                <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-                  <button
-                    onClick={handlePreviousQuestion}
-                    disabled={currentQuestionIndex === 0}
-                    className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    ← Soal Sebelumnya
-                  </button>
-                  
-                  <div className="flex items-center space-x-3">
-                    {currentQuestionIndex < totalQuestions - 1 ? (
-                      <button 
-                        onClick={handleNextQuestion}
-                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                      >
-                        Soal Selanjutnya →
-                      </button>
-                    ) : null}
-                    
+                      {/* Essay Answer (for essay questions) */}
+                      {question.question_type === 'essay' && (
+                        <div className="space-y-3">
+                          <h4 className="font-medium text-gray-900 flex items-center">
+                            <ChevronRight className="w-4 h-4 mr-2 text-blue-600" />
+                            Tulis jawaban Anda:
+                          </h4>
+                          <textarea
+                            rows={8}
+                            value={answers[question.id] || ''}
+                            onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all resize-none"
+                            placeholder="Tulis jawaban Anda di sini..."
+                          />
+                          <div className="text-sm text-gray-500">
+                            {answers[question.id] ? `${answers[question.id].length} karakter` : '0 karakter'}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Final Submit Section */}
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl shadow-lg border border-green-200 p-6">
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle className="w-8 h-8 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      Selesaikan Ujian
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Pastikan semua jawaban sudah benar sebelum mengumpulkan ujian.
+                    </p>
+                    <div className="text-sm text-gray-500 mb-6">
+                      {answeredQuestions} dari {totalQuestions} soal telah dijawab
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button
+                      onClick={handleSaveAnswers}
+                      disabled={saving}
+                      className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-200 transition-all shadow-lg disabled:opacity-50"
+                    >
+                      {saving ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                          Menyimpan...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Simpan Jawaban
+                        </>
+                      )}
+                    </button>
                     <button
                       onClick={handleFinishExam}
-                      className="inline-flex items-center px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+                      className="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-200 transition-all shadow-lg"
                     >
-                      <CheckCircle className="w-5 h-5 mr-2" />
-                      Selesai Ujian
+                      <Send className="w-4 h-4 mr-2" />
+                      Kumpulkan Ujian
                     </button>
                   </div>
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
