@@ -1,6 +1,6 @@
 src/components/TeacherManagement.tsx
 src/components/TeacherFilter.tsx
-
+src/components/SubjectManagement.tsx
 src/components/StudentPerformanceTable.tsx
 src/components/StudentManagement.tsx
 src/components/StudentFilter.tsx
@@ -65,8 +65,8 @@ src/components/dashboards/teacher/TeacherSidebar.tsx
 src/components/dashboards/teacher/TeacherStatsGrid.tsx
 src/components/dashboards/teacher/TeacherSubjectsList.tsx
 src/components/dashboards/teacher/TeacherWelcomeCard.tsx
-
-
+src/components/CoordinatorMatrix.tsx
+src/components/SubjectCoordinatorManagement.tsx
 src/components/charts/BrowserUsageChart.tsx
 src/components/charts/StudentGrowthChart.tsx
 src/components/charts/StudentsByMajorChart.tsx
@@ -94,7 +94,7 @@ src/components/dashboards/teacher/pages/modals/TeacherSubmissionRejectModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherSubmitQuestionsModal.tsx
 src/components/modals/AssignmentConfirmationModal.tsx
 src/components/modals/AssignmentDeleteModal.tsx
-
+src/components/modals/CoordinatorConfirmationModal.tsx
 src/components/modals/ImportDataModal.tsx
 src/components/modals/details/ExamDetailModal.tsx
 src/components/profile/ProfilePictureUpload.tsx
@@ -105,7 +105,7 @@ src/components/dashboards/student/StudentMainContent.tsx
 src/components/dashboards/student/StudentSidebar.tsx
 src/components/dashboards/student/pages/StudentDashboardPage.tsx
 src/components/dashboards/student/pages/StudentEvaluationPage.tsx
-src/components/dashboards/student/pages/StudentExamsPage.tsx
+
 src/components/dashboards/student/pages/StudentProfilePage.tsx
 src/components/dashboards/student/pages/StudentResultsPage.tsx
 src/components/profile/index.ts
