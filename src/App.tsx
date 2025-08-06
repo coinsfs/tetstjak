@@ -104,7 +104,6 @@ const AppContent: React.FC = () => {
       '/student/results',
       '/student/evaluation',
       '/student/profile'
-      // ✅ PERBAIKAN: Remove '/student/exam-taking' dari sini karena akan dihandle terpisah
     ];
 
     switch (role) {
@@ -113,6 +112,10 @@ const AppContent: React.FC = () => {
       case 'teacher':
         return teacherPaths.some(teacherPath => path.startsWith(teacherPath));
       case 'student':
+        // ✅ PERBAIKAN: Handle exam-taking paths secara khusus
+        if (path.startsWith('/student/exam-taking/')) {
+          return true; // Always allow exam-taking paths for students
+        }
         return studentPaths.some(studentPath => path.startsWith(studentPath));
       default:
         return false;
@@ -149,16 +152,70 @@ const AppContent: React.FC = () => {
   }
 
   // Route based on current path
-  switch (currentPath) {
-    case '/admin':
-    case '/manage/teachers':
-    case '/manage/students':
-    case '/manage/expertise-programs':
-    case '/manage/exams':
-    case '/manage/subjects':
-    case '/manage/classes':
-    case '/manage/assignments':
-    case '/manage/analytics':
+  // ✅ PERBAIKAN: Gunakan startsWith untuk routing yang lebih fleksibel
+  if (currentPath.startsWith('/admin') || currentPath.startsWith('/manage/')) {
+    return (
+      <ProtectedRoute requiredRole="admin">
+        <AdminDashboard />
+      </ProtectedRoute>
+    );
+  } else if (currentPath.startsWith('/teacher')) {
+    return (
+      <ProtectedRoute requiredRole="teacher">
+        <TeacherDashboard />
+      </ProtectedRoute>
+    );
+  } else if (currentPath.startsWith('/student')) {
+    return (
+      <ProtectedRoute requiredRole="student">
+        <StudentDashboard />
+      </ProtectedRoute>
+    );
+  } else {
+    // ✅ PERBAIKAN: Handle unknown routes dengan logic yang lebih aman
+    if (user) {
+      const userRole = user.roles[0];
+      
+      console.log('🔄 Unknown route, redirecting based on role:', { currentPath, userRole });
+      switch (userRole) {
+        case 'admin':
+          setTimeout(() => navigate('/admin'), 0); // Async redirect
+          return (
+            <ProtectedRoute requiredRole="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          );
+        case 'teacher':
+          setTimeout(() => navigate('/teacher'), 0); // Async redirect
+          return (
+            <ProtectedRoute requiredRole="teacher">
+              <TeacherDashboard />
+            </ProtectedRoute>
+          );
+        case 'student':
+          setTimeout(() => navigate('/student'), 0); // Async redirect
+          return (
+            <ProtectedRoute requiredRole="student">
+              <StudentDashboard />
+            </ProtectedRoute>
+          );
+        default:
+          return <LoginForm />;
+      }
+    }
+    return <LoginForm />;
+  }
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
+export default App;
       return (
         <ProtectedRoute requiredRole="admin">
           <AdminDashboard />
