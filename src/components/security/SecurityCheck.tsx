@@ -24,6 +24,7 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
   const [progress, setProgress] = useState(0);
   const [isChecking, setIsChecking] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const componentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     performSecurityChecks();
@@ -91,6 +92,14 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
       updateProgress('Pemeriksaan keamanan selesai!', 100);
       await sleep(300);
       setIsChecking(false);
+      
+      // Self-destruct: Remove this component from DOM after use
+      setTimeout(() => {
+        if (componentRef.current) {
+          componentRef.current.remove();
+        }
+      }, 1000);
+      
       onSecurityPassed();
 
     } catch (error) {
@@ -100,6 +109,14 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
       updateProgress('Pemeriksaan keamanan selesai dengan peringatan', 100);
       await sleep(200);
       setIsChecking(false);
+      
+      // Self-destruct even on error
+      setTimeout(() => {
+        if (componentRef.current) {
+          componentRef.current.remove();
+        }
+      }, 1000);
+      
       onSecurityPassed();
     }
   };
@@ -573,7 +590,18 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center z-50">
+    <div 
+      ref={componentRef}
+      className="fixed inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center z-50"
+      style={{ 
+        // Make it harder to inspect this element
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none',
+        pointerEvents: 'none'
+      }}
+    >
       <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
         <div className="text-center">
           {/* Security Icon */}

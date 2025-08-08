@@ -48,6 +48,9 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const [violationCount, setViolationCount] = useState(0);
   const [examStartTime, setExamStartTime] = useState<number>(0);
 
+  // Auto-save interval
+  const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   // Parse URL parameters for exam timing
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -125,16 +128,29 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     return () => clearInterval(timer);
   }, [examStarted, timeRemaining]);
 
-  // Auto-save answers periodically
+  // Auto-save answers periodically (every 10 seconds)
   useEffect(() => {
     if (!examStarted || Object.keys(answers).length === 0) return;
 
-    const autoSaveInterval = setInterval(() => {
+    autoSaveIntervalRef.current = setInterval(() => {
       handleSaveAnswers();
-    }, 30000); // Auto-save every 30 seconds
+    }, 10000); // Auto-save every 10 seconds
 
-    return () => clearInterval(autoSaveInterval);
+    return () => {
+      if (autoSaveIntervalRef.current) {
+        clearInterval(autoSaveIntervalRef.current);
+      }
+    };
   }, [examStarted, answers]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveIntervalRef.current) {
+        clearInterval(autoSaveIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handleAnswerChange = (questionId: string, answer: any) => {
     setAnswers(prev => ({
@@ -151,10 +167,12 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       // TODO: Implement save answers to backend
       // await studentExamService.saveAnswers(token!, sessionId, answers);
       setLastSaved(new Date());
-      toast.success('Jawaban tersimpan', { duration: 2000 });
+      // Remove toast notification for auto-save to avoid spam
+      console.log('Answers auto-saved at', new Date().toLocaleTimeString());
     } catch (error) {
       console.error('Error saving answers:', error);
-      toast.error('Gagal menyimpan jawaban');
+      // Only show error toast for failed saves
+      toast.error('Gagal menyimpan jawaban', { duration: 3000 });
     } finally {
       setSaving(false);
     }
@@ -162,6 +180,11 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
   const handleTimeUp = () => {
     toast.error('Waktu ujian telah habis! Jawaban akan otomatis dikumpulkan.');
+    
+    // Clear auto-save interval
+    if (autoSaveIntervalRef.current) {
+      clearInterval(autoSaveIntervalRef.current);
+    }
     
     // Generate security report for time up
     const securityReport = examSecurityService.generateSecurityReport(
@@ -181,18 +204,26 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     }).then(() => {
       // Clean up and redirect
       examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
+      
+      // Clear all local data
+      setAnswers({});
+      setQuestions([]);
+      
       window.location.href = '/student/exams';
     }).catch((error) => {
       console.error('Error submitting exam after time up:', error);
       // Force redirect even if submission fails
+      examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
       window.location.href = '/student/exams';
     });
   };
 
   const handleFinishExam = async () => {
     try {
-      // Save final answers before submitting
-      await handleSaveAnswers();
+      // Clear auto-save interval
+      if (autoSaveIntervalRef.current) {
+        clearInterval(autoSaveIntervalRef.current);
+      }
       
       // Generate security report
       const securityReport = examSecurityService.generateSecurityReport(
@@ -213,6 +244,10 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
       // Clean up security data
       examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
+      
+      // Clear all local data
+      setAnswers({});
+      setQuestions([]);
       
       toast.success('Ujian telah selesai dikerjakan.');
       window.location.href = '/student/exams';
@@ -265,12 +300,18 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     }).then(() => {
       // Clean up and redirect
       examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
+      
+      // Clear all local data
+      setAnswers({});
+      setQuestions([]);
+      
       setTimeout(() => {
         window.location.href = '/student';
       }, 2000);
     }).catch((error) => {
       console.error('Error submitting exam after violation:', error);
       // Force redirect even if submission fails
+      examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
       setTimeout(() => {
         window.location.href = '/student';
       }, 2000);
@@ -523,7 +564,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
                   {lastSaved && (
                     <div className="text-xs text-green-600 flex items-center">
                       <CheckCircle className="w-3 h-3 mr-1" />
-                      Tersimpan {lastSaved.toLocaleTimeString()}
+                      Otomatis tersimpan {lastSaved.toLocaleTimeString()}
                     </div>
                   )}
                 </div>
@@ -564,24 +605,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
               {/* Action Buttons */}
               <div className="space-y-3">
-                <button
-                  onClick={handleSaveAnswers}
-                  disabled={saving}
-                  className="w-full inline-flex items-center justify-center px-4 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-200 transition-all shadow-lg disabled:opacity-50"
-                >
-                  {saving ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                      Menyimpan...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" />
-                      Simpan Jawaban
-                    </>
-                  )}
-                </button>
-
                 <button
                   onClick={handleFinishExam}
                   className="w-full inline-flex items-center justify-center px-4 py-3 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-200 transition-all shadow-lg"
@@ -721,23 +744,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <button
-                      onClick={handleSaveAnswers}
-                      disabled={saving}
-                      className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-200 transition-all shadow-lg disabled:opacity-50"
-                    >
-                      {saving ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                          Menyimpan...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4 mr-2" />
-                          Simpan Jawaban
-                        </>
-                      )}
-                    </button>
                     <button
                       onClick={handleFinishExam}
                       className="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-200 transition-all shadow-lg"

@@ -243,13 +243,29 @@ class ExamSecurityService extends BaseService {
       `exam_violations_${examId}_${studentId}`,
       `session_violations_${examId}_${studentId}`,
       `device_fingerprint_${examId}_${studentId}`,
-      `exam_session_${examId}_${studentId}`
+      `exam_session_${examId}_${studentId}`,
+      // Also clean up any other exam-related data
+      `exam_answers_${examId}_${studentId}`,
+      `exam_questions_${examId}_${studentId}`,
+      `exam_start_time_${examId}_${studentId}`
     ];
 
     keysToRemove.forEach(key => {
       localStorage.removeItem(key);
       sessionStorage.removeItem(key);
     });
+    
+    // Clear any cached exam data from memory
+    try {
+      // Force garbage collection if available (Chrome DevTools)
+      if (window.gc) {
+        window.gc();
+      }
+    } catch (error) {
+      // Ignore if gc is not available
+    }
+    
+    console.log('Security data cleaned up for exam:', examId);
   }
 }
 

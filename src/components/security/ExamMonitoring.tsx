@@ -28,8 +28,6 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     high: 0,
     critical: 0
   });
-  const [showWarning, setShowWarning] = useState(false);
-  const [warningMessage, setWarningMessage] = useState('');
 
   const tabSwitchCount = useRef(0);
   const lastActiveTime = useRef(Date.now());
@@ -37,6 +35,11 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   const backupInterval = useRef<NodeJS.Timeout | null>(null);
   const mouseTracker = useRef({ x: 0, y: 0, clicks: 0 });
   const keyboardTracker = useRef({ keystrokes: 0, suspiciousKeys: 0 });
+  const screenHeightTracker = useRef({ 
+    originalHeight: window.innerHeight,
+    currentHeight: window.innerHeight,
+    violations: 0
+  });
 
   useEffect(() => {
     setupMonitoring();
@@ -71,6 +74,9 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     
     // 8. Fullscreen Monitoring
     setupFullscreenMonitoring();
+    
+    // 9. Screen Height Monitoring (Split Screen Detection)
+    setupScreenHeightMonitoring();
   };
 
   // 1. Tab/Window Focus Monitoring
@@ -99,7 +105,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 
       // Show warning after 3 tab switches
       if (tabSwitchCount.current >= 3) {
-        showViolationWarning('Terlalu banyak perpindahan tab terdeteksi. Ujian akan otomatis dikumpulkan jika terus berlanjut.');
+        console.warn('Too many tab switches detected:', tabSwitchCount.current);
       }
 
       // Critical violation after 5 tab switches
@@ -177,6 +183,46 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     document.addEventListener('mouseleave', handleMouseLeave);
   };
 
+  // 9. Screen Height Monitoring (Split Screen Detection)
+  const setupScreenHeightMonitoring = () => {
+    const handleResize = () => {
+      const currentHeight = window.innerHeight;
+      const originalHeight = screenHeightTracker.current.originalHeight;
+      const heightReduction = originalHeight - currentHeight;
+      const reductionPercentage = (heightReduction / originalHeight) * 100;
+      
+      screenHeightTracker.current.currentHeight = currentHeight;
+      
+      // Detect significant height reduction (possible split screen)
+      if (reductionPercentage > 30) { // More than 30% height reduction
+        screenHeightTracker.current.violations += 1;
+        
+        logViolation('screen_height_reduction', 'high', {
+          originalHeight,
+          currentHeight,
+          reductionPercentage: Math.round(reductionPercentage),
+          violationCount: screenHeightTracker.current.violations,
+          timestamp: Date.now()
+        });
+        
+        // Critical violation after multiple height reductions
+        if (screenHeightTracker.current.violations >= 3) {
+          onCriticalViolation(`Split screen atau pengurangan tinggi layar terdeteksi (${Math.round(reductionPercentage)}% pengurangan). Ujian dihentikan.`);
+        }
+      }
+      
+      // Also check for very small screen height (possible mobile split screen)
+      if (currentHeight < 400) {
+        logViolation('very_small_screen_height', 'medium', {
+          currentHeight,
+          timestamp: Date.now()
+        });
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+  };
+
   // 4. Keyboard Event Monitoring
   const setupKeyboardTracking = () => {
     const handleKeyDown = (e: KeyEvent) => {
@@ -243,14 +289,12 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       logViolation('copy_attempt', 'high', {
         timestamp: Date.now()
       });
-      showViolationWarning('Menyalin konten ujian tidak diperbolehkan.');
     };
 
     const handlePaste = () => {
       logViolation('paste_attempt', 'high', {
         timestamp: Date.now()
       });
-      showViolationWarning('Menempel konten dari luar tidak diperbolehkan.');
     };
 
     const handleCut = () => {
@@ -366,7 +410,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
         if (recentViolations.length >= 3) {
           onCriticalViolation(`Developer Tools terdeteksi terbuka secara konsisten (${recentViolations.length} kali dalam 30 detik). Ujian dihentikan.`);
         } else {
-          showViolationWarning(`Aktivitas mencurigakan terdeteksi. Peringatan ${recentViolations.length + 1}/3.`);
+          console.warn(`Suspicious activity detected. Warning ${recentViolations.length + 1}/3.`);
         }
       } else if (devtoolsScore >= 40) {
         logViolation('devtools_suspected', 'medium', {
@@ -387,7 +431,6 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
         logViolation('fullscreen_exit', 'high', {
           timestamp: Date.now()
         });
-        showViolationWarning('Ujian harus dilakukan dalam mode fullscreen.');
         
         // Try to re-enter fullscreen
         setTimeout(() => {
@@ -460,13 +503,6 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     }, 30000); // Every 30 seconds
   };
 
-  // Show Warning
-  const showViolationWarning = (message: string) => {
-    setWarningMessage(message);
-    setShowWarning(true);
-    setTimeout(() => setShowWarning(false), 5000);
-  };
-
   // Cleanup
   const cleanup = () => {
     if (monitoringInterval.current) {
@@ -499,25 +535,13 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
         </div>
       )}
 
-      {/* Violation Warning */}
-      {showWarning && (
-        <div className="fixed top-4 right-4 bg-yellow-500 text-white px-6 py-4 rounded-lg shadow-lg z-40 max-w-sm">
-          <div className="flex items-start space-x-3">
-            <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-            <div>
-              <div className="font-medium">Peringatan Keamanan</div>
-              <div className="text-sm mt-1">{warningMessage}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Violation Counter (for debugging - remove in production) */}
       {process.env.NODE_ENV === 'development' && (
         <div className="fixed bottom-4 left-4 bg-gray-800 text-white px-4 py-2 rounded-lg text-xs z-40">
           <div>Violations: L:{violationCounts.low} M:{violationCounts.medium} H:{violationCounts.high} C:{violationCounts.critical}</div>
           <div>Tab Switches: {tabSwitchCount.current}</div>
           <div>Active: {isTabActive ? 'Yes' : 'No'}</div>
+          <div>Screen: {screenHeightTracker.current.currentHeight}px (Original: {screenHeightTracker.current.originalHeight}px)</div>
         </div>
       )}
     </>
