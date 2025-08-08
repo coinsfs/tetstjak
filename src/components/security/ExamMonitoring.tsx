@@ -306,36 +306,78 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   // 7. DevTools Continuous Monitoring
   const setupDevToolsMonitoring = () => {
     const checkDevTools = () => {
-      let devtools = false;
+      let devtoolsScore = 0;
+      const threshold = 80; // Higher threshold for continuous monitoring
 
-      // Size-based detection
-      const threshold = 160;
-      if (window.outerHeight - window.innerHeight > threshold || 
-          window.outerWidth - window.innerWidth > threshold) {
-        devtools = true;
+      // Size-based detection (more lenient)
+      try {
+        const heightDiff = window.outerHeight - window.innerHeight;
+        const widthDiff = window.outerWidth - window.innerWidth;
+        
+        // Even more lenient for continuous monitoring
+        if (heightDiff > 300 && widthDiff > 350) {
+          devtoolsScore += 40;
+        } else if (heightDiff > 250 || widthDiff > 300) {
+          devtoolsScore += 20;
+        }
+      } catch (error) {
+        console.warn('Continuous window size detection failed:', error);
       }
 
-      // Performance-based detection
-      const start = performance.now();
-      debugger;
-      const end = performance.now();
-      if (end - start > 100) {
-        devtools = true;
+      // Performance-based detection (less frequent)
+      try {
+        const start = performance.now();
+        debugger;
+        const end = performance.now();
+        
+        // Higher threshold for continuous monitoring
+        if (end - start > 300) {
+          devtoolsScore += 30;
+        }
+      } catch (error) {
+        console.warn('Continuous performance detection failed:', error);
       }
 
-      if (devtools) {
+      // Check for rapid console clearing (potential DevTools usage)
+      try {
+        const now = Date.now();
+        if (window.lastConsoleCheck && (now - window.lastConsoleCheck) < 1000) {
+          devtoolsScore += 10;
+        }
+        window.lastConsoleCheck = now;
+      } catch (error) {
+        console.warn('Console check timing failed:', error);
+      }
+
+      if (devtoolsScore >= threshold) {
         logViolation('devtools_detected', 'critical', {
           timestamp: Date.now(),
+          score: devtoolsScore,
           windowSize: {
             outer: { width: window.outerWidth, height: window.outerHeight },
             inner: { width: window.innerWidth, height: window.innerHeight }
           }
         });
-        onCriticalViolation('Developer Tools terdeteksi terbuka. Ujian dihentikan.');
+        
+        // Only trigger critical violation after multiple detections
+        const recentViolations = JSON.parse(localStorage.getItem(`exam_violations_${examId}_${studentId}`) || '[]')
+          .filter((v: any) => v.type === 'devtools_detected' && (Date.now() - v.timestamp) < 30000);
+        
+        if (recentViolations.length >= 3) {
+          onCriticalViolation(`Developer Tools terdeteksi terbuka secara konsisten (${recentViolations.length} kali dalam 30 detik). Ujian dihentikan.`);
+        } else {
+          showViolationWarning(`Aktivitas mencurigakan terdeteksi. Peringatan ${recentViolations.length + 1}/3.`);
+        }
+      } else if (devtoolsScore >= 40) {
+        logViolation('devtools_suspected', 'medium', {
+          timestamp: Date.now(),
+          score: devtoolsScore
+        });
       }
     };
 
-    monitoringInterval.current = setInterval(checkDevTools, 1000); // Check every second
+    // Less frequent checking to reduce false positives
+    monitoringInterval.current = setInterval(checkDevTools, 3000); // Check every 3 seconds
   };
 
   // 8. Fullscreen Monitoring

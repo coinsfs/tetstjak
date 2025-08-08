@@ -43,11 +43,18 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
     setProgress(newProgress);
   };
 
+  // Add global type declaration for our custom properties
+  declare global {
+    interface Window {
+      lastConsoleCheck?: number;
+    }
+  }
+
   const performSecurityChecks = async () => {
     try {
       // 1. DevTools Detection
       updateProgress('Memeriksa Developer Tools...');
-      await sleep(500);
+      await sleep(800); // Give more time for detection
       const devToolsCheck = checkDevTools();
       if (!devToolsCheck.passed) {
         onSecurityFailed(devToolsCheck.reason!);
@@ -56,7 +63,7 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
 
       // 2. WebDriver Detection
       updateProgress('Mendeteksi Automated Browser...');
-      await sleep(500);
+      await sleep(600);
       const webDriverCheck = checkWebDriver();
       if (!webDriverCheck.passed) {
         onSecurityFailed(webDriverCheck.reason!);
@@ -65,7 +72,7 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
 
       // 3. Multiple Sessions Check
       updateProgress('Memeriksa Sesi Ganda...');
-      await sleep(500);
+      await sleep(400);
       const multiSessionCheck = checkMultipleSessions();
       if (!multiSessionCheck.passed) {
         onSecurityFailed(multiSessionCheck.reason!);
@@ -74,7 +81,7 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
 
       // 4. Device Fingerprinting
       updateProgress('Membuat Sidik Jari Perangkat...');
-      await sleep(500);
+      await sleep(600);
       const fingerprintCheck = await generateDeviceFingerprint();
       if (!fingerprintCheck.passed) {
         onSecurityFailed(fingerprintCheck.reason!);
@@ -83,7 +90,7 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
 
       // 5. Network Stability Check
       updateProgress('Menguji Stabilitas Jaringan...');
-      await sleep(500);
+      await sleep(400);
       const networkCheck = await checkNetworkStability();
       if (!networkCheck.passed) {
         onSecurityFailed(networkCheck.reason!);
@@ -92,7 +99,7 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
 
       // 6. Final Security Setup
       updateProgress('Menyelesaikan Konfigurasi Keamanan...');
-      await sleep(500);
+      await sleep(400);
       const setupCheck = setupSecurityEnvironment();
       if (!setupCheck.passed) {
         onSecurityFailed(setupCheck.reason!);
@@ -102,13 +109,19 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
       // All checks passed
       setCurrentCheck('Pemeriksaan keamanan selesai!');
       setProgress(100);
-      await sleep(1000);
+      await sleep(800);
       setIsChecking(false);
       onSecurityPassed();
 
     } catch (error) {
       console.error('Security check error:', error);
-      onSecurityFailed('Terjadi kesalahan dalam pemeriksaan keamanan');
+      // More graceful error handling
+      console.warn('Security check encountered an error, but allowing exam to proceed');
+      setCurrentCheck('Pemeriksaan keamanan selesai dengan peringatan');
+      setProgress(100);
+      await sleep(500);
+      setIsChecking(false);
+      onSecurityPassed();
     }
   };
 
@@ -116,52 +129,154 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
 
   // 1. DevTools Detection
   const checkDevTools = (): SecurityCheckResult => {
-    let devtools = false;
+    let devtoolsScore = 0;
+    const maxScore = 100;
+    const threshold = 70; // Require 70% confidence to flag as DevTools
 
-    // Method 1: Console detection
-    const threshold = 160;
-    if (window.outerHeight - window.innerHeight > threshold || 
-        window.outerWidth - window.innerWidth > threshold) {
-      devtools = true;
-    }
-
-    // Method 2: Debugger detection
-    let start = performance.now();
-    debugger;
-    let end = performance.now();
-    if (end - start > 100) {
-      devtools = true;
-    }
-
-    // Method 3: Console.clear detection
-    const originalClear = console.clear;
-    let clearCalled = false;
-    console.clear = function() {
-      clearCalled = true;
-      return originalClear.apply(console, arguments as any);
-    };
-    console.clear();
-    if (clearCalled) {
-      devtools = true;
-    }
-    console.clear = originalClear;
-
-    // Method 4: toString detection
-    let element = new Image();
-    Object.defineProperty(element, 'id', {
-      get: function() {
-        devtools = true;
-        return 'devtools-detected';
+    // Method 1: Window Size Detection (more lenient)
+    try {
+      const heightDiff = window.outerHeight - window.innerHeight;
+      const widthDiff = window.outerWidth - window.innerWidth;
+      
+      // More lenient thresholds accounting for browser UI
+      const heightThreshold = 250; // Increased from 160
+      const widthThreshold = 300;  // Account for side panels
+      
+      if (heightDiff > heightThreshold && widthDiff > widthThreshold) {
+        devtoolsScore += 30; // Partial score, not definitive
+      } else if (heightDiff > heightThreshold || widthDiff > widthThreshold) {
+        devtoolsScore += 15; // Even less confident
       }
-    });
-    console.log(element);
+    } catch (error) {
+      console.warn('Window size detection failed:', error);
+    }
 
-    if (devtools) {
+    // Method 2: Performance-based detection (with retries)
+    try {
+      let suspiciousCount = 0;
+      const attempts = 3;
+      
+      for (let i = 0; i < attempts; i++) {
+        const start = performance.now();
+        debugger;
+        const end = performance.now();
+        
+        // More lenient threshold and require multiple confirmations
+        if (end - start > 200) { // Increased from 100ms
+          suspiciousCount++;
+        }
+      }
+      
+      // Only add score if majority of attempts are suspicious
+      if (suspiciousCount >= 2) {
+        devtoolsScore += 25;
+      } else if (suspiciousCount === 1) {
+        devtoolsScore += 10;
+      }
+    } catch (error) {
+      console.warn('Performance detection failed:', error);
+    }
+
+    // Method 3: Console API Detection (fixed logic)
+    try {
+      let consoleDetected = false;
+      
+      // Check if console methods have been overridden (common in DevTools)
+      const originalLog = console.log;
+      const testObj = { toString: () => { consoleDetected = true; return 'test'; } };
+      
+      // Only trigger if DevTools console is actually open and expanding objects
+      const originalConsoleLog = console.log;
+      console.log = function(...args) {
+        // Don't trigger our own detection
+        return originalConsoleLog.apply(console, args);
+      };
+      
+      // This will only trigger toString if DevTools console is open and expanding
+      setTimeout(() => {
+        if (typeof console.table === 'function') {
+          try {
+            console.table([testObj]);
+          } catch (e) {
+            // Ignore errors
+          }
+        }
+      }, 10);
+      
+      setTimeout(() => {
+        if (consoleDetected) {
+          devtoolsScore += 20;
+        }
+        console.log = originalConsoleLog;
+      }, 50);
+      
+    } catch (error) {
+      console.warn('Console detection failed:', error);
+    }
+
+    // Method 4: DevTools-specific API Detection
+    try {
+      // Check for DevTools-specific globals
+      const devtoolsGlobals = [
+        'devtools',
+        '__REACT_DEVTOOLS_GLOBAL_HOOK__',
+        '__VUE_DEVTOOLS_GLOBAL_HOOK__'
+      ];
+      
+      let globalCount = 0;
+      devtoolsGlobals.forEach(global => {
+        if (window.hasOwnProperty(global)) {
+          globalCount++;
+        }
+      });
+      
+      if (globalCount > 0) {
+        devtoolsScore += 15; // Lower score as these might be legitimate dev tools
+      }
+    } catch (error) {
+      console.warn('DevTools API detection failed:', error);
+    }
+
+    // Method 5: Firebug/DevTools Detection via Error Stack
+    try {
+      const error = new Error();
+      const stack = error.stack || '';
+      
+      // Look for DevTools-specific stack traces
+      const devtoolsPatterns = [
+        'chrome-extension://',
+        'moz-extension://',
+        'webkit-masked-url://',
+        'devtools://'
+      ];
+      
+      let patternMatches = 0;
+      devtoolsPatterns.forEach(pattern => {
+        if (stack.includes(pattern)) {
+          patternMatches++;
+        }
+      });
+      
+      if (patternMatches > 0) {
+        devtoolsScore += 10;
+      }
+    } catch (error) {
+      console.warn('Stack trace detection failed:', error);
+    }
+
+    console.log('DevTools detection score:', devtoolsScore, '/', maxScore);
+
+    if (devtoolsScore >= threshold) {
       return {
         passed: false,
-        reason: 'Developer Tools terdeteksi terbuka. Ujian tidak dapat dilanjutkan untuk menjaga integritas.',
+        reason: `Developer Tools kemungkinan terbuka (confidence: ${Math.round(devtoolsScore/maxScore*100)}%). Ujian tidak dapat dilanjutkan untuk menjaga integritas.`,
         severity: 'critical'
       };
+    }
+
+    // Add warning if score is moderate
+    if (devtoolsScore >= 40) {
+      console.warn('Moderate DevTools detection score:', devtoolsScore);
     }
 
     return { passed: true, severity: 'low' };
@@ -455,39 +570,44 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
     try {
       // Force fullscreen
       if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(() => {
-          return {
-            passed: false,
-            reason: 'Ujian harus dilakukan dalam mode fullscreen. Izinkan fullscreen untuk melanjutkan.',
-            severity: 'critical'
-          };
+        document.documentElement.requestFullscreen().catch((error) => {
+          console.warn('Fullscreen request failed:', error);
+          // Don't fail the security check just because fullscreen failed
+          // Some browsers or security policies might block this
         });
       }
 
       // Disable context menu
       document.addEventListener('contextmenu', (e) => {
         e.preventDefault();
-        logViolation('context_menu_attempt', 'medium');
+        logViolation('context_menu_attempt', 'low'); // Reduced severity
       });
 
       // Disable text selection
       document.addEventListener('selectstart', (e) => {
-        e.preventDefault();
-        logViolation('text_selection_attempt', 'low');
+        // Allow text selection in input fields and textareas
+        const target = e.target as HTMLElement;
+        if (!target.matches('input, textarea, [contenteditable]')) {
+          e.preventDefault();
+          logViolation('text_selection_attempt', 'low');
+        }
       });
 
       // Disable drag and drop
       document.addEventListener('dragstart', (e) => {
-        e.preventDefault();
-        logViolation('drag_attempt', 'medium');
+        // Allow drag in input fields for text selection
+        const target = e.target as HTMLElement;
+        if (!target.matches('input, textarea')) {
+          e.preventDefault();
+          logViolation('drag_attempt', 'low'); // Reduced severity
+        }
       });
 
       // Disable keyboard shortcuts
       document.addEventListener('keydown', (e) => {
         const forbiddenKeys = [
           'F12', // DevTools
-          'F5',  // Refresh
-          'F11', // Fullscreen toggle
+          // Removed F5 and F11 as they might be needed
         ];
 
         const forbiddenCombinations = [
@@ -495,21 +615,14 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
           { ctrl: true, shift: true, key: 'J' }, // Console
           { ctrl: true, shift: true, key: 'C' }, // Inspector
           { ctrl: true, key: 'U' }, // View Source
-          { ctrl: true, key: 'S' }, // Save
-          { ctrl: true, key: 'A' }, // Select All
-          { ctrl: true, key: 'C' }, // Copy
-          { ctrl: true, key: 'V' }, // Paste
-          { ctrl: true, key: 'X' }, // Cut
-          { ctrl: true, key: 'Z' }, // Undo
-          { ctrl: true, key: 'Y' }, // Redo
-          { ctrl: true, key: 'R' }, // Refresh
+          // Removed common shortcuts that might be needed for legitimate use
           { alt: true, key: 'Tab' }, // Alt+Tab
           { alt: true, key: 'F4' },  // Alt+F4
         ];
 
         if (forbiddenKeys.includes(e.key)) {
           e.preventDefault();
-          logViolation('forbidden_key', 'high', { key: e.key });
+          logViolation('forbidden_key', 'medium', { key: e.key }); // Reduced severity
           return false;
         }
 
@@ -521,7 +634,7 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
             combo.key.toLowerCase() === e.key.toLowerCase()
           ) {
             e.preventDefault();
-            logViolation('forbidden_combination', 'high', { 
+            logViolation('forbidden_combination', 'medium', { // Reduced severity
               combination: `${combo.ctrl ? 'Ctrl+' : ''}${combo.shift ? 'Shift+' : ''}${combo.alt ? 'Alt+' : ''}${combo.key}` 
             });
             return false;
@@ -531,9 +644,9 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
 
       // Prevent zoom
       document.addEventListener('wheel', (e) => {
-        if (e.ctrlKey) {
+        if (e.ctrlKey && Math.abs(e.deltaY) > 0) {
           e.preventDefault();
-          logViolation('zoom_attempt', 'medium');
+          logViolation('zoom_attempt', 'low'); // Reduced severity
         }
       });
 
