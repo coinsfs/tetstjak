@@ -25,7 +25,7 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
   const [isChecking, setIsChecking] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const checksCompleted = useRef(0);
-  const totalChecks = 6;
+  const totalChecks = 5;
 
   useEffect(() => {
     performSecurityChecks();
@@ -54,7 +54,7 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
     try {
       // 1. DevTools Detection
       updateProgress('Memeriksa Developer Tools...');
-      await sleep(800); // Give more time for detection
+      await sleep(200); // Reduced time
       const devToolsCheck = checkDevTools();
       if (!devToolsCheck.passed) {
         onSecurityFailed(devToolsCheck.reason!);
@@ -63,43 +63,34 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
 
       // 2. WebDriver Detection
       updateProgress('Mendeteksi Automated Browser...');
-      await sleep(600);
+      await sleep(150);
       const webDriverCheck = checkWebDriver();
       if (!webDriverCheck.passed) {
         onSecurityFailed(webDriverCheck.reason!);
         return;
       }
 
-      // 3. Multiple Sessions Check
-      updateProgress('Memeriksa Sesi Ganda...');
-      await sleep(400);
-      const multiSessionCheck = checkMultipleSessions();
-      if (!multiSessionCheck.passed) {
-        onSecurityFailed(multiSessionCheck.reason!);
-        return;
-      }
-
-      // 4. Device Fingerprinting
+      // 3. Device Fingerprinting
       updateProgress('Membuat Sidik Jari Perangkat...');
-      await sleep(600);
+      await sleep(200);
       const fingerprintCheck = await generateDeviceFingerprint();
       if (!fingerprintCheck.passed) {
         onSecurityFailed(fingerprintCheck.reason!);
         return;
       }
 
-      // 5. Network Stability Check
+      // 4. Network Stability Check
       updateProgress('Menguji Stabilitas Jaringan...');
-      await sleep(400);
+      await sleep(100);
       const networkCheck = await checkNetworkStability();
       if (!networkCheck.passed) {
         onSecurityFailed(networkCheck.reason!);
         return;
       }
 
-      // 6. Final Security Setup
+      // 5. Final Security Setup
       updateProgress('Menyelesaikan Konfigurasi Keamanan...');
-      await sleep(400);
+      await sleep(100);
       const setupCheck = setupSecurityEnvironment();
       if (!setupCheck.passed) {
         onSecurityFailed(setupCheck.reason!);
@@ -109,7 +100,7 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
       // All checks passed
       setCurrentCheck('Pemeriksaan keamanan selesai!');
       setProgress(100);
-      await sleep(800);
+      await sleep(200);
       setIsChecking(false);
       onSecurityPassed();
 
@@ -119,13 +110,24 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
       console.warn('Security check encountered an error, but allowing exam to proceed');
       setCurrentCheck('Pemeriksaan keamanan selesai dengan peringatan');
       setProgress(100);
-      await sleep(500);
+      await sleep(100);
       setIsChecking(false);
       onSecurityPassed();
     }
   };
 
-  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  const sleep = (ms: number) => new Promise(resolve => {
+    // Use requestAnimationFrame for faster execution and prevent network pause
+    const startTime = performance.now();
+    const frame = () => {
+      if (performance.now() - startTime >= ms) {
+        resolve(undefined);
+      } else {
+        requestAnimationFrame(frame);
+      }
+    };
+    requestAnimationFrame(frame);
+  });
 
   // 1. DevTools Detection
   const checkDevTools = (): SecurityCheckResult => {
@@ -348,58 +350,7 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
     return { passed: true, severity: 'low' };
   };
 
-  // 3. Multiple Sessions Check
-  const checkMultipleSessions = (): SecurityCheckResult => {
-    const sessionKey = `exam_session_${examId}_${studentId}`;
-    const currentTime = Date.now();
-    const sessionTimeout = 5 * 60 * 1000; // 5 minutes
-
-    // Check localStorage for existing session
-    const existingSession = localStorage.getItem(sessionKey);
-    if (existingSession) {
-      const sessionData = JSON.parse(existingSession);
-      const timeDiff = currentTime - sessionData.timestamp;
-      
-      if (timeDiff < sessionTimeout) {
-        return {
-          passed: false,
-          reason: 'Ujian sudah dibuka di tab atau browser lain. Tutup semua tab ujian lain terlebih dahulu.',
-          severity: 'critical'
-        };
-      }
-    }
-
-    // Create new session
-    const sessionData = {
-      timestamp: currentTime,
-      tabId: Math.random().toString(36).substr(2, 9),
-      examId,
-      studentId
-    };
-    localStorage.setItem(sessionKey, JSON.stringify(sessionData));
-
-    // Set up session monitoring
-    const checkInterval = setInterval(() => {
-      const currentSession = localStorage.getItem(sessionKey);
-      if (currentSession) {
-        const current = JSON.parse(currentSession);
-        if (current.tabId !== sessionData.tabId) {
-          clearInterval(checkInterval);
-          window.location.href = '/student';
-        }
-      }
-    }, 1000);
-
-    // Clean up on page unload
-    window.addEventListener('beforeunload', () => {
-      localStorage.removeItem(sessionKey);
-      clearInterval(checkInterval);
-    });
-
-    return { passed: true, severity: 'low' };
-  };
-
-  // 4. Device Fingerprinting
+  // 3. Device Fingerprinting
   const generateDeviceFingerprint = async (): SecurityCheckResult => {
     try {
       const fingerprint = {
@@ -514,16 +465,21 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   };
 
-  // 5. Network Stability Check
+  // 4. Network Stability Check
   const checkNetworkStability = async (): SecurityCheckResult => {
     try {
-      const startTime = performance.now();
+      // Simplified and faster network check
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
       
-      // Ping test to our API
-      const response = await fetch('/api/v1/ping', {
+      const startTime = performance.now();
+      const response = await fetch(`${window.location.origin}/favicon.ico`, {
         method: 'GET',
-        cache: 'no-cache'
+        cache: 'no-cache',
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
 
       const endTime = performance.now();
       const latency = endTime - startTime;
@@ -531,12 +487,12 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
       if (!response.ok) {
         return {
           passed: false,
-          reason: 'Koneksi ke server tidak stabil. Pastikan koneksi internet Anda stabil.',
+          reason: 'Koneksi internet tidak stabil. Pastikan koneksi Anda stabil.',
           severity: 'critical'
         };
       }
 
-      if (latency > 5000) { // 5 seconds
+      if (latency > 3000) { // 3 seconds
         return {
           passed: false,
           reason: 'Koneksi internet terlalu lambat. Ujian memerlukan koneksi yang stabil.',
@@ -544,28 +500,24 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
         };
       }
 
-      // Check connection type
-      const connection = (navigator as any).connection;
-      if (connection && connection.effectiveType === 'slow-2g') {
-        return {
-          passed: false,
-          reason: 'Koneksi internet terlalu lambat untuk ujian online.',
-          severity: 'critical'
-        };
-      }
-
       return { passed: true, severity: 'low' };
 
     } catch (error) {
-      return {
-        passed: false,
-        reason: 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
-        severity: 'critical'
-      };
+      if (error instanceof Error && error.name === 'AbortError') {
+        return {
+          passed: false,
+          reason: 'Koneksi internet terlalu lambat (timeout).',
+          severity: 'critical'
+        };
+      }
+      
+      // Allow to proceed if network check fails due to other reasons
+      console.warn('Network check failed, but allowing to proceed:', error);
+      return { passed: true, severity: 'low' };
     }
   };
 
-  // 6. Security Environment Setup
+  // 5. Security Environment Setup
   const setupSecurityEnvironment = (): SecurityCheckResult => {
     try {
       // Force fullscreen
@@ -737,16 +689,16 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
               <span>DevTools Block</span>
             </div>
             <div className="flex items-center space-x-2">
-              <Lock className="w-4 h-4" />
-              <span>Session Lock</span>
-            </div>
-            <div className="flex items-center space-x-2">
               <Wifi className="w-4 h-4" />
               <span>Network Check</span>
             </div>
             <div className="flex items-center space-x-2">
               <Eye className="w-4 h-4" />
               <span>Monitoring</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Lock className="w-4 h-4" />
+              <span>Security Setup</span>
             </div>
           </div>
         </div>
