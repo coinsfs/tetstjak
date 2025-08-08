@@ -24,8 +24,6 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
   const [progress, setProgress] = useState(0);
   const [isChecking, setIsChecking] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const checksCompleted = useRef(0);
-  const totalChecks = 4;
 
   useEffect(() => {
     performSecurityChecks();
@@ -36,11 +34,9 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
     };
   }, []);
 
-  const updateProgress = (checkName: string) => {
-    checksCompleted.current += 1;
-    const newProgress = (checksCompleted.current / totalChecks) * 100;
+  const updateProgress = (checkName: string, progressValue: number) => {
     setCurrentCheck(checkName);
-    setProgress(newProgress);
+    setProgress(Math.min(progressValue, 100)); // Ensure progress never exceeds 100%
   };
 
   // Add global type declaration for our custom properties
@@ -53,8 +49,8 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
   const performSecurityChecks = async () => {
     try {
       // 1. DevTools Detection
-      updateProgress('Memeriksa Developer Tools...');
-      await sleep(200); // Reduced time
+      updateProgress('Memeriksa Developer Tools...', 10);
+      await sleep(300);
       const devToolsCheck = checkDevTools();
       if (!devToolsCheck.passed) {
         onSecurityFailed(devToolsCheck.reason!);
@@ -62,7 +58,8 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
       }
 
       // 2. WebDriver Detection
-      updateProgress('Mendeteksi Automated Browser...');
+      updateProgress('Mendeteksi Automated Browser...', 35);
+      await sleep(250);
       await sleep(150);
       const webDriverCheck = checkWebDriver();
       if (!webDriverCheck.passed) {
@@ -71,7 +68,8 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
       }
 
       // 3. Device Fingerprinting
-      updateProgress('Membuat Sidik Jari Perangkat...');
+      updateProgress('Membuat Sidik Jari Perangkat...', 65);
+      await sleep(400);
       await sleep(200);
       const fingerprintCheck = await generateDeviceFingerprint();
       if (!fingerprintCheck.passed) {
@@ -80,7 +78,8 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
       }
 
       // 4. Final Security Setup
-      updateProgress('Menyelesaikan Konfigurasi Keamanan...');
+      updateProgress('Menyelesaikan Konfigurasi Keamanan...', 90);
+      await sleep(200);
       await sleep(100);
       const setupCheck = setupSecurityEnvironment();
       if (!setupCheck.passed) {
@@ -89,9 +88,8 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
       }
 
       // All checks passed
-      setCurrentCheck('Pemeriksaan keamanan selesai!');
-      setProgress(100);
-      await sleep(200);
+      updateProgress('Pemeriksaan keamanan selesai!', 100);
+      await sleep(300);
       setIsChecking(false);
       onSecurityPassed();
 
@@ -99,25 +97,15 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
       console.error('Security check error:', error);
       // More graceful error handling
       console.warn('Security check encountered an error, but allowing exam to proceed');
-      setCurrentCheck('Pemeriksaan keamanan selesai dengan peringatan');
-      setProgress(100);
-      await sleep(100);
+      updateProgress('Pemeriksaan keamanan selesai dengan peringatan', 100);
+      await sleep(200);
       setIsChecking(false);
       onSecurityPassed();
     }
   };
 
   const sleep = (ms: number) => new Promise(resolve => {
-    // Use requestAnimationFrame for faster execution and prevent network pause
-    const startTime = performance.now();
-    const frame = () => {
-      if (performance.now() - startTime >= ms) {
-        resolve(undefined);
-      } else {
-        requestAnimationFrame(frame);
-      }
-    };
-    requestAnimationFrame(frame);
+    setTimeout(resolve, ms);
   });
 
   // 1. DevTools Detection
