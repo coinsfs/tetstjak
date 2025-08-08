@@ -25,7 +25,7 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
   const [isChecking, setIsChecking] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const checksCompleted = useRef(0);
-  const totalChecks = 5;
+  const totalChecks = 4;
 
   useEffect(() => {
     performSecurityChecks();
@@ -79,16 +79,7 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
         return;
       }
 
-      // 4. Network Stability Check
-      updateProgress('Menguji Stabilitas Jaringan...');
-      await sleep(100);
-      const networkCheck = await checkNetworkStability();
-      if (!networkCheck.passed) {
-        onSecurityFailed(networkCheck.reason!);
-        return;
-      }
-
-      // 5. Final Security Setup
+      // 4. Final Security Setup
       updateProgress('Menyelesaikan Konfigurasi Keamanan...');
       await sleep(100);
       const setupCheck = setupSecurityEnvironment();
@@ -465,59 +456,7 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   };
 
-  // 4. Network Stability Check
-  const checkNetworkStability = async (): SecurityCheckResult => {
-    try {
-      // Simplified and faster network check
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
-      
-      const startTime = performance.now();
-      const response = await fetch(`${window.location.origin}/favicon.ico`, {
-        method: 'GET',
-        cache: 'no-cache',
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-
-      const endTime = performance.now();
-      const latency = endTime - startTime;
-
-      if (!response.ok) {
-        return {
-          passed: false,
-          reason: 'Koneksi internet tidak stabil. Pastikan koneksi Anda stabil.',
-          severity: 'critical'
-        };
-      }
-
-      if (latency > 3000) { // 3 seconds
-        return {
-          passed: false,
-          reason: 'Koneksi internet terlalu lambat. Ujian memerlukan koneksi yang stabil.',
-          severity: 'critical'
-        };
-      }
-
-      return { passed: true, severity: 'low' };
-
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        return {
-          passed: false,
-          reason: 'Koneksi internet terlalu lambat (timeout).',
-          severity: 'critical'
-        };
-      }
-      
-      // Allow to proceed if network check fails due to other reasons
-      console.warn('Network check failed, but allowing to proceed:', error);
-      return { passed: true, severity: 'low' };
-    }
-  };
-
-  // 5. Security Environment Setup
+  // 4. Security Environment Setup
   const setupSecurityEnvironment = (): SecurityCheckResult => {
     try {
       // Force fullscreen
@@ -689,16 +628,16 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
               <span>DevTools Block</span>
             </div>
             <div className="flex items-center space-x-2">
-              <Wifi className="w-4 h-4" />
-              <span>Network Check</span>
-            </div>
-            <div className="flex items-center space-x-2">
               <Eye className="w-4 h-4" />
               <span>Monitoring</span>
             </div>
             <div className="flex items-center space-x-2">
               <Lock className="w-4 h-4" />
               <span>Security Setup</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Wifi className="w-4 h-4" />
+              <span>Device Check</span>
             </div>
           </div>
         </div>
