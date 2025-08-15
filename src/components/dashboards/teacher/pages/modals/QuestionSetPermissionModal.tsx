@@ -20,10 +20,10 @@ interface QuestionSetPermissionModalProps {
 }
 
 const PERMISSION_TYPES = [
-  { key: 'view', label: 'Lihat', description: 'Dapat melihat paket soal' },
-  { key: 'edit', label: 'Edit', description: 'Dapat mengedit informasi paket soal' },
-  { key: 'manage_questions', label: 'Kelola Soal', description: 'Dapat menambah/hapus soal dalam paket' },
-  { key: 'publish', label: 'Publikasi', description: 'Dapat mempublikasikan paket soal' }
+  { key: 'can_view', label: 'Lihat', description: 'Dapat melihat paket soal' },
+  { key: 'can_edit', label: 'Edit', description: 'Dapat mengedit informasi paket soal' },
+  { key: 'can_manage_questions', label: 'Kelola Soal', description: 'Dapat menambah/hapus soal dalam paket' },
+  { key: 'can_publish', label: 'Publikasi', description: 'Dapat mempublikasikan paket soal' }
 ];
 
 const QuestionSetPermissionModal: React.FC<QuestionSetPermissionModalProps> = ({
@@ -196,13 +196,13 @@ const QuestionSetPermissionModal: React.FC<QuestionSetPermissionModalProps> = ({
     if (!questionSet.permission_holders) return [];
     
     switch (permissionType) {
-      case 'view':
+      case 'can_view':
         return questionSet.permission_holders.can_view || [];
-      case 'edit':
+      case 'can_edit':
         return questionSet.permission_holders.can_edit || [];
-      case 'manage_questions':
+      case 'can_manage_questions':
         return questionSet.permission_holders.can_manage_questions || [];
-      case 'publish':
+      case 'can_publish':
         return questionSet.permission_holders.can_publish || [];
       default:
         return [];
