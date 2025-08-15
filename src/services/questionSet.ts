@@ -54,6 +54,30 @@ class QuestionSetService extends BaseService {
       body: JSON.stringify({ question_ids: questionIds })
     }, token);
   }
+
+  async updateQuestionSetPermissions(
+    token: string, 
+    questionSetId: string, 
+    userId: string, 
+    permissions: string[], 
+    action: 'grant' | 'revoke'
+  ): Promise<void> {
+    await this.put(`/question-sets/${questionSetId}/permissions`, {
+      user_id: userId,
+      permissions,
+      action
+    }, token);
+  }
+
+  async bulkGroupPermissions(token: string, payload: {
+    question_set_ids: string[];
+    coordinator_id: string;
+    permissions: string[];
+    action: 'grant' | 'revoke';
+    apply_to_all_teachers: boolean;
+  }): Promise<void> {
+    await this.post('/question-sets/bulk/group-permissions', payload, token);
+  }
 }
 
 export const questionSetService = new QuestionSetService();

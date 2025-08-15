@@ -7,6 +7,7 @@ import QuestionSetFormModal from './modals/QuestionSetFormModal';
 import QuestionSetDetailModal from './modals/QuestionSetDetailModal';
 import QuestionSetManageQuestionsModal from './modals/QuestionSetManageQuestionsModal';
 import QuestionSetDeleteModal from './modals/QuestionSetDeleteModal';
+import QuestionSetPermissionModal from './modals/QuestionSetPermissionModal';
 import { getProfileImageUrl } from '@/constants/config';
 import toast from 'react-hot-toast';
 
@@ -36,6 +37,7 @@ const TeacherQuestionSetsPage: React.FC = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showManageQuestionsModal, setShowManageQuestionsModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [selectedQuestionSet, setSelectedQuestionSet] = useState<QuestionSet | null>(null);
 
   useEffect(() => {
@@ -156,12 +158,18 @@ const TeacherQuestionSetsPage: React.FC = () => {
     setShowDeleteModal(true);
   };
 
+  const handleManagePermissions = (questionSet: QuestionSet) => {
+    setSelectedQuestionSet(questionSet);
+    setShowPermissionModal(true);
+  };
+
   const handleModalSuccess = () => {
     fetchQuestionSets();
     setShowCreateModal(false);
     setShowDetailModal(false);
     setShowManageQuestionsModal(false);
     setShowDeleteModal(false);
+    setShowPermissionModal(false);
     setSelectedQuestionSet(null);
   };
 
@@ -589,6 +597,16 @@ const TeacherQuestionSetsPage: React.FC = () => {
                               <Eye className="w-4 h-4" />
                             </button>
                             
+                            {questionSet.is_creator && (
+                              <button
+                                onClick={() => handleManagePermissions(questionSet)}
+                                className="p-1.5 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-md transition-colors"
+                                title="Kelola Izin"
+                              >
+                                <Users className="w-4 h-4" />
+                              </button>
+                            )}
+                            
                             {questionSet.can_manage_questions && (
                               <button
                                 onClick={() => handleManageQuestions(questionSet)}
@@ -692,6 +710,16 @@ const TeacherQuestionSetsPage: React.FC = () => {
           onSuccess={handleModalSuccess}
         />
       )}
+
+    {showPermissionModal && selectedQuestionSet && (
+      <QuestionSetPermissionModal
+        questionSet={selectedQuestionSet}
+        isOpen={showPermissionModal}
+        onClose={() => setShowPermissionModal(false)}
+        onSuccess={handleModalSuccess}
+        myCoordinations={myCoordinations}
+      />
+    )}
     </div>
   );
 };
