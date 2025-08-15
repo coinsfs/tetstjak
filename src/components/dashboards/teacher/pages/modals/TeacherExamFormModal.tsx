@@ -294,32 +294,41 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
   };
 
   const getAvailableTeachingAssignments = () => {
-    if (!teachingSummary || !teachingSummary.teaching_assignments || !formData.academic_period_id) {
-      // Fallback to teachingClasses if teaching_assignments is empty
-      if (!teachingClasses || teachingClasses.length === 0 || !formData.academic_period_id) return [];
-      
-      // Extract assignments from teachingClasses with safe property access
-      const allAssignments = teachingClasses.flatMap(teachingClass => 
+    // Use teachingSummary.classes as primary source since API only returns classes
+    if (teachingSummary && teachingSummary.classes && formData.academic_period_id) {
+      const allAssignments = teachingSummary.classes.flatMap(teachingClass => 
         (teachingClass.assignments || []).map(assignment => ({
           ...assignment,
           _id: assignment.teaching_assignment_id,
-          class_details: {
-            ...teachingClass.class_details,
-            expertise_details: teachingClass.expertise_details || {}
-          },
+          class_details: teachingClass.class_details || {},
+          expertise_details: teachingClass.expertise_details || {},
           subject_details: { 
             name: assignment.name || 'Unknown Subject', 
             code: assignment.code || 'N/A' 
           },
-          academic_period_id: formData.academic_period_id // Assume current period
+          academic_period_id: formData.academic_period_id // Current period
         }))
       );
       return allAssignments;
     }
+
+    // Fallback to teachingClasses from props
+    if (!teachingClasses || teachingClasses.length === 0 || !formData.academic_period_id) return [];
     
-    return teachingSummary.teaching_assignments.filter(
-      assignment => assignment.academic_period_id === formData.academic_period_id
+    const allAssignments = teachingClasses.flatMap(teachingClass => 
+      (teachingClass.assignments || []).map(assignment => ({
+        ...assignment,
+        _id: assignment.teaching_assignment_id,
+        class_details: teachingClass.class_details || {},
+        expertise_details: teachingClass.expertise_details || {},
+        subject_details: { 
+          name: assignment.name || 'Unknown Subject', 
+          code: assignment.code || 'N/A' 
+        },
+        academic_period_id: formData.academic_period_id // Assume current period
+      }))
     );
+    return allAssignments;
   };
 
   // Helper function to safely get class display text
