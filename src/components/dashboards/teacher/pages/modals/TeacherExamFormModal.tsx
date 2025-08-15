@@ -77,10 +77,17 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
 
       // Set default academic period to active one
       const activePeriod = periodsResponse.find(p => p.is_active);
-      if ((activePeriod || activeAcademicPeriod) && !isEditMode) {
+      if (!isEditMode) {
+        let defaultPeriodId = '';
+        if (activePeriod) {
+          defaultPeriodId = activePeriod._id;
+        } else if (activeAcademicPeriod) {
+          defaultPeriodId = activeAcademicPeriod._id;
+        }
+        
         setFormData(prev => ({
           ...prev,
-          academic_period_id: activePeriod._id
+          academic_period_id: defaultPeriodId
         }));
       }
 
