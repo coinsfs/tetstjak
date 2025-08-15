@@ -81,7 +81,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
         populateFormData(examData);
         
         // Load available proctors for the exam's academic period
-        const proctors = await teacherExamService.getAvailableProctors(token, examData.academic_period_id);
+        const proctors = await teacherExamService.getBasicTeachers(token);
         setAvailableProctors(proctors);
       } else {
         // For new exam, reset form with current time
@@ -89,7 +89,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
         
         // Load proctors for active period if available
         if (activePeriod) {
-          const proctors = await teacherExamService.getAvailableProctors(token, activePeriod._id);
+          const proctors = await teacherExamService.getBasicTeachers(token);
           setAvailableProctors(proctors);
         }
       }
@@ -173,7 +173,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
     // Load available proctors for the selected period
     if (periodId && token) {
       try {
-        const proctors = await teacherExamService.getAvailableProctors(token, periodId);
+        const proctors = await teacherExamService.getBasicTeachers(token);
         setAvailableProctors(proctors);
       } catch (error) {
         console.error('Error loading proctors:', error);
@@ -278,7 +278,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
   };
 
   const getAvailableSubjects = () => {
-    if (!teachingSummary || !formData.academic_period_id) return [];
+    if (!teachingSummary || !teachingSummary.teaching_assignments || !formData.academic_period_id) return [];
     
     return teachingSummary.teaching_assignments.filter(
       assignment => assignment.academic_period_id === formData.academic_period_id
@@ -472,8 +472,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                             className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
                           />
                           <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-900">{proctor.name}</div>
-                            <div className="text-xs text-gray-500">{proctor.email}</div>
+                            <div className="text-sm font-medium text-gray-900">{proctor.full_name}</div>
                           </div>
                         </label>
                       ))}
