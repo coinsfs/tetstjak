@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, Users, Settings, Save, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { teacherExamService, CreateTeacherExamRequest, UpdateTeacherExamRequest, TeacherExam, BasicTeacher, AcademicPeriod, ActiveAcademicPeriod } from '@/services/teacherExam';
-import { teacherService, TeachingSummaryResponse, AugmentedTeachingAssignment } from '@/services/teacher';
+import { teacherExamService, CreateTeacherExamRequest, UpdateTeacherExamRequest, TeacherExam, BasicTeacher, AcademicPeriod } from '@/services/teacherExam';
+import { teacherService, TeachingSummaryResponse } from '@/services/teacher';
 import { convertWIBToUTC, convertUTCToWIB, getCurrentWIBDateTime, validateTimeRange } from '@/utils/timezone';
 import toast from 'react-hot-toast';
 
@@ -23,7 +23,6 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(false);
   const [teachingSummary, setTeachingSummary] = useState<TeachingSummaryResponse | null>(null);
-  const [allTeachingAssignments, setAllTeachingAssignments] = useState<AugmentedTeachingAssignment[]>([]);
   const [availableProctors, setAvailableProctors] = useState<BasicTeacher[]>([]);
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   
@@ -63,20 +62,10 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
         teacherService.getTeachingSummary(token),
         teacherExamService.getAcademicPeriods(token)
       ]);
-      
+
       setTeachingSummary(summaryResponse);
       setAcademicPeriods(periodsResponse);
-      
-      // Flatten and augment teaching assignments from the summary response
-      const extractedAssignments: AugmentedTeachingAssignment[] = [];
-      summaryResponse.classes.forEach(cls => {
-        cls.assignments.forEach(assignment => {
-          extractedAssignments.push({ ...assignment, class_academic_year: cls.class_details.academic_year, class_details: cls.class_details });
-        });
-      });
-      setAllTeachingAssignments(extractedAssignments);
-      
-      
+
       // Set default academic period to active one
       const activePeriod = periodsResponse.find(p => p.is_active);
       if (activePeriod && !isEditMode) {
@@ -288,16 +277,12 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
     }
   };
 
-  const getAvailableSubjects = (): AugmentedTeachingAssignment[] => {
-    if (!allTeachingAssignments || !formData.academic_period_id) return [];
-  
-    const selectedAcademicPeriod = academicPeriods.find(
-      (period) => period._id === formData.academic_period_id
+  const getAvailableSubjects = () => {
+    if (!teachingSummary || !teachingSummary.teaching_assignments || !formData.academic_period_id) return [];
+    
+    return teachingSummary.teaching_assignments.filter(
+      assignment => assignment.academic_period_id === formData.academic_period_id
     );
-  
-    if (!selectedAcademicPeriod) return [];
-  
-    return allTeachingAssignments.filter(assignment => assignment.class_academic_year === selectedAcademicPeriod.year);
   };
 
   if (!isOpen) return null;
@@ -421,7 +406,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                     >
                       <option value="">Pilih mata pelajaran</option>
                       {getAvailableSubjects().map((assignment) => (
-                        <option key={assignment.teaching_assignment_id} value={assignment.teaching_assignment_id}>
+                        <option key={assignment._id} value={assignment._id}>
                           {assignment.subject_details.name} - Kelas {assignment.class_details.grade_level} {assignment.class_details.expertise_details.abbreviation} {assignment.class_details.name}
                         </option>
                       ))}

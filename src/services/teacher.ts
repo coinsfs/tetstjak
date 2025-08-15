@@ -33,13 +33,9 @@ export interface TeachingClass {
   expertise_details: ExpertiseDetails;
 }
 
-export interface AugmentedTeachingAssignment extends TeachingAssignment {
-  class_academic_year: string;
-  class_details: ClassDetails; // Include class details for display purposes
-}
-
 export interface TeachingSummaryResponse {
   classes: TeachingClass[];
+  teaching_assignments: TeachingAssignment[];
 }
 
 export interface ClassStudent {
