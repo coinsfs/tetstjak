@@ -303,7 +303,10 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
         (teachingClass.assignments || []).map(assignment => ({
           ...assignment,
           _id: assignment.teaching_assignment_id,
-          class_details: teachingClass.class_details || {},
+          class_details: {
+            ...teachingClass.class_details,
+            expertise_details: teachingClass.expertise_details || {}
+          },
           subject_details: { 
             name: assignment.name || 'Unknown Subject', 
             code: assignment.code || 'N/A' 
