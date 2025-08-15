@@ -78,6 +78,16 @@ class QuestionSetService extends BaseService {
   }): Promise<void> {
     await this.post('/question-sets/bulk/group-permissions', payload, token);
   }
+
+  async searchUsers(token: string, query: string): Promise<{
+    _id: string;
+    full_name: string;
+    profile_picture_key: string | null;
+  }[]> {
+    const params = { search: query };
+    const queryString = this.buildQueryParams(params);
+    return this.get(`/question-sets/users/search?${queryString}`, token);
+  }
 }
 
 export const questionSetService = new QuestionSetService();

@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { X, Users, Shield, UserPlus, UserMinus, Check, AlertCircle, Crown, Settings } from 'lucide-react';
+import { X, Users, Shield, UserPlus, UserMinus, Check, AlertCircle, Crown, Settings, Search, Loader } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { questionSetService, QuestionSet, CoordinationAssignment } from '@/services/questionSet';
-import { userService, Teacher } from '@/services/user';
 import { getProfileImageUrl } from '@/constants/config';
 import toast from 'react-hot-toast';
+
+interface SearchedUser {
+  _id: string;
+  full_name: string;
+  profile_picture_key: string | null;
+}
 
 interface QuestionSetPermissionModalProps {
   questionSet: QuestionSet;
@@ -30,11 +35,13 @@ const QuestionSetPermissionModal: React.FC<QuestionSetPermissionModalProps> = ({
 }) => {
   const { token } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [loadingTeachers, setLoadingTeachers] = useState(false);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<SearchedUser[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchResults, setShowSearchResults] = useState(false);
   
   // Individual permission state
-  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedUser, setSelectedUser] = useState<SearchedUser | null>(null);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [selectedAction, setSelectedAction] = useState<'grant' | 'revoke'>('grant');
   
@@ -46,34 +53,67 @@ const QuestionSetPermissionModal: React.FC<QuestionSetPermissionModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetchTeachers();
       resetForm();
     }
   }, [isOpen]);
 
-  const fetchTeachers = async () => {
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery.trim().length >= 2) {
+        performSearch(searchQuery.trim());
+      } else {
+        setSearchResults([]);
+        setShowSearchResults(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const performSearch = async (query: string) => {
     if (!token) return;
 
-    setLoadingTeachers(true);
+    setSearchLoading(true);
     try {
-      const response = await userService.getTeachers(token, { limit: 1000 });
-      setTeachers(response.data || []);
+      const results = await questionSetService.searchUsers(token, query);
+      setSearchResults(results);
+      setShowSearchResults(true);
     } catch (error) {
-      console.error('Error fetching teachers:', error);
-      toast.error('Gagal memuat daftar guru');
+      console.error('Error searching users:', error);
+      toast.error('Gagal mencari guru');
+      setSearchResults([]);
+      setShowSearchResults(false);
     } finally {
-      setLoadingTeachers(false);
+      setSearchLoading(false);
     }
   };
 
   const resetForm = () => {
-    setSelectedUserId('');
+    setSelectedUser(null);
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowSearchResults(false);
     setSelectedPermissions([]);
     setSelectedAction('grant');
     setSelectedCoordinationId('');
     setBulkPermissions([]);
     setBulkAction('grant');
     setApplyToAllTeachers(false);
+  };
+
+  const handleUserSelect = (user: SearchedUser) => {
+    setSelectedUser(user);
+    setSearchQuery(user.full_name);
+    setShowSearchResults(false);
+    setSearchResults([]);
+  };
+
+  const handleClearSelectedUser = () => {
+    setSelectedUser(null);
+    setSearchQuery('');
+    setShowSearchResults(false);
+    setSearchResults([]);
   };
 
   const handlePermissionToggle = (permission: string, isBulk: boolean = false) => {
@@ -95,7 +135,7 @@ const QuestionSetPermissionModal: React.FC<QuestionSetPermissionModalProps> = ({
   const handleSubmitIndividualPermission = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!token || !selectedUserId || selectedPermissions.length === 0) {
+    if (!token || !selectedUser || selectedPermissions.length === 0) {
       toast.error('Pilih guru dan minimal satu izin');
       return;
     }
@@ -105,7 +145,7 @@ const QuestionSetPermissionModal: React.FC<QuestionSetPermissionModalProps> = ({
       await questionSetService.updateQuestionSetPermissions(
         token,
         questionSet._id,
-        selectedUserId,
+        selectedUser._id,
         selectedPermissions,
         selectedAction
       );
@@ -292,25 +332,101 @@ const QuestionSetPermissionModal: React.FC<QuestionSetPermissionModalProps> = ({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Pilih Guru
                   </label>
-                  {loadingTeachers ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-indigo-600 border-t-transparent"></div>
-                    </div>
-                  ) : (
-                    <select
-                      value={selectedUserId}
-                      onChange={(e) => setSelectedUserId(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                      required
-                    >
-                      <option value="">Pilih guru...</option>
-                      {teachers.map((teacher) => (
-                        <option key={teacher._id} value={teacher._id}>
-                          {teacher.profile_details?.full_name || teacher.login_id}
-                        </option>
-                      ))}
-                    </select>
-                  )}
+                  <div className="relative">
+                    {selectedUser ? (
+                      /* Selected User Display */
+                      <div className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                        <div className="flex items-center space-x-3">
+                          {selectedUser.profile_picture_key ? (
+                            <img
+                              src={getProfileImageUrl(selectedUser.profile_picture_key)}
+                              alt={selectedUser.full_name}
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                              <Users className="w-4 h-4 text-gray-500" />
+                            </div>
+                          )}
+                          <span className="text-sm font-medium text-gray-900">
+                            {selectedUser.full_name}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleClearSelectedUser}
+                          className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full transition-colors"
+                          title="Hapus pilihan"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      /* Search Input */
+                      <>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Ketik nama guru..."
+                            className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                          />
+                          {searchLoading && (
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                              <Loader className="w-4 h-4 text-gray-400 animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Search Results Dropdown */}
+                        {showSearchResults && (
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                            {searchResults.length > 0 ? (
+                              <div className="py-1">
+                                {searchResults.map((user) => (
+                                  <button
+                                    key={user._id}
+                                    type="button"
+                                    onClick={() => handleUserSelect(user)}
+                                    className="w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                                  >
+                                    {user.profile_picture_key ? (
+                                      <img
+                                        src={getProfileImageUrl(user.profile_picture_key)}
+                                        alt={user.full_name}
+                                        className="w-8 h-8 rounded-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                        <Users className="w-4 h-4 text-gray-500" />
+                                      </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-gray-900 truncate">
+                                        {user.full_name}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        ID: {user._id.slice(-8)}
+                                      </p>
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                                Tidak ada guru ditemukan
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Ketik minimal 2 karakter untuk mencari guru
+                  </p>
                 </div>
 
                 {/* Action Selection */}
@@ -376,7 +492,7 @@ const QuestionSetPermissionModal: React.FC<QuestionSetPermissionModalProps> = ({
 
               <button
                 type="submit"
-                disabled={loading || !selectedUserId || selectedPermissions.length === 0}
+                disabled={loading || !selectedUser || selectedPermissions.length === 0}
                 className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? (
