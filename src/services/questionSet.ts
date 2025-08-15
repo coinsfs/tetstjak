@@ -29,7 +29,7 @@ class QuestionSetService extends BaseService {
 
   async searchQuestionSets(token: string, query: string, filters?: QuestionSetFilters): Promise<QuestionSetResponse> {
     const params = {
-      q: query,
+      search: query,
       ...filters
     };
     const queryString = this.buildQueryParams(params);
@@ -84,7 +84,7 @@ class QuestionSetService extends BaseService {
     full_name: string;
     profile_picture_key: string | null;
   }[]> {
-    const params = { search: query };
+    const params = { q: query };
     const queryString = this.buildQueryParams(params);
     return this.get(`/question-sets/users/search?${queryString}`, token);
   }
