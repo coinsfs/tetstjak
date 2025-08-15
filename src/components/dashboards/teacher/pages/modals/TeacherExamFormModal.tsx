@@ -334,7 +334,8 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
   // Helper function to safely get class display text
   const getClassDisplayText = (assignment: any) => {
     const classDetails = assignment.class_details || {};
-    const expertiseDetails = classDetails.expertise_details || {};
+    // expertise_details is at assignment level, not nested in class_details
+    const expertiseDetails = assignment.expertise_details || {};
     
     const gradeLevel = classDetails.grade_level || 'N/A';
     const abbreviation = expertiseDetails.abbreviation || 'N/A';
