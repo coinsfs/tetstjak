@@ -298,13 +298,16 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
       // Fallback to teachingClasses if teaching_assignments is empty
       if (!teachingClasses || teachingClasses.length === 0 || !formData.academic_period_id) return [];
       
-      // Extract assignments from teachingClasses
+      // Extract assignments from teachingClasses with safe property access
       const allAssignments = teachingClasses.flatMap(teachingClass => 
-        teachingClass.assignments.map(assignment => ({
+        (teachingClass.assignments || []).map(assignment => ({
           ...assignment,
           _id: assignment.teaching_assignment_id,
-          class_details: teachingClass.class_details,
-          subject_details: { name: assignment.name, code: assignment.code },
+          class_details: teachingClass.class_details || {},
+          subject_details: { 
+            name: assignment.name || 'Unknown Subject', 
+            code: assignment.code || 'N/A' 
+          },
           academic_period_id: formData.academic_period_id // Assume current period
         }))
       );
@@ -314,6 +317,18 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
     return teachingSummary.teaching_assignments.filter(
       assignment => assignment.academic_period_id === formData.academic_period_id
     );
+  };
+
+  // Helper function to safely get class display text
+  const getClassDisplayText = (assignment: any) => {
+    const classDetails = assignment.class_details || {};
+    const expertiseDetails = classDetails.expertise_details || {};
+    
+    const gradeLevel = classDetails.grade_level || 'N/A';
+    const abbreviation = expertiseDetails.abbreviation || 'N/A';
+    const className = classDetails.name || 'N/A';
+    
+    return `Kelas ${gradeLevel} ${abbreviation} ${className}`;
   };
 
   if (!isOpen) return null;
@@ -438,7 +453,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                       <option value="">Pilih mata pelajaran</option>
                       {getAvailableTeachingAssignments().map((assignment) => (
                         <option key={assignment._id || assignment.teaching_assignment_id} value={assignment._id || assignment.teaching_assignment_id}>
-                          {assignment.subject_details.name} - Kelas {assignment.class_details.grade_level} {assignment.class_details.expertise_details.abbreviation} {assignment.class_details.name}
+                          {assignment.subject_details?.name || 'Unknown Subject'} - {getClassDisplayText(assignment)}
                         </option>
                       ))}
                     </select>
