@@ -55,7 +55,7 @@ src/components/dashboards/teacher/pages/TeacherAnalyticsPage.tsx
 
 
 
-src/components/dashboards/teacher/pages/modals/TeacherQuestionFormModal.tsx
+
 src/components/dashboards/teacher/pages/modals/TeacherQuestionDetailModal.tsx
 src/components/dashboards/teacher/TeacherDepartmentInfo.tsx
 src/components/dashboards/teacher/TeacherHeader.tsx
