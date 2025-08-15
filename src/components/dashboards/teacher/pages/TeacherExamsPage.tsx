@@ -539,6 +539,9 @@ const TeacherExamsPage: React.FC = () => {
           teachingClasses={teachingClasses}
           currentUserId={user?._id || ''}
           activeAcademicPeriod={activeAcademicPeriod}
+          teachingClasses={teachingClasses}
+          currentUserId={user?._id || ''}
+          activeAcademicPeriod={activeAcademicPeriod}
         />
       )}
 

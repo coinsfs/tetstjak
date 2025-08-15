@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, Users, Settings, Save, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { TeachingClass } from '@/services/teacher';
 import { teacherExamService, CreateTeacherExamRequest, UpdateTeacherExamRequest, TeacherExam, BasicTeacher, AcademicPeriod } from '@/services/teacherExam';
 import { teacherService, TeachingSummaryResponse } from '@/services/teacher';
 import { convertWIBToUTC, convertUTCToWIB, getCurrentWIBDateTime, validateTimeRange } from '@/utils/timezone';
@@ -10,6 +11,11 @@ interface TeacherExamFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  teachingClasses: TeachingClass[];
+  currentUserId: string;
+  activeAcademicPeriod: {
+    _id: string;
+  } | null;
   examId?: string;
 }
 
@@ -17,6 +23,9 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  teachingClasses,
+  currentUserId,
+  activeAcademicPeriod,
   examId
 }) => {
   const { token } = useAuth();
@@ -68,7 +77,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
 
       // Set default academic period to active one
       const activePeriod = periodsResponse.find(p => p.is_active);
-      if (activePeriod && !isEditMode) {
+      if ((activePeriod || activeAcademicPeriod) && !isEditMode) {
         setFormData(prev => ({
           ...prev,
           academic_period_id: activePeriod._id
@@ -277,8 +286,23 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
     }
   };
 
-  const getAvailableSubjects = () => {
-    if (!teachingSummary || !teachingSummary.teaching_assignments || !formData.academic_period_id) return [];
+  const getAvailableTeachingAssignments = () => {
+    if (!teachingSummary || !teachingSummary.teaching_assignments || !formData.academic_period_id) {
+      // Fallback to teachingClasses if teaching_assignments is empty
+      if (!teachingClasses || teachingClasses.length === 0 || !formData.academic_period_id) return [];
+      
+      // Extract assignments from teachingClasses
+      const allAssignments = teachingClasses.flatMap(teachingClass => 
+        teachingClass.assignments.map(assignment => ({
+          ...assignment,
+          _id: assignment.teaching_assignment_id,
+          class_details: teachingClass.class_details,
+          subject_details: { name: assignment.name, code: assignment.code },
+          academic_period_id: formData.academic_period_id // Assume current period
+        }))
+      );
+      return allAssignments;
+    }
     
     return teachingSummary.teaching_assignments.filter(
       assignment => assignment.academic_period_id === formData.academic_period_id
@@ -405,8 +429,8 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
                       required
                     >
                       <option value="">Pilih mata pelajaran</option>
-                      {getAvailableSubjects().map((assignment) => (
-                        <option key={assignment._id} value={assignment._id}>
+                      {getAvailableTeachingAssignments().map((assignment) => (
+                        <option key={assignment._id || assignment.teaching_assignment_id} value={assignment._id || assignment.teaching_assignment_id}>
                           {assignment.subject_details.name} - Kelas {assignment.class_details.grade_level} {assignment.class_details.expertise_details.abbreviation} {assignment.class_details.name}
                         </option>
                       ))}
