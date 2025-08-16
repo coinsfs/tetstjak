@@ -40,16 +40,25 @@ const TeacherQuestionSetsPage: React.FC = () => {
   const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [selectedQuestionSet, setSelectedQuestionSet] = useState<QuestionSet | null>(null);
 
+  // Prevent multiple API calls with ref to track if initial fetch is done
+  const [initialFetchDone, setInitialFetchDone] = useState(false);
+  const [filtersInitialized, setFiltersInitialized] = useState(false);
+
   useEffect(() => {
     fetchInitialData();
   }, []);
 
+  // Only fetch question sets after initial data is loaded and filters are initialized
   useEffect(() => {
-    fetchQuestionSets();
-  }, [filters]);
+    if (initialFetchDone && filtersInitialized) {
+      fetchQuestionSets();
+    }
+  }, [filters, initialFetchDone, filtersInitialized]);
 
-  // Debounced search
+  // Debounced search - only update filters after user stops typing
   useEffect(() => {
+    if (!filtersInitialized) return;
+
     const timer = setTimeout(() => {
       if (searchQuery !== filters.search) {
         setFilters(prev => ({
@@ -61,7 +70,7 @@ const TeacherQuestionSetsPage: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, filters.search]);
+  }, [searchQuery, filters.search, filtersInitialized]);
 
   const fetchInitialData = async () => {
     if (!token) return;
@@ -70,9 +79,16 @@ const TeacherQuestionSetsPage: React.FC = () => {
       // Fetch user's coordinations to determine if they can create question sets
       const coordinations = await questionSetService.getMyCoordinations(token);
       setMyCoordinations(coordinations);
+      setInitialFetchDone(true);
+      
+      // Initialize filters after getting coordinations
+      setTimeout(() => {
+        setFiltersInitialized(true);
+      }, 0);
     } catch (error) {
       console.error('Error fetching initial data:', error);
-      // Don't show error toast for coordinations as it's optional
+      setInitialFetchDone(true);
+      setFiltersInitialized(true);
     }
   };
 
@@ -420,10 +436,10 @@ const TeacherQuestionSetsPage: React.FC = () => {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Mata Pelajaran
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                       Kelas
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                       Soal
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -432,7 +448,7 @@ const TeacherQuestionSetsPage: React.FC = () => {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Pembuat
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                       Tanggal
                     </th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -501,8 +517,8 @@ const TeacherQuestionSetsPage: React.FC = () => {
                           </div>
                         </td>
 
-                        {/* Kelas */}
-                        <td className="px-4 py-3">
+                        {/* Kelas - Fixed with whitespace-nowrap */}
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex items-center space-x-2">
                             <Users className="w-4 h-4 text-gray-400 flex-shrink-0" />
                             <span className="text-sm text-gray-900">
@@ -511,8 +527,8 @@ const TeacherQuestionSetsPage: React.FC = () => {
                           </div>
                         </td>
 
-                        {/* Soal */}
-                        <td className="px-4 py-3">
+                        {/* Soal - Fixed with whitespace-nowrap */}
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <div className="text-sm">
                             <div className="font-medium text-gray-900">
                               {questionSet.metadata.total_questions} soal
@@ -521,7 +537,7 @@ const TeacherQuestionSetsPage: React.FC = () => {
                               {questionSet.metadata.total_points} poin
                             </div>
                             {questionSet.metadata.total_questions > 0 && (
-                              <div className="flex space-x-1 mt-1">
+                              <div className="flex space-x-1 mt-1 w-20">
                                 <div 
                                   className="bg-green-200 h-1.5 rounded-l"
                                   style={{ 
@@ -578,8 +594,8 @@ const TeacherQuestionSetsPage: React.FC = () => {
                           </div>
                         </td>
 
-                        {/* Tanggal */}
-                        <td className="px-4 py-3">
+                        {/* Tanggal - Fixed with whitespace-nowrap */}
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex items-center space-x-1 text-xs text-gray-500">
                             <Calendar className="w-3 h-3 flex-shrink-0" />
                             <span>{formatDate(questionSet.created_at)}</span>
