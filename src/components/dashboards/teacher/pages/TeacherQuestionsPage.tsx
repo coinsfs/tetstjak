@@ -397,7 +397,7 @@ const TeacherQuestionsPage: React.FC = () => {
         />
 
         {/* Content Area */}
-        <div className="p-6">
+        <div>
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="flex items-center space-x-2">
