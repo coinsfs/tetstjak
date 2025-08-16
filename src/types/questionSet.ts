@@ -61,6 +61,12 @@ export interface QuestionSet extends BaseEntity {
   question_ids?: string[];
   permission_holders?: QuestionSetPermissionHolders;
   current_user_permissions?: QuestionSetCurrentUserPermissions;
+  can_delete?: boolean;
+  can_duplicate?: boolean;
+  is_used_in_exams?: boolean;
+  total_exams_using?: number;
+  group_info?: any;
+  access_reason?: string;
 }
 
 export interface QuestionSetResponse extends PaginationResponse {
@@ -72,6 +78,7 @@ export interface QuestionSetFilters extends SearchFilters, PaginationParams {
   subject_id?: string;
   status?: string;
   is_public?: boolean;
+  created_by?: string;
 }
 
 export interface CreateQuestionSetRequest {

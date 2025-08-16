@@ -88,6 +88,15 @@ class QuestionSetService extends BaseService {
     const queryString = this.buildQueryParams(params);
     return this.get(`/question-sets/users/search?${queryString}`, token);
   }
+
+  async getQuestionSetQuestions(token: string, questionSetId: string): Promise<{
+    question_set_id: string;
+    question_set_name: string;
+    total_questions: number;
+    question_ids: string[];
+  }> {
+    return this.get(`/question-sets/${questionSetId}/questions`, token);
+  }
 }
 
 export const questionSetService = new QuestionSetService();
