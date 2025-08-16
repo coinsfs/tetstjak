@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HelpCircle, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { questionBankService, Question } from '@/services/questionBank';
@@ -42,7 +42,6 @@ const TeacherQuestionsPage: React.FC = () => {
   const [teachingClasses, setTeachingClasses] = useState<TeachingClass[]>([]);
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [activeAcademicPeriod, setActiveAcademicPeriod] = useState<AcademicPeriod | null>(null);
-  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
   
   // Selection state for creating question sets
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
@@ -75,9 +74,16 @@ const TeacherQuestionsPage: React.FC = () => {
   const [selectedSubmission, setSelectedSubmission] = useState<QuestionSubmission | null>(null);
   const [showSubmitQuestionsModal, setShowSubmitQuestionsModal] = useState(false);
 
-  // Fetch initial data only once
-  const fetchInitialData = useCallback(async () => {
-    if (!token || initialDataLoaded) return;
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  useEffect(() => {
+    fetchQuestions();
+  }, [filters, questionSource]);
+
+  const fetchInitialData = async () => {
+    if (!token) return;
 
     try {
       const teachingData = await teacherService.getTeachingSummary(token);
@@ -98,17 +104,14 @@ const TeacherQuestionsPage: React.FC = () => {
           academic_period_id: activePeriod._id
         }));
       }
-      
-      setInitialDataLoaded(true);
     } catch (error) {
       console.error('Error fetching initial data:', error);
       toast.error('Gagal memuat data awal');
     }
-  }, [token, initialDataLoaded]);
+  };
 
-  // Fetch questions with proper dependency management
-  const fetchQuestions = useCallback(async () => {
-    if (!token || !initialDataLoaded) return;
+  const fetchQuestions = async () => {
+    if (!token) return;
 
     setLoading(true);
     try {
@@ -182,19 +185,7 @@ const TeacherQuestionsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [token, initialDataLoaded, questionSource, filters]);
-
-  // Initial data fetch
-  useEffect(() => {
-    fetchInitialData();
-  }, [fetchInitialData]);
-
-  // Questions fetch - only when initial data is loaded and filters change
-  useEffect(() => {
-    if (initialDataLoaded) {
-      fetchQuestions();
-    }
-  }, [fetchQuestions]);
+  };
 
   const handleFilterChange = (key: keyof QuestionFilters, value: any) => {
     setFilters(prev => ({
@@ -356,6 +347,29 @@ const TeacherQuestionsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Original Header - now simplified */}
+      <div className="bg-white rounded-xl shadow-sm p-6" style={{ display: 'none' }}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center">
+              <HelpCircle className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Bank Soal</h1>
+              <p className="text-gray-600">Kelola dan tinjau soal pembelajaran</p>
+            </div>
+          </div>
+          
+          <button
+            onClick={handleCreateQuestion}
+            className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Buat Soal Baru</span>
+          </button>
+        </div>
+      </div>
 
       {/* Question Source Toggle */}
       <QuestionSourceToggle
