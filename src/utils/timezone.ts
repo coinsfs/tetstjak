@@ -8,6 +8,7 @@ export const WIB_OFFSET = 7; // UTC+7
  */
 export const convertWIBToUTC = (wibDatetime: string): string => {
   if (!wibDatetime) return '';
+  console.log(wibDatetime)
   
   // Tambahkan timezone offset WIB (+07:00) ke datetime string
   // Ini memberitahu browser bahwa waktu ini adalah WIB, bukan waktu lokal browser
@@ -15,6 +16,7 @@ export const convertWIBToUTC = (wibDatetime: string): string => {
   
   // Parse sebagai Date object dengan timezone WIB yang eksplisit
   const wibDate = new Date(wibWithTimezone);
+  print(wibDate.toISOString)
   
   // toISOString() akan mengkonversi ke UTC
   return wibDate.toISOString();
