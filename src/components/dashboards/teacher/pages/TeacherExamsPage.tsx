@@ -197,61 +197,61 @@ const TeacherExamsPage: React.FC = () => {
   };
 
   const getActionButtons = (exam: TeacherExam) => {
-    const { status } = exam;
-    const buttons = [];
+  const { status } = exam;
+  const buttons = [];
 
-    // Input Questions Button - Always available for pending_questions and ready status
-    if (status === 'pending_questions' || status === 'ready') {
-      buttons.push(
-        <button
-          key="input-questions"
-          onClick={() => handleInputQuestions(exam)}
-          className="flex items-center space-x-1 px-2 py-1.5 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-xs whitespace-nowrap"
-        >
-          <HelpCircle className="w-3 h-3" />
-          <span>Input Soal</span>
-        </button>
-      );
-    }
-    
-    // Start/Monitor/Analytics Button - Based on status
-    if (status === 'ready') {
-      buttons.push(
-        <button
-          key="start"
-          onClick={() => handleStartExam(exam)}
-          className="flex items-center space-x-1 px-2 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs whitespace-nowrap"
-        >
-          <Play className="w-3 h-3" />
-          <span>Mulai</span>
-        </button>
-      );
-    } else if (status === 'ongoing') {
-      buttons.push(
-        <button
-          key="monitor"
-          onClick={() => handleMonitorExam(exam)}
-          className="flex items-center space-x-1 px-2 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs whitespace-nowrap"
-        >
-          <Eye className="w-3 h-3" />
-          <span>Monitoring</span>
-        </button>
-      );
-    } else if (status === 'completed') {
-      buttons.push(
-        <button
-          key="analytics"
-          onClick={() => handleAnalyticsExam(exam)}
-          className="flex items-center space-x-1 px-2 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-xs whitespace-nowrap"
-        >
-          <BarChart3 className="w-3 h-3" />
-          <span>Analitik</span>
-        </button>
-      );
-    }
+  // Start/Monitor/Analytics Button - Based on status (MOVED TO FIRST)
+  if (status === 'ready') {
+    buttons.push(
+      <button
+        key="start"
+        onClick={() => handleStartExam(exam)}
+        className="flex items-center space-x-1 px-2 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs whitespace-nowrap"
+      >
+        <Play className="w-3 h-3" />
+        <span>Mulai</span>
+      </button>
+    );
+  } else if (status === 'ongoing') {
+    buttons.push(
+      <button
+        key="monitor"
+        onClick={() => handleMonitorExam(exam)}
+        className="flex items-center space-x-1 px-2 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs whitespace-nowrap"
+      >
+        <Eye className="w-3 h-3" />
+        <span>Monitoring</span>
+      </button>
+    );
+  } else if (status === 'completed') {
+    buttons.push(
+      <button
+        key="analytics"
+        onClick={() => handleAnalyticsExam(exam)}
+        className="flex items-center space-x-1 px-2 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-xs whitespace-nowrap"
+      >
+        <BarChart3 className="w-3 h-3" />
+        <span>Analitik</span>
+      </button>
+    );
+  }
 
-    return buttons;
-  };
+  // Input Questions Button - Always available for pending_questions and ready status (MOVED TO SECOND)
+  if (status === 'pending_questions' || status === 'ready') {
+    buttons.push(
+      <button
+        key="input-questions"
+        onClick={() => handleInputQuestions(exam)}
+        className="flex items-center space-x-1 px-2 py-1.5 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-xs whitespace-nowrap"
+      >
+        <HelpCircle className="w-3 h-3" />
+        <span>Input Soal</span>
+      </button>
+    );
+  }
+
+  return buttons;
+};
 
   const formatDateTime = (dateString: string) => {
     return formatDateTimeWithTimezone(dateString);
