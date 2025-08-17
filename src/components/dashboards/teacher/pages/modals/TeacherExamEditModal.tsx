@@ -9,6 +9,33 @@ import {
 } from '@/services/teacherExam';
 import toast from 'react-hot-toast';
 
+// Helper functions untuk format waktu WIB
+const formatUTCToWIBInput = (utcDatetime: string): string => {
+  if (!utcDatetime) return '';
+  
+  // Parse UTC datetime dan konversi ke WIB (UTC+7)
+  const utcDate = new Date(utcDatetime);
+  const wibDate = new Date(utcDate.getTime() + (7 * 60 * 60 * 1000)); // Add 7 hours for WIB
+  
+  const year = wibDate.getFullYear();
+  const month = String(wibDate.getMonth() + 1).padStart(2, '0');
+  const day = String(wibDate.getDate()).padStart(2, '0');
+  const hours = String(wibDate.getHours()).padStart(2, '0');
+  const minutes = String(wibDate.getMinutes()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+const formatWIBToUTC = (wibDatetime: string): string => {
+  if (!wibDatetime) return '';
+  
+  // Parse WIB datetime dan konversi ke UTC
+  const wibDate = new Date(wibDatetime);
+  const utcDate = new Date(wibDate.getTime() - (7 * 60 * 60 * 1000)); // Subtract 7 hours for UTC
+  
+  return utcDate.toISOString();
+};
+
 interface TeacherExamEditModalProps {
   exam: TeacherExam;
   isOpen: boolean;
@@ -31,8 +58,8 @@ const TeacherExamEditModal: React.FC<TeacherExamEditModalProps> = ({
     title: exam.title,
     exam_type: exam.exam_type,
     duration_minutes: exam.duration_minutes,
-    availability_start_time: exam.availability_start_time,
-    availability_end_time: exam.availability_end_time,
+    availability_start_time: formatUTCToWIBInput(exam.availability_start_time),
+    availability_end_time: formatUTCToWIBInput(exam.availability_end_time),
     status: exam.status,
     settings: {
       shuffle_questions: exam.settings.shuffle_questions,
@@ -117,7 +144,13 @@ const TeacherExamEditModal: React.FC<TeacherExamEditModalProps> = ({
 
     setLoading(true);
     try {
-      await teacherExamService.updateTeacherExam(token, exam._id, formData);
+      const updateData = {
+        ...formData,
+        availability_start_time: formatWIBToUTC(formData.availability_start_time),
+        availability_end_time: formatWIBToUTC(formData.availability_end_time)
+      };
+      
+      await teacherExamService.updateTeacherExam(token, exam._id, updateData);
       toast.success('Ujian berhasil diperbarui');
       onSuccess();
     } catch (error) {
@@ -127,16 +160,6 @@ const TeacherExamEditModal: React.FC<TeacherExamEditModalProps> = ({
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatDateTimeLocal = (dateString: string) => {
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
   const getExamTypeLabel = (examType: string) => {
@@ -269,11 +292,12 @@ const TeacherExamEditModal: React.FC<TeacherExamEditModalProps> = ({
                 </label>
                 <input
                   type="datetime-local"
-                  value={formatDateTimeLocal(formData.availability_start_time)}
-                  onChange={(e) => handleInputChange('availability_start_time', new Date(e.target.value).toISOString())}
+                  value={formData.availability_start_time}
+                  onChange={(e) => handleInputChange('availability_start_time', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm"
                   required
                 />
+                <div className="text-xs text-gray-500 mt-1">Waktu dalam zona WIB (UTC+7)</div>
               </div>
 
               <div>
@@ -282,11 +306,12 @@ const TeacherExamEditModal: React.FC<TeacherExamEditModalProps> = ({
                 </label>
                 <input
                   type="datetime-local"
-                  value={formatDateTimeLocal(formData.availability_end_time)}
-                  onChange={(e) => handleInputChange('availability_end_time', new Date(e.target.value).toISOString())}
+                  value={formData.availability_end_time}
+                  onChange={(e) => handleInputChange('availability_end_time', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm"
                   required
                 />
+                <div className="text-xs text-gray-500 mt-1">Waktu dalam zona WIB (UTC+7)</div>
               </div>
             </div>
           </div>
