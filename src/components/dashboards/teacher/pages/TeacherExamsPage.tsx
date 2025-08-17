@@ -463,7 +463,7 @@ const TeacherExamsPage: React.FC = () => {
                     
                     {/* Aksi */}
                     <td className="px-6 py-4 whitespace-nowrap text-center text-right">
-                      <div className="flex items-center justify-center space-x-2">
+                      <div className="flex items-center justify-end space-x-2">
                         {/* Action Buttons */}
                         {getActionButtons(exam).map((button, index) => (
                           <React.Fragment key={index}>
