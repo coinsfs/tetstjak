@@ -9,15 +9,21 @@ export const WIB_OFFSET = 7; // UTC+7
 export const convertWIBToUTC = (wibDatetime: string): string => {
   if (!wibDatetime) return '';
   
+  console.log('🔄 convertWIBToUTC - Input WIB:', wibDatetime);
+  
   // Tambahkan timezone offset WIB (+07:00) ke datetime string
   // Ini memberitahu browser bahwa waktu ini adalah WIB, bukan waktu lokal browser
   const wibWithTimezone = wibDatetime + '+07:00';
+  
+  console.log('🔧 convertWIBToUTC - WIB with timezone:', wibWithTimezone);
   
   // Parse sebagai Date object dengan timezone WIB yang eksplisit
   const wibDate = new Date(wibWithTimezone);
   
   // toISOString() akan mengkonversi ke UTC
-  return wibDate.toISOString();
+  const result = wibDate.toISOString();
+  console.log('✅ convertWIBToUTC - Output UTC:', result);
+  return result;
 };
 
 /**
@@ -27,14 +33,25 @@ export const convertWIBToUTC = (wibDatetime: string): string => {
  */
 export const convertUTCToWIB = (utcDatetime: string): string => {
   if (!utcDatetime) return '';
-  console.log(utcDatetime);
+  
+  console.log('🔄 convertUTCToWIB - Input UTC:', utcDatetime);
   
   try {
-    const utcDate = new Date(utcDatetime);
+    // Ensure the UTC datetime string is properly formatted as UTC
+    // If it doesn't end with 'Z', append it to explicitly mark as UTC
+    let utcString = utcDatetime;
+    if (!utcString.endsWith('Z') && !utcString.includes('+') && !utcString.includes('-', 10)) {
+      // If it's a simple ISO string without timezone info, append 'Z' to mark as UTC
+      utcString = utcDatetime + 'Z';
+    }
+    
+    console.log('🔧 convertUTCToWIB - Processed UTC string:', utcString);
+    
+    const utcDate = new Date(utcString);
     
     // Validasi apakah date valid
     if (isNaN(utcDate.getTime())) {
-      console.error('Invalid date:', utcDatetime);
+      console.error('❌ convertUTCToWIB - Invalid date:', utcDatetime);
       return '';
     }
     
@@ -45,10 +62,11 @@ export const convertUTCToWIB = (utcDatetime: string): string => {
     
     // sv-SE locale menghasilkan format YYYY-MM-DD HH:mm:ss
     // Ambil bagian YYYY-MM-DD HH:mm saja dan ganti spasi dengan T
-    console.log(wibString.substring(0, 16).replace(' '), 'T');
-    return wibString.substring(0, 16).replace(' ', 'T');
+    const result = wibString.substring(0, 16).replace(' ', 'T');
+    console.log('✅ convertUTCToWIB - Output WIB:', result);
+    return result;
   } catch (error) {
-    console.error('Error converting UTC to WIB:', error, utcDatetime);
+    console.error('❌ convertUTCToWIB - Error converting UTC to WIB:', error, utcDatetime);
     return '';
   }
 };
