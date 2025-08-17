@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, FileText, Calendar, Settings, AlertTriangle, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { convertUTCToWIB, convertWIBToUTC } from '@/utils/timezone';
 import { 
   teacherExamService, 
   TeacherExam,
@@ -8,33 +9,6 @@ import {
   BasicTeacher
 } from '@/services/teacherExam';
 import toast from 'react-hot-toast';
-
-// Helper functions untuk format waktu WIB
-const formatUTCToWIBInput = (utcDatetime: string): string => {
-  if (!utcDatetime) return '';
-  
-  // Parse UTC datetime dan konversi ke WIB (UTC+7)
-  const utcDate = new Date(utcDatetime);
-  const wibDate = new Date(utcDate.getTime() + (7 * 60 * 60 * 1000)); // Add 7 hours for WIB
-  
-  const year = wibDate.getFullYear();
-  const month = String(wibDate.getMonth() + 1).padStart(2, '0');
-  const day = String(wibDate.getDate()).padStart(2, '0');
-  const hours = String(wibDate.getHours()).padStart(2, '0');
-  const minutes = String(wibDate.getMinutes()).padStart(2, '0');
-  
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-};
-
-const formatWIBToUTC = (wibDatetime: string): string => {
-  if (!wibDatetime) return '';
-  
-  // Parse WIB datetime dan konversi ke UTC
-  const wibDate = new Date(wibDatetime);
-  const utcDate = new Date(wibDate.getTime() - (7 * 60 * 60 * 1000)); // Subtract 7 hours for UTC
-  
-  return utcDate.toISOString();
-};
 
 interface TeacherExamEditModalProps {
   exam: TeacherExam;
@@ -58,8 +32,8 @@ const TeacherExamEditModal: React.FC<TeacherExamEditModalProps> = ({
     title: exam.title,
     exam_type: exam.exam_type,
     duration_minutes: exam.duration_minutes,
-    availability_start_time: formatUTCToWIBInput(exam.availability_start_time),
-    availability_end_time: formatUTCToWIBInput(exam.availability_end_time),
+    availability_start_time: convertUTCToWIB(exam.availability_start_time),
+    availability_end_time: convertUTCToWIB(exam.availability_end_time),
     status: exam.status,
     settings: {
       shuffle_questions: exam.settings.shuffle_questions,
@@ -146,8 +120,8 @@ const TeacherExamEditModal: React.FC<TeacherExamEditModalProps> = ({
     try {
       const updateData = {
         ...formData,
-        availability_start_time: formatWIBToUTC(formData.availability_start_time),
-        availability_end_time: formatWIBToUTC(formData.availability_end_time)
+        availability_start_time: convertWIBToUTC(formData.availability_start_time),
+        availability_end_time: convertWIBToUTC(formData.availability_end_time)
       };
       
       await teacherExamService.updateTeacherExam(token, exam._id, updateData);

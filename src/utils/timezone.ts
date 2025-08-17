@@ -3,23 +3,27 @@ export const WIB_OFFSET = 7; // UTC+7
 
 /**
  * Konversi datetime dari WIB ke UTC
- * @param wibDatetime - datetime dalam format WIB (naive datetime)
+ * @param wibDatetime - datetime dalam format WIB (naive datetime dari datetime-local input)
  * @returns datetime dalam format UTC ISO string
  */
 export const convertWIBToUTC = (wibDatetime: string): string => {
   if (!wibDatetime) return '';
   
-  // Parse datetime - browser akan menginterpretasi sebagai waktu lokal
-  const wibDate = new Date(wibDatetime);
+  // Tambahkan timezone offset WIB (+07:00) ke datetime string
+  // Ini memberitahu browser bahwa waktu ini adalah WIB, bukan waktu lokal browser
+  const wibWithTimezone = wibDatetime + '+07:00';
   
-  // toISOString() otomatis mengkonversi ke UTC
+  // Parse sebagai Date object dengan timezone WIB yang eksplisit
+  const wibDate = new Date(wibWithTimezone);
+  
+  // toISOString() akan mengkonversi ke UTC
   return wibDate.toISOString();
 };
 
 /**
- * Konversi datetime dari UTC ke WIB untuk display
+ * Konversi datetime dari UTC ke WIB untuk display di datetime-local input
  * @param utcDatetime - datetime dalam format UTC ISO string
- * @returns datetime dalam format WIB untuk input datetime-local
+ * @returns datetime dalam format naive local time untuk datetime-local input
  */
 export const convertUTCToWIB = (utcDatetime: string): string => {
   if (!utcDatetime) return '';
@@ -27,12 +31,25 @@ export const convertUTCToWIB = (utcDatetime: string): string => {
   // Parse UTC datetime
   const utcDate = new Date(utcDatetime);
   
-  // Untuk input datetime-local, kita perlu mendapatkan waktu lokal
-  // Gunakan offset timezone browser untuk konversi yang akurat
-  const timezoneOffset = utcDate.getTimezoneOffset() * 60 * 1000;
-  const localDate = new Date(utcDate.getTime() - timezoneOffset);
+  // Gunakan Intl.DateTimeFormat untuk mendapatkan komponen waktu dalam WIB
+  const wibFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23'
+  });
   
-  return formatDateTimeLocal(localDate);
+  const parts = wibFormatter.formatToParts(utcDate);
+  const partsMap = parts.reduce((acc, part) => {
+    acc[part.type] = part.value;
+    return acc;
+  }, {} as Record<string, string>);
+  
+  // Format sebagai YYYY-MM-DDTHH:mm untuk datetime-local input
+  return `${partsMap.year}-${partsMap.month}-${partsMap.day}T${partsMap.hour}:${partsMap.minute}`;
 };
 
 /**
@@ -56,8 +73,9 @@ export const formatDateTimeLocal = (date: Date): string => {
  */
 export const getCurrentWIBDateTime = (): string => {
   const now = new Date();
-  // Gunakan waktu lokal langsung untuk datetime-local input
-  return formatDateTimeLocal(now);
+  
+  // Gunakan convertUTCToWIB untuk konsistensi
+  return convertUTCToWIB(now.toISOString());
 };
 
 /**
@@ -90,8 +108,12 @@ export const formatDateTimeWithTimezone = (utcDatetime: string): string => {
 export const validateTimeRange = (startTimeWIB: string, endTimeWIB: string): boolean => {
   if (!startTimeWIB || !endTimeWIB) return false;
   
-  const startDate = new Date(startTimeWIB);
-  const endDate = new Date(endTimeWIB);
+  // Konversi ke UTC untuk perbandingan yang akurat
+  const startUTC = convertWIBToUTC(startTimeWIB);
+  const endUTC = convertWIBToUTC(endTimeWIB);
+  
+  const startDate = new Date(startUTC);
+  const endDate = new Date(endUTC);
   
   return endDate > startDate;
 };
