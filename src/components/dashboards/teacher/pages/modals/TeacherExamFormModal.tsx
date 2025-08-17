@@ -318,8 +318,7 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
       onSuccess();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : `Gagal ${isEditMode ? 'memperbarui' : 'membuat'} ujian`;
-          availability_start_time: formatWIBToUTC(formData.availability_start_time),
-          availability_end_time: formatWIBToUTC(formData.availability_end_time),
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
