@@ -197,62 +197,63 @@ const TeacherExamsPage: React.FC = () => {
   };
 
   const getActionButtons = (exam: TeacherExam) => {
-  const { status } = exam;
-  const buttons = [];
+    const { status } = exam;
+    const buttons = [];
 
-  // Start/Monitor/Analytics Button - Based on status (MOVED TO FIRST)
-  if (status === 'ready') {
-    buttons.push(
-      <button
-        key="start"
-        onClick={() => handleStartExam(exam)}
-        className="flex items-center space-x-1 px-2 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs whitespace-nowrap"
-      >
-        <Play className="w-3 h-3" />
-        <span>Mulai</span>
-      </button>
-    );
-  } else if (status === 'ongoing') {
-    buttons.push(
-      <button
-        key="monitor"
-        onClick={() => handleMonitorExam(exam)}
-        className="flex items-center space-x-1 px-2 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs whitespace-nowrap"
-      >
-        <Eye className="w-3 h-3" />
-        <span>Monitoring</span>
-      </button>
-    );
-  } else if (status === 'completed') {
-    buttons.push(
-      <button
-        key="analytics"
-        onClick={() => handleAnalyticsExam(exam)}
-        className="flex items-center space-x-1 px-2 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-xs whitespace-nowrap"
-      >
-        <BarChart3 className="w-3 h-3" />
-        <span>Analitik</span>
-      </button>
-    );
-  }
+    // Input Questions Button - Always available for pending_questions and ready status
+    if (status === 'pending_questions' || status === 'ready') {
+      buttons.push(
+        <button
+          key="input-questions"
+          onClick={() => handleInputQuestions(exam)}
+          className="flex items-center space-x-1 px-2 py-1.5 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-xs whitespace-nowrap"
+        >
+          <HelpCircle className="w-3 h-3" />
+          <span>Input Soal</span>
+        </button>
+      );
+    }
+    
+    // Start/Monitor/Analytics Button - Based on status
+    if (status === 'ready') {
+      buttons.push(
+        <button
+          key="start"
+          onClick={() => handleStartExam(exam)}
+          className="flex items-center space-x-1 px-2 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs whitespace-nowrap"
+        >
+          <Play className="w-3 h-3" />
+          <span>Mulai</span>
+        </button>
+      );
+    } else if (status === 'ongoing') {
+      buttons.push(
+        <button
+          key="monitor"
+          onClick={() => handleMonitorExam(exam)}
+          className="flex items-center space-x-1 px-2 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs whitespace-nowrap"
+        >
+          <Eye className="w-3 h-3" />
+          <span>Monitoring</span>
+        </button>
+      );
+    } else if (status === 'completed') {
+      buttons.push(
+        <button
+          key="analytics"
+          onClick={() => handleAnalyticsExam(exam)}
+          className="flex items-center space-x-1 px-2 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-xs whitespace-nowrap"
+        >
+          <BarChart3 className="w-3 h-3" />
+          <span>Analitik</span>
+        </button>
+      );
+    }
 
-  // Input Questions Button - Always available for pending_questions and ready status (MOVED TO SECOND)
-  if (status === 'pending_questions' || status === 'ready') {
-    buttons.push(
-      <button
-        key="input-questions"
-        onClick={() => handleInputQuestions(exam)}
-        className="flex items-center space-x-1 px-2 py-1.5 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-xs whitespace-nowrap"
-      >
-        <HelpCircle className="w-3 h-3" />
-        <span>Input Soal</span>
-      </button>
-    );
-  }
+    return buttons;
+  };
 
-  return buttons;
-};
-
+  
   const formatDateTime = (dateString: string) => {
     return formatDateTimeWithTimezone(dateString);
   };
@@ -398,7 +399,7 @@ const TeacherExamsPage: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Soal
                   </th>
-                  <th className="px-6 py-3 right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Aksi
                   </th>
                 </tr>
@@ -407,7 +408,7 @@ const TeacherExamsPage: React.FC = () => {
                 {exams.map((exam) => (
                   <tr key={exam._id} className="hover:bg-gray-50">
                     {/* Ujian */}
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="max-w-xs">
                         <div className="text-sm font-medium text-gray-900 truncate">
                           {exam.title}
