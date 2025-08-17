@@ -45,7 +45,7 @@ export const convertUTCToWIB = (utcDatetime: string): string => {
     
     // sv-SE locale menghasilkan format YYYY-MM-DD HH:mm:ss
     // Ambil bagian YYYY-MM-DD HH:mm saja dan ganti spasi dengan T
-    print(wibString.substring(0, 16).replace(' '), 'T');
+    console.log(wibString.substring(0, 16).replace(' '), 'T');
     return wibString.substring(0, 16).replace(' ', 'T');
   } catch (error) {
     console.error('Error converting UTC to WIB:', error, utcDatetime);
