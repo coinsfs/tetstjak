@@ -407,7 +407,7 @@ const TeacherExamsPage: React.FC = () => {
                 {exams.map((exam) => (
                   <tr key={exam._id} className="hover:bg-gray-50">
                     {/* Ujian */}
-                    <td className="px-6 py-4 whitespace-nowrap text-end">
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="max-w-xs">
                         <div className="text-sm font-medium text-gray-900 truncate">
                           {exam.title}
