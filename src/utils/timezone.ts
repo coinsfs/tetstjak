@@ -28,28 +28,27 @@ export const convertWIBToUTC = (wibDatetime: string): string => {
 export const convertUTCToWIB = (utcDatetime: string): string => {
   if (!utcDatetime) return '';
   
-  // Parse UTC datetime
-  const utcDate = new Date(utcDatetime);
-  
-  // Gunakan Intl.DateTimeFormat untuk mendapatkan komponen waktu dalam WIB
-  const wibFormatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Jakarta',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23'
-  });
-  
-  const parts = wibFormatter.formatToParts(utcDate);
-  const partsMap = parts.reduce((acc, part) => {
-    acc[part.type] = part.value;
-    return acc;
-  }, {} as Record<string, string>);
-  
-  // Format sebagai YYYY-MM-DDTHH:mm untuk datetime-local input
-  return `${partsMap.year}-${partsMap.month}-${partsMap.day}T${partsMap.hour}:${partsMap.minute}`;
+  try {
+    const utcDate = new Date(utcDatetime);
+    
+    // Validasi apakah date valid
+    if (isNaN(utcDate.getTime())) {
+      console.error('Invalid date:', utcDatetime);
+      return '';
+    }
+    
+    // Gunakan toLocaleString dengan timezone Jakarta
+    const wibString = utcDate.toLocaleString('sv-SE', {
+      timeZone: 'Asia/Jakarta'
+    });
+    
+    // sv-SE locale menghasilkan format YYYY-MM-DD HH:mm:ss
+    // Ambil bagian YYYY-MM-DD HH:mm saja dan ganti spasi dengan T
+    return wibString.substring(0, 16).replace(' ', 'T');
+  } catch (error) {
+    console.error('Error converting UTC to WIB:', error, utcDatetime);
+    return '';
+  }
 };
 
 /**
