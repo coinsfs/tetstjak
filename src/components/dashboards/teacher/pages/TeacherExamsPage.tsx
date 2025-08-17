@@ -462,7 +462,7 @@ const TeacherExamsPage: React.FC = () => {
                     </td>
                     
                     {/* Aksi */}
-                    <td className="px-6 py-4 whitespace-nowrap text-center text-end">
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-right">
                       <div className="flex items-center justify-center space-x-2">
                         {/* Action Buttons */}
                         {getActionButtons(exam).map((button, index) => (
