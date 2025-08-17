@@ -6,37 +6,6 @@ import { teacherExamService, CreateTeacherExamRequest, UpdateTeacherExamRequest,
 import { teacherService, TeachingSummaryResponse } from '@/services/teacher';
 import { convertWIBToUTC, convertUTCToWIB, getCurrentWIBDateTime, validateTimeRange } from '@/utils/timezone';
 
-// Helper functions untuk format waktu WIB
-const formatDateTimeLocalWIB = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-};
-
-const formatUTCToWIBInput = (utcDatetime: string): string => {
-  if (!utcDatetime) return '';
-  
-  // Parse UTC datetime dan konversi ke WIB (UTC+7)
-  const utcDate = new Date(utcDatetime);
-  const wibDate = new Date(utcDate.getTime() + (7 * 60 * 60 * 1000)); // Add 7 hours for WIB
-  
-  return formatDateTimeLocalWIB(wibDate);
-};
-
-const formatWIBToUTC = (wibDatetime: string): string => {
-  if (!wibDatetime) return '';
-  
-  // Parse WIB datetime dan konversi ke UTC
-  const wibDate = new Date(wibDatetime);
-  const utcDate = new Date(wibDate.getTime() - (7 * 60 * 60 * 1000)); // Subtract 7 hours for UTC
-  
-  return utcDate.toISOString();
-};
-
 import toast from 'react-hot-toast';
 
 interface TeacherExamFormModalProps {
@@ -154,8 +123,8 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
       title: examData.title,
       exam_type: examData.exam_type as any,
       duration_minutes: examData.duration_minutes,
-      availability_start_time: formatUTCToWIBInput(examData.availability_start_time),
-      availability_end_time: formatUTCToWIBInput(examData.availability_end_time),
+      availability_start_time: convertUTCToWIB(examData.availability_start_time),
+      availability_end_time: convertUTCToWIB(examData.availability_end_time),
       status: examData.status as any,
       academic_period_id: examData.academic_period_id,
       teaching_assignment_id: examData.teaching_assignment_id,
@@ -170,10 +139,10 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
   };
 
   const resetForm = () => {
+    const nowFormatted = getCurrentWIBDateTime();
     const now = new Date();
-    const nowFormatted = formatDateTimeLocalWIB(now);
     const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-    const oneHourLaterFormatted = formatDateTimeLocalWIB(oneHourLater);
+    const oneHourLaterFormatted = getCurrentWIBDateTime();
 
     setFormData({
       title: '',
@@ -301,8 +270,8 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
           title: formData.title,
           exam_type: formData.exam_type,
           duration_minutes: formData.duration_minutes,
-          availability_start_time: formatWIBToUTC(formData.availability_start_time),
-          availability_end_time: formatWIBToUTC(formData.availability_end_time),
+          availability_start_time: convertWIBToUTC(formData.availability_start_time),
+          availability_end_time: convertWIBToUTC(formData.availability_end_time),
           status: formData.status,
           settings: formData.settings,
           academic_period_id: formData.academic_period_id,
