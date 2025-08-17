@@ -72,6 +72,32 @@ export const convertUTCToWIB = (utcDatetime: string): string => {
 };
 
 /**
+ * Format datetime untuk display dengan konversi ke WIB
+ * @param utcDatetime - datetime dalam format UTC
+ * @returns formatted string dalam WIB
+ */
+export const formatDateTimeWithTimezone = (utcDatetime: string): string => {
+  if (!utcDatetime) return '-';
+  
+  try {
+    const utcDate = new Date(utcDatetime);
+    
+    // Gunakan toLocaleString dengan timezone Jakarta untuk konversi otomatis
+    return utcDate.toLocaleString('id-ID', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Jakarta'
+    }) + ' WIB';
+  } catch (error) {
+    console.error('Error formatting datetime:', error);
+    return '-';
+  }
+};
+
+/**
  * Format Date object ke format datetime-local input
  * @param date - Date object
  * @returns formatted string untuk datetime-local input
@@ -95,27 +121,6 @@ export const getCurrentWIBDateTime = (): string => {
   
   // Gunakan convertUTCToWIB untuk konsistensi
   return convertUTCToWIB(now.toISOString());
-};
-
-/**
- * Format datetime untuk display dengan timezone info
- * @param utcDatetime - datetime dalam format UTC
- * @returns formatted string dengan timezone info
- */
-export const formatDateTimeWithTimezone = (utcDatetime: string): string => {
-  if (!utcDatetime) return '-';
-  
-  const utcDate = new Date(utcDatetime);
-  
-  // Gunakan toLocaleString dengan timezone untuk konversi otomatis
-  return utcDate.toLocaleString('id-ID', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Jakarta'
-  }) + ' WIB';
 };
 
 /**

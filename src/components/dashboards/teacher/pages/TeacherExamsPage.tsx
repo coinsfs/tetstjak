@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FileText, 
+  Play,
   Plus, 
   Filter,
   Calendar,
@@ -9,7 +10,6 @@ import {
   BookOpen,
   Edit,
   Trash2,
-  Play,
   Eye,
   BarChart3,
   HelpCircle,
@@ -32,7 +32,7 @@ import TeacherExamEditModal from './modals/TeacherExamEditModal';
 import TeacherExamQuestionsModal from './modals/TeacherExamQuestionsModal';
 import TeacherExamStartConfirmationModal from './modals/TeacherExamStartConfirmationModal';
 import Pagination from '@/components/Pagination';
-import { formatDateTimeWithTimezone } from '@/utils/timezone';
+import { formatDateTimeWithTimezone, convertUTCToWIB } from '@/utils/timezone';
 import toast from 'react-hot-toast';
 
 const TeacherExamsPage: React.FC = () => {
@@ -196,28 +196,26 @@ const TeacherExamsPage: React.FC = () => {
     );
   };
 
+  const handleStartExam = (exam: TeacherExam) => {
+    setSelectedExam(exam);
+    setShowStartConfirmationModal(true);
+  };
+
+  const formatDateTime = (dateString: string) => {
+    return formatDateTimeWithTimezone(dateString);
+  };
+
   const getActionButtons = (exam: TeacherExam) => {
   const { status } = exam;
   const buttons = [];
 
-  // Start/Monitor/Analytics Button - Based on status (MOVED TO FIRST)
-  if (status === 'ready') {
-    buttons.push(
-      <button
-        key="start"
-        onClick={() => handleStartExam(exam)}
-        className="flex items-center space-x-1 px-2 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs whitespace-nowrap"
-      >
-        <Play className="w-3 h-3" />
-        <span>Mulai</span>
-      </button>
-    );
-  } else if (status === 'ongoing') {
+  // Monitor/Analytics Button - Based on status
+  if (status === 'ongoing') {
     buttons.push(
       <button
         key="monitor"
         onClick={() => handleMonitorExam(exam)}
-        className="flex items-center space-x-1 px-2 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs whitespace-nowrap"
+        className="flex items-center space-x-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium whitespace-nowrap shadow-sm"
       >
         <Eye className="w-3 h-3" />
         <span>Monitoring</span>
@@ -228,7 +226,7 @@ const TeacherExamsPage: React.FC = () => {
       <button
         key="analytics"
         onClick={() => handleAnalyticsExam(exam)}
-        className="flex items-center space-x-1 px-2 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-xs whitespace-nowrap"
+        className="flex items-center space-x-1 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium whitespace-nowrap shadow-sm"
       >
         <BarChart3 className="w-3 h-3" />
         <span>Analitik</span>
@@ -242,7 +240,7 @@ const TeacherExamsPage: React.FC = () => {
       <button
         key="input-questions"
         onClick={() => handleInputQuestions(exam)}
-        className="flex items-center space-x-1 px-2 py-1.5 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-xs whitespace-nowrap"
+        className="flex items-center space-x-1 px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium whitespace-nowrap shadow-sm"
       >
         <HelpCircle className="w-3 h-3" />
         <span>Input Soal</span>
@@ -252,11 +250,6 @@ const TeacherExamsPage: React.FC = () => {
 
   return buttons;
 };
-
-  
-  const formatDateTime = (dateString: string) => {
-    return formatDateTimeWithTimezone(dateString);
-  };
 
   const isDeleteDisabled = (exam: TeacherExam) => {
     return exam.status === 'ongoing' || exam.status === 'completed' || 
@@ -464,6 +457,25 @@ const TeacherExamsPage: React.FC = () => {
                     {/* Aksi */}
                     <td className="px-6 py-4 whitespace-nowrap text-center text-right">
                       <div className="flex items-center justify-end space-x-2">
+                        {/* Start Button - Always first, disabled if not ready */}
+                        <button
+                          onClick={() => handleStartExam(exam)}
+                          disabled={exam.status !== 'ready'}
+                          className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap shadow-sm ${
+                            exam.status === 'ready'
+                              ? 'bg-green-600 text-white hover:bg-green-700'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          }`}
+                          title={
+                            exam.status === 'ready' 
+                              ? 'Mulai ujian' 
+                              : 'Ujian belum siap dimulai'
+                          }
+                        >
+                          <Play className="w-3 h-3" />
+                          <span>Mulai</span>
+                        </button>
+                        
                         {/* Action Buttons */}
                         {getActionButtons(exam).map((button, index) => (
                           <React.Fragment key={index}>
