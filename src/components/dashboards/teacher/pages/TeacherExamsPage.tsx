@@ -196,11 +196,6 @@ const TeacherExamsPage: React.FC = () => {
     );
   };
 
-  const handleStartExam = (exam: TeacherExam) => {
-    setSelectedExam(exam);
-    setShowStartConfirmationModal(true);
-  };
-
   const formatDateTime = (dateString: string) => {
     return formatDateTimeWithTimezone(dateString);
   };
