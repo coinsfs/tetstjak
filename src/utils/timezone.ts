@@ -80,10 +80,27 @@ export const formatDateTimeWithTimezone = (utcDatetime: string): string => {
   if (!utcDatetime) return '-';
   
   try {
-    const utcDate = new Date(utcDatetime);
+    // Ensure the UTC datetime string is properly formatted as UTC
+    // If it doesn't end with 'Z', append it to explicitly mark as UTC
+    let utcString = utcDatetime;
+    if (!utcString.endsWith('Z') && !utcString.includes('+') && !utcString.includes('-', 10)) {
+      // If it's a simple ISO string without timezone info, append 'Z' to mark as UTC
+      utcString = utcDatetime + 'Z';
+    }
+    
+    console.log('🔄 formatDateTimeWithTimezone - Input UTC:', utcDatetime);
+    console.log('🔧 formatDateTimeWithTimezone - Processed UTC string:', utcString);
+    
+    const utcDate = new Date(utcString);
+    
+    // Validasi apakah date valid
+    if (isNaN(utcDate.getTime())) {
+      console.error('❌ formatDateTimeWithTimezone - Invalid date:', utcDatetime);
+      return '-';
+    }
     
     // Gunakan toLocaleString dengan timezone Jakarta untuk konversi otomatis
-    return utcDate.toLocaleString('id-ID', {
+    const result = utcDate.toLocaleString('id-ID', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -91,8 +108,11 @@ export const formatDateTimeWithTimezone = (utcDatetime: string): string => {
       minute: '2-digit',
       timeZone: 'Asia/Jakarta'
     }) + ' WIB';
+    
+    console.log('✅ formatDateTimeWithTimezone - Output WIB:', result);
+    return result;
   } catch (error) {
-    console.error('Error formatting datetime:', error);
+    console.error('❌ formatDateTimeWithTimezone - Error formatting datetime:', error, utcDatetime);
     return '-';
   }
 };
