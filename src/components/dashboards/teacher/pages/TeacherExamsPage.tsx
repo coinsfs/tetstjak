@@ -197,7 +197,7 @@ const TeacherExamsPage: React.FC = () => {
   };
 
   const formatDateTime = (dateString: string) => {
-    return formatDateTimeWithTimezone(dateString);
+    return convertUTCToWIB(dateString);
   };
 
   const getActionButtons = (exam: TeacherExam) => {
