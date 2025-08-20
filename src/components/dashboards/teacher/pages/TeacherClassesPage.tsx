@@ -424,7 +424,6 @@ const TeacherClassesPage: React.FC = () => {
                 </div>
               )}
             </>
-            </div>
           )}
         </div>
       </div>
