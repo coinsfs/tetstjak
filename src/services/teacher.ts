@@ -84,8 +84,12 @@ class TeacherService extends BaseService {
     return this.get<TeachingSummaryResponse>('/teaching-assignments/teacher/teaching-summary', token);
   }
 
-  async getClassStudents(token: string, classId: string, search?: string): Promise<ClassStudentsResponse> {
-    const params: any = { class_id: classId };
+  async getClassStudents(token: string, classId: string, page: number = 1, limit: number = 10, search?: string): Promise<ClassStudentsResponse> {
+    const params: any = { 
+      class_id: classId,
+      page: page,
+      limit: limit
+    };
     if (search) {
       params.search = search;
     }

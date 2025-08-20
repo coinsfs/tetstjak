@@ -10,7 +10,10 @@ import {
   Mail,
   Phone,
   MapPin,
-  User
+  User,
+  Eye,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { teacherService, TeachingClass, ClassStudent } from '@/services/teacher';
@@ -25,6 +28,10 @@ const TeacherClassesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     fetchTeachingSummary();
@@ -32,9 +39,16 @@ const TeacherClassesPage: React.FC = () => {
 
   useEffect(() => {
     if (selectedClass) {
-      fetchClassStudents(selectedClass.class_details._id, searchQuery);
+      setCurrentPage(1); // Reset to first page when class changes
+      fetchClassStudents(selectedClass.class_details._id, 1, itemsPerPage, searchQuery);
     }
-  }, [selectedClass, searchQuery]);
+  }, [selectedClass]);
+
+  useEffect(() => {
+    if (selectedClass) {
+      fetchClassStudents(selectedClass.class_details._id, currentPage, itemsPerPage, searchQuery);
+    }
+  }, [currentPage, searchQuery]);
 
   const fetchTeachingSummary = async () => {
     if (!token) return;
@@ -51,19 +65,40 @@ const TeacherClassesPage: React.FC = () => {
     }
   };
 
-  const fetchClassStudents = async (classId: string, search?: string) => {
+  const fetchClassStudents = async (classId: string, page: number, limit: number, search?: string) => {
     if (!token) return;
 
     try {
       setStudentsLoading(true);
-      const response = await teacherService.getClassStudents(token, classId, search);
+      const response = await teacherService.getClassStudents(token, classId, page, limit, search);
       setStudents(response.data);
+      setTotalPages(response.total_pages);
+      setCurrentPage(response.current_page);
+      setTotalItems(response.total_items);
+      setItemsPerPage(response.limit);
     } catch (error) {
       console.error('Error fetching class students:', error);
       toast.error('Gagal memuat daftar siswa');
     } finally {
       setStudentsLoading(false);
     }
+  };
+
+  const handleViewStudentDetail = (student: ClassStudent) => {
+    toast.success(`Melihat detail siswa: ${student.profile_details?.full_name || student.login_id}`);
+    console.log('Student detail:', student);
+    // TODO: Implement modal or navigation to student detail page
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1); // Reset to first page when searching
   };
 
   const getGradeLabel = (gradeLevel: number) => {
@@ -194,7 +229,7 @@ const TeacherClassesPage: React.FC = () => {
               type="text"
               placeholder="Cari siswa..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
             />
           </div>
@@ -202,107 +237,193 @@ const TeacherClassesPage: React.FC = () => {
 
         {/* Students List */}
         <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Daftar Siswa</h2>
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">Daftar Siswa</h2>
+              <div className="text-sm text-gray-500">
+                Menampilkan {students.length} dari {totalItems} siswa
+              </div>
+            </div>
+          </div>
           
           {studentsLoading ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-12 px-6">
               <div className="flex items-center space-x-2">
                 <div className="animate-spin rounded-full h-5 w-5 border-2 border-green-600 border-t-transparent"></div>
                 <span className="text-gray-600">Memuat daftar siswa...</span>
               </div>
             </div>
           ) : students.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 px-6">
               <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600">
                 {searchQuery ? 'Tidak ada siswa yang ditemukan' : 'Belum ada siswa di kelas ini'}
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {students.map((student) => (
-                <div key={student._id} className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-all duration-200 hover:shadow-md">
-                  <div className="flex items-start space-x-4">
-                    <div className="relative flex-shrink-0">
-                      {getProfileImage(student) ? (
-                        <img
-                          src={getProfileImage(student)!}
-                          alt="Profile"
-                          className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            target.nextElementSibling?.classList.remove('hidden');
-                          }}
-                        />
-                      ) : null}
-                      <div className={`w-12 h-12 rounded-full bg-green-100 flex items-center justify-center border-2 border-gray-200 ${getProfileImage(student) ? 'hidden' : ''}`}>
-                        <span className="text-sm font-semibold text-green-700">
-                          {getInitials(student)}
-                        </span>
-                      </div>
-                      {student.is_active && (
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white">
-                          <UserCheck className="w-2 h-2 text-white m-0.5" />
-                        </div>
-                      )}
+            <>
+              {/* Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Siswa
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Login ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Telepon
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Aksi
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {students.map((student) => (
+                      <tr key={student._id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-3">
+                            <div className="relative flex-shrink-0">
+                              {getProfileImage(student) ? (
+                                <img
+                                  src={getProfileImage(student)!}
+                                  alt="Profile"
+                                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    target.nextElementSibling?.classList.remove('hidden');
+                                  }}
+                                />
+                              ) : null}
+                              <div className={`w-10 h-10 rounded-full bg-green-100 flex items-center justify-center border-2 border-gray-200 ${getProfileImage(student) ? 'hidden' : ''}`}>
+                                <span className="text-sm font-semibold text-green-700">
+                                  {getInitials(student)}
+                                </span>
+                              </div>
+                              {student.is_active && (
+                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white">
+                                  <UserCheck className="w-2 h-2 text-white m-0.5" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {student.profile_details?.full_name || student.login_id}
+                              </p>
+                              <p className="text-sm text-gray-500 capitalize">
+                                {student.profile_details?.gender || 'N/A'}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{student.login_id}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 truncate max-w-xs" title={student.email}>
+                            {student.email}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {student.profile_details?.phone_number || '-'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            student.is_active 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {student.is_active ? 'Aktif' : 'Tidak Aktif'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <button
+                            onClick={() => handleViewStudentDetail(student)}
+                            className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors"
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            Lihat Detail
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-700">
+                      Menampilkan <span className="font-medium">{((currentPage - 1) * itemsPerPage) + 1}</span> sampai{' '}
+                      <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalItems)}</span> dari{' '}
+                      <span className="font-medium">{totalItems}</span> siswa
                     </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 truncate">
-                        {student.profile_details?.full_name || student.login_id}
-                      </h3>
-                      <p className="text-sm text-gray-600 truncate">
-                        {student.login_id}
-                      </p>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage <= 1}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4 mr-1" />
+                        Sebelumnya
+                      </button>
                       
-                      <div className="mt-2 space-y-1">
-                        {student.email && (
-                          <div className="flex items-center space-x-2 text-xs text-gray-500">
-                            <Mail className="w-3 h-3" />
-                            <span className="truncate">{student.email}</span>
-                          </div>
-                        )}
-                        
-                        {student.profile_details?.phone_number && (
-                          <div className="flex items-center space-x-2 text-xs text-gray-500">
-                            <Phone className="w-3 h-3" />
-                            <span>{student.profile_details.phone_number}</span>
-                          </div>
-                        )}
-                        
-                        {student.profile_details?.birth_place && (
-                          <div className="flex items-center space-x-2 text-xs text-gray-500">
-                            <MapPin className="w-3 h-3" />
-                            <span className="truncate">{student.profile_details.birth_place}</span>
-                          </div>
-                        )}
-                        
-                        {student.profile_details?.birth_date && (
-                          <div className="flex items-center space-x-2 text-xs text-gray-500">
-                            <Calendar className="w-3 h-3" />
-                            <span>{formatBirthDate(student.profile_details.birth_date)}</span>
-                          </div>
-                        )}
+                      <div className="flex items-center space-x-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNumber;
+                          if (totalPages <= 5) {
+                            pageNumber = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNumber = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNumber = totalPages - 4 + i;
+                          } else {
+                            pageNumber = currentPage - 2 + i;
+                          }
+                          
+                          return (
+                            <button
+                              key={pageNumber}
+                              onClick={() => handlePageChange(pageNumber)}
+                              className={`inline-flex items-center px-3 py-2 border text-sm font-medium rounded-md transition-colors ${
+                                currentPage === pageNumber
+                                  ? 'border-green-500 bg-green-50 text-green-600'
+                                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              {pageNumber}
+                            </button>
+                          );
+                        })}
                       </div>
                       
-                      <div className="mt-3 flex items-center justify-between">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          student.is_active 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {student.is_active ? 'Aktif' : 'Tidak Aktif'}
-                        </span>
-                        
-                        <span className="text-xs text-gray-500 capitalize">
-                          {student.profile_details?.gender || 'N/A'}
-                        </span>
-                      </div>
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage >= totalPages}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Berikutnya
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                      </button>
                     </div>
                   </div>
                 </div>
-              ))}
+              )}
+            </>
             </div>
           )}
         </div>
