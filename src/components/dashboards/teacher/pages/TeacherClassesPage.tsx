@@ -154,7 +154,8 @@ const TeacherClassesPage: React.FC = () => {
   // Class Detail View
   if (selectedClass) {
     return (
-      <div className="space-y-6">
+      <>
+        <div className="space-y-6">
         {/* Header */}
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
@@ -435,16 +436,18 @@ const TeacherClassesPage: React.FC = () => {
             </>
           )}
         </div>
-      </div>
 
-      {/* Student Detail Modal */}
-      {isStudentDetailModalOpen && selectedStudentForModal && (
-        <StudentDetailModal
-          student={selectedStudentForModal}
-          isOpen={isStudentDetailModalOpen}
-          onClose={handleCloseStudentDetailModal}
-        />
-      )}
+        </div>
+
+        {/* Student Detail Modal */}
+        {isStudentDetailModalOpen && selectedStudentForModal && (
+          <StudentDetailModal
+            student={selectedStudentForModal}
+            isOpen={isStudentDetailModalOpen}
+            onClose={handleCloseStudentDetailModal}
+          />
+        )}
+      </>
     );
   }
 
