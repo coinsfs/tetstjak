@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { teacherService, TeachingClass, ClassStudent } from '@/services/teacher';
+import StudentDetailModal from '@/components/modals/details/StudentDetailModal';
 import { getProfileImageUrl } from '@/constants/config';
 import toast from 'react-hot-toast';
 
@@ -32,6 +33,10 @@ const TeacherClassesPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  
+  // Modal states
+  const [selectedStudentForModal, setSelectedStudentForModal] = useState<ClassStudent | null>(null);
+  const [isStudentDetailModalOpen, setIsStudentDetailModalOpen] = useState(false);
 
   useEffect(() => {
     fetchTeachingSummary();
@@ -85,9 +90,13 @@ const TeacherClassesPage: React.FC = () => {
   };
 
   const handleViewStudentDetail = (student: ClassStudent) => {
-    toast.success(`Melihat detail siswa: ${student.profile_details?.full_name || student.login_id}`);
-    console.log('Student detail:', student);
-    // TODO: Implement modal or navigation to student detail page
+    setSelectedStudentForModal(student);
+    setIsStudentDetailModalOpen(true);
+  };
+
+  const handleCloseStudentDetailModal = () => {
+    setIsStudentDetailModalOpen(false);
+    setSelectedStudentForModal(null);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -427,6 +436,15 @@ const TeacherClassesPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Student Detail Modal */}
+      {isStudentDetailModalOpen && selectedStudentForModal && (
+        <StudentDetailModal
+          student={selectedStudentForModal}
+          isOpen={isStudentDetailModalOpen}
+          onClose={handleCloseStudentDetailModal}
+        />
+      )}
     );
   }
 
@@ -571,6 +589,15 @@ const TeacherClassesPage: React.FC = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Student Detail Modal */}
+      {isStudentDetailModalOpen && selectedStudentForModal && (
+        <StudentDetailModal
+          student={selectedStudentForModal}
+          isOpen={isStudentDetailModalOpen}
+          onClose={handleCloseStudentDetailModal}
+        />
       )}
     </div>
   );
