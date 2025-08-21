@@ -39,7 +39,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
     );
   }
 
-            Anda tidak memiliki izin untuk mengakses halaman ini. Role yang diperlukan: {Array.isArray(requiredRole) ? requiredRole.join(' atau ') : requiredRole}
+            <p>Anda tidak memiliki izin untuk mengakses halaman ini. Role yang diperlukan: {Array.isArray(requiredRole) ? requiredRole.join(' atau ') : requiredRole}</p>
 };
 
 export default ProtectedRoute;
