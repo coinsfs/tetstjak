@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: string;
+  requiredRole: string | string[];
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
@@ -24,7 +24,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
     return <div>Please login to access this page</div>;
   }
 
-  if (requiredRole && user?.roles[0] !== requiredRole) {
+  const hasRequiredRole = Array.isArray(requiredRole) 
+    ? requiredRole.some(role => user.roles.includes(role))
+    : user.roles.includes(requiredRole);
+
+  if (!hasRequiredRole) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -35,7 +39,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
     );
   }
 
-  return <>{children}</>;
+            Anda tidak memiliki izin untuk mengakses halaman ini. Role yang diperlukan: {Array.isArray(requiredRole) ? requiredRole.join(' atau ') : requiredRole}
 };
 
 export default ProtectedRoute;

@@ -18,6 +18,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from '@/hooks/useRouter';
 import { 
   teacherExamService, 
   TeacherExam, 
@@ -37,6 +38,7 @@ import toast from 'react-hot-toast';
 
 const TeacherExamsPage: React.FC = () => {
   const { token, user } = useAuth();
+  const { navigate } = useRouter();
   const [exams, setExams] = useState<TeacherExam[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
@@ -144,8 +146,11 @@ const TeacherExamsPage: React.FC = () => {
   };
 
   const handleMonitorExam = (exam: TeacherExam) => {
-    // TODO: Implement monitoring functionality
-    toast.success('Fitur monitoring akan segera tersedia');
+    if (exam.status === 'ongoing') {
+      navigate(`/monitor-exam/${exam._id}`);
+    } else {
+      toast.error('Ujian belum berlangsung atau sudah selesai.');
+    }
   };
 
   const handleAnalyticsExam = (exam: TeacherExam) => {

@@ -7,6 +7,7 @@ import AdminDashboard from './components/dashboards/AdminDashboard';
 import TeacherDashboard from './components/dashboards/TeacherDashboard';
 import StudentDashboard from './components/dashboards/StudentDashboard';
 import StudentExamTakingPage from './components/dashboards/student/pages/StudentExamTakingPage';
+import ProctorMonitoringPage from './components/dashboards/teacher/pages/ProctorMonitoringPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const AppContent: React.FC = () => {
@@ -64,6 +65,18 @@ const AppContent: React.FC = () => {
       return (
         <ProtectedRoute requiredRole="student">
           <StudentExamTakingPage user={user} sessionId={sessionId} />
+        </ProtectedRoute>
+      );
+    }
+  }
+
+  // Handle proctor monitoring route
+  if (currentPath.startsWith('/monitor-exam/')) {
+    const examId = currentPath.split('/').pop();
+    if (examId) {
+      return (
+        <ProtectedRoute requiredRole="teacher">
+          <ProctorMonitoringPage />
         </ProtectedRoute>
       );
     }
