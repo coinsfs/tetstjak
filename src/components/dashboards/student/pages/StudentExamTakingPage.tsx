@@ -163,7 +163,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     websocketService.send({
       messageType: 'exam_activity',
       activityType: 'answer_changed',
-      type: 'question_navigated',
       type: 'answer_changed',
       questionId: questionId,
       newAnswer: answer,
@@ -171,8 +170,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       timestamp: Date.now(),
       studentId: user?._id,
       examId: sessionId,
-      sessionId: sessionId,
-      full_name: user?.profile_details?.full_name
       sessionId: sessionId,
       full_name: user?.profile_details?.full_name
     });
