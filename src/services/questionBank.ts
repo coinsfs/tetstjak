@@ -118,10 +118,6 @@ class QuestionBankService extends BaseService {
     await this.put(`/exams/${examId}/questions`, { question_ids: questionIds }, token);
   }
 
-  async getQuestionsByIds(token: string, ids: string[]): Promise<Question[]> {
-    return this.post<Question[]>('/question-banks/by-ids', { ids }, token);
-  }
-
   async submitForReview(token: string, questionIds: string[], coordinationAssignmentId: string, purpose: string): Promise<void> {
     await this.post('/question-banks/submit-for-review', {
       question_ids: questionIds,
