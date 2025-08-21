@@ -149,10 +149,7 @@ const TeacherExamsPage: React.FC = () => {
     if (exam.status === 'ongoing') {
       navigate(`/monitor-exam/${exam._id}`);
     } else {
-      // For testing purposes, allow monitoring even if not ongoing
-      console.log('Exam status:', exam.status);
-      navigate(`/monitor-exam/${exam._id}`);
-      // toast.error('Ujian belum berlangsung atau sudah selesai.');
+      toast.error('Ujian belum berlangsung atau sudah selesai.');
     }
   };
 
@@ -553,6 +550,9 @@ const TeacherExamsPage: React.FC = () => {
             setShowCreateModal(false);
             fetchExams();
           }}
+          teachingClasses={teachingClasses}
+          currentUserId={user?._id || ''}
+          activeAcademicPeriod={activeAcademicPeriod}
           teachingClasses={teachingClasses}
           currentUserId={user?._id || ''}
           activeAcademicPeriod={activeAcademicPeriod}
