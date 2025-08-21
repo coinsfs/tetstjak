@@ -75,6 +75,28 @@ const TeacherDashboard: React.FC = () => {
     }
   };
 
+  const renderContent = () => {
+    switch (currentPath) {
+      case '/teacher':
+      case '/teacher/':
+        return <TeacherDashboardPage />;
+      case '/teacher/classes':
+        return <TeacherClassesPage />;
+      case '/teacher/exams':
+        return <TeacherExamsPage />;
+      case '/teacher/questions':
+        return <TeacherQuestionsPage />;
+      case '/teacher/question-sets':
+        return <TeacherQuestionSetsPage />;
+      case '/teacher/analytics':
+        return <TeacherAnalyticsPage />;
+      case '/teacher/profile':
+        return <TeacherProfilePage />;
+      default:
+        return <TeacherDashboardPage />;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar Component */}
@@ -89,7 +111,9 @@ const TeacherDashboard: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:ml-64 overflow-hidden">
         {/* Header Component */}
-        <TeacherHeader
+        <TeacherMainContent>
+          {renderContent()}
+        </TeacherMainContent>
           user={user}
           setSidebarOpen={setSidebarOpen}
           title={getPageTitle()}
@@ -105,6 +129,7 @@ const TeacherDashboard: React.FC = () => {
       </div>
     </div>
   );
+};
 };
 
 export default TeacherDashboard;
