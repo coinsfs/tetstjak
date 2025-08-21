@@ -15,6 +15,8 @@ const TeacherDashboard: React.FC = () => {
   const { currentPath, navigate } = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dashboardStats, setDashboardStats] = useState<TeacherDashboardStats | undefined>();
+  const [statsLoading, setStatsLoading] = useState(true);
+  
   // Add loading state check
   if (!user) {
     return (
@@ -27,15 +29,13 @@ const TeacherDashboard: React.FC = () => {
     );
   }
 
-  const [statsLoading, setStatsLoading] = useState(true);
-    // Handle monitoring route first
-    if (currentPath.startsWith('/monitor-exam/')) {
-      const examId = currentPath.split('/').pop();
-      if (examId) {
-        return <ProctorMonitoringPage examId={examId} />;
-      }
+  // Handle monitoring route first
+  if (currentPath.startsWith('/monitor-exam/')) {
+    const examId = currentPath.split('/').pop();
+    if (examId) {
+      return <ProctorMonitoringPage examId={examId} />;
     }
-
+  }
 
   useEffect(() => {
     const fetchDashboardStats = async () => {
@@ -71,8 +71,6 @@ const TeacherDashboard: React.FC = () => {
       case '/teacher/profile':
         return 'Profile';
       default:
-        return <TeacherDashboardPage />;
-        }
         return 'Dashboard';
     }
   };
