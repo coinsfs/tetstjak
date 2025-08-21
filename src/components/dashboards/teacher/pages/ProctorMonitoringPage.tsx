@@ -193,15 +193,10 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId: p
 
   useEffect(() => {
     const fetchExamAndSessions = async () => {
-      if (!examId || !token) {
-        setError('ID Ujian atau token tidak ditemukan.');
-        setLoading(false);
-        return;
       }
 
       try {
         console.log('Fetching exam details for ID:', examId);
-        
         // 1. Ambil detail ujian (untuk judul)
         try {
           const examDetailsResponse = await teacherExamService.getTeacherExams(token, { page: 1, limit: 100 });
