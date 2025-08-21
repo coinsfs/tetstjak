@@ -10,7 +10,8 @@ import {
   Settings,
   LogOut,
   BookOpen,
-  Package
+  Package,
+  Monitor
 } from 'lucide-react';
 
 interface MenuItem {
@@ -119,6 +120,24 @@ const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
                   </button>
                 );
               })}
+              
+              {/* Debug menu item for monitoring */}
+              {process.env.NODE_ENV === 'development' && (
+                <button
+                  onClick={() => {
+                    navigate('/monitor-exam/test');
+                    setSidebarOpen(false);
+                  }}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 text-left rounded-lg transition-all duration-200 ${
+                    currentPath.startsWith('/monitor-exam/')
+                      ? 'bg-green-50 text-green-700 border-r-2 border-green-500'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <Monitor className={`w-5 h-5 ${currentPath.startsWith('/monitor-exam/') ? 'text-green-600' : 'text-gray-400'}`} />
+                  <span className="font-medium">Monitor Test</span>
+                </button>
+              )}
             </div>
           </nav>
 
