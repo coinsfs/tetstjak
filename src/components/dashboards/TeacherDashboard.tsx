@@ -72,10 +72,6 @@ const TeacherDashboard: React.FC = () => {
         return 'Profile';
       default:
         return <TeacherDashboardPage />;
-      default:
-        // Handle sub-routes or unknown routes
-        if (currentPath.startsWith('/teacher/')) {
-          return 'Teacher Dashboard';
         }
         return 'Dashboard';
     }
