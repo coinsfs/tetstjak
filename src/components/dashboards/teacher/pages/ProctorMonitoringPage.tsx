@@ -48,13 +48,6 @@ interface StudentSessionStatus {
   total_questions: number; // Total soal dalam ujian
 }
 
-// Mock data untuk demo - dalam implementasi nyata, ini akan datang dari API
-interface MockActiveSession {
-  sessionId: string;
-  studentId: string;
-  full_name: string;
-}
-
 const ProctorMonitoringPage: React.FC = () => {
   const { currentPath } = useRouter();
   const examId = currentPath.split('/').pop();
@@ -76,6 +69,7 @@ const ProctorMonitoringPage: React.FC = () => {
 
   // Ref untuk menyimpan instance WebSocket agar tidak hilang saat re-render
   const wsConnectionsRef = useRef<Map<string, WebSocket>>(new Map());
+  const [examDetails, setExamDetails] = useState<any>(null);
 
   // Fungsi untuk mengelola event dari WebSocket
   const handleWsMessage = useCallback((event: MessageEvent, sessionId: string) => {
@@ -118,6 +112,10 @@ const ProctorMonitoringPage: React.FC = () => {
             } else if (data.status === 'submitted') {
               currentSession.status = 'submitted';
             }
+          } else if (data.messageType === 'student_join') {
+            handleStudentJoin(data);
+          } else if (data.messageType === 'student_leave') {
+            handleStudentLeave(data);
           } else if (data.messageType === 'exam_activity') {
             // Handle exam activities - hitung progres pengerjaan soal
             if (data.type === 'answer_changed') {
@@ -158,6 +156,66 @@ const ProctorMonitoringPage: React.FC = () => {
         disconnected: connections.filter(ws => ws.readyState === WebSocket.CLOSED).length
       };
       return stats;
+    });
+  }, []);
+
+  // Handle new student joining via WebSocket
+  const handleStudentJoin = useCallback((data: RealtimeEvent) => {
+    setStudentSessions(prevSessions => {
+      // Check if student already exists
+      const existingIndex = prevSessions.findIndex(s => s.student_id === data.studentId);
+      
+      if (existingIndex === -1) {
+        // Add new student
+        const newStudent: StudentSessionStatus = {
+          student_id: data.studentId,
+          session_id: data.sessionId,
+          full_name: data.full_name || `Student ${data.studentId.slice(-6)}`,
+          status: 'online',
+          last_activity: data.timestamp,
+          violation_count: 0,
+          critical_violations: 0,
+          ws_status: 'open',
+          start_time: data.timestamp,
+          answers: {},
+          answered_questions: 0,
+          total_questions: totalExamQuestions || 0
+        };
+        
+        // Setup WebSocket for this new student
+        if (token) {
+          setupWebSocketForSession(newStudent, token);
+        }
+        
+        return [...prevSessions, newStudent];
+      } else {
+        // Update existing student status
+        const updatedSessions = [...prevSessions];
+        updatedSessions[existingIndex] = {
+          ...updatedSessions[existingIndex],
+          status: 'online',
+          last_activity: data.timestamp,
+          ws_status: 'open'
+        };
+        return updatedSessions;
+      }
+    });
+  }, [totalExamQuestions, token, setupWebSocketForSession]);
+
+  // Handle student leaving
+  const handleStudentLeave = useCallback((data: RealtimeEvent) => {
+    setStudentSessions(prevSessions => {
+      return prevSessions.map(session => {
+        if (session.student_id === data.studentId) {
+          return {
+            ...session,
+            status: 'offline',
+            last_activity: data.timestamp,
+            ws_status: 'closed'
+          };
+        }
+        return session;
+      });
     });
   }, []);
 
@@ -204,17 +262,42 @@ const ProctorMonitoringPage: React.FC = () => {
     };
   }, [handleWsMessage, updateConnectionStats]);
 
-  // Mock function to simulate getting active exam sessions
-  const getMockActiveExamSessions = useCallback((examId: string): MockActiveSession[] => {
-    // In real implementation, this would be an API call
-    return [
-      { sessionId: '689f77431520379a7501cf80', studentId: 'student1', full_name: 'Ahmad Rizki' },
-      { sessionId: '689f77431520379a7501cf81', studentId: 'student2', full_name: 'Siti Nurhaliza' },
-      { sessionId: '689f77431520379a7501cf82', studentId: 'student3', full_name: 'Budi Santoso' },
-      { sessionId: '689f77431520379a7501cf83', studentId: 'student4', full_name: 'Dewi Sartika' },
-      { sessionId: '689f77431520379a7501cf84', studentId: 'student5', full_name: 'Eko Prasetyo' }
-    ];
-  }, []);
+  // Setup WebSocket connection to listen for new students joining
+  const setupMainExamWebSocket = useCallback(() => {
+    if (!token || !examId) return;
+
+    const mainWsUrl = `${API_BASE_URL.replace('http', 'ws')}/ws/exam-monitor/${examId}?token=${token}`;
+    const mainWs = new WebSocket(mainWsUrl);
+
+    mainWs.onopen = () => {
+      console.log('Main exam monitoring WebSocket connected');
+    };
+
+    mainWs.onmessage = (event) => {
+      try {
+        const data: RealtimeEvent = JSON.parse(event.data);
+        console.log('Main WS message:', data);
+        
+        if (data.messageType === 'student_join') {
+          handleStudentJoin(data);
+        } else if (data.messageType === 'student_leave') {
+          handleStudentLeave(data);
+        }
+      } catch (error) {
+        console.error('Error parsing main WS message:', error);
+      }
+    };
+
+    mainWs.onclose = () => {
+      console.log('Main exam monitoring WebSocket closed');
+    };
+
+    mainWs.onerror = (error) => {
+      console.error('Main exam monitoring WebSocket error:', error);
+    };
+
+    return mainWs;
+  }, [token, examId, handleStudentJoin, handleStudentLeave]);
 
   useEffect(() => {
     const fetchExamAndSessions = async () => {
@@ -231,6 +314,7 @@ const ProctorMonitoringPage: React.FC = () => {
           const exam = examDetailsResponse.data.find(e => e._id === examId);
           if (exam) {
             setExamTitle(exam.title);
+            setExamDetails(exam);
             // Ambil total soal dari ujian
             const totalQuestions = exam.question_ids?.length || 0;
             setTotalExamQuestions(totalQuestions);
@@ -244,32 +328,16 @@ const ProctorMonitoringPage: React.FC = () => {
           setTotalExamQuestions(0);
         }
 
-        // 2. Ambil daftar sesi aktif untuk ujian ini
-        // Untuk demo, kita gunakan mock data
-        // Dalam implementasi nyata, ini akan menjadi API call:
-        // const activeSessionsResponse = await teacherExamService.getActiveExamSessions(token, examId);
-        const activeSessionsResponse = getMockActiveExamSessions(examId);
+        // 2. Initialize empty student sessions - will be populated when students join
+        setStudentSessions([]);
 
-        const initialStudentStatuses: StudentSessionStatus[] = activeSessionsResponse.map(s => ({
-          student_id: s.studentId,
-          session_id: s.sessionId,
-          full_name: s.full_name,
-          status: 'offline', // Default, akan diperbarui oleh WS event
-          last_activity: Date.now(),
-          violation_count: 0,
-          critical_violations: 0,
-          ws_status: 'connecting',
-          start_time: Date.now(),
-          answers: {}, // Inisialisasi objek jawaban kosong
-          answered_questions: 0, // Belum ada soal yang dijawab
-          total_questions: totalExamQuestions || 0 // Set total soal dari ujian
-        }));
-        setStudentSessions(initialStudentStatuses);
+        // 3. Setup main WebSocket to listen for students joining/leaving
+        const mainWs = setupMainExamWebSocket();
 
-        // 3. Buat koneksi WebSocket untuk setiap sesi
-        initialStudentStatuses.forEach(session => {
-          setupWebSocketForSession(session, token);
-        });
+        // Store main WebSocket reference for cleanup
+        if (mainWs) {
+          wsConnectionsRef.current.set('main', mainWs);
+        }
 
       } catch (error) {
         console.error('Error fetching exam details or active sessions:', error);
@@ -290,7 +358,6 @@ const ProctorMonitoringPage: React.FC = () => {
       });
       wsConnectionsRef.current.clear();
     };
-  }, [examId, token, setupWebSocketForSession, getMockActiveExamSessions]);
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
