@@ -255,6 +255,17 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         clearInterval(autoSaveIntervalRef.current);
       }
       
+      // Send student leave event before finishing
+      websocketService.send({
+        messageType: 'student_leave',
+        type: 'student_leave',
+        timestamp: Date.now(),
+        studentId: user?._id,
+        examId: sessionId,
+        sessionId: sessionId,
+        full_name: user?.profile_details?.full_name
+      });
+      
       // Generate security report
       const securityReport = examSecurityService.generateSecurityReport(
         sessionId,

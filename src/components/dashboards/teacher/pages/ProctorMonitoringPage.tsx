@@ -48,9 +48,11 @@ interface StudentSessionStatus {
   total_questions: number; // Total soal dalam ujian
 }
 
-const ProctorMonitoringPage: React.FC = () => {
-  const { currentPath } = useRouter();
-  const examId = currentPath.split('/').pop();
+interface ProctorMonitoringPageProps {
+  examId: string;
+}
+
+const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId }) => {
   const { token } = useAuth();
   const { navigate } = useRouter();
 

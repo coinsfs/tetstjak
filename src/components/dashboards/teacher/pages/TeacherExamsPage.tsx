@@ -146,7 +146,7 @@ const TeacherExamsPage: React.FC = () => {
   };
 
   const handleMonitorExam = (exam: TeacherExam) => {
-    if (exam.status === 'ongoing') {
+    if (exam.status === 'active' || exam.status === 'ongoing') {
       navigate(`/monitor-exam/${exam._id}`);
     } else {
       toast.error('Ujian belum berlangsung atau sudah selesai.');
