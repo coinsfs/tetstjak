@@ -409,18 +409,19 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   // Violation Logging - Modified to send via WebSocket
   const logViolation = (type: string, severity: 'low' | 'medium' | 'high' | 'critical', details?: any) => {
     const violation = {
+      messageType: 'violation_event',
       type,
       severity,
       timestamp: Date.now(),
       examId,
       studentId,
+      sessionId,
       details: details || {},
       userAgent: navigator.userAgent,
       url: window.location.href,
       tabActive: isTabActive,
       mousePosition: mouseTracker.current,
-      keyboardStats: keyboardTracker.current,
-      messageType: 'violation_event'
+      keyboardStats: keyboardTracker.current
     };
 
     // Send violation via WebSocket

@@ -163,11 +163,18 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     websocketService.send({
       messageType: 'exam_activity',
       activityType: 'answer_changed',
+      type: 'question_navigated',
+      type: 'answer_changed',
       questionId: questionId,
       newAnswer: answer,
+      questionIndex: questions.findIndex(q => q.id === questionId),
       timestamp: Date.now(),
       studentId: user?._id,
-      examId: sessionId
+      examId: sessionId,
+      sessionId: sessionId,
+      full_name: user?.profile_details?.full_name
+      sessionId: sessionId,
+      full_name: user?.profile_details?.full_name
     });
   };
 
@@ -186,10 +193,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       websocketService.send({
         messageType: 'exam_activity',
         activityType: 'auto_save',
+        type: 'auto_save',
         timestamp: Date.now(),
         studentId: user?._id,
         examId: sessionId,
-        answersCount: Object.keys(answers).length
+        sessionId: sessionId,
+        answersCount: Object.keys(answers).length,
+        full_name: user?.profile_details?.full_name
       });
 
     } catch (error) {
@@ -293,6 +303,18 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const handleSecurityPassed = () => {
     setSecurityPassed(true);
     setExamStartTime(Date.now());
+    
+    // Send session started event
+    websocketService.send({
+      messageType: 'session_status',
+      type: 'session_started',
+      status: 'started',
+      timestamp: Date.now(),
+      studentId: user?._id,
+      examId: sessionId,
+      sessionId: sessionId,
+      full_name: user?.profile_details?.full_name
+    });
   };
 
   const handleSecurityFailed = (reason: string) => {

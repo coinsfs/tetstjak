@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
 import { teacherExamService } from '@/services/teacherExam';
 import { AlertCircle, User, Clock, Activity, Eye, CheckCircle, WifiOff, Wifi, ArrowLeft, Users, Shield, Monitor } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '@/constants/config';
 
@@ -24,6 +25,11 @@ interface RealtimeEvent {
   // Tambahan untuk status sesi
   status?: 'started' | 'ended' | 'left_page' | 'rejoined_page' | 'submitted';
   full_name?: string; // Jika backend mengirimkan nama siswa
+  // Tambahan untuk aktivitas pengerjaan soal
+  questionId?: string;
+  newAnswer?: any;
+  questionIndex?: number;
+  answersCount?: number;
 }
 
 // Definisi tipe data untuk status siswa
@@ -37,7 +43,9 @@ interface StudentSessionStatus {
   critical_violations: number;
   ws_status: 'connecting' | 'open' | 'closed' | 'error'; // Status koneksi WebSocket
   start_time?: number;
-  answers_count?: number;
+  answers: Record<string, any>; // Menyimpan jawaban siswa per questionId
+  answered_questions: number; // Jumlah soal yang sudah dijawab
+  total_questions: number; // Total soal dalam ujian
 }
 
 // Mock data untuk demo - dalam implementasi nyata, ini akan datang dari API
@@ -55,8 +63,10 @@ const ProctorMonitoringPage: React.FC = () => {
 
   const [examTitle, setExamTitle] = useState<string>('Memuat...');
   const [studentSessions, setStudentSessions] = useState<StudentSessionStatus[]>([]);
-  const [realtimeEvents, setRealtimeEvents] = useState<RealtimeEvent[]>([]);
+  const [violationEvents, setViolationEvents] = useState<RealtimeEvent[]>([]);
+  const [examActivityEvents, setExamActivityEvents] = useState<RealtimeEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalExamQuestions, setTotalExamQuestions] = useState<number>(0);
   const [connectionStats, setConnectionStats] = useState({
     total: 0,
     connected: 0,
@@ -73,8 +83,12 @@ const ProctorMonitoringPage: React.FC = () => {
       const data: RealtimeEvent = JSON.parse(event.data);
       console.log(`WS message from ${sessionId}:`, data);
 
-      // Tambahkan event ke feed real-time
-      setRealtimeEvents(prevEvents => [data, ...prevEvents].slice(0, 100)); // Batasi 100 event terakhir
+      // Kategorikan event berdasarkan messageType
+      if (data.messageType === 'violation_event') {
+        setViolationEvents(prevEvents => [data, ...prevEvents].slice(0, 50)); // Batasi 50 event pelanggaran terakhir
+      } else if (data.messageType === 'exam_activity') {
+        setExamActivityEvents(prevEvents => [data, ...prevEvents].slice(0, 50)); // Batasi 50 event aktivitas terakhir
+      }
 
       // Perbarui status siswa berdasarkan event
       setStudentSessions(prevSessions => {
@@ -94,16 +108,34 @@ const ProctorMonitoringPage: React.FC = () => {
             // Perbarui status ujian siswa
             if (data.status === 'started' || data.status === 'rejoined_page') {
               currentSession.status = 'examming';
+              // Inisialisasi answers ketika sesi dimulai
+              if (data.status === 'started') {
+                currentSession.answers = {};
+                currentSession.answered_questions = 0;
+              }
             } else if (data.status === 'left_page') {
               currentSession.status = 'offline';
             } else if (data.status === 'submitted') {
               currentSession.status = 'submitted';
             }
           } else if (data.messageType === 'exam_activity') {
-            // Handle exam activities like answer changes, navigation, etc.
+            // Handle exam activities - hitung progres pengerjaan soal
             if (data.type === 'answer_changed') {
-              // Update answers count if available
-              currentSession.answers_count = (currentSession.answers_count || 0) + 1;
+              // Update jawaban siswa dan hitung ulang progres
+              if (data.questionId && data.newAnswer !== undefined) {
+                currentSession.answers[data.questionId] = data.newAnswer;
+                
+                // Hitung ulang jumlah soal yang sudah dijawab
+                // Hitung jawaban yang tidak kosong/null/undefined
+                currentSession.answered_questions = Object.values(currentSession.answers).filter(answer => 
+                  answer !== null && answer !== undefined && answer !== ''
+                ).length;
+              }
+            } else if (data.type === 'auto_save') {
+              // Update answers count dari auto save jika tersedia
+              if (data.answersCount !== undefined) {
+                currentSession.answered_questions = Math.max(currentSession.answered_questions, data.answersCount);
+              }
             }
           }
           return updatedSessions;
@@ -199,12 +231,17 @@ const ProctorMonitoringPage: React.FC = () => {
           const exam = examDetailsResponse.data.find(e => e._id === examId);
           if (exam) {
             setExamTitle(exam.title);
+            // Ambil total soal dari ujian
+            const totalQuestions = exam.question_ids?.length || 0;
+            setTotalExamQuestions(totalQuestions);
           } else {
             setExamTitle(`Ujian ${examId.slice(-8)}`);
+            setTotalExamQuestions(0);
           }
         } catch (error) {
           console.warn('Could not fetch exam details, using fallback title');
           setExamTitle(`Ujian ${examId.slice(-8)}`);
+          setTotalExamQuestions(0);
         }
 
         // 2. Ambil daftar sesi aktif untuk ujian ini
@@ -223,7 +260,9 @@ const ProctorMonitoringPage: React.FC = () => {
           critical_violations: 0,
           ws_status: 'connecting',
           start_time: Date.now(),
-          answers_count: 0
+          answers: {}, // Inisialisasi objek jawaban kosong
+          answered_questions: 0, // Belum ada soal yang dijawab
+          total_questions: totalExamQuestions || 0 // Set total soal dari ujian
         }));
         setStudentSessions(initialStudentStatuses);
 
@@ -285,7 +324,12 @@ const ProctorMonitoringPage: React.FC = () => {
       'session_ended': 'Selesai Ujian',
       'answer_changed': 'Ubah Jawaban',
       'question_navigated': 'Navigasi Soal',
-      'auto_save': 'Auto Save'
+      'auto_save': 'Auto Save',
+      'mouse_leave_window': 'Mouse Keluar Window',
+      'rapid_clicking': 'Klik Cepat',
+      'rapid_typing': 'Ketik Cepat',
+      'suspicious_key': 'Tombol Mencurigakan',
+      'suspicious_combination': 'Kombinasi Tombol Mencurigakan'
     };
     return labels[type] || type.replace(/_/g, ' ');
   };
@@ -383,13 +427,14 @@ const ProctorMonitoringPage: React.FC = () => {
 
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <AlertCircle className="w-6 h-6 text-yellow-600" />
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-purple-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Pelanggaran</p>
+                <p className="text-sm font-medium text-gray-600">Rata-rata Progres</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {studentSessions.reduce((sum, s) => sum + s.violation_count, 0)}
+                  {studentSessions.length > 0 && totalExamQuestions > 0 ? 
+                    Math.round((studentSessions.reduce((sum, s) => sum + s.answered_questions, 0) / studentSessions.length / totalExamQuestions) * 100) : 0}%
                 </p>
               </div>
             </div>
@@ -397,13 +442,13 @@ const ProctorMonitoringPage: React.FC = () => {
 
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <Shield className="w-6 h-6 text-red-600" />
+              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-yellow-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Pelanggaran Kritis</p>
+                <p className="text-sm font-medium text-gray-600">Total Pelanggaran</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {studentSessions.reduce((sum, s) => sum + s.critical_violations, 0)}
+                  {studentSessions.reduce((sum, s) => sum + s.violation_count, 0)}
                 </p>
               </div>
             </div>
@@ -423,7 +468,10 @@ const ProctorMonitoringPage: React.FC = () => {
                   <p className="text-gray-600">Belum ada siswa yang terdeteksi.</p>
                 </div>
               ) : (
-                studentSessions.map(student => (
+                // Urutkan siswa berdasarkan jumlah soal yang dijawab (descending)
+                studentSessions
+                  .sort((a, b) => b.answered_questions - a.answered_questions)
+                  .map(student => (
                   <div key={student.session_id} className="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center space-x-3">
@@ -446,7 +494,20 @@ const ProctorMonitoringPage: React.FC = () => {
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="w-4 h-4 text-blue-500" />
+                        <span className="text-gray-600">
+                          Progres: <span className="font-medium text-gray-900">
+                            {student.answered_questions}/{student.total_questions}
+                          </span>
+                          {student.total_questions > 0 && (
+                            <span className="text-xs text-gray-500 ml-1">
+                              ({Math.round((student.answered_questions / student.total_questions) * 100)}%)
+                            </span>
+                          )}
+                        </span>
+                      </div>
                       <div className="flex items-center space-x-2">
                         <AlertCircle className="w-4 h-4 text-red-500" />
                         <span className="text-gray-600">Pelanggaran: <span className="font-medium text-gray-900">{student.violation_count}</span></span>
@@ -461,57 +522,99 @@ const ProctorMonitoringPage: React.FC = () => {
                         <Clock className="w-4 h-4 text-gray-500" />
                         <span className="text-gray-600">Aktif: <span className="font-medium text-gray-900">{new Date(student.last_activity).toLocaleTimeString()}</span></span>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle className="w-4 h-4 text-blue-500" />
-                        <span className="text-gray-600">Jawaban: <span className="font-medium text-gray-900">{student.answers_count || 0}</span></span>
-                      </div>
                     </div>
                   </div>
-                ))
+                  ))
               )}
             </div>
           </div>
 
           {/* Real-time Activity Feed */}
-          <div className="lg:col-span-1 bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
-              <Activity className="w-5 h-5 mr-2 text-purple-600" /> Log Aktivitas Real-time
-            </h2>
-            <div className="space-y-3 max-h-96 overflow-y-auto pr-2 scrollbar-hide">
-              {realtimeEvents.length === 0 ? (
-                <div className="text-center py-8">
-                  <Activity className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600 text-sm">Menunggu aktivitas siswa...</p>
-                </div>
-              ) : (
-                realtimeEvents.map((event, index) => (
-                  <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm hover:shadow-sm transition-shadow">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate">
-                          {event.full_name || studentSessions.find(s => s.student_id === event.studentId)?.full_name || `Siswa ${event.studentId.substring(0, 6)}`}
-                        </p>
-                        <p className="text-gray-700 mt-1">
-                          {getEventTypeLabel(event.type)}
-                        </p>
-                      </div>
-                      {event.severity && (
-                        <span className={`font-semibold text-xs px-2 py-1 rounded ${getSeverityColor(event.severity)} bg-opacity-10`}>
-                          {event.severity.toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    {event.details && (event.details.reason || event.details.message) && (
-                      <p className="text-gray-600 text-xs mb-2">
-                        {event.details.reason || event.details.message}
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-500">
-                      {new Date(event.timestamp).toLocaleTimeString()}
-                    </p>
+          <div className="lg:col-span-1 space-y-6">
+            {/* Log Pelanggaran */}
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <AlertCircle className="w-5 h-5 mr-2 text-red-600" /> Log Pelanggaran
+              </h2>
+              <div className="space-y-3 max-h-48 overflow-y-auto pr-2 scrollbar-hide">
+                {violationEvents.length === 0 ? (
+                  <div className="text-center py-4">
+                    <AlertCircle className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-600 text-xs">Belum ada pelanggaran</p>
                   </div>
-                ))
-              )}
+                ) : (
+                  violationEvents.map((event, index) => (
+                    <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-red-900 truncate">
+                            {event.full_name || studentSessions.find(s => s.student_id === event.studentId)?.full_name || `Siswa ${event.studentId.substring(0, 6)}`}
+                          </p>
+                          <p className="text-red-700 mt-1">
+                            {getEventTypeLabel(event.type)}
+                          </p>
+                        </div>
+                        {event.severity && (
+                          <span className={`font-semibold text-xs px-2 py-1 rounded ${getSeverityColor(event.severity)} bg-opacity-20`}>
+                            {event.severity.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      {event.details && (event.details.reason || event.details.message) && (
+                        <p className="text-red-600 text-xs mb-2">
+                          {event.details.reason || event.details.message}
+                        </p>
+                      )}
+                      <p className="text-xs text-red-500">
+                        {new Date(event.timestamp).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Log Aktivitas Pengerjaan */}
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <Activity className="w-5 h-5 mr-2 text-blue-600" /> Log Aktivitas Pengerjaan
+              </h2>
+              <div className="space-y-3 max-h-48 overflow-y-auto pr-2 scrollbar-hide">
+                {examActivityEvents.length === 0 ? (
+                  <div className="text-center py-4">
+                    <Activity className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-600 text-xs">Menunggu aktivitas pengerjaan...</p>
+                  </div>
+                ) : (
+                  examActivityEvents.map((event, index) => (
+                    <div key={index} className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-blue-900 truncate">
+                            {event.full_name || studentSessions.find(s => s.student_id === event.studentId)?.full_name || `Siswa ${event.studentId.substring(0, 6)}`}
+                          </p>
+                          <p className="text-blue-700 mt-1">
+                            {getEventTypeLabel(event.type)}
+                            {event.questionId && (
+                              <span className="text-xs text-blue-600 ml-1">
+                                - Soal {event.questionIndex ? event.questionIndex + 1 : 'ID: ' + event.questionId.slice(-4)}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      {event.type === 'answer_changed' && event.newAnswer && (
+                        <p className="text-blue-600 text-xs mb-2">
+                          Jawaban: {typeof event.newAnswer === 'string' ? event.newAnswer.substring(0, 50) + (event.newAnswer.length > 50 ? '...' : '') : JSON.stringify(event.newAnswer)}
+                        </p>
+                      )}
+                      <p className="text-xs text-blue-500">
+                        {new Date(event.timestamp).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>
