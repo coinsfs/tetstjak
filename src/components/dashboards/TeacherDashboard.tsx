@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
-import { Loader } from 'lucide-react';
 import { dashboardService } from '@/services/dashboard';
 import { TeacherDashboardStats } from '@/types/dashboard';
 import TeacherSidebar from './teacher/TeacherSidebar';
 import TeacherHeader from './teacher/TeacherHeader';
 import TeacherMainContent from './teacher/TeacherMainContent';
 import toast from 'react-hot-toast';
-import ProctorMonitoringPage from './teacher/pages/ProctorMonitoringPage';
 
 const TeacherDashboard: React.FC = () => {
   const { user, logout, token } = useAuth();
@@ -16,26 +14,6 @@ const TeacherDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dashboardStats, setDashboardStats] = useState<TeacherDashboardStats | undefined>();
   const [statsLoading, setStatsLoading] = useState(true);
-  
-  // Add loading state check
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Handle monitoring route first
-  if (currentPath.startsWith('/monitor-exam/')) {
-    const examId = currentPath.split('/').pop();
-    if (examId) {
-      return <ProctorMonitoringPage examId={examId} />;
-    }
-  }
 
   useEffect(() => {
     const fetchDashboardStats = async () => {
@@ -71,6 +49,10 @@ const TeacherDashboard: React.FC = () => {
       case '/teacher/profile':
         return 'Profile';
       default:
+        // Handle sub-routes or unknown routes
+        if (currentPath.startsWith('/teacher/')) {
+          return 'Teacher Dashboard';
+        }
         return 'Dashboard';
     }
   };
