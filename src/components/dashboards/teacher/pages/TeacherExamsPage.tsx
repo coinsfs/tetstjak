@@ -149,7 +149,10 @@ const TeacherExamsPage: React.FC = () => {
     if (exam.status === 'ongoing') {
       navigate(`/monitor-exam/${exam._id}`);
     } else {
-      toast.error('Ujian belum berlangsung atau sudah selesai.');
+      // For testing purposes, allow monitoring even if not ongoing
+      console.log('Exam status:', exam.status);
+      navigate(`/monitor-exam/${exam._id}`);
+      // toast.error('Ujian belum berlangsung atau sudah selesai.');
     }
   };
 

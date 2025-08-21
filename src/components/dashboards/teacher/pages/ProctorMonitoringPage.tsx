@@ -47,9 +47,13 @@ interface MockActiveSession {
   full_name: string;
 }
 
-const ProctorMonitoringPage: React.FC = () => {
+interface ProctorMonitoringPageProps {
+  examId?: string;
+}
+
+const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId: propExamId }) => {
   const { currentPath } = useRouter();
-  const examId = currentPath.split('/').pop();
+  const examId = propExamId || currentPath.split('/').pop();
   const { token } = useAuth();
   const { navigate } = useRouter();
 
@@ -63,6 +67,9 @@ const ProctorMonitoringPage: React.FC = () => {
     connecting: 0,
     disconnected: 0
   });
+
+  // Add error boundary
+  const [error, setError] = useState<string | null>(null);
 
   // Ref untuk menyimpan instance WebSocket agar tidak hilang saat re-render
   const wsConnectionsRef = useRef<Map<string, WebSocket>>(new Map());
@@ -187,12 +194,14 @@ const ProctorMonitoringPage: React.FC = () => {
   useEffect(() => {
     const fetchExamAndSessions = async () => {
       if (!examId || !token) {
-        toast.error('ID Ujian atau token tidak ditemukan.');
+        setError('ID Ujian atau token tidak ditemukan.');
         setLoading(false);
         return;
       }
 
       try {
+        console.log('Fetching exam details for ID:', examId);
+        
         // 1. Ambil detail ujian (untuk judul)
         try {
           const examDetailsResponse = await teacherExamService.getTeacherExams(token, { page: 1, limit: 100 });
@@ -202,6 +211,7 @@ const ProctorMonitoringPage: React.FC = () => {
           } else {
             setExamTitle(`Ujian ${examId.slice(-8)}`);
           }
+          console.log('Exam title set:', examTitle);
         } catch (error) {
           console.warn('Could not fetch exam details, using fallback title');
           setExamTitle(`Ujian ${examId.slice(-8)}`);
@@ -234,7 +244,7 @@ const ProctorMonitoringPage: React.FC = () => {
 
       } catch (error) {
         console.error('Error fetching exam details or active sessions:', error);
-        toast.error('Gagal memuat detail ujian atau sesi aktif.');
+        setError('Gagal memuat detail ujian atau sesi aktif.');
       } finally {
         setLoading(false);
       }
@@ -298,8 +308,28 @@ const ProctorMonitoringPage: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <Loader className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
           <p className="text-gray-600">Memuat dashboard monitoring...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md mx-4">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={handleBackToExams}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Kembali ke Ujian
+          </button>
         </div>
       </div>
     );

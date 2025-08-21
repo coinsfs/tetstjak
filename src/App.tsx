@@ -76,7 +76,7 @@ const AppContent: React.FC = () => {
     if (examId) {
       return (
         <ProtectedRoute requiredRole="teacher">
-          <ProctorMonitoringPage />
+          <ProctorMonitoringPage examId={examId} />
         </ProtectedRoute>
       );
     }
