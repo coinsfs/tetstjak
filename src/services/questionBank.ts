@@ -105,6 +105,7 @@ class QuestionBankService extends BaseService {
   async submitForReview(token: string, questionIds: string[]): Promise<void> {
     await this.post('/question-banks/my-questions/submit-for-review', { question_ids: questionIds }, token);
   }
+
   async getQuestionSets(token: string, subjectId: string, gradeLevel: number): Promise<QuestionSet[]> {
     const params = {
       subject_id: subjectId,
@@ -116,14 +117,6 @@ class QuestionBankService extends BaseService {
 
   async updateExamQuestions(token: string, examId: string, questionIds: string[]): Promise<void> {
     await this.put(`/exams/${examId}/questions`, { question_ids: questionIds }, token);
-  }
-
-  async submitForReview(token: string, questionIds: string[], coordinationAssignmentId: string, purpose: string): Promise<void> {
-    await this.post('/question-banks/submit-for-review', {
-      question_ids: questionIds,
-      coordination_assignment_id: coordinationAssignmentId,
-      purpose: purpose
-    }, token);
   }
 }
 
