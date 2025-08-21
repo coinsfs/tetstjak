@@ -1,9 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { websocketService } from '@/services/websocket';
 
 interface ExamMonitoringProps {
   examId: string;
   studentId: string;
+  sessionId: string;
+  token: string | null;
   onCriticalViolation: (reason: string) => void;
   onViolationUpdate: (count: number) => void;
 }
@@ -18,6 +21,8 @@ interface ViolationCount {
 const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   examId,
   studentId,
+  sessionId,
+  token,
   onCriticalViolation,
   onViolationUpdate
 }) => {
@@ -32,7 +37,6 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   const tabSwitchCount = useRef(0);
   const lastActiveTime = useRef(Date.now());
   const monitoringInterval = useRef<NodeJS.Timeout | null>(null);
-  const backupInterval = useRef<NodeJS.Timeout | null>(null);
   const mouseTracker = useRef({ x: 0, y: 0, clicks: 0 });
   const keyboardTracker = useRef({ keystrokes: 0, suspiciousKeys: 0 });
   const screenHeightTracker = useRef({ 
@@ -42,13 +46,19 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   });
 
   useEffect(() => {
+    // Establish WebSocket connection
+    if (token && sessionId) {
+      const wsUrl = `wss://smkmudakalirejo.pagekite.me/api/v1/ws/exam-room/${sessionId}?token=${token}`;
+      websocketService.connect(wsUrl);
+    }
+
     setupMonitoring();
-    startPeriodicBackup();
 
     return () => {
       cleanup();
+      websocketService.disconnect();
     };
-  }, []);
+  }, [token, sessionId]);
 
   const setupMonitoring = () => {
     // 1. Tab/Window Focus Monitoring
@@ -66,16 +76,13 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     // 5. Clipboard Monitoring
     setupClipboardMonitoring();
     
-    // 6. Screen Recording Detection
-    setupScreenRecordingDetection();
-    
-    // 7. DevTools Continuous Check
+    // 6. DevTools Continuous Check
     setupDevToolsMonitoring();
     
-    // 8. Fullscreen Monitoring
+    // 7. Fullscreen Monitoring
     setupFullscreenMonitoring();
     
-    // 9. Screen Height Monitoring (Split Screen Detection)
+    // 8. Screen Height Monitoring (Split Screen Detection)
     setupScreenHeightMonitoring();
   };
 
@@ -183,49 +190,9 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     document.addEventListener('mouseleave', handleMouseLeave);
   };
 
-  // 9. Screen Height Monitoring (Split Screen Detection)
-  const setupScreenHeightMonitoring = () => {
-    const handleResize = () => {
-      const currentHeight = window.innerHeight;
-      const originalHeight = screenHeightTracker.current.originalHeight;
-      const heightReduction = originalHeight - currentHeight;
-      const reductionPercentage = (heightReduction / originalHeight) * 100;
-      
-      screenHeightTracker.current.currentHeight = currentHeight;
-      
-      // Detect significant height reduction (possible split screen)
-      if (reductionPercentage > 30) { // More than 30% height reduction
-        screenHeightTracker.current.violations += 1;
-        
-        logViolation('screen_height_reduction', 'high', {
-          originalHeight,
-          currentHeight,
-          reductionPercentage: Math.round(reductionPercentage),
-          violationCount: screenHeightTracker.current.violations,
-          timestamp: Date.now()
-        });
-        
-        // Critical violation after multiple height reductions
-        if (screenHeightTracker.current.violations >= 3) {
-          onCriticalViolation(`Split screen atau pengurangan tinggi layar terdeteksi (${Math.round(reductionPercentage)}% pengurangan). Ujian dihentikan.`);
-        }
-      }
-      
-      // Also check for very small screen height (possible mobile split screen)
-      if (currentHeight < 400) {
-        logViolation('very_small_screen_height', 'medium', {
-          currentHeight,
-          timestamp: Date.now()
-        });
-      }
-    };
-    
-    window.addEventListener('resize', handleResize);
-  };
-
   // 4. Keyboard Event Monitoring
   const setupKeyboardTracking = () => {
-    const handleKeyDown = (e: KeyEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       keyboardTracker.current.keystrokes += 1;
 
       // Monitor suspicious key combinations
@@ -280,7 +247,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown as any);
+    document.addEventListener('keydown', handleKeyDown);
   };
 
   // 5. Clipboard Monitoring
@@ -308,46 +275,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     document.addEventListener('cut', handleCut);
   };
 
-  // 6. Screen Recording Detection
-  const setupScreenRecordingDetection = () => {
-    // Check for screen capture API usage
-    if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
-      const originalGetDisplayMedia = navigator.mediaDevices.getDisplayMedia;
-      navigator.mediaDevices.getDisplayMedia = function(...args) {
-        logViolation('screen_capture_attempt', 'critical', {
-          timestamp: Date.now(),
-          method: 'getDisplayMedia'
-        });
-        onCriticalViolation('Screen recording terdeteksi. Ujian dihentikan.');
-        return originalGetDisplayMedia.apply(this, args);
-      };
-    }
-
-    // Monitor for common screen recording software
-    const checkScreenRecording = () => {
-      // Check for OBS, Bandicam, etc. (simplified detection)
-      const suspiciousProcesses = [
-        'obs', 'bandicam', 'camtasia', 'screencast',
-        'recordmydesktop', 'simplescreenrecorder'
-      ];
-
-      // This is a simplified check - in real implementation,
-      // you might need more sophisticated detection
-      const userAgent = navigator.userAgent.toLowerCase();
-      for (const process of suspiciousProcesses) {
-        if (userAgent.includes(process)) {
-          logViolation('screen_recording_software', 'critical', {
-            detectedSoftware: process,
-            timestamp: Date.now()
-          });
-        }
-      }
-    };
-
-    setInterval(checkScreenRecording, 10000); // Check every 10 seconds
-  };
-
-  // 7. DevTools Continuous Monitoring
+  // 6. DevTools Continuous Monitoring
   const setupDevToolsMonitoring = () => {
     const checkDevTools = () => {
       let devtoolsScore = 0;
@@ -403,15 +331,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
           }
         });
         
-        // Only trigger critical violation after multiple detections
-        const recentViolations = JSON.parse(localStorage.getItem(`exam_violations_${examId}_${studentId}`) || '[]')
-          .filter((v: any) => v.type === 'devtools_detected' && (Date.now() - v.timestamp) < 30000);
-        
-        if (recentViolations.length >= 3) {
-          onCriticalViolation(`Developer Tools terdeteksi terbuka secara konsisten (${recentViolations.length} kali dalam 30 detik). Ujian dihentikan.`);
-        } else {
-          console.warn(`Suspicious activity detected. Warning ${recentViolations.length + 1}/3.`);
-        }
+        console.warn(`Suspicious activity detected. DevTools score: ${devtoolsScore}`);
       } else if (devtoolsScore >= 40) {
         logViolation('devtools_suspected', 'medium', {
           timestamp: Date.now(),
@@ -424,7 +344,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     monitoringInterval.current = setInterval(checkDevTools, 3000); // Check every 3 seconds
   };
 
-  // 8. Fullscreen Monitoring
+  // 7. Fullscreen Monitoring
   const setupFullscreenMonitoring = () => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
@@ -446,7 +366,47 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     document.addEventListener('fullscreenchange', handleFullscreenChange);
   };
 
-  // Violation Logging
+  // 8. Screen Height Monitoring (Split Screen Detection)
+  const setupScreenHeightMonitoring = () => {
+    const handleResize = () => {
+      const currentHeight = window.innerHeight;
+      const originalHeight = screenHeightTracker.current.originalHeight;
+      const heightReduction = originalHeight - currentHeight;
+      const reductionPercentage = (heightReduction / originalHeight) * 100;
+      
+      screenHeightTracker.current.currentHeight = currentHeight;
+      
+      // Detect significant height reduction (possible split screen)
+      if (reductionPercentage > 30) { // More than 30% height reduction
+        screenHeightTracker.current.violations += 1;
+        
+        logViolation('screen_height_reduction', 'high', {
+          originalHeight,
+          currentHeight,
+          reductionPercentage: Math.round(reductionPercentage),
+          violationCount: screenHeightTracker.current.violations,
+          timestamp: Date.now()
+        });
+        
+        // Critical violation after multiple height reductions
+        if (screenHeightTracker.current.violations >= 3) {
+          onCriticalViolation(`Split screen atau pengurangan tinggi layar terdeteksi (${Math.round(reductionPercentage)}% pengurangan). Ujian dihentikan.`);
+        }
+      }
+      
+      // Also check for very small screen height (possible mobile split screen)
+      if (currentHeight < 400) {
+        logViolation('very_small_screen_height', 'medium', {
+          currentHeight,
+          timestamp: Date.now()
+        });
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+  };
+
+  // Violation Logging - Modified to send via WebSocket
   const logViolation = (type: string, severity: 'low' | 'medium' | 'high' | 'critical', details?: any) => {
     const violation = {
       type,
@@ -459,16 +419,14 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       url: window.location.href,
       tabActive: isTabActive,
       mousePosition: mouseTracker.current,
-      keyboardStats: keyboardTracker.current
+      keyboardStats: keyboardTracker.current,
+      messageType: 'violation_event'
     };
 
-    // Store in localStorage
-    const violationsKey = `exam_violations_${examId}_${studentId}`;
-    const existingViolations = JSON.parse(localStorage.getItem(violationsKey) || '[]');
-    existingViolations.push(violation);
-    localStorage.setItem(violationsKey, JSON.stringify(existingViolations));
+    // Send violation via WebSocket
+    websocketService.send(violation);
 
-    // Update violation counts
+    // Update local violation counts for display
     setViolationCounts(prev => {
       const newCounts = { ...prev };
       newCounts[severity] += 1;
@@ -477,39 +435,13 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       return newCounts;
     });
 
-    // Check for critical violation thresholds
-    const totalHighViolations = violationCounts.high + violationCounts.critical;
-    if (totalHighViolations >= 10) {
-      onCriticalViolation('Terlalu banyak pelanggaran keamanan terdeteksi. Ujian dihentikan.');
-    }
-
-    console.warn('Violation logged:', violation);
-  };
-
-  // Periodic Data Backup
-  const startPeriodicBackup = () => {
-    backupInterval.current = setInterval(() => {
-      const violationsKey = `exam_violations_${examId}_${studentId}`;
-      const violations = localStorage.getItem(violationsKey);
-      
-      if (violations) {
-        // Backup to sessionStorage
-        const sessionKey = `session_violations_${examId}_${studentId}`;
-        sessionStorage.setItem(sessionKey, violations);
-        
-        // TODO: Send to backend API periodically
-        // sendViolationsToBackend(JSON.parse(violations));
-      }
-    }, 30000); // Every 30 seconds
+    console.warn('Violation logged and sent via WS:', violation);
   };
 
   // Cleanup
   const cleanup = () => {
     if (monitoringInterval.current) {
       clearInterval(monitoringInterval.current);
-    }
-    if (backupInterval.current) {
-      clearInterval(backupInterval.current);
     }
   };
 

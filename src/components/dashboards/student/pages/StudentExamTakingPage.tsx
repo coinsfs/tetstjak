@@ -5,6 +5,7 @@ import { useRouter } from '@/hooks/useRouter';
 import { studentExamService, ExamQuestion } from '@/services/studentExam';
 import { SecurityCheck, ExamMonitoring } from '@/components/security';
 import { examSecurityService } from '@/services/examSecurity';
+import { websocketService } from '@/services/websocket';
 import { 
   FileText, 
   Clock, 
@@ -157,6 +158,17 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       ...prev,
       [questionId]: answer
     }));
+
+    // Send answer change activity via WebSocket
+    websocketService.send({
+      messageType: 'exam_activity',
+      activityType: 'answer_changed',
+      questionId: questionId,
+      newAnswer: answer,
+      timestamp: Date.now(),
+      studentId: user?._id,
+      examId: sessionId
+    });
   };
 
   const handleSaveAnswers = async () => {
@@ -169,6 +181,17 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       setLastSaved(new Date());
       // Remove toast notification for auto-save to avoid spam
       console.log('Answers auto-saved at', new Date().toLocaleTimeString());
+
+      // Send auto-save activity via WebSocket
+      websocketService.send({
+        messageType: 'exam_activity',
+        activityType: 'auto_save',
+        timestamp: Date.now(),
+        studentId: user?._id,
+        examId: sessionId,
+        answersCount: Object.keys(answers).length
+      });
+
     } catch (error) {
       console.error('Error saving answers:', error);
       // Only show error toast for failed saves
@@ -337,6 +360,16 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     const element = document.getElementById(`question-${questionIndex}`);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Send question navigation activity via WebSocket
+      websocketService.send({
+        messageType: 'exam_activity',
+        activityType: 'question_navigated',
+        questionIndex: questionIndex,
+        questionId: questions[questionIndex]?.id,
+        timestamp: Date.now(),
+        studentId: user?._id,
+        examId: sessionId
+      });
     }
   };
 
@@ -471,6 +504,8 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       <ExamMonitoring
         examId={sessionId}
         studentId={user?._id || ''}
+        sessionId={sessionId}
+        token={token}
         onCriticalViolation={handleCriticalViolation}
         onViolationUpdate={handleViolationUpdate}
       />
