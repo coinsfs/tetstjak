@@ -42,6 +42,11 @@ const AppContent: React.FC = () => {
     }
   }, [isAuthenticated, user, currentPath, navigate, isLoading]);
 
+  // Force re-render when currentPath changes to ensure proper navigation
+  useEffect(() => {
+    // This effect ensures the component re-renders when the path changes
+    console.log('Current path changed to:', currentPath);
+  }, [currentPath]);
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">

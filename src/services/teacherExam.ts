@@ -146,15 +146,12 @@ class TeacherExamService extends BaseService {
     studentId: string;
     full_name: string;
   }[]> {
-    // This is a mock implementation
-    // In real implementation, this would call: `/exam-sessions/active-by-exam/${examId}`
-    return [
-      { sessionId: '689f77431520379a7501cf80', studentId: 'student1', full_name: 'Ahmad Rizki' },
-      { sessionId: '689f77431520379a7501cf81', studentId: 'student2', full_name: 'Siti Nurhaliza' },
-      { sessionId: '689f77431520379a7501cf82', studentId: 'student3', full_name: 'Budi Santoso' },
-      { sessionId: '689f77431520379a7501cf83', studentId: 'student4', full_name: 'Dewi Sartika' },
-      { sessionId: '689f77431520379a7501cf84', studentId: 'student5', full_name: 'Eko Prasetyo' }
-    ];
+    // Real implementation - get active exam sessions from API
+    return this.get<{
+      sessionId: string;
+      studentId: string;
+      full_name: string;
+    }[]>(`/exam-sessions/active-by-exam/${examId}`, token);
   }
 }
 

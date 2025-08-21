@@ -48,12 +48,6 @@ interface StudentSessionStatus {
   total_questions: number; // Total soal dalam ujian
 }
 
-// Mock data untuk demo - dalam implementasi nyata, ini akan datang dari API
-interface MockActiveSession {
-  sessionId: string;
-  studentId: string;
-  full_name: string;
-}
 
 const ProctorMonitoringPage: React.FC = () => {
   const { currentPath } = useRouter();
@@ -90,6 +84,39 @@ const ProctorMonitoringPage: React.FC = () => {
         setExamActivityEvents(prevEvents => [data, ...prevEvents].slice(0, 50)); // Batasi 50 event aktivitas terakhir
       }
 
+      // Handle student join/leave events
+      if (data.messageType === 'student_join') {
+        setStudentSessions(prevSessions => {
+          const existingIndex = prevSessions.findIndex(s => s.session_id === data.sessionId);
+          if (existingIndex === -1) {
+            // Add new student session
+            const newSession: StudentSessionStatus = {
+              student_id: data.studentId,
+              session_id: data.sessionId,
+              full_name: data.full_name || `Student ${data.studentId.slice(-6)}`,
+              status: 'online',
+              last_activity: data.timestamp,
+              violation_count: 0,
+              critical_violations: 0,
+              ws_status: 'open',
+              start_time: data.timestamp,
+              answers: {},
+              answered_questions: 0,
+              total_questions: totalExamQuestions
+            };
+            return [...prevSessions, newSession];
+          }
+          return prevSessions;
+        });
+      } else if (data.messageType === 'student_leave') {
+        setStudentSessions(prevSessions => 
+          prevSessions.map(s => 
+            s.session_id === data.sessionId 
+              ? { ...s, status: 'offline', ws_status: 'closed' }
+              : s
+          )
+        );
+      }
       // Perbarui status siswa berdasarkan event
       setStudentSessions(prevSessions => {
         const updatedSessions = [...prevSessions];
@@ -161,60 +188,81 @@ const ProctorMonitoringPage: React.FC = () => {
     });
   }, []);
 
-  // Fungsi untuk menginisialisasi koneksi WebSocket untuk satu sesi
-  const setupWebSocketForSession = useCallback((session: StudentSessionStatus, currentToken: string) => {
-    if (!session.session_id || wsConnectionsRef.current.has(session.session_id)) {
-      return; // Jangan buat koneksi duplikat
-    }
-
-    const wsUrl = `${API_BASE_URL.replace('http', 'ws')}/ws/exam-room/${session.session_id}?token=${currentToken}`;
+  // Setup main monitoring WebSocket connection
+  const setupMainWebSocket = useCallback((currentToken: string, examId: string) => {
+    const wsUrl = `${API_BASE_URL.replace('http', 'ws')}/ws/exam-monitoring/${examId}?token=${currentToken}`;
     const ws = new WebSocket(wsUrl);
 
-    wsConnectionsRef.current.set(session.session_id, ws);
-
-    setStudentSessions(prev => prev.map(s => 
-      s.session_id === session.session_id ? { ...s, ws_status: 'connecting' } : s
-    ));
-
     ws.onopen = () => {
-      console.log(`WebSocket for session ${session.session_id} connected.`);
-      setStudentSessions(prev => prev.map(s => 
-        s.session_id === session.session_id ? { ...s, ws_status: 'open' } : s
-      ));
-      updateConnectionStats();
+      console.log('Main monitoring WebSocket connected');
     };
 
-    ws.onmessage = (event) => handleWsMessage(event, session.session_id);
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('Main monitoring WS message:', data);
+        
+        // Handle different message types
+        if (data.messageType === 'student_join') {
+          setStudentSessions(prevSessions => {
+            const existingIndex = prevSessions.findIndex(s => s.session_id === data.sessionId);
+            if (existingIndex === -1) {
+              const newSession: StudentSessionStatus = {
+                student_id: data.studentId,
+                session_id: data.sessionId,
+                full_name: data.full_name || `Student ${data.studentId.slice(-6)}`,
+                status: 'online',
+                last_activity: data.timestamp,
+                violation_count: 0,
+                critical_violations: 0,
+                ws_status: 'open',
+                start_time: data.timestamp,
+                answers: {},
+                answered_questions: 0,
+                total_questions: totalExamQuestions
+              };
+              return [...prevSessions, newSession];
+            } else {
+              // Update existing session to online
+              return prevSessions.map(s => 
+                s.session_id === data.sessionId 
+                  ? { ...s, status: 'online', ws_status: 'open', last_activity: data.timestamp }
+                  : s
+              );
+            }
+          });
+        } else if (data.messageType === 'student_leave') {
+          setStudentSessions(prevSessions => 
+            prevSessions.map(s => 
+              s.session_id === data.sessionId 
+                ? { ...s, status: 'offline', ws_status: 'closed', last_activity: data.timestamp }
+                : s
+            )
+          );
+        } else if (data.messageType === 'violation_event') {
+          setViolationEvents(prevEvents => [data, ...prevEvents].slice(0, 50));
+        } else if (data.messageType === 'exam_activity') {
+          setExamActivityEvents(prevEvents => [data, ...prevEvents].slice(0, 50));
+        }
+      } catch (error) {
+        console.error('Error parsing main monitoring WS message:', error);
+      }
+    };
 
-    ws.onclose = (event) => {
-      console.log(`WebSocket for session ${session.session_id} closed:`, event.reason);
-      setStudentSessions(prev => prev.map(s => 
-        s.session_id === session.session_id ? { ...s, ws_status: 'closed', status: 'offline' } : s
-      ));
-      wsConnectionsRef.current.delete(session.session_id);
-      updateConnectionStats();
+    ws.onclose = () => {
+      console.log('Main monitoring WebSocket disconnected');
+      // Mark all students as offline
+      setStudentSessions(prevSessions => 
+        prevSessions.map(s => ({ ...s, status: 'offline', ws_status: 'closed' }))
+      );
     };
 
     ws.onerror = (error) => {
-      console.error(`WebSocket for session ${session.session_id} error:`, error);
-      setStudentSessions(prev => prev.map(s => 
-        s.session_id === session.session_id ? { ...s, ws_status: 'error', status: 'offline' } : s
-      ));
-      updateConnectionStats();
+      console.error('Main monitoring WebSocket error:', error);
     };
-  }, [handleWsMessage, updateConnectionStats]);
 
-  // Mock function to simulate getting active exam sessions
-  const getMockActiveExamSessions = useCallback((examId: string): MockActiveSession[] => {
-    // In real implementation, this would be an API call
-    return [
-      { sessionId: '689f77431520379a7501cf80', studentId: 'student1', full_name: 'Ahmad Rizki' },
-      { sessionId: '689f77431520379a7501cf81', studentId: 'student2', full_name: 'Siti Nurhaliza' },
-      { sessionId: '689f77431520379a7501cf82', studentId: 'student3', full_name: 'Budi Santoso' },
-      { sessionId: '689f77431520379a7501cf83', studentId: 'student4', full_name: 'Dewi Sartika' },
-      { sessionId: '689f77431520379a7501cf84', studentId: 'student5', full_name: 'Eko Prasetyo' }
-    ];
-  }, []);
+    return ws;
+  }, [totalExamQuestions]);
 
   useEffect(() => {
     const fetchExamAndSessions = async () => {
@@ -244,36 +292,15 @@ const ProctorMonitoringPage: React.FC = () => {
           setTotalExamQuestions(0);
         }
 
-        // 2. Ambil daftar sesi aktif untuk ujian ini
-        // Untuk demo, kita gunakan mock data
-        // Dalam implementasi nyata, ini akan menjadi API call:
-        // const activeSessionsResponse = await teacherExamService.getActiveExamSessions(token, examId);
-        const activeSessionsResponse = getMockActiveExamSessions(examId);
-
-        const initialStudentStatuses: StudentSessionStatus[] = activeSessionsResponse.map(s => ({
-          student_id: s.studentId,
-          session_id: s.sessionId,
-          full_name: s.full_name,
-          status: 'offline', // Default, akan diperbarui oleh WS event
-          last_activity: Date.now(),
-          violation_count: 0,
-          critical_violations: 0,
-          ws_status: 'connecting',
-          start_time: Date.now(),
-          answers: {}, // Inisialisasi objek jawaban kosong
-          answered_questions: 0, // Belum ada soal yang dijawab
-          total_questions: totalExamQuestions || 0 // Set total soal dari ujian
-        }));
-        setStudentSessions(initialStudentStatuses);
-
-        // 3. Buat koneksi WebSocket untuk setiap sesi
-        initialStudentStatuses.forEach(session => {
-          setupWebSocketForSession(session, token);
-        });
+        // 2. Setup main monitoring WebSocket connection
+        const mainWs = setupMainWebSocket(token, examId);
+        
+        // Store main WebSocket reference for cleanup
+        wsConnectionsRef.current.set('main', mainWs);
 
       } catch (error) {
-        console.error('Error fetching exam details or active sessions:', error);
-        toast.error('Gagal memuat detail ujian atau sesi aktif.');
+        console.error('Error setting up exam monitoring:', error);
+        toast.error('Gagal memuat monitoring ujian.');
       } finally {
         setLoading(false);
       }
@@ -290,7 +317,7 @@ const ProctorMonitoringPage: React.FC = () => {
       });
       wsConnectionsRef.current.clear();
     };
-  }, [examId, token, setupWebSocketForSession, getMockActiveExamSessions]);
+  }, [examId, token, setupMainWebSocket]);
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Play, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from '@/hooks/useRouter';
 import { teacherExamService, TeacherExam } from '@/services/teacherExam';
 import toast from 'react-hot-toast';
 
@@ -18,6 +19,7 @@ const TeacherExamStartConfirmationModal: React.FC<TeacherExamStartConfirmationMo
   onSuccess
 }) => {
   const { token } = useAuth();
+  const { navigate } = useRouter();
   const [loading, setLoading] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
 
@@ -29,6 +31,9 @@ const TeacherExamStartConfirmationModal: React.FC<TeacherExamStartConfirmationMo
       await teacherExamService.startExamManually(token, exam._id);
       toast.success('Ujian berhasil dimulai');
       onClose();
+      
+      // Navigate to monitoring page after starting the exam
+      navigate(`/monitor-exam/${exam._id}`);
       onSuccess();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Gagal memulai ujian';
