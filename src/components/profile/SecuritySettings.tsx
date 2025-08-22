@@ -103,7 +103,7 @@ const SecuritySettings: React.FC = () => {
     try {
       setLoading(true);
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://smkmudakalirejo.pagekite.me/api/v1'}/users/me/change-password`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://54.179.214.145/api/v1'}/users/me/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
