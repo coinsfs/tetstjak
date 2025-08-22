@@ -9,6 +9,7 @@ class WebSocketService {
   private authErrorCallback: (() => void) | null = null;
   private currentToken: string | null = null;
   private currentEndpoint: string | null = null;
+  private currentWsUrl: string | null = null;
 
   connect(
     token: string, 
@@ -16,21 +17,36 @@ class WebSocketService {
     onAuthError?: () => void, 
     onStatusChange?: (status: 'connected' | 'disconnected' | 'error') => void
   ) {
+    const newWsUrl = `ws://54.179.214.145/api/v1${endpointSuffix}?token=${token}`;
+
+    // Jika sudah terhubung atau sedang terhubung ke URL yang sama, jangan lakukan apa-apa
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) && this.currentWsUrl === newWsUrl) {
+      console.log('WebSocket already connected or connecting to the same endpoint.');
+      return;
+    }
+
+    // Jika ada koneksi berbeda yang aktif, tutup dulu
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) && this.currentWsUrl !== newWsUrl) {
+      console.log('Closing existing WebSocket connection to establish a new one.');
+      this.ws.close(); // Tutup koneksi yang ada
+      this.ws = null;
+    }
+
     try {
       this.currentToken = token;
       this.currentEndpoint = endpointSuffix;
       this.authErrorCallback = onAuthError || null;
       this.statusChangeCallback = onStatusChange || null;
+      this.currentWsUrl = newWsUrl; // Simpan URL baru
       
-      const wsUrl = `ws://54.179.214.145/api/v1${endpointSuffix}?token=${token}`;
-      this.ws = new WebSocket(wsUrl);
+      this.ws = new WebSocket(newWsUrl);
       
       this.ws.onopen = () => {
         console.log('WebSocket connected');
         this.reconnectAttempts = 0;
         this.statusChangeCallback?.('connected');
         
-        // Send queued messages
+        // Kirim pesan yang mengantri
         while (this.messageQueue.length > 0) {
           const message = this.messageQueue.shift();
           if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -44,7 +60,7 @@ class WebSocketService {
           const data = JSON.parse(event.data);
           console.log('WebSocket message received:', data);
           
-          // Call registered handlers
+          // Panggil handler yang terdaftar
           if (data.type && this.messageHandlers.has(data.type)) {
             const handler = this.messageHandlers.get(data.type);
             if (handler) {
@@ -60,7 +76,7 @@ class WebSocketService {
         console.log('WebSocket disconnected:', event.reason);
         this.statusChangeCallback?.('disconnected');
         
-        // Handle authentication errors
+        // Tangani kesalahan autentikasi
         if (event.code === 1008) {
           console.error('WebSocket authentication failed');
           this.authErrorCallback?.();
@@ -116,16 +132,24 @@ class WebSocketService {
   }
 
   disconnect() {
+    // Hanya tutup jika ada instance WebSocket yang aktif
+    if (this.ws) {
+      // Periksa apakah WebSocket terbuka atau sedang terhubung sebelum menutup
+      if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+        console.log('Closing WebSocket connection...');
+        this.ws.close();
+      } else {
+        console.log('WebSocket is already closed or closing, no need to close again.');
+      }
+      this.ws = null; // Selalu kosongkan referensi
+    }
+    // Hapus state lain terlepas dari status koneksi
     this.messageQueue = [];
     this.statusChangeCallback = null;
     this.authErrorCallback = null;
     this.currentToken = null;
     this.currentEndpoint = null;
-    
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
+    this.currentWsUrl = null;
   }
 }
 
