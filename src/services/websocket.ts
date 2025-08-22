@@ -22,7 +22,7 @@ class WebSocketService {
       this.authErrorCallback = onAuthError || null;
       this.statusChangeCallback = onStatusChange || null;
       
-      const wsUrl = `wss://smkmudakalirejo.pagekite.me/api/v1${endpointSuffix}?token=${token}`;
+      const wsUrl = `ws://54.179.214.145//api/v1${endpointSuffix}?token=${token}`;
       this.ws = new WebSocket(wsUrl);
       
       this.ws.onopen = () => {
