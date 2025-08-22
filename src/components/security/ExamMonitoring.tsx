@@ -48,7 +48,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   useEffect(() => {
     // Establish WebSocket connection
     if (token && sessionId) {
-      const wsUrl = `wss://smkmudakalirejo.pagekite.me/api/v1/ws/exam-room/${sessionId}?token=${token}`;
+      const wsUrl = `ws://54.179.214.145/api/v1/ws/exam-room/${sessionId}?token=${token}`;
       websocketService.connect(wsUrl);
     }
 
