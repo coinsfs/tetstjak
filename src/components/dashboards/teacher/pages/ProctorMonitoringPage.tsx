@@ -304,7 +304,7 @@ const ProctorMonitoringPage: React.FC = () => {
 
   // Setup main monitoring WebSocket connection
   const setupMainWebSocket = useCallback((currentToken: string, examId: string) => {
-    const wsUrl = `${API_BASE_URL.replace('http', 'ws')}/ws/exam-monitoring/${examId}?token=${currentToken}`;
+    const wsUrl = `${API_BASE_URL.replace('http', 'ws')}/ws/exam-room/${examId}?token=${currentToken}`;
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
