@@ -348,6 +348,17 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   const setupFullscreenMonitoring = () => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
+        websocketService.send({
+          type: 'activity_event',
+          details: {
+            eventType: 'fullscreen_exit',
+            timestamp: new Date().toISOString(),
+            studentId,
+            examId,
+            sessionId,
+          },
+        });
+        
         logViolation('fullscreen_exit', 'high', {
           timestamp: Date.now()
         });
@@ -379,6 +390,20 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       // Detect significant height reduction (possible split screen)
       if (reductionPercentage > 30) { // More than 30% height reduction
         screenHeightTracker.current.violations += 1;
+        
+        websocketService.send({
+          type: 'activity_event',
+          details: {
+            eventType: 'screen_resize',
+            originalHeight,
+            currentHeight,
+            reductionPercentage: Math.round(reductionPercentage),
+            timestamp: new Date().toISOString(),
+            studentId,
+            examId,
+            sessionId,
+          },
+        });
         
         logViolation('screen_height_reduction', 'high', {
           originalHeight,

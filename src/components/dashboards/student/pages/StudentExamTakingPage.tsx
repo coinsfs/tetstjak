@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { UserProfile } from '@/types/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
@@ -20,7 +20,9 @@ import {
   Send,
   ChevronRight,
   Hash,
-  Award
+  Award,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -48,6 +50,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const [securityPassed, setSecurityPassed] = useState(false);
   const [violationCount, setViolationCount] = useState(0);
   const [examStartTime, setExamStartTime] = useState<number>(0);
+
+  // WebSocket and activity tracking state
+  const [wsConnectionStatus, setWsConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting' | 'error'>('disconnected');
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const questionStartTimeRef = useRef<Record<string, number>>({});
+  const answerDebounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Auto-save interval
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -84,6 +93,63 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       setError('Parameter ujian tidak ditemukan');
     }
   }, []);
+
+  // WebSocket connection setup
+  useEffect(() => {
+    if (!token || !sessionId || !securityPassed) return;
+
+    const wsEndpoint = `/ws/exam-room/${sessionId}`;
+    
+    const handleAuthError = () => {
+      console.error('WebSocket authentication failed, redirecting to login');
+      navigate('/login');
+    };
+
+    const handleStatusChange = (status: 'connected' | 'disconnected' | 'error') => {
+      setWsConnectionStatus(status);
+      if (status === 'disconnected' || status === 'error') {
+        setWsConnectionStatus('reconnecting');
+      }
+    };
+
+    websocketService.connect(token, wsEndpoint, handleAuthError, handleStatusChange);
+
+    // Listen for proctor messages (optional for future use)
+    websocketService.onMessage('proctor_message', (data) => {
+      console.log('Proctor message received:', data);
+    });
+
+    return () => {
+      websocketService.disconnect();
+    };
+  }, [token, sessionId, securityPassed, navigate]);
+
+  // Heartbeat for activity monitoring
+  useEffect(() => {
+    if (!examStarted || !user?._id || !securityPassed) return;
+
+    heartbeatIntervalRef.current = setInterval(() => {
+      websocketService.send({
+        type: 'activity_event',
+        details: {
+          eventType: 'heartbeat',
+          timestamp: new Date().toISOString(),
+          studentId: user._id,
+          examId: sessionId,
+          sessionId: sessionId,
+          currentQuestionIndex: currentQuestionIndex,
+          totalAnswered: Object.keys(answers).length,
+          timeRemaining: timeRemaining,
+        },
+      });
+    }, 30000); // Every 30 seconds
+
+    return () => {
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+      }
+    };
+  }, [examStarted, user, sessionId, currentQuestionIndex, answers, timeRemaining, securityPassed]);
 
   // Load exam questions
   useEffect(() => {
@@ -150,29 +216,68 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       if (autoSaveIntervalRef.current) {
         clearInterval(autoSaveIntervalRef.current);
       }
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+      }
+      if (answerDebounceTimeoutRef.current) {
+        clearTimeout(answerDebounceTimeoutRef.current);
+      }
     };
   }, []);
 
   const handleAnswerChange = (questionId: string, answer: any) => {
+    const questionIndex = questions.findIndex(q => q.id === questionId);
+    const wasAnswered = !!answers[questionId];
+    
     setAnswers(prev => ({
       ...prev,
       [questionId]: answer
     }));
 
-    // Send answer change activity via WebSocket
-    websocketService.send({
-      messageType: 'exam_activity',
-      activityType: 'answer_changed',
-      type: 'answer_changed',
-      questionId: questionId,
-      newAnswer: answer,
-      questionIndex: questions.findIndex(q => q.id === questionId),
-      timestamp: Date.now(),
-      studentId: user?._id,
-      examId: sessionId,
-      sessionId: sessionId,
-      full_name: user?.profile_details?.full_name
-    });
+    // Clear existing debounce timeout
+    if (answerDebounceTimeoutRef.current) {
+      clearTimeout(answerDebounceTimeoutRef.current);
+    }
+
+    // Send answer_start event if this is the first interaction with this question
+    if (!wasAnswered) {
+      websocketService.send({
+        type: 'activity_event',
+        details: {
+          eventType: 'answer_start',
+          questionId: questionId,
+          questionPosition: questionIndex + 1,
+          timestamp: new Date().toISOString(),
+          studentId: user?._id,
+          examId: sessionId,
+          sessionId: sessionId,
+        },
+      });
+    }
+
+    // Debounced answer submission/modification event
+    answerDebounceTimeoutRef.current = setTimeout(() => {
+      const eventType = wasAnswered ? 'answer_modified' : 'answer_submitted';
+      const timeSpentOnQuestion = questionStartTimeRef.current[questionId] 
+        ? Date.now() - questionStartTimeRef.current[questionId] 
+        : 0;
+
+      websocketService.send({
+        type: 'activity_event',
+        details: {
+          eventType: eventType,
+          questionId: questionId,
+          questionPosition: questionIndex + 1,
+          answerContent: answer,
+          characterCount: typeof answer === 'string' ? answer.length : 0,
+          timeSpent: timeSpentOnQuestion,
+          timestamp: new Date().toISOString(),
+          studentId: user?._id,
+          examId: sessionId,
+          sessionId: sessionId,
+        },
+      });
+    }, 2000); // 2 seconds debounce
   };
 
   const handleSaveAnswers = async () => {
@@ -387,19 +492,75 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   };
 
   const scrollToQuestion = (questionIndex: number) => {
+    const prevQuestionIndex = currentQuestionIndex;
+    const prevQuestionId = questions[prevQuestionIndex]?.id;
+    const newQuestionId = questions[questionIndex]?.id;
+
+    // Calculate time spent on previous question
+    if (prevQuestionId && questionStartTimeRef.current[prevQuestionId] && prevQuestionIndex !== questionIndex) {
+      const timeSpent = Date.now() - questionStartTimeRef.current[prevQuestionId];
+      websocketService.send({
+        type: 'activity_event',
+        details: {
+          eventType: 'question_time_spent',
+          questionId: prevQuestionId,
+          questionPosition: prevQuestionIndex + 1,
+          timeSpent: timeSpent,
+          timestamp: new Date().toISOString(),
+          studentId: user?._id,
+          examId: sessionId,
+          sessionId: sessionId,
+        },
+      });
+    }
+
+    // Update current question index
+    setCurrentQuestionIndex(questionIndex);
+
+    // Record start time for new question
+    if (newQuestionId) {
+      questionStartTimeRef.current[newQuestionId] = Date.now();
+    }
+
     const element = document.getElementById(`question-${questionIndex}`);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      // Send question navigation activity via WebSocket
+      
+      // Send question_viewed event
       websocketService.send({
-        messageType: 'exam_activity',
-        activityType: 'question_navigated',
-        questionIndex: questionIndex,
-        questionId: questions[questionIndex]?.id,
-        timestamp: Date.now(),
-        studentId: user?._id,
-        examId: sessionId
+        type: 'activity_event',
+        details: {
+          eventType: 'question_viewed',
+          questionId: newQuestionId,
+          questionPosition: questionIndex + 1,
+          timestamp: new Date().toISOString(),
+          studentId: user?._id,
+          examId: sessionId,
+          sessionId: sessionId,
+        },
       });
+
+      // Send navigation_action event if this is not the initial view
+      if (prevQuestionIndex !== questionIndex) {
+        const direction = questionIndex > prevQuestionIndex ? 'next' : 
+                         questionIndex < prevQuestionIndex ? 'previous' : 'jump';
+        
+        websocketService.send({
+          type: 'activity_event',
+          details: {
+            eventType: 'navigation_action',
+            direction: direction,
+            fromQuestionId: prevQuestionId,
+            fromQuestionPosition: prevQuestionIndex + 1,
+            toQuestionId: newQuestionId,
+            toQuestionPosition: questionIndex + 1,
+            timestamp: new Date().toISOString(),
+            studentId: user?._id,
+            examId: sessionId,
+            sessionId: sessionId,
+          },
+        });
+      }
     }
   };
 
@@ -538,6 +699,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         token={token}
         onCriticalViolation={handleCriticalViolation}
         onViolationUpdate={handleViolationUpdate}
+        websocketService={websocketService}
       />
 
       {/* Sticky Header */}
@@ -564,6 +726,30 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
                   <span className="text-xs font-normal ml-2 hidden sm:inline">
                     (Waktu hampir habis!)
                   </span>
+                )}
+              </div>
+            )}
+
+            {/* Connection Status */}
+            {examStarted && (
+              <div className="flex items-center space-x-2">
+                {wsConnectionStatus === 'connected' && (
+                  <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-800 rounded-lg text-xs">
+                    <Wifi className="w-3 h-3" />
+                    <span className="hidden sm:inline">Terkoneksi</span>
+                  </div>
+                )}
+                {(wsConnectionStatus === 'disconnected' || wsConnectionStatus === 'reconnecting') && (
+                  <div className="flex items-center space-x-1 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-lg text-xs animate-pulse">
+                    <WifiOff className="w-3 h-3" />
+                    <span className="hidden sm:inline">Menyambung...</span>
+                  </div>
+                )}
+                {wsConnectionStatus === 'error' && (
+                  <div className="flex items-center space-x-1 px-2 py-1 bg-red-100 text-red-800 rounded-lg text-xs">
+                    <AlertCircle className="w-3 h-3" />
+                    <span className="hidden sm:inline">Koneksi Error</span>
+                  </div>
                 )}
               </div>
             )}
