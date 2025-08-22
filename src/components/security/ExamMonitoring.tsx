@@ -57,7 +57,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     return () => {
       cleanup();
       websocketService.disconnect();
-    };
+  }, [token, examId, securityPassed, navigate]);
   }, [token, sessionId]);
 
   const setupMonitoring = () => {
@@ -440,7 +440,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       timestamp: Date.now(),
       examId,
       studentId,
-      sessionId,
+    const wsEndpoint = `/ws/exam-room/${examId}`;
       details: details || {},
       userAgent: navigator.userAgent,
       url: window.location.href,

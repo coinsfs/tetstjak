@@ -54,6 +54,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   // WebSocket and activity tracking state
   const [wsConnectionStatus, setWsConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting' | 'error'>('disconnected');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [actualExamId, setActualExamId] = useState<string>('');
   const questionStartTimeRef = useRef<Record<string, number>>({});
   const answerDebounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -67,6 +68,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     const sParam = urlParams.get('s');
     const eParam = urlParams.get('e');
     const dParam = urlParams.get('d');
+    const examIdParam = urlParams.get('examId');
 
     if (sParam && eParam && dParam) {
       try {
@@ -74,6 +76,12 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         const startTime = parseInt(atob(sParam + '=='));
         const endTime = parseInt(atob(eParam + '=='));
         const duration = parseInt(atob(dParam + '=='));
+        
+        // Decode exam ID if provided
+        if (examIdParam) {
+          const decodedExamId = atob(examIdParam + '==');
+          setActualExamId(decodedExamId);
+        }
         
         const now = Date.now();
         const timeLeft = Math.max(0, Math.floor((endTime - now) / 1000));
@@ -693,7 +701,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Security Monitoring */}
       <ExamMonitoring
-        examId={sessionId}
+        examId={actualExamId || sessionId}
         studentId={user?._id || ''}
         sessionId={sessionId}
         token={token}

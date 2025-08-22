@@ -205,9 +205,10 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
       const s = btoa(startTime.toString()).replace(/[+=]/g, ''); // Remove padding chars
       const e = btoa(endTime.toString()).replace(/[+=]/g, '');
       const d = btoa(duration.toString()).replace(/[+=]/g, '');
+      const examId = btoa(exam._id).replace(/[+=]/g, ''); // Add exam_id parameter
       
       // Navigate to exam taking page with session ID and time parameters
-      window.location.href = `/exam-taking/${examSession._id}?s=${s}&e=${e}&d=${d}`;
+      window.location.href = `/exam-taking/${examSession._id}?s=${s}&e=${e}&d=${d}&examId=${examId}`;
       
       toast.success('Ujian berhasil dimulai!');
     } catch (error) {
