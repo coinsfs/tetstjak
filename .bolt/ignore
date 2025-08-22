@@ -105,7 +105,7 @@ src/components/dashboards/student/StudentMainContent.tsx
 src/components/dashboards/student/StudentSidebar.tsx
 src/components/dashboards/student/pages/StudentDashboardPage.tsx
 src/components/dashboards/student/pages/StudentEvaluationPage.tsx
-
+src/components/dashboards/student/pages/StudentExamsPage.tsx
 src/components/dashboards/student/pages/StudentProfilePage.tsx
 src/components/dashboards/student/pages/StudentResultsPage.tsx
 src/components/profile/index.ts
