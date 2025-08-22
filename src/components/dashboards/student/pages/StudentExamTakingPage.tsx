@@ -41,7 +41,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [examStarted, setExamStarted] = useState(false);
   const [examTitle, setExamTitle] = useState<string>('');
   const [examDuration, setExamDuration] = useState<number>(0);
@@ -187,11 +187,11 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
   // Timer countdown
   useEffect(() => {
-    if (timeRemaining <= 0) return;
+    if (timeRemaining === null || timeRemaining <= 0) return;
 
     const timer = setInterval(() => {
       setTimeRemaining(prev => {
-        if (prev <= 1) {
+        if (prev === null || prev <= 1) {
           // Time's up - auto submit exam
           handleTimeUp();
           return 0;
@@ -628,7 +628,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   }
 
   // Show waiting screen if exam hasn't started yet
-  if (!examStarted && timeRemaining > 0) {
+  if (!examStarted && timeRemaining !== null && timeRemaining > 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-4 bg-white rounded-2xl shadow-xl p-8">
@@ -672,7 +672,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   }
 
   // Show time up screen if time has expired
-  if (timeRemaining <= 0) {
+  if (timeRemaining !== null && timeRemaining <= 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-pink-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-4 bg-white rounded-2xl shadow-xl p-8">
@@ -692,6 +692,21 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
             <CheckCircle className="w-5 h-5 mr-2" />
             Kumpulkan Jawaban
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading screen if timeRemaining is still being calculated
+  if (timeRemaining === null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-center bg-white rounded-2xl shadow-xl p-8 max-w-md mx-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mx-auto mb-6"></div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            Mempersiapkan Ujian
+          </h3>
+          <p className="text-gray-600">Menghitung waktu ujian...</p>
         </div>
       </div>
     );
@@ -726,11 +741,11 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
             {/* Timer */}
             {examStarted && (
               <div className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-mono text-lg font-bold shadow-lg ${
-                timeRemaining <= 300 ? 'bg-red-100 text-red-800 animate-pulse' : 'bg-blue-100 text-blue-800'
+                timeRemaining !== null && timeRemaining <= 300 ? 'bg-red-100 text-red-800 animate-pulse' : 'bg-blue-100 text-blue-800'
               }`}>
                 <Clock className="w-5 h-5" />
-                <span>{formatTime(timeRemaining)}</span>
-                {timeRemaining <= 300 && (
+                <span>{timeRemaining !== null ? formatTime(timeRemaining) : '--:--'}</span>
+                {timeRemaining !== null && timeRemaining <= 300 && (
                   <span className="text-xs font-normal ml-2 hidden sm:inline">
                     (Waktu hampir habis!)
                   </span>
