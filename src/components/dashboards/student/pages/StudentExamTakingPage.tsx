@@ -80,7 +80,8 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         // Decode exam ID if provided
         if (examIdParam) {
           try {
-            const decodedExamId = atob(examIdParam + '==');
+              const startTime = parseInt(atob(sParam.padEnd(sParam.length + (4 - sParam.length % 4) % 4, '=')));
+
             setActualExamId(decodedExamId);
           } catch (error) {
             console.log('ExamId decode failed, using sessionId');
