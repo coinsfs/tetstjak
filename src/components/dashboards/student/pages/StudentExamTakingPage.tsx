@@ -79,8 +79,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         
         // Decode exam ID if provided
         if (examIdParam) {
-          const decodedExamId = atob(examIdParam + '==');
-          setActualExamId(decodedExamId);
+          try {
+            const decodedExamId = atob(examIdParam + '==');
+            setActualExamId(decodedExamId);
+          } catch (error) {
+            console.log('ExamId decode failed, using sessionId');
+            // Skip, gunakan sessionId
+          }
         }
         
         const now = Date.now();
@@ -186,22 +191,46 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   }, [token, sessionId]);
 
   // Timer countdown
+  // Di timer effect (sekitar baris 193)
   useEffect(() => {
-    if (timeRemaining <= 0) return;
-
-    const timer = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 1) {
-          // Time's up - auto submit exam
-          handleTimeUp();
-          return 0;
+    const urlParams = new URLSearchParams(window.location.search);
+    const sParam = urlParams.get('s');
+    const eParam = urlParams.get('e');
+    const dParam = urlParams.get('d');
+    const examIdParam = urlParams.get('examId');
+  
+    if (sParam && eParam && dParam) {
+      try {
+        // TAMBAH LOGGING UNTUK DEBUG
+        console.log('Raw params:', { sParam, eParam, dParam });
+        
+        // Decode parameters - FIX BASE64 PADDING
+        const startTime = parseInt(atob(sParam.padEnd(sParam.length + (4 - sParam.length % 4) % 4, '=')));
+        const endTime = parseInt(atob(eParam.padEnd(eParam.length + (4 - eParam.length % 4) % 4, '=')));
+        const duration = parseInt(atob(dParam.padEnd(dParam.length + (4 - dParam.length % 4) % 4, '=')));
+        
+        console.log('Decoded values:', { startTime, endTime, duration });
+        
+        const now = Date.now();
+        const timeLeft = Math.max(0, Math.floor((endTime - now) / 1000));
+        
+        console.log('Final timing:', { now, timeLeft });
+        
+        setTimeRemaining(timeLeft);
+        setExamDuration(Math.floor(duration / 1000 / 60));
+        
+        if (now >= startTime && now <= endTime && timeLeft > 0) {
+          setExamStarted(true);
         }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [examStarted, timeRemaining]);
+      } catch (error) {
+        console.error('Error parsing URL parameters:', error);
+        // FALLBACK: Set default 60 menit
+        setTimeRemaining(3600); // 1 jam
+        setExamDuration(60);
+        setError('Parameter ujian tidak valid, menggunakan waktu default');
+      }
+    }
+  }, []);
 
   // Auto-save answers periodically (every 10 seconds)
   useEffect(() => {
