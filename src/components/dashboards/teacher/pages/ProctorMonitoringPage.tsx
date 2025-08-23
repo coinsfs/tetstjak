@@ -457,20 +457,16 @@ const ProctorMonitoringPage: React.FC = () => {
   const sendBroadcastMessage = useCallback(async (message: string, type: 'info' | 'warning' | 'critical') => {
     const mainWs = wsConnectionsRef.current.get('main');
     if (mainWs && mainWs.readyState === WebSocket.OPEN) {
-      const broadcastData = {
-        messageType: 'proctor_broadcast',
-        type: type,
-        message: message,
-        timestamp: Date.now(),
-        examId: examId
-      };
-
-      mainWs.send(JSON.stringify(broadcastData));
-      
-      // Add to broadcast history
-      setBroadcastHistory(prev => [{
-        type,
-        message,
+    const message = {
+      type: 'proctor_broadcast',
+      message: broadcastMessage,
+      timestamp: Date.now(),
+      examId: examId
+    };
+    
+    websocketService.send(message);
+    toast.success('Pesan broadcast terkirim');
+    setBroadcastMessage('');
         timestamp: Date.now()
       }, ...prev].slice(0, 20));
 
@@ -483,19 +479,15 @@ const ProctorMonitoringPage: React.FC = () => {
   // Emergency terminate exam
   const terminateExam = useCallback(async () => {
     const mainWs = wsConnectionsRef.current.get('main');
-    if (mainWs && mainWs.readyState === WebSocket.OPEN) {
-      const terminateData = {
-        messageType: 'terminate_exam',
-        examId: examId,
-        timestamp: Date.now(),
-        reason: 'Emergency termination by proctor'
-      };
-
-      mainWs.send(JSON.stringify(terminateData));
-      toast.success('Ujian telah dihentikan untuk semua siswa');
-      setShowEmergencyConfirm(false);
-    } else {
-      toast.error('Koneksi tidak tersedia untuk menghentikan ujian');
+    const message = {
+      type: 'terminate_exam',
+      examId: examId,
+      timestamp: Date.now(),
+      reason: 'Terminated by proctor'
+    };
+    
+    websocketService.send(message);
+    toast.success('Ujian dihentikan untuk semua siswa');
     }
   }, [examId]);
 
