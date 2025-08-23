@@ -17,7 +17,7 @@ class WebSocketService {
     onAuthError?: () => void, 
     onStatusChange?: (status: 'connected' | 'disconnected' | 'error') => void
   ) {
-    const newWsUrl = `ws://54.179.214.145/api/v1${endpointSuffix}?token=${token}`;
+    const newWsUrl = `wss://testing.cigarverse.space/api/v1${endpointSuffix}?token=${token}`;
 
     // Jika sudah terhubung atau sedang terhubung ke URL yang sama, jangan lakukan apa-apa
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) && this.currentWsUrl === newWsUrl) {
