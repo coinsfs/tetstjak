@@ -45,31 +45,20 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     violations: 0
   });
 
-  const handleAuthError = () => {
-    console.error('WebSocket authentication failed in ExamMonitoring. Terminating exam.');
-    // Laporkan ini sebagai pelanggaran kritis ke komponen induk
-    onCriticalViolation('Autentikasi WebSocket gagal. Ujian dihentikan.');
-  };
-  
-  const handleStatusChange = (status: 'connected' | 'disconnected' | 'error') => {
-    console.log(`ExamMonitoring WebSocket status: ${status}`);
-    // Anda bisa menambahkan logika di sini jika ExamMonitoring perlu menampilkan status koneksi secara internal
-    // atau melakukan tindakan lain berdasarkan status koneksi.
-  };
-  
   useEffect(() => {
     // Establish WebSocket connection
-    if (token && examId) {
-      websocketService.connect(token, `/ws/exam-room/${examId}`, handleAuthError, handleStatusChange);
+    if (token && sessionId) {
+      const wsUrl = `ws://54.179.214.145/api/v1/ws/exam-room/${sessionId}?token=${token}`;
+      websocketService.connect(wsUrl);
     }
-  
+
     setupMonitoring();
-  
+
     return () => {
       cleanup();
       websocketService.disconnect();
     };
-  }, [token, examId, onCriticalViolation]);
+  }, [token, sessionId]);
 
   const setupMonitoring = () => {
     // 1. Tab/Window Focus Monitoring
@@ -310,6 +299,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       // Performance-based detection (less frequent)
       try {
         const start = performance.now();
+        debugger;
         const end = performance.now();
         
         // Higher threshold for continuous monitoring
@@ -517,3 +507,4 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 };
 
 export default ExamMonitoring;
+
