@@ -299,7 +299,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       // Performance-based detection (less frequent)
       try {
         const start = performance.now();
-        debugger;
+
         const end = performance.now();
         
         // Higher threshold for continuous monitoring
