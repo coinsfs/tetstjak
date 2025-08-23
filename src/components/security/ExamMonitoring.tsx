@@ -131,18 +131,11 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     };
 
     // Generic handler for any unhandled message types
-    const handleGenericMessage = (data: any) => {
-      if (!['activity_event', 'violation_event', 'session_status', 'student_leave', 'exam_activity', 'presence_update'].includes(data.type)) {
-        console.log('🔍 GENERIC MESSAGE received:', {
-          type: data.type,
-          timestamp: new Date().toISOString(),
-          raw_data: data
-        });
-      }
-    };
-
-    // Register all message listeners
-    websocketService.onMessage('activity_event', handleActivityEvent);
+      logActivity('heartbeat', {
+        timestamp: new Date().toISOString(),
+        currentQuestionIndex: currentQuestionIndex,
+        totalAnswered: Object.keys(answers).length,
+        timeRemaining: timeRemaining,
     websocketService.onMessage('violation_event', handleViolationEvent);
     websocketService.onMessage('session_status', handleSessionStatus);
     websocketService.onMessage('student_leave', handleStudentLeave);
@@ -454,15 +447,8 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   const setupFullscreenMonitoring = () => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
-        websocketService.send({
-          type: 'activity_event',
-          details: {
-            eventType: 'fullscreen_exit',
-            timestamp: new Date().toISOString(),
-            studentId,
-            examId,
-            sessionId,
-          },
+        logActivity('fullscreen_exit', {
+          timestamp: new Date().toISOString(),
         });
         
         logViolation('fullscreen_exit', 'high', {
@@ -497,18 +483,11 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       if (reductionPercentage > 30) { // More than 30% height reduction
         screenHeightTracker.current.violations += 1;
         
-        websocketService.send({
-          type: 'activity_event',
-          details: {
-            eventType: 'screen_resize',
-            originalHeight,
-            currentHeight,
-            reductionPercentage: Math.round(reductionPercentage),
-            timestamp: new Date().toISOString(),
-            studentId,
-            examId,
-            sessionId,
-          },
+        logActivity('screen_resize', {
+          originalHeight,
+          currentHeight,
+          reductionPercentage: Math.round(reductionPercentage),
+          timestamp: new Date().toISOString(),
         });
         
         logViolation('screen_height_reduction', 'high', {
@@ -540,19 +519,21 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   // Violation Logging - Modified to send via WebSocket
   const logViolation = (type: string, severity: 'low' | 'medium' | 'high' | 'critical', details?: any) => {
     const violation = {
-      messageType: 'violation_event',
-      type,
+      type: 'violation_event',
+      violation_type: type,
       severity,
       timestamp: Date.now(),
       examId,
       studentId,
       sessionId,
-      details: details || {},
-      userAgent: navigator.userAgent,
-      url: window.location.href,
-      tabActive: isTabActive,
-      mousePosition: mouseTracker.current,
-      keyboardStats: keyboardTracker.current
+      details: {
+        ...details,
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+        tabActive: isTabActive,
+        mousePosition: mouseTracker.current,
+        keyboardStats: keyboardTracker.current
+      }
     };
 
     // Send violation via WebSocket
@@ -568,6 +549,22 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     });
 
     console.warn('Violation logged and sent via WS:', violation);
+  };
+
+  // Activity Logging - New function for exam activities
+  const logActivity = (activityType: string, details?: any) => {
+    const activity = {
+      type: 'activity_event',
+      activityType,
+      timestamp: Date.now(),
+      examId,
+      studentId,
+      sessionId,
+      details: details || {}
+    };
+
+    websocketService.send(activity);
+    console.log('Activity logged and sent via WS:', activity);
   };
 
   // Cleanup

@@ -28,7 +28,6 @@ import {
   Download,
   RefreshCw,
   Settings,
-  Bell,
   BellOff
 } from 'lucide-react';
 import { BookOpen } from 'lucide-react';

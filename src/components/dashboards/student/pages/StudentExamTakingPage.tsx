@@ -332,15 +332,16 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
       // Send auto-save activity via WebSocket
       websocketService.send({
-        messageType: 'exam_activity',
+        type: 'activity_event',
         activityType: 'auto_save',
-        type: 'auto_save',
         timestamp: Date.now(),
         studentId: user?._id,
         examId: sessionId,
         sessionId: sessionId,
-        answersCount: Object.keys(answers).length,
-        full_name: user?.profile_details?.full_name
+        details: {
+          answersCount: Object.keys(answers).length,
+          full_name: user?.profile_details?.full_name
+        }
       });
 
     } catch (error) {
@@ -401,13 +402,15 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       
       // Send student leave event before finishing
       websocketService.send({
-        messageType: 'student_leave',
-        type: 'student_leave',
+        type: 'activity_event',
+        activityType: 'student_leave',
         timestamp: Date.now(),
         studentId: user?._id,
         examId: sessionId,
         sessionId: sessionId,
-        full_name: user?.profile_details?.full_name
+        details: {
+          full_name: user?.profile_details?.full_name
+        }
       });
       
       // Generate security report
@@ -458,14 +461,16 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     
     // Send session started event
     websocketService.send({
-      messageType: 'session_status',
-      type: 'session_started',
+      type: 'activity_event',
+      activityType: 'session_started',
       status: 'started',
       timestamp: Date.now(),
       studentId: user?._id,
       examId: sessionId,
       sessionId: sessionId,
-      full_name: user?.profile_details?.full_name
+      details: {
+        full_name: user?.profile_details?.full_name
+      }
     });
   };
 
@@ -540,16 +545,16 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       const timeSpent = Date.now() - questionStartTimeRef.current[prevQuestionId];
       websocketService.send({
         type: 'activity_event',
+        activityType: 'question_time_spent',
+        timestamp: Date.now(),
+        studentId: user?._id,
+        examId: sessionId,
+        sessionId: sessionId,
         details: {
-          eventType: 'question_time_spent',
           questionId: prevQuestionId,
           questionPosition: prevQuestionIndex + 1,
           timeSpent: timeSpent,
-          timestamp: new Date().toISOString(),
-          studentId: user?._id,
-          examId: sessionId,
-          sessionId: sessionId,
-        },
+        }
       });
     }
 
@@ -568,15 +573,15 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       // Send question_viewed event
       websocketService.send({
         type: 'activity_event',
+        activityType: 'question_viewed',
+        timestamp: Date.now(),
+        studentId: user?._id,
+        examId: sessionId,
+        sessionId: sessionId,
         details: {
-          eventType: 'question_viewed',
           questionId: newQuestionId,
           questionPosition: questionIndex + 1,
-          timestamp: new Date().toISOString(),
-          studentId: user?._id,
-          examId: sessionId,
-          sessionId: sessionId,
-        },
+        }
       });
 
       // Send navigation_action event if this is not the initial view
@@ -586,18 +591,18 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         
         websocketService.send({
           type: 'activity_event',
+          activityType: 'navigation_action',
+          timestamp: Date.now(),
+          studentId: user?._id,
+          examId: sessionId,
+          sessionId: sessionId,
           details: {
-            eventType: 'navigation_action',
             direction: direction,
             fromQuestionId: prevQuestionId,
             fromQuestionPosition: prevQuestionIndex + 1,
             toQuestionId: newQuestionId,
             toQuestionPosition: questionIndex + 1,
-            timestamp: new Date().toISOString(),
-            studentId: user?._id,
-            examId: sessionId,
-            sessionId: sessionId,
-          },
+          }
         });
       }
     }
