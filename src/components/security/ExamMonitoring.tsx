@@ -46,19 +46,12 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   });
 
   useEffect(() => {
-    // Establish WebSocket connection
-    if (token && sessionId) {
-      const wsUrl = `ws://54.179.214.145/api/v1/ws/exam-room/${sessionId}?token=${token}`;
-      websocketService.connect(wsUrl);
-    }
-
     setupMonitoring();
 
     return () => {
       cleanup();
-      websocketService.disconnect();
     };
-  }, [token, sessionId]);
+  }, []);
 
   const setupMonitoring = () => {
     // 1. Tab/Window Focus Monitoring

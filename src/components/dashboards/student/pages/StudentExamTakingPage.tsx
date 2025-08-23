@@ -134,7 +134,8 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     });
 
     return () => {
-      websocketService.disconnect();
+      // Don't disconnect WebSocket here - let AuthContext manage it
+      // websocketService.disconnect();
     };
   }, [token, sessionId, securityPassed, navigate]);
 

@@ -11,6 +11,10 @@ class WebSocketService {
   private currentEndpoint: string | null = null;
   private currentWsUrl: string | null = null;
 
+  getCurrentEndpoint(): string | null {
+    return this.currentEndpoint;
+  }
+
   connect(
     token: string, 
     endpointSuffix: string = '/ws/lobby', 

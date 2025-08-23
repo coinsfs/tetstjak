@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { UserProfile } from '@/types/auth';
 import { authService } from '@/services/auth';
 import { websocketService } from '@/services/websocket';
+import { useRouter } from '@/hooks/useRouter';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -31,6 +32,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { currentPath } = useRouter();
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -52,6 +54,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     initializeAuth();
   }, []);
+
+  // WebSocket connection management based on authentication and current path
+  useEffect(() => {
+    if (isAuthenticated && token && !isLoading) {
+      // Check if user is currently in an exam
+      const isInExam = currentPath.startsWith('/exam-taking/');
+      
+      if (!isInExam) {
+        // User is not in exam, ensure lobby connection is active
+        const currentEndpoint = websocketService.getCurrentEndpoint();
+        
+        if (currentEndpoint !== '/ws/lobby') {
+          console.log('Reconnecting to lobby WebSocket...');
+          websocketService.connect(token, '/ws/lobby');
+        }
+      }
+      // If user is in exam, let StudentExamTakingPage handle the connection
+    } else if (!isAuthenticated && !isLoading) {
+      // User is not authenticated, disconnect WebSocket
+      websocketService.disconnect();
+    }
+  }, [isAuthenticated, token, isLoading, currentPath]);
 
   const login = async (username: string, password: string): Promise<void> => {
     try {
