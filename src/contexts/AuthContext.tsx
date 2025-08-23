@@ -34,6 +34,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { currentPath } = useRouter();
 
+  const isAuthenticated = !!user && !!token;
+
   useEffect(() => {
     const initializeAuth = async () => {
       const savedToken = localStorage.getItem('access_token');
@@ -110,8 +112,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Failed to refresh user profile:', error);
     }
   };
-
-  const isAuthenticated = !!user && !!token;
 
   return (
     <AuthContext.Provider value={{
