@@ -53,6 +53,119 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     };
   }, []);
 
+  // Add WebSocket message logging for debugging
+  useEffect(() => {
+    console.log('🔧 ExamMonitoring: Setting up WebSocket message listeners for debugging');
+    
+    // Listen for activity events from students
+    const handleActivityEvent = (data: any) => {
+      console.log('📊 ACTIVITY EVENT received:', {
+        type: data.type,
+        student_id: data.student_id,
+        student_name: data.student_name,
+        details: data.details,
+        timestamp: new Date().toISOString(),
+        raw_data: data
+      });
+    };
+
+    // Listen for violation events from students
+    const handleViolationEvent = (data: any) => {
+      console.log('⚠️ VIOLATION EVENT received:', {
+        type: data.type,
+        student_id: data.student_id,
+        student_name: data.student_name,
+        severity: data.severity,
+        details: data.details,
+        timestamp: new Date().toISOString(),
+        raw_data: data
+      });
+    };
+
+    // Listen for session status updates
+    const handleSessionStatus = (data: any) => {
+      console.log('🎯 SESSION STATUS received:', {
+        type: data.type,
+        student_id: data.student_id,
+        student_name: data.student_name,
+        status: data.status,
+        timestamp: new Date().toISOString(),
+        raw_data: data
+      });
+    };
+
+    // Listen for student leave events
+    const handleStudentLeave = (data: any) => {
+      console.log('👋 STUDENT LEAVE received:', {
+        type: data.type,
+        student_id: data.student_id,
+        student_name: data.student_name,
+        timestamp: new Date().toISOString(),
+        raw_data: data
+      });
+    };
+
+    // Listen for exam activity events
+    const handleExamActivity = (data: any) => {
+      console.log('📝 EXAM ACTIVITY received:', {
+        type: data.type,
+        student_id: data.student_id,
+        student_name: data.student_name,
+        activity_type: data.activityType,
+        answers_count: data.answersCount,
+        timestamp: new Date().toISOString(),
+        raw_data: data
+      });
+    };
+
+    // Listen for presence updates
+    const handlePresenceUpdate = (data: any) => {
+      console.log('👥 PRESENCE UPDATE received:', {
+        type: data.type,
+        room_id: data.room_id,
+        proctor_count: data.proctor_count,
+        student_count: data.student_count,
+        timestamp: new Date().toISOString(),
+        raw_data: data
+      });
+    };
+
+    // Generic handler for any unhandled message types
+    const handleGenericMessage = (data: any) => {
+      if (!['activity_event', 'violation_event', 'session_status', 'student_leave', 'exam_activity', 'presence_update'].includes(data.type)) {
+        console.log('🔍 GENERIC MESSAGE received:', {
+          type: data.type,
+          timestamp: new Date().toISOString(),
+          raw_data: data
+        });
+      }
+    };
+
+    // Register all message listeners
+    websocketService.onMessage('activity_event', handleActivityEvent);
+    websocketService.onMessage('violation_event', handleViolationEvent);
+    websocketService.onMessage('session_status', handleSessionStatus);
+    websocketService.onMessage('student_leave', handleStudentLeave);
+    websocketService.onMessage('exam_activity', handleExamActivity);
+    websocketService.onMessage('presence_update', handlePresenceUpdate);
+    
+    // Note: Generic handler would need to be implemented differently in websocketService
+    // For now, we'll rely on the specific message type handlers above
+
+    console.log('✅ ExamMonitoring: WebSocket message listeners registered');
+
+    // Cleanup function
+    return () => {
+      console.log('🧹 ExamMonitoring: Cleaning up WebSocket message listeners');
+      websocketService.offMessage('activity_event');
+      websocketService.offMessage('violation_event');
+      websocketService.offMessage('session_status');
+      websocketService.offMessage('student_leave');
+      websocketService.offMessage('exam_activity');
+      websocketService.offMessage('presence_update');
+    };
+  }, [examId, studentId, sessionId]);
+
   const setupMonitoring = () => {
     // 1. Tab/Window Focus Monitoring
     setupFocusMonitoring();
