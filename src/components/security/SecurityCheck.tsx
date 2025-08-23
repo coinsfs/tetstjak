@@ -156,7 +156,7 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
       
       for (let i = 0; i < attempts; i++) {
         const start = performance.now();
-        debugger;
+
         const end = performance.now();
         
         // More lenient threshold and require multiple confirmations
