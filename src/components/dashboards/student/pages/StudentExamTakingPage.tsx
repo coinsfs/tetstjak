@@ -80,7 +80,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         // Decode exam ID if provided
         if (examIdParam) {
           try {
-              const startTime = parseInt(atob(sParam.padEnd(sParam.length + (4 - sParam.length % 4) % 4, '=')));
+            const decodedExamId = atob(examIdParam.padEnd(examIdParam.length + (4 - examIdParam.length % 4) % 4, '='));
 
             setActualExamId(decodedExamId);
           } catch (error) {
@@ -112,7 +112,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   useEffect(() => {
     if (!token || !sessionId || !securityPassed) return;
 
-    const wsEndpoint = `/ws/exam-room/${sessionId}`;
+    const wsEndpoint = `/ws/exam-room/${actualExamId}`;
     
     const handleAuthError = () => {
       console.error('WebSocket authentication failed, redirecting to login');
