@@ -85,7 +85,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
             setActualExamId(decodedExamId);
           } catch (error) {
-            console.log('ExamId decode failed, using sessionId');
             // Skip, gunakan sessionId
           }
         }
@@ -204,20 +203,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   
     if (sParam && eParam && dParam) {
       try {
-        // TAMBAH LOGGING UNTUK DEBUG
-        console.log('Raw params:', { sParam, eParam, dParam });
-        
         // Decode parameters - FIX BASE64 PADDING
         const startTime = parseInt(atob(sParam.padEnd(sParam.length + (4 - sParam.length % 4) % 4, '=')));
         const endTime = parseInt(atob(eParam.padEnd(eParam.length + (4 - eParam.length % 4) % 4, '=')));
         const duration = parseInt(atob(dParam.padEnd(dParam.length + (4 - dParam.length % 4) % 4, '=')));
         
-        console.log('Decoded values:', { startTime, endTime, duration });
-        
         const now = Date.now();
         const timeLeft = Math.max(0, Math.floor((endTime - now) / 1000));
-        
-        console.log('Final timing:', { now, timeLeft });
         
         setTimeRemaining(timeLeft);
         setExamDuration(Math.floor(duration / 1000 / 60));
@@ -227,10 +219,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         }
       } catch (error) {
         console.error('Error parsing URL parameters:', error);
-        // FALLBACK: Set default 60 menit
-        setTimeRemaining(3600); // 1 jam
-        setExamDuration(60);
-        setError('Parameter ujian tidak valid, menggunakan waktu default');
+        setError('Parameter ujian tidak valid');
       }
     }
   }, []);
@@ -329,7 +318,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       // await studentExamService.saveAnswers(token!, sessionId, answers);
       setLastSaved(new Date());
       // Remove toast notification for auto-save to avoid spam
-      console.log('Answers auto-saved at', new Date().toLocaleTimeString());
 
       // Send auto-save activity via WebSocket
       websocketService.send({
@@ -344,8 +332,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         },
       });
 
-      // This will be handled by ExamMonitoring component
-      console.log('Exam finishing, monitoring will handle cleanup');
     } catch (error) {
       console.error('Error saving answers:', error);
       // Only show error toast for failed saves
@@ -451,9 +437,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     setSecurityPassed(true);
     setExamStartTime(Date.now());
     
-    // Send session started event
-    // This will be handled by ExamMonitoring component
-    console.log('Question viewed, monitoring will track navigation');
+    // Security check passed, exam can start
   };
 
   const handleSecurityFailed = (reason: string) => {
@@ -571,8 +555,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         const direction = questionIndex > prevQuestionIndex ? 'next' : 
                          questionIndex < prevQuestionIndex ? 'previous' : 'jump';
         
-      // This will be handled by ExamMonitoring component
-      console.log('Navigation action, monitoring will track movement');
+        // Navigation action tracked
       }
     }
   };

@@ -69,7 +69,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const currentEndpoint = websocketService.getCurrentEndpoint();
         
         if (currentEndpoint !== '/ws/lobby') {
-          console.log('Reconnecting to lobby WebSocket...');
           websocketService.connect(token, '/ws/lobby');
         }
       }

@@ -116,7 +116,6 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   // Setup WebSocket message handlers
   const setupMessageHandlers = useCallback(() => {
     websocketService.onMessage('violation_event', (data: any) => {
-      console.log('VIOLATION EVENT received:', data);
       setViolationEvents(prevEvents => [data, ...prevEvents].slice(0, 100));
       if (data.severity === 'critical') {
         playNotificationSound();
@@ -125,29 +124,14 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     });
 
     websocketService.onMessage('activity_event', (data: any) => {
-      console.log('ACTIVITY EVENT received:', data);
       setExamActivityEvents(prevEvents => [data, ...prevEvents].slice(0, 100));
       updateStudentSession(data);
     });
 
     websocketService.onMessage('presence_update', (data: any) => {
-      console.log('PRESENCE UPDATE received:', data);
       // Handle presence updates if needed
     });
 
-    // Generic handler for debugging
-    websocketService.onMessage('*', (data: any) => {
-      console.log('ALL MESSAGES:', data);
-      
-      if (data.type === 'violation_event') {
-        setViolationEvents(prevEvents => [data, ...prevEvents].slice(0, 100));
-        if (data.severity === 'critical') playNotificationSound();
-      } else if (data.type === 'activity_event') {
-        setExamActivityEvents(prevEvents => [data, ...prevEvents].slice(0, 100));
-      }
-      
-      updateStudentSession(data);
-    });
   }, [updateStudentSession, playNotificationSound]);
 
   // Initialize WebSocket connection
@@ -180,7 +164,6 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
       websocketService.offMessage('violation_event');
       websocketService.offMessage('activity_event');
       websocketService.offMessage('presence_update');
-      websocketService.offMessage('*');
     };
   }, [examId, token, setupMessageHandlers, navigate]);
 

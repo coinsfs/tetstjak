@@ -27,13 +27,11 @@ class WebSocketService {
 
     // Jika sudah terhubung atau sedang terhubung ke URL yang sama, jangan lakukan apa-apa
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) && this.currentWsUrl === newWsUrl) {
-      console.log('WebSocket already connected or connecting to the same endpoint.');
       return;
     }
 
     // Jika ada koneksi berbeda yang aktif, tutup dulu
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) && this.currentWsUrl !== newWsUrl) {
-      console.log('Closing existing WebSocket connection to establish a new one.');
       this.ws.close(); // Tutup koneksi yang ada
       this.ws = null;
     }
@@ -48,12 +46,8 @@ class WebSocketService {
       this.ws = new WebSocket(newWsUrl);
       
       this.ws.onopen = () => {
-        console.log('WebSocket connected');
         this.reconnectAttempts = 0;
         this.statusChangeCallback?.('connected');
-        
-        // Expose debug methods in development
-        this.exposeDebugMethods();
         
         // Expose debug methods in development
         this.exposeDebugMethods();
@@ -70,7 +64,6 @@ class WebSocketService {
       this.ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log('WebSocket message received:', data);
           
           // Call generic handler first if exists
           if (this.genericHandler) {
@@ -101,7 +94,6 @@ class WebSocketService {
       };
 
       this.ws.onclose = (event) => {
-        console.log('WebSocket disconnected:', event.reason);
         this.statusChangeCallback?.('disconnected');
         
         // Tangani kesalahan autentikasi
@@ -115,7 +107,6 @@ class WebSocketService {
       };
 
       this.ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
         this.statusChangeCallback?.('error');
       };
     } catch (error) {
@@ -127,7 +118,6 @@ class WebSocketService {
   private attemptReconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
       
       this.statusChangeCallback?.('disconnected');
       
@@ -156,10 +146,8 @@ class WebSocketService {
 
   send(message: any) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.log('Sending WebSocket message:', message);
       this.ws.send(JSON.stringify(message));
     } else {
-      console.warn('WebSocket is not connected, queuing message');
       this.messageQueue.push(message);
     }
   }
@@ -184,7 +172,6 @@ class WebSocketService {
       ...data
     };
     
-    console.log('Sending test message:', testMessage);
     this.send(testMessage);
   }
 
@@ -220,7 +207,6 @@ class WebSocketService {
           });
         }
       };
-      console.log('WebSocket debug methods exposed as window.wsDebug');
     }
   }
 
@@ -229,10 +215,7 @@ class WebSocketService {
     if (this.ws) {
       // Periksa apakah WebSocket terbuka atau sedang terhubung sebelum menutup
       if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
-        console.log('Closing WebSocket connection...');
         this.ws.close();
-      } else {
-        console.log('WebSocket is already closed or closing, no need to close again.');
       }
       this.ws = null; // Selalu kosongkan referensi
     }
