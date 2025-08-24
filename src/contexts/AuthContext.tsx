@@ -60,11 +60,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // WebSocket connection management based on authentication and current path
   useEffect(() => {
     if (isAuthenticated && token && !isLoading) {
-      // Check if user is currently in an exam
-      const isInExam = currentPath.startsWith('/exam-taking/');
+      // Check if user is currently in a specialized WebSocket-dependent page
+      const isInExamTaking = currentPath.startsWith('/exam-taking/');
+      const isInProctorMonitoring = currentPath.startsWith('/monitor-exam/');
       
-      if (!isInExam) {
-        // User is not in exam, ensure lobby connection is active
+      // If user is not in exam taking AND not in proctor monitoring, ensure lobby connection is active
+      if (!isInExamTaking && !isInProctorMonitoring) {
         const currentEndpoint = websocketService.getCurrentEndpoint();
         
         if (currentEndpoint !== '/ws/lobby') {

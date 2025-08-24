@@ -713,7 +713,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         user={user}
         onCriticalViolation={handleCriticalViolation}
         onViolationUpdate={handleViolationUpdate}
-        websocketService={websocketService}
       />
 
       {/* Sticky Header */}

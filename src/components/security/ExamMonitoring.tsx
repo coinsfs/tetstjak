@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { websocketService } from '@/services/websocket';
+import { examSecurityService } from '@/services/examSecurity'; // Import examSecurityService
 import { UserProfile } from '@/types/auth';
 
 
@@ -10,7 +11,6 @@ interface ExamMonitoringProps {
   sessionId: string;
   token: string | null;
   user: UserProfile | null;
-  onCriticalViolation: (reason: string) => void;
   onViolationUpdate: (count: number) => void;
 }
 
@@ -27,7 +27,6 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   sessionId,
   token,
   user,
-  onCriticalViolation,
   onViolationUpdate
 }) => {
   const [isTabActive, setIsTabActive] = useState(true);
@@ -44,6 +43,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   const mouseTracker = useRef({ x: 0, y: 0, clicks: 0 });
   const keyboardTracker = useRef({ keystrokes: 0, suspiciousKeys: 0 });
   const screenHeightTracker = useRef({ 
+    // Initial height captured when component mounts
     originalHeight: window.innerHeight,
     currentHeight: window.innerHeight,
     violations: 0
@@ -227,7 +227,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 
       // Critical violation after 5 tab switches
       if (tabSwitchCount.current >= 5) {
-        onCriticalViolation('Terlalu banyak perpindahan tab. Ujian dihentikan untuk menjaga integritas.');
+        reportCriticalViolation('Terlalu banyak perpindahan tab. Ujian dihentikan untuk menjaga integritas.');
       }
     };
 
@@ -482,7 +482,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
         // Try to re-enter fullscreen
         setTimeout(() => {
           if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen().catch(() => {
+            document.documentElement.requestFullscreen().catch((e) => {
               onCriticalViolation('Gagal mempertahankan mode fullscreen. Ujian dihentikan.');
             });
           }
@@ -538,7 +538,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
         
         // Critical violation after multiple height reductions
         if (screenHeightTracker.current.violations >= 3) {
-          onCriticalViolation(`Split screen atau pengurangan tinggi layar terdeteksi (${Math.round(reductionPercentage)}% pengurangan). Ujian dihentikan.`);
+          reportCriticalViolation(`Split screen atau pengurangan tinggi layar terdeteksi (${Math.round(reductionPercentage)}% pengurangan). Ujian dihentikan.`);
         }
       }
       
@@ -552,6 +552,29 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     };
     
     window.addEventListener('resize', handleResize);
+  };
+
+  // Function to report critical violations to the backend
+  const reportCriticalViolation = async (reason: string) => {
+    if (!token || !user?._id) return;
+
+    const violation: any = {
+      type: 'critical_violation_event',
+      violation_type: 'exam_terminated_by_system',
+      severity: 'critical',
+      timestamp: Date.now(),
+      examId,
+      studentId: user._id,
+      sessionId,
+      details: {
+        reason,
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+      },
+    };
+
+    // Send critical violation to backend
+    await examSecurityService.reportCriticalViolation(token, examId, user._id, violation);
   };
 
   // Violation Logging - Modified to send via WebSocket
