@@ -333,9 +333,19 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
       // Send auto-save activity via WebSocket
       websocketService.send({
+        type: 'activity_event',
+        details: {
+          eventType: 'auto_save',
+          timestamp: new Date().toISOString(),
+          studentId: user?._id,
+          examId: sessionId,
+          sessionId: sessionId,
+          answersCount: Object.keys(answers).length,
+        },
+      });
+
       // This will be handled by ExamMonitoring component
       console.log('Exam finishing, monitoring will handle cleanup');
-
     } catch (error) {
       console.error('Error saving answers:', error);
       // Only show error toast for failed saves
