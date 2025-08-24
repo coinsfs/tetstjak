@@ -62,6 +62,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   const [lastHeartbeat, setLastHeartbeat] = useState<Date>(new Date());
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { token } = useAuth();
   const { navigate } = useRouter();
 
@@ -116,11 +117,18 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   // Setup WebSocket message handlers
   const setupMessageHandlers = useCallback(() => {
     websocketService.onMessage('violation_event', (data: any) => {
-      setViolationEvents(prevEvents => [data, ...prevEvents].slice(0, 100));
+      // Enhanced violation event handling with better data extraction
+      const enhancedData = {
+        ...data,
+        full_name: data.details?.full_name || data.student_name || data.full_name || 'Unknown Student',
+        timestamp: data.timestamp || Date.now()
+      };
+      
+      setViolationEvents(prevEvents => [enhancedData, ...prevEvents].slice(0, 100));
       if (data.severity === 'critical') {
         playNotificationSound();
       }
-      updateStudentSession(data);
+      updateStudentSession(enhancedData);
     });
 
     websocketService.onMessage('activity_event', (data: any) => {
@@ -173,13 +181,12 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
       const studentId = data.studentId || data.student_id;
       
       if (studentId) {
+        // Immediately remove disconnected student from the list
         setConnectedStudents(prevStudents => 
-          prevStudents.map(student => 
-            student.studentId === studentId 
-              ? { ...student, status: 'inactive' as const, lastActivity: new Date() }
-              : student
-          )
+          prevStudents.filter(student => student.studentId !== studentId)
         );
+        
+        console.log(`Student ${studentId} disconnected and removed from monitoring list`);
       }
     });
 
@@ -226,6 +233,29 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     };
   }, [examId, token, setupMessageHandlers, navigate]);
 
+  // Client-side ping to keep connection alive during idle periods
+  useEffect(() => {
+    if (!examId || !token) return;
+
+    // Send ping every 20 seconds to keep connection alive
+    pingIntervalRef.current = setInterval(() => {
+      websocketService.send({
+        type: 'proctor_ping',
+        examId: examId,
+        timestamp: Date.now(),
+        message: 'keep-alive'
+      });
+      
+      setLastHeartbeat(new Date());
+    }, 20000); // 20 seconds
+
+    return () => {
+      if (pingIntervalRef.current) {
+        clearInterval(pingIntervalRef.current);
+      }
+    };
+  }, [examId, token]);
+
   // Initialize notification sound
   useEffect(() => {
     notificationSoundRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
@@ -262,8 +292,25 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
 
   // Format timestamp for display
   const formatTimestamp = (timestamp: string | number) => {
-    const date = new Date(typeof timestamp === 'string' ? timestamp : timestamp);
-    return date.toLocaleTimeString('id-ID');
+    // Enhanced timestamp formatting with validation
+    let dateValue: Date;
+    
+    if (typeof timestamp === 'number') {
+      // Handle numeric timestamp
+      dateValue = new Date(timestamp);
+    } else if (typeof timestamp === 'string') {
+      // Handle string timestamp
+      dateValue = new Date(timestamp);
+    } else {
+      return 'Invalid Date';
+    }
+    
+    // Check if date is valid
+    if (isNaN(dateValue.getTime())) {
+      return 'Invalid Date';
+    }
+    
+    return dateValue.toLocaleTimeString('id-ID');
   };
 
   // Get status color
@@ -447,7 +494,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
                         </span>
                       </div>
                       <p className="text-sm font-medium text-gray-900">{violation.violation_type}</p>
-                      <p className="text-xs text-gray-600">Siswa: {violation.details?.full_name || 'Unknown'}</p>
+                      <p className="text-xs text-gray-600">Siswa: {violation.full_name || violation.details?.full_name || 'Unknown Student'}</p>
                     </div>
                   ))}
                 </div>

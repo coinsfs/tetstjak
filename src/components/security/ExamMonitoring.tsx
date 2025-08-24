@@ -4,6 +4,9 @@ import { websocketService } from '@/services/websocket';
 import { examSecurityService } from '@/services/examSecurity'; // Import examSecurityService
 import { UserProfile } from '@/types/auth';
 
+// Debouncing mechanism to prevent duplicate violation logging
+const lastLoggedViolation: Record<string, number> = {};
+const VIOLATION_DEBOUNCE_TIME = 1000; // 1 second debounce
 
 interface ExamMonitoringProps {
   examId: string;
@@ -154,10 +157,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       lastActiveTime.current = Date.now();
       tabSwitchCount.current += 1;
       
-      logViolation('tab_switch', 'high', {
-        switchCount: tabSwitchCount.current,
-        timestamp: Date.now()
-      });
+      // Tab switch will be handled by visibility change event to avoid duplication
 
       // Show warning after 3 tab switches
       if (tabSwitchCount.current >= 3) {
@@ -509,6 +509,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
         reason,
         userAgent: navigator.userAgent,
         url: window.location.href,
+        full_name: user?.profile_details?.full_name || 'Unknown Student'
       },
     };
 
@@ -518,6 +519,17 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 
   // Violation Logging - Modified to send via WebSocket
   const logViolation = (type: string, severity: 'low' | 'medium' | 'high' | 'critical', details?: any) => {
+    // Implement debouncing to prevent duplicate violations
+    const now = Date.now();
+    const violationKey = `${type}_${severity}`;
+    
+    if (lastLoggedViolation[violationKey] && (now - lastLoggedViolation[violationKey]) < VIOLATION_DEBOUNCE_TIME) {
+      // Skip logging if same violation type was logged recently
+      return;
+    }
+    
+    lastLoggedViolation[violationKey] = now;
+
     const violation = {
       type: 'violation_event',
       violation_type: type,
@@ -528,6 +540,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       sessionId,
       details: {
         ...details,
+        full_name: user?.profile_details?.full_name || 'Unknown Student',
         userAgent: navigator.userAgent,
         url: window.location.href,
         tabActive: isTabActive,
