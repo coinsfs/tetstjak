@@ -541,19 +541,21 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   // Violation Logging - Modified to send via WebSocket
   const logViolation = (type: string, severity: 'low' | 'medium' | 'high' | 'critical', details?: any) => {
     const violation = {
-      messageType: 'violation_event',
-      type,
+      type: 'violation_event',
+      violation_type: type,
       severity,
       timestamp: Date.now(),
       examId,
       studentId,
       sessionId,
-      details: details || {},
-      userAgent: navigator.userAgent,
-      url: window.location.href,
-      tabActive: isTabActive,
-      mousePosition: mouseTracker.current,
-      keyboardStats: keyboardTracker.current
+      details: {
+        ...details,
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+        tabActive: isTabActive,
+        mousePosition: mouseTracker.current,
+        keyboardStats: keyboardTracker.current
+      }
     };
 
     // Send violation via WebSocket
@@ -569,6 +571,23 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     });
 
     console.warn('Violation logged and sent via WS:', violation);
+  };
+
+  // Activity Logging - For non-violation events
+  const logActivity = (activityType: string, details?: any) => {
+    const activity = {
+      type: 'activity_event',
+      activityType,
+      timestamp: Date.now(),
+      examId,
+      studentId,
+      sessionId,
+      details: details || {}
+    };
+
+    // Send activity via WebSocket
+    websocketService.send(activity);
+    console.log('Activity logged and sent via WS:', activity);
   };
 
   // Cleanup

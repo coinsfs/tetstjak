@@ -7,6 +7,7 @@ class WebSocketService {
   private messageQueue: any[] = [];
   private statusChangeCallback: ((status: 'connected' | 'disconnected' | 'error') => void) | null = null;
   private authErrorCallback: (() => void) | null = null;
+  private genericHandler: ((data: any) => void) | null = null;
   private currentToken: string | null = null;
   private currentEndpoint: string | null = null;
   private currentWsUrl: string | null = null;
@@ -51,6 +52,9 @@ class WebSocketService {
         this.reconnectAttempts = 0;
         this.statusChangeCallback?.('connected');
         
+        // Expose debug methods in development
+        this.exposeDebugMethods();
+        
         // Kirim pesan yang mengantri
         while (this.messageQueue.length > 0) {
           const message = this.messageQueue.shift();
@@ -65,11 +69,27 @@ class WebSocketService {
           const data = JSON.parse(event.data);
           console.log('WebSocket message received:', data);
           
+          // Call generic handler first if exists
+          if (this.genericHandler) {
+            this.genericHandler(data);
+          }
+          
+          // Check for both 'type' and 'messageType' fields for backward compatibility
+          const messageType = data.type || data.messageType;
+          
           // Panggil handler yang terdaftar
-          if (data.type && this.messageHandlers.has(data.type)) {
-            const handler = this.messageHandlers.get(data.type);
+          if (messageType && this.messageHandlers.has(messageType)) {
+            const handler = this.messageHandlers.get(messageType);
             if (handler) {
               handler(data);
+            }
+          }
+          
+          // Call catch-all handler
+          if (this.messageHandlers.has('*')) {
+            const genericRegisteredHandler = this.messageHandlers.get('*');
+            if (genericRegisteredHandler) {
+              genericRegisteredHandler(data);
             }
           }
         } catch (error) {
@@ -123,16 +143,81 @@ class WebSocketService {
     this.messageHandlers.set(type, handler);
   }
 
+  setGenericHandler(handler: (data: any) => void) {
+    this.genericHandler = handler;
+  }
+
   offMessage(type: string) {
     this.messageHandlers.delete(type);
   }
 
   send(message: any) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      console.log('Sending WebSocket message:', message);
       this.ws.send(JSON.stringify(message));
     } else {
       console.warn('WebSocket is not connected, queuing message');
       this.messageQueue.push(message);
+    }
+  }
+
+  getConnectionInfo() {
+    return {
+      url: this.currentWsUrl,
+      endpoint: this.currentEndpoint,
+      readyState: this.ws?.readyState,
+      registeredHandlers: Array.from(this.messageHandlers.keys()),
+      hasGenericHandler: !!this.genericHandler,
+      queuedMessages: this.messageQueue.length
+    };
+  }
+
+  // Debug method to manually trigger test messages
+  sendTestMessage(type: string, data: any = {}) {
+    const testMessage = {
+      type: type,
+      timestamp: Date.now(),
+      test: true,
+      ...data
+    };
+    
+    console.log('Sending test message:', testMessage);
+    this.send(testMessage);
+  }
+
+  // Get current connection state for debugging
+  isConnected(): boolean {
+    return this.ws?.readyState === WebSocket.OPEN;
+  }
+
+  // Expose debugging methods globally in development
+  exposeDebugMethods() {
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      (window as any).wsDebug = {
+        getInfo: () => this.getConnectionInfo(),
+        sendTest: (type: string, data?: any) => this.sendTestMessage(type, data),
+        isConnected: () => this.isConnected(),
+        sendViolation: (violationType: string, severity: string = 'medium') => {
+          this.sendTestMessage('violation_event', {
+            violation_type: violationType,
+            severity: severity,
+            studentId: 'test-student',
+            examId: 'test-exam',
+            sessionId: 'test-session',
+            details: { test: true }
+          });
+        },
+        sendActivity: (activityType: string) => {
+          this.sendTestMessage('activity_event', {
+            activityType: activityType,
+            studentId: 'test-student',
+            examId: 'test-exam',
+            sessionId: 'test-session',
+            details: { test: true }
+          });
+        }
+      };
+      console.log('WebSocket debug methods exposed as window.wsDebug');
     }
   }
 
