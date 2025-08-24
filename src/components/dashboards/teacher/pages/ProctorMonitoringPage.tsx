@@ -68,7 +68,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   // Update student session based on received events
   const updateStudentSession = useCallback((eventData: any) => {
     const studentId = eventData.studentId || eventData.student_id;
-    const studentName = eventData.student_name || eventData.details?.full_name || 'Unknown Student';
+    const studentName = eventData.full_name || eventData.student_name || eventData.details?.full_name || 'Unknown Student';
     
     if (!studentId) return;
 
@@ -85,13 +85,13 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           lastActivity: new Date(),
           violationCount: eventData.type === 'violation_event' ? student.violationCount + 1 : student.violationCount,
           status: eventData.severity === 'critical' ? 'suspicious' : student.status,
-          currentQuestion: eventData.details?.questionPosition || student.currentQuestion,
-          answersSubmitted: eventData.details?.answersCount || student.answersSubmitted
+          currentQuestion: eventData.details?.currentQuestionIndex !== undefined ? eventData.details.currentQuestionIndex + 1 : student.currentQuestion,
+          answersSubmitted: eventData.details?.totalAnswered !== undefined ? eventData.details.totalAnswered : student.answersSubmitted
         };
         
         return updatedStudents;
       } else {
-        // Add new student
+        // Add new student if not present
         return [...prevStudents, {
           studentId,
           full_name: studentName,
@@ -99,8 +99,8 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           lastActivity: new Date(),
           violationCount: eventData.type === 'violation_event' ? 1 : 0,
           status: 'active',
-          currentQuestion: eventData.details?.questionPosition || 0,
-          answersSubmitted: eventData.details?.answersCount || 0
+          currentQuestion: eventData.details?.currentQuestionIndex !== undefined ? eventData.details.currentQuestionIndex + 1 : 0,
+          answersSubmitted: eventData.details?.totalAnswered !== undefined ? eventData.details.totalAnswered : 0
         }];
       }
     });
@@ -129,7 +129,58 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     });
 
     websocketService.onMessage('presence_update', (data: any) => {
-      // Handle presence updates if needed
+      if (data.users && Array.isArray(data.users)) {
+        setConnectedStudents(data.users.map((user: any) => ({
+          studentId: user.id || user.studentId,
+          full_name: user.full_name || 'Unknown Student',
+          connectionTime: new Date(user.connectionTime || Date.now()),
+          lastActivity: new Date(user.lastActivity || Date.now()),
+          violationCount: user.violationCount || 0,
+          status: user.status || 'active',
+          currentQuestion: user.currentQuestion || 0,
+          answersSubmitted: user.answersSubmitted || 0
+        })));
+      }
+    });
+
+    // Handle student connection events
+    websocketService.onMessage('student_connected', (data: any) => {
+      const studentId = data.studentId || data.student_id;
+      const studentName = data.full_name || data.student_name || 'Unknown Student';
+      
+      if (studentId) {
+        setConnectedStudents(prevStudents => {
+          const exists = prevStudents.some(s => s.studentId === studentId);
+          if (!exists) {
+            return [...prevStudents, {
+              studentId,
+              full_name: studentName,
+              connectionTime: new Date(),
+              lastActivity: new Date(),
+              violationCount: 0,
+              status: 'active',
+              currentQuestion: 0,
+              answersSubmitted: 0
+            }];
+          }
+          return prevStudents;
+        });
+      }
+    });
+
+    // Handle student disconnection events
+    websocketService.onMessage('student_disconnected', (data: any) => {
+      const studentId = data.studentId || data.student_id;
+      
+      if (studentId) {
+        setConnectedStudents(prevStudents => 
+          prevStudents.map(student => 
+            student.studentId === studentId 
+              ? { ...student, status: 'inactive' as const, lastActivity: new Date() }
+              : student
+          )
+        );
+      }
     });
 
   }, [updateStudentSession, playNotificationSound]);
@@ -158,43 +209,22 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     // Use same endpoint as students
     websocketService.connect(token, `/ws/exam-room/${examId}`, onAuthError, onStatusChange);
     
+    // Set generic handler to log all messages
+    websocketService.setGenericHandler((data) => {
+      console.log('WebSocket Message:', data);
+    });
+    
     setupMessageHandlers();
     
     return () => {
       websocketService.offMessage('violation_event');
       websocketService.offMessage('activity_event');
       websocketService.offMessage('presence_update');
+      websocketService.offMessage('student_connected');
+      websocketService.offMessage('student_disconnected');
+      websocketService.setGenericHandler(null); // Clear generic handler on unmount
     };
   }, [examId, token, setupMessageHandlers, navigate]);
-
-  // Mock data for demonstration
-  useEffect(() => {
-    // Simulate some connected students
-    const mockStudents: ConnectedStudent[] = [
-      {
-        studentId: 'student1',
-        full_name: 'Ahmad Rizki',
-        connectionTime: new Date(Date.now() - 300000),
-        lastActivity: new Date(Date.now() - 30000),
-        violationCount: 2,
-        status: 'active',
-        currentQuestion: 5,
-        answersSubmitted: 4
-      },
-      {
-        studentId: 'student2',
-        full_name: 'Siti Nurhaliza',
-        connectionTime: new Date(Date.now() - 250000),
-        lastActivity: new Date(Date.now() - 10000),
-        violationCount: 0,
-        status: 'active',
-        currentQuestion: 3,
-        answersSubmitted: 3
-      }
-    ];
-    
-    setConnectedStudents(mockStudents);
-  }, []);
 
   // Initialize notification sound
   useEffect(() => {
