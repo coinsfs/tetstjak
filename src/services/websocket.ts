@@ -55,6 +55,9 @@ class WebSocketService {
         // Expose debug methods in development
         this.exposeDebugMethods();
         
+        // Expose debug methods in development
+        this.exposeDebugMethods();
+        
         // Kirim pesan yang mengantri
         while (this.messageQueue.length > 0) {
           const message = this.messageQueue.shift();

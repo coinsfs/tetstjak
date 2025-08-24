@@ -581,6 +581,12 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     // Send violation via WebSocket
     websocketService.send(violation);
 
+    // Store in localStorage for backup
+    const violationsKey = `exam_violations_${examId}_${studentId}`;
+    const existingViolations = JSON.parse(localStorage.getItem(violationsKey) || '[]');
+    existingViolations.push(violation);
+    localStorage.setItem(violationsKey, JSON.stringify(existingViolations));
+
     // Update local violation counts for display
     setViolationCounts(prev => {
       const newCounts = { ...prev };
@@ -659,4 +665,3 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 };
 
 export default ExamMonitoring;
-
