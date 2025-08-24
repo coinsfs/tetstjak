@@ -58,6 +58,8 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   const [examActivityEvents, setExamActivityEvents] = useState<ExamActivityEvent[]>([]);
   const [violationEvents, setViolationEvents] = useState<ViolationEvent[]>([]);
   const [connectedStudents, setConnectedStudents] = useState<ConnectedStudent[]>([]);
+  const [totalActiveStudents, setTotalActiveStudents] = useState(0);
+  const [displayActivityEvents, setDisplayActivityEvents] = useState<ExamActivityEvent[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
   const [lastHeartbeat, setLastHeartbeat] = useState<Date>(new Date());
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -133,10 +135,21 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
 
     websocketService.onMessage('activity_event', (data: any) => {
       setExamActivityEvents(prevEvents => [data, ...prevEvents].slice(0, 100));
+      
+      // Add to display activity events (filter out heartbeat to reduce noise)
+      if (data.activityType !== 'heartbeat') {
+        setDisplayActivityEvents(prevEvents => [data, ...prevEvents].slice(0, 20));
+      }
+      
       updateStudentSession(data);
     });
 
     websocketService.onMessage('presence_update', (data: any) => {
+      // Update total active students count from presence_update message
+      if (data.student_count !== undefined) {
+        setTotalActiveStudents(data.student_count);
+      }
+      
       if (data.users && Array.isArray(data.users)) {
         setConnectedStudents(data.users.map((user: any) => ({
           studentId: user.id || user.studentId,
@@ -335,6 +348,105 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     }
   };
 
+  // Get human-readable violation description
+  const getViolationDescription = (violation: ViolationEvent) => {
+    const { violation_type, details } = violation;
+    
+    switch (violation_type) {
+      case 'tab_switch_return':
+        const inactiveTime = details?.inactiveTime ? Math.round(details.inactiveTime / 1000) : 0;
+        const switchCount = details?.switchCount || 0;
+        return `Kembali ke tab ujian setelah ${inactiveTime} detik (${switchCount} kali pindah tab)`;
+      
+      case 'suspicious_key':
+        const key = details?.key || 'Unknown';
+        return `Menekan tombol mencurigakan: ${key}`;
+      
+      case 'suspicious_combination':
+        const combination = details?.combination || 'Unknown';
+        return `Menggunakan kombinasi tombol: ${combination}`;
+      
+      case 'devtools_detected':
+        const score = details?.score || 0;
+        return `Developer Tools terdeteksi (confidence: ${score}%)`;
+      
+      case 'screen_height_reduction':
+        const reductionPercentage = details?.reductionPercentage || 0;
+        return `Pengurangan tinggi layar ${reductionPercentage}% (kemungkinan split screen)`;
+      
+      case 'right_click_attempt':
+        return 'Mencoba klik kanan pada halaman ujian';
+      
+      case 'copy_attempt':
+        return 'Mencoba menyalin teks dari halaman ujian';
+      
+      case 'paste_attempt':
+        return 'Mencoba menempel teks ke halaman ujian';
+      
+      case 'cut_attempt':
+        return 'Mencoba memotong teks dari halaman ujian';
+      
+      case 'fullscreen_exit':
+        return 'Keluar dari mode fullscreen';
+      
+      case 'page_hidden':
+        return 'Menyembunyikan halaman ujian (Alt+Tab atau minimize)';
+      
+      case 'rapid_clicking':
+        const clickCount = details?.clickCount || 0;
+        return `Klik terlalu cepat (${clickCount} klik dalam waktu singkat)`;
+      
+      case 'rapid_typing':
+        const keystrokeCount = details?.keystrokeCount || 0;
+        return `Mengetik terlalu cepat (${keystrokeCount} keystroke)`;
+      
+      default:
+        return violation_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+  };
+
+  // Get human-readable activity description
+  const getActivityDescription = (activity: ExamActivityEvent) => {
+    const { activityType, details } = activity;
+    const studentName = details?.full_name || 'Siswa';
+    
+    switch (activityType) {
+      case 'answer_start':
+        const questionPos = details?.questionPosition || details?.currentQuestionIndex + 1 || 'Unknown';
+        return `${studentName} mulai menjawab soal ${questionPos}`;
+      
+      case 'answer_submitted':
+        const submitQuestionPos = details?.questionPosition || details?.currentQuestionIndex + 1 || 'Unknown';
+        return `${studentName} mengirim jawaban soal ${submitQuestionPos}`;
+      
+      case 'answer_modified':
+        const modifyQuestionPos = details?.questionPosition || details?.currentQuestionIndex + 1 || 'Unknown';
+        return `${studentName} mengubah jawaban soal ${modifyQuestionPos}`;
+      
+      case 'question_viewed':
+        const viewQuestionPos = details?.questionPosition || details?.currentQuestionIndex + 1 || 'Unknown';
+        return `${studentName} melihat soal ${viewQuestionPos}`;
+      
+      case 'auto_save':
+        const answersCount = details?.answersCount || 0;
+        return `${studentName} otomatis menyimpan ${answersCount} jawaban`;
+      
+      case 'fullscreen_exit':
+        return `${studentName} keluar dari mode fullscreen`;
+      
+      case 'screen_resize':
+        const reductionPercentage = details?.reductionPercentage || 0;
+        return `${studentName} mengubah ukuran layar (${reductionPercentage}% pengurangan)`;
+      
+      case 'question_time_spent':
+        const timeSpent = details?.timeSpent ? Math.round(details.timeSpent / 1000) : 0;
+        const questionPosition = details?.questionPosition || 'Unknown';
+        return `${studentName} menghabiskan ${timeSpent} detik pada soal ${questionPosition}`;
+      
+      default:
+        return `${studentName} melakukan ${activityType.replace(/_/g, ' ')}`;
+    }
+  };
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6">
@@ -389,7 +501,8 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Siswa Terhubung</p>
-                <p className="text-2xl font-bold text-gray-900">{connectedStudents.length}</p>
+                <p className="text-2xl font-bold text-gray-900">{totalActiveStudents}</p>
+                <p className="text-xs text-gray-500 mt-1">Detail: {connectedStudents.length} siswa</p>
               </div>
               <Users className="w-8 h-8 text-blue-600" />
             </div>
@@ -431,6 +544,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">Siswa Terhubung</h3>
+              <p className="text-sm text-gray-500 mt-1">Total aktif: {totalActiveStudents} siswa</p>
             </div>
             <div className="p-6 max-h-96 overflow-y-auto">
               {connectedStudents.length === 0 ? (
@@ -493,8 +607,22 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
                           {formatTimestamp(violation.timestamp)}
                         </span>
                       </div>
-                      <p className="text-sm font-medium text-gray-900">{violation.violation_type}</p>
+                      <p className="text-sm font-medium text-gray-900 mb-2">
+                        {getViolationDescription(violation)}
+                      </p>
                       <p className="text-xs text-gray-600">Siswa: {violation.full_name || violation.details?.full_name || 'Unknown Student'}</p>
+                      {violation.details && Object.keys(violation.details).length > 0 && (
+                        <details className="mt-2">
+                          <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+                            Detail teknis
+                          </summary>
+                          <div className="mt-1 text-xs text-gray-400 bg-gray-50 p-2 rounded">
+                            <pre className="whitespace-pre-wrap">
+                              {JSON.stringify(violation.details, null, 2)}
+                            </pre>
+                          </div>
+                        </details>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -503,6 +631,57 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           </div>
         </div>
 
+        {/* Student Activities */}
+        <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Aktivitas Siswa Terbaru</h3>
+            <p className="text-sm text-gray-500 mt-1">Aktivitas normal siswa selama ujian</p>
+          </div>
+          <div className="p-6 max-h-96 overflow-y-auto">
+            {displayActivityEvents.length === 0 ? (
+              <div className="text-center py-8">
+                <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">Belum ada aktivitas siswa</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {displayActivityEvents.map((activity, index) => (
+                  <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-900">
+                        {getActivityDescription(activity)}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formatTimestamp(activity.timestamp)}
+                      </p>
+                      {activity.details && Object.keys(activity.details).filter(key => 
+                        !['full_name', 'timestamp', 'studentId', 'examId', 'sessionId'].includes(key)
+                      ).length > 0 && (
+                        <details className="mt-2">
+                          <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">
+                            Detail aktivitas
+                          </summary>
+                          <div className="mt-1 text-xs text-gray-400 bg-white p-2 rounded border">
+                            {Object.entries(activity.details)
+                              .filter(([key]) => !['full_name', 'timestamp', 'studentId', 'examId', 'sessionId'].includes(key))
+                              .map(([key, value]) => (
+                                <div key={key} className="flex justify-between">
+                                  <span className="font-medium">{key}:</span>
+                                  <span>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
+                                </div>
+                              ))
+                            }
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
         {/* Broadcast Controls */}
         <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Kontrol Ujian</h3>
