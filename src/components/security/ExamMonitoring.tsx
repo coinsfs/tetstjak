@@ -455,6 +455,12 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   const setupFullscreenMonitoring = () => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
+        // Log fullscreen exit activity
+        logActivity('fullscreen_exit', {
+          timestamp: new Date().toISOString(),
+          full_name: user?.profile_details?.full_name
+        });
+        
         websocketService.send({
           type: 'activity_event',
           details: {
@@ -498,6 +504,13 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       if (reductionPercentage > 30) { // More than 30% height reduction
         screenHeightTracker.current.violations += 1;
         
+        // Log screen resize activity
+        logActivity('screen_resize', {
+          originalHeight,
+          currentHeight,
+          reductionPercentage: Math.round(reductionPercentage)
+        });
+        
         websocketService.send({
           type: 'activity_event',
           details: {
@@ -540,6 +553,13 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 
   // Violation Logging - Modified to send via WebSocket
   const logViolation = (type: string, severity: 'low' | 'medium' | 'high' | 'critical', details?: any) => {
+    // Also log as activity for comprehensive tracking
+    logActivity('violation_detected', {
+      violation_type: type,
+      severity: severity,
+      ...details
+    });
+    
     const violation = {
       type: 'violation_event',
       violation_type: type,
@@ -575,6 +595,12 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 
   // Activity Logging - For non-violation events
   const logActivity = (activityType: string, details?: any) => {
+    // Add common details
+    const enhancedDetails = {
+      ...details,
+      full_name: user?.profile_details?.full_name
+    };
+    
     const activity = {
       type: 'activity_event',
       activityType,
@@ -582,7 +608,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       examId,
       studentId,
       sessionId,
-      details: details || {}
+      details: enhancedDetails
     };
 
     // Send activity via WebSocket
