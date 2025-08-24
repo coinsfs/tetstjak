@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { websocketService } from '@/services/websocket';
+import { UserProfile } from '@/types/auth';
 
 
 interface ExamMonitoringProps {
@@ -8,6 +9,7 @@ interface ExamMonitoringProps {
   studentId: string;
   sessionId: string;
   token: string | null;
+  user: UserProfile | null;
   onCriticalViolation: (reason: string) => void;
   onViolationUpdate: (count: number) => void;
 }
@@ -24,6 +26,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   studentId,
   sessionId,
   token,
+  user,
   onCriticalViolation,
   onViolationUpdate
 }) => {
