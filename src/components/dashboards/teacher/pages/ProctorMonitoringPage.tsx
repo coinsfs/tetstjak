@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
 import { websocketService } from '@/services/websocket';
@@ -119,6 +119,8 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   // Setup WebSocket message handlers
   const setupMessageHandlers = useCallback(() => {
     websocketService.onMessage('violation_event', (data: any) => {
+      console.log('VIOLATION HANDLER CALLED:', new Date().toISOString());
+
       // Enhanced violation event handling with better data extraction
       const enhancedData = {
         ...data,
@@ -134,6 +136,8 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     });
 
     websocketService.onMessage('activity_event', (data: any) => {
+      console.log('ACTIVITY HANDLER CALLED:', new Date().toISOString());
+
       setExamActivityEvents(prevEvents => [data, ...prevEvents].slice(0, 100));
       
       // Add to display activity events (filter out heartbeat to reduce noise)
@@ -348,105 +352,151 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     }
   };
 
-  // Get human-readable violation description
-  const getViolationDescription = (violation: ViolationEvent) => {
-    const { violation_type, details } = violation;
-    
-    switch (violation_type) {
-      case 'tab_switch_return':
-        const inactiveTime = details?.inactiveTime ? Math.round(details.inactiveTime / 1000) : 0;
-        const switchCount = details?.switchCount || 0;
-        return `Kembali ke tab ujian setelah ${inactiveTime} detik (${switchCount} kali pindah tab)`;
-      
-      case 'suspicious_key':
-        const key = details?.key || 'Unknown';
-        return `Menekan tombol mencurigakan: ${key}`;
-      
-      case 'suspicious_combination':
-        const combination = details?.combination || 'Unknown';
-        return `Menggunakan kombinasi tombol: ${combination}`;
-      
-      case 'devtools_detected':
-        const score = details?.score || 0;
-        return `Developer Tools terdeteksi (confidence: ${score}%)`;
-      
-      case 'screen_height_reduction':
-        const reductionPercentage = details?.reductionPercentage || 0;
-        return `Pengurangan tinggi layar ${reductionPercentage}% (kemungkinan split screen)`;
-      
-      case 'right_click_attempt':
-        return 'Mencoba klik kanan pada halaman ujian';
-      
-      case 'copy_attempt':
-        return 'Mencoba menyalin teks dari halaman ujian';
-      
-      case 'paste_attempt':
-        return 'Mencoba menempel teks ke halaman ujian';
-      
-      case 'cut_attempt':
-        return 'Mencoba memotong teks dari halaman ujian';
-      
-      case 'fullscreen_exit':
-        return 'Keluar dari mode fullscreen';
-      
-      case 'page_hidden':
-        return 'Menyembunyikan halaman ujian (Alt+Tab atau minimize)';
-      
-      case 'rapid_clicking':
-        const clickCount = details?.clickCount || 0;
-        return `Klik terlalu cepat (${clickCount} klik dalam waktu singkat)`;
-      
-      case 'rapid_typing':
-        const keystrokeCount = details?.keystrokeCount || 0;
-        return `Mengetik terlalu cepat (${keystrokeCount} keystroke)`;
-      
-      default:
-        return violation_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    }
-  };
+// Ganti functions ini dengan versi yang di-memoize:
 
-  // Get human-readable activity description
-  const getActivityDescription = (activity: ExamActivityEvent) => {
-    const { activityType, details } = activity;
-    const studentName = details?.full_name || 'Siswa';
+const getViolationDescription = useCallback((violation: ViolationEvent) => {
+  // Safe destructuring with fallback values
+  const { violation_type, details = {} } = violation;
+  
+  // Handle undefined/null violation_type - try to infer from details
+  if (!violation_type || typeof violation_type !== 'string') {
+    // Jangan pakai console.warn di sini - ganti dengan console.debug atau hapus
+    console.debug('Missing violation_type, trying to infer from details:', violation);
     
-    switch (activityType) {
-      case 'answer_start':
-        const questionPos = details?.questionPosition || details?.currentQuestionIndex + 1 || 'Unknown';
-        return `${studentName} mulai menjawab soal ${questionPos}`;
-      
-      case 'answer_submitted':
-        const submitQuestionPos = details?.questionPosition || details?.currentQuestionIndex + 1 || 'Unknown';
-        return `${studentName} mengirim jawaban soal ${submitQuestionPos}`;
-      
-      case 'answer_modified':
-        const modifyQuestionPos = details?.questionPosition || details?.currentQuestionIndex + 1 || 'Unknown';
-        return `${studentName} mengubah jawaban soal ${modifyQuestionPos}`;
-      
-      case 'question_viewed':
-        const viewQuestionPos = details?.questionPosition || details?.currentQuestionIndex + 1 || 'Unknown';
-        return `${studentName} melihat soal ${viewQuestionPos}`;
-      
-      case 'auto_save':
-        const answersCount = details?.answersCount || 0;
-        return `${studentName} otomatis menyimpan ${answersCount} jawaban`;
-      
-      case 'fullscreen_exit':
-        return `${studentName} keluar dari mode fullscreen`;
-      
-      case 'screen_resize':
-        const reductionPercentage = details?.reductionPercentage || 0;
-        return `${studentName} mengubah ukuran layar (${reductionPercentage}% pengurangan)`;
-      
-      case 'question_time_spent':
-        const timeSpent = details?.timeSpent ? Math.round(details.timeSpent / 1000) : 0;
-        const questionPosition = details?.questionPosition || 'Unknown';
-        return `${studentName} menghabiskan ${timeSpent} detik pada soal ${questionPosition}`;
-      
-      default:
-        return `${studentName} melakukan ${activityType.replace(/_/g, ' ')}`;
+    // Try to infer violation type from details
+    if (details.visibilityState === 'hidden') {
+      return 'Menyembunyikan halaman ujian (Alt+Tab atau minimize)';
     }
-  };
+    if (details.tabActive === false) {
+      return 'Pindah tab dari halaman ujian';
+    }
+    
+    // Default fallback
+    return 'Aktivitas mencurigakan terdeteksi';
+  }
+  
+  switch (violation_type) {
+    case 'tab_switch_return':
+      const inactiveTime = details?.inactiveTime ? Math.round(details.inactiveTime / 1000) : 0;
+      const switchCount = details?.switchCount || 0;
+      return `Kembali ke tab ujian setelah ${inactiveTime} detik (${switchCount} kali pindah tab)`;
+    
+    case 'suspicious_key':
+      const key = details?.key || 'Unknown';
+      return `Menekan tombol mencurigakan: ${key}`;
+    
+    case 'suspicious_combination':
+      const combination = details?.combination || 'Unknown';
+      return `Menggunakan kombinasi tombol: ${combination}`;
+    
+    case 'devtools_detected':
+      const score = details?.score || 0;
+      return `Developer Tools terdeteksi (confidence: ${score}%)`;
+    
+    case 'screen_height_reduction':
+      const reductionPercentage = details?.reductionPercentage || 0;
+      return `Pengurangan tinggi layar ${reductionPercentage}% (kemungkinan split screen)`;
+    
+    case 'right_click_attempt':
+      return 'Mencoba klik kanan pada halaman ujian';
+    
+    case 'copy_attempt':
+      return 'Mencoba menyalin teks dari halaman ujian';
+    
+    case 'paste_attempt':
+      return 'Mencoba menempel teks ke halaman ujian';
+    
+    case 'cut_attempt':
+      return 'Mencoba memotong teks dari halaman ujian';
+    
+    case 'fullscreen_exit':
+      return 'Keluar dari mode fullscreen';
+    
+    case 'page_hidden':
+      return 'Menyembunyikan halaman ujian (Alt+Tab atau minimize)';
+    
+    case 'rapid_clicking':
+      const clickCount = details?.clickCount || 0;
+      return `Klik terlalu cepat (${clickCount} klik dalam waktu singkat)`;
+    
+    case 'rapid_typing':
+      const keystrokeCount = details?.keystrokeCount || 0;
+      return `Mengetik terlalu cepat (${keystrokeCount} keystroke)`;
+    
+    default:
+      // Safe string manipulation with null checks
+      try {
+        return violation_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      } catch (error) {
+        console.error('Error formatting violation_type:', error, violation_type);
+        return `Pelanggaran: ${violation_type}`;
+      }
+  }
+}, []); // Empty dependency array karena function ini pure
+
+const getActivityDescription = useCallback((activity: ExamActivityEvent) => {
+  const { activityType, details = {} } = activity;
+  const studentName = details?.full_name || activity.student_name || 'Siswa';
+  
+  // Handle undefined/null activityType
+  if (!activityType || typeof activityType !== 'string') {
+    // Jangan pakai console.warn - ganti dengan console.debug atau hapus
+    console.debug('Missing activityType, using fallback:', activity);
+    
+    // Try to infer activity from details or use generic message
+    if (details.timestamp) {
+      return `${studentName} melakukan aktivitas pada ujian`;
+    }
+    return `${studentName} aktif dalam ujian`;
+  }
+  
+  switch (activityType) {
+    case 'answer_start':
+      const questionPos = details?.questionPosition || details?.currentQuestionIndex + 1 || 'Unknown';
+      return `${studentName} mulai menjawab soal ${questionPos}`;
+    
+    case 'answer_submitted':
+      const submitQuestionPos = details?.questionPosition || details?.currentQuestionIndex + 1 || 'Unknown';
+      return `${studentName} mengirim jawaban soal ${submitQuestionPos}`;
+    
+    case 'answer_modified':
+      const modifyQuestionPos = details?.questionPosition || details?.currentQuestionIndex + 1 || 'Unknown';
+      return `${studentName} mengubah jawaban soal ${modifyQuestionPos}`;
+    
+    case 'question_viewed':
+      const viewQuestionPos = details?.questionPosition || details?.currentQuestionIndex + 1 || 'Unknown';
+      return `${studentName} melihat soal ${viewQuestionPos}`;
+    
+    case 'auto_save':
+      const answersCount = details?.answersCount || 0;
+      return `${studentName} otomatis menyimpan ${answersCount} jawaban`;
+    
+    case 'fullscreen_exit':
+      return `${studentName} keluar dari mode fullscreen`;
+    
+    case 'screen_resize':
+      const reductionPercentage = details?.reductionPercentage || 0;
+      return `${studentName} mengubah ukuran layar (${reductionPercentage}% pengurangan)`;
+    
+    case 'question_time_spent':
+      const timeSpent = details?.timeSpent ? Math.round(details.timeSpent / 1000) : 0;
+      const questionPosition = details?.questionPosition || 'Unknown';
+      return `${studentName} menghabiskan ${timeSpent} detik pada soal ${questionPosition}`;
+    
+    default:
+      // Safe string manipulation with null checks
+      try {
+        return `${studentName} melakukan ${activityType.replace(/_/g, ' ')}`;
+      } catch (error) {
+        console.error('Error formatting activityType:', error, activityType);
+        return `${studentName} melakukan aktivitas: ${activityType}`;
+      }
+  }
+}, []); // Empty dependency array karena function ini pure
+
+  // Tambahkan ini sebelum return statement
+  const memoizedViolationEvents = useMemo(() => violationEvents, [violationEvents]);
+  const memoizedDisplayActivityEvents = useMemo(() => displayActivityEvents, [displayActivityEvents]);
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6">
@@ -597,7 +647,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {violationEvents.map((violation, index) => (
+                  {memoizedViolationEvents.map((violation, index) => (
                     <div key={index} className="border border-gray-200 rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getViolationColor(violation.severity)}`}>
@@ -638,7 +688,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
             <p className="text-sm text-gray-500 mt-1">Aktivitas normal siswa selama ujian</p>
           </div>
           <div className="p-6 max-h-96 overflow-y-auto">
-            {displayActivityEvents.length === 0 ? (
+            {memoizedDisplayActivityEvents.length === 0 ? (
               <div className="text-center py-8">
                 <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-500">Belum ada aktivitas siswa</p>
