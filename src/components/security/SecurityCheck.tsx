@@ -3,6 +3,7 @@ import { AlertTriangle, Shield, Wifi, Monitor, Lock, Eye } from 'lucide-react';
 
 
 
+
 interface SecurityCheckProps {
   onSecurityPassed: () => void;
   onSecurityFailed: (reason: string) => void;
