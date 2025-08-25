@@ -24,6 +24,7 @@ class WebSocketService {
   }
 
   
+  
   getConnectionState(): {
     readyState: number | undefined;
     endpoint: string | null;
