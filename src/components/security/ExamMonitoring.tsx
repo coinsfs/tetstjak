@@ -5,6 +5,7 @@ import { examSecurityService } from '@/services/examSecurity'; // Import examSec
 import { UserProfile } from '@/types/auth';
 
 
+
 // Debouncing mechanism to prevent duplicate violation logging
 const lastLoggedViolation: Record<string, number> = {};
 const VIOLATION_DEBOUNCE_TIME = 1000; // 1 second debounce
