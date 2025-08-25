@@ -19,6 +19,7 @@ class WebSocketService {
     return this.currentEndpoint;
   }
 
+  
   isConnected(): boolean {
     return this.ws?.readyState === WebSocket.OPEN;
   }
