@@ -11,6 +11,7 @@ class WebSocketService {
   private currentToken: string | null = null;
   private currentEndpoint: string | null = null;
   private currentWsUrl: string | null = null;
+  private isReconnecting: boolean = false;
 
   getCurrentEndpoint(): string | null {
     return this.currentEndpoint;
@@ -21,17 +22,25 @@ class WebSocketService {
     token: string, 
     endpointSuffix: string = '/ws/lobby', 
     onAuthError?: () => void, 
-    onStatusChange?: (status: 'connected' | 'disconnected' | 'error') => void
+    onStatusChange?: (status: 'connected' | 'disconnected' | 'error' | 'reconnecting') => void
   ) {
     const newWsUrl = `wss://testing.cigarverse.space/api/v1${endpointSuffix}?token=${token}`;
 
     // Jika sudah terhubung atau sedang terhubung ke URL yang sama, jangan lakukan apa-apa
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) && this.currentWsUrl === newWsUrl) {
+      console.log('WebSocketService: Already connected or connecting to this URL, skipping.');
+      return;
+    }
+
+    // Jika sedang dalam proses reconnect, jangan mulai koneksi baru dari luar
+    if (this.isReconnecting && this.currentWsUrl === newWsUrl) {
+      console.log('WebSocketService: Reconnect attempt already in progress for this URL.');
       return;
     }
 
     // Jika ada koneksi berbeda yang aktif, tutup dulu
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) && this.currentWsUrl !== newWsUrl) {
+      console.log('WebSocketService: Closing existing connection to different URL.');
       this.ws.close(); // Tutup koneksi yang ada
       this.ws = null;
     }
@@ -42,12 +51,17 @@ class WebSocketService {
       this.authErrorCallback = onAuthError || null;
       this.statusChangeCallback = onStatusChange || null;
       this.currentWsUrl = newWsUrl; // Simpan URL baru
+      this.isReconnecting = false; // Reset flag saat memulai koneksi baru
+      
+      console.log('WebSocketService: Attempting to connect to:', newWsUrl);
       
       this.ws = new WebSocket(newWsUrl);
       
       this.ws.onopen = () => {
         this.reconnectAttempts = 0;
+        this.isReconnecting = false; // Reset flag saat koneksi berhasil
         this.statusChangeCallback?.('connected');
+        console.log('WebSocketService: Successfully connected to:', newWsUrl);
         
         // Expose debug methods in development
         this.exposeDebugMethods();
@@ -94,32 +108,42 @@ class WebSocketService {
       };
 
       this.ws.onclose = (event) => {
-        this.statusChangeCallback?.('disconnected');
+        console.log('WebSocketService: Connection closed. Code:', event.code, 'Reason:', event.reason);
         
         // Tangani kesalahan autentikasi
         if (event.code === 1008) {
           console.error('WebSocket authentication failed');
+          this.isReconnecting = false; // Reset flag saat auth error
           this.authErrorCallback?.();
           return;
         }
         
+        // Hanya panggil attemptReconnect jika tidak sedang dalam proses reconnect
+        if (!this.isReconnecting) {
+          this.statusChangeCallback?.('disconnected');
+        }
         this.attemptReconnect();
       };
 
       this.ws.onerror = (error) => {
+        console.error('WebSocketService: Connection error:', error);
         this.statusChangeCallback?.('error');
+        this.isReconnecting = false; // Reset flag saat terjadi error
       };
     } catch (error) {
       console.error('Failed to connect to WebSocket:', error);
       this.statusChangeCallback?.('error');
+      this.isReconnecting = false; // Reset flag saat terjadi error
     }
   }
 
   private attemptReconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
+      this.isReconnecting = true; // Set flag saat memulai upaya reconnect
       
-      this.statusChangeCallback?.('disconnected');
+      this.statusChangeCallback?.('reconnecting'); // Laporkan status 'reconnecting'
+      console.log(`WebSocketService: Attempting reconnect ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
       
       setTimeout(() => {
         if (this.currentToken && this.currentEndpoint) {
@@ -129,6 +153,7 @@ class WebSocketService {
     } else {
       console.error('Max reconnection attempts reached');
       this.statusChangeCallback?.('error');
+      this.isReconnecting = false; // Reset flag jika upaya reconnect gagal
     }
   }
 
@@ -215,6 +240,7 @@ class WebSocketService {
     if (this.ws) {
       // Periksa apakah WebSocket terbuka atau sedang terhubung sebelum menutup
       if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+        console.log('WebSocketService: Manually disconnecting WebSocket');
         this.ws.close();
       }
       this.ws = null; // Selalu kosongkan referensi
@@ -226,6 +252,7 @@ class WebSocketService {
     this.currentToken = null;
     this.currentEndpoint = null;
     this.currentWsUrl = null;
+    this.isReconnecting = false; // Pastikan flag direset saat disconnect manual
   }
 }
 

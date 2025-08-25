@@ -738,7 +738,9 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
                 {(wsConnectionStatus === 'disconnected' || wsConnectionStatus === 'reconnecting') && (
                   <div className="flex items-center space-x-1 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-lg text-xs animate-pulse">
                     <WifiOff className="w-3 h-3" />
-                    <span className="hidden sm:inline">Menyambung...</span>
+                    <span className="hidden sm:inline">
+                      {wsConnectionStatus === 'reconnecting' ? 'Menyambung...' : 'Terputus'}
+                    </span>
                   </div>
                 )}
                 {wsConnectionStatus === 'error' && (
