@@ -36,6 +36,7 @@ interface ConnectedStudent {
 }
 
 
+
 interface ViolationEvent {
   type: string;
   violation_type: string;
