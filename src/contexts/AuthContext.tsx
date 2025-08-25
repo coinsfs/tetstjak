@@ -104,7 +104,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             websocketService.disconnect();
           }
           
-          // Connect immediately without setTimeout
+          // Connect immediately - no setTimeout wrapper needed
           const onAuthError = () => {
             console.error('WebSocket authentication failed');
             logout();

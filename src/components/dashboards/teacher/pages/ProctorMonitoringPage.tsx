@@ -162,7 +162,8 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
       }
       
       if (data.users && Array.isArray(data.users)) {
-        setConnectedStudents(data.users.map((user: any) => ({
+        // Completely replace the connected students list with server data
+        const updatedStudents = data.users.map((user: any) => ({
           studentId: user.id || user.studentId,
           full_name: user.full_name || 'Unknown Student',
           connectionTime: new Date(user.connectionTime || Date.now()),
@@ -171,7 +172,15 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           status: user.status || 'active',
           currentQuestion: user.currentQuestion || 0,
           answersSubmitted: user.answersSubmitted || 0
-        })));
+        }));
+        
+        console.log('ProctorMonitoring: Updating connected students from presence_update', {
+          previousCount: connectedStudents.length,
+          newCount: updatedStudents.length,
+          students: updatedStudents.map(s => ({ id: s.studentId, name: s.full_name }))
+        });
+        
+        setConnectedStudents(updatedStudents);
       }
     });
 
@@ -205,12 +214,28 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
       const studentId = data.studentId || data.student_id;
       
       if (studentId) {
-        // Immediately remove disconnected student from the list
+        console.log('ProctorMonitoring: Student disconnected', {
+          studentId,
+          studentName: data.full_name || data.student_name,
+          currentStudentCount: connectedStudents.length
+        });
+        
+        // Immediately and robustly remove disconnected student from the list
         setConnectedStudents(prevStudents => 
-          prevStudents.filter(student => student.studentId !== studentId)
+          prevStudents.filter(student => {
+            const shouldKeep = student.studentId !== studentId;
+            if (!shouldKeep) {
+              console.log('ProctorMonitoring: Removing student from list', {
+                removedStudentId: student.studentId,
+                removedStudentName: student.full_name
+              });
+            }
+            return shouldKeep;
+          })
         );
         
-        console.log(`Student ${studentId} disconnected and removed from monitoring list`);
+        // Also update total count immediately
+        setTotalActiveStudents(prev => Math.max(0, prev - 1));
       }
     });
 

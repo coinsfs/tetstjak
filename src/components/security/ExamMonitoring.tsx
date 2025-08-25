@@ -372,38 +372,8 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
           timestamp: Date.now()
         });
         
-        // Use useEffect to handle critical violation to avoid setState during render
-        if (criticalViolationTimeoutRef.current) {
-          clearTimeout(criticalViolationTimeoutRef.current);
-        }
-        
-        criticalViolationTimeoutRef.current = setTimeout(() => {
-          // Show user-friendly prompt instead of forcing fullscreen
-          const userConfirmed = window.confirm(
-            'Mode fullscreen diperlukan untuk ujian. Klik OK untuk masuk kembali ke mode fullscreen, atau Cancel untuk menghentikan ujian.'
-          );
-          
-          if (userConfirmed) {
-            // User agreed to re-enter fullscreen
-            const enterFullscreen = () => {
-              if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen().catch((error) => {
-                  console.error('Failed to re-enter fullscreen:', error);
-                  onCriticalViolation('Gagal masuk kembali ke mode fullscreen. Ujian dihentikan.');
-                });
-              }
-            };
-            
-            // Add click event listener for user gesture
-            document.addEventListener('click', enterFullscreen, { once: true });
-            
-            // Show instruction to user
-            alert('Klik di mana saja pada halaman untuk masuk ke mode fullscreen.');
-          } else {
-            // User declined to re-enter fullscreen
-            onCriticalViolation('Mode fullscreen diperlukan untuk ujian. Ujian dihentikan.');
-          }
-        }, 100); // Small delay to avoid setState during render
+        // Handle fullscreen exit with proper user gesture requirement
+        handleFullscreenExit();
       }
     };
 
@@ -550,6 +520,39 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       return newCounts;
     });
 
+  };
+
+  const handleFullscreenExit = () => {
+    // Use setTimeout to avoid setState during render
+    setTimeout(() => {
+      // Show user-friendly prompt instead of forcing fullscreen
+      const userConfirmed = window.confirm(
+        'Mode fullscreen diperlukan untuk ujian. Klik OK untuk masuk kembali ke mode fullscreen, atau Cancel untuk menghentikan ujian.'
+      );
+      
+      if (userConfirmed) {
+        // User agreed to re-enter fullscreen
+        const enterFullscreen = () => {
+          if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch((error) => {
+              console.error('Failed to re-enter fullscreen:', error);
+              onCriticalViolation('Gagal masuk kembali ke mode fullscreen. Ujian dihentikan.');
+            });
+          } else {
+            onCriticalViolation('Browser tidak mendukung mode fullscreen. Ujian dihentikan.');
+          }
+        };
+        
+        // Add click event listener for user gesture
+        document.addEventListener('click', enterFullscreen, { once: true });
+        
+        // Show instruction to user
+        alert('Klik di mana saja pada halaman untuk masuk ke mode fullscreen.');
+      } else {
+        // User declined to re-enter fullscreen
+        onCriticalViolation('Mode fullscreen diperlukan untuk ujian. Ujian dihentikan.');
+      }
+    }, 100); // Small delay to avoid setState during render
   };
 
   // Activity Logging - For non-violation events

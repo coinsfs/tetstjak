@@ -13,6 +13,7 @@ class WebSocketService {
   private currentWsUrl: string | null = null;
   private isReconnecting: boolean = false;
   private reconnectTimeoutId: NodeJS.Timeout | null = null;
+  private reconnectTimeoutId: NodeJS.Timeout | null = null;
 
   getCurrentEndpoint(): string | null {
     return this.currentEndpoint;
@@ -57,7 +58,7 @@ class WebSocketService {
       return;
     }
 
-    // If reconnecting to the same URL, don't start new connection
+    // If reconnecting to the same URL, don't start new connection - let existing reconnect handle it
     if (this.isReconnecting && this.currentWsUrl === newWsUrl) {
       console.log('WebSocketService: Reconnect attempt already in progress for this URL.', {
         currentUrl: this.currentWsUrl,
@@ -209,7 +210,11 @@ class WebSocketService {
 
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      this.isReconnecting = true;
+      
+      // Only set isReconnecting to true if this is the first attempt in this cycle
+      if (!this.isReconnecting) {
+        this.isReconnecting = true;
+      }
       
       this.statusChangeCallback?.('reconnecting');
       console.log(`WebSocketService: Attempting reconnect ${this.reconnectAttempts}/${this.maxReconnectAttempts}`, {
