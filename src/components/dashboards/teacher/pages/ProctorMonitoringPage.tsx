@@ -233,11 +233,6 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     // Use same endpoint as students
     websocketService.connect(token, `/ws/exam-room/${examId}`, onAuthError, onStatusChange);
     
-    // Set generic handler to log all messages
-    websocketService.setGenericHandler((data) => {
-      console.log('WebSocket Message:', data);
-    });
-    
     setupMessageHandlers();
     
     return () => {
@@ -246,7 +241,6 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
       websocketService.offMessage('presence_update');
       websocketService.offMessage('student_connected');
       websocketService.offMessage('student_disconnected');
-      websocketService.setGenericHandler(null); // Clear generic handler on unmount
     };
   }, [examId, token, setupMessageHandlers, navigate]);
 
