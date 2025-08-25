@@ -55,35 +55,114 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
   }, []);
 
-  // WebSocket connection management based on authentication and current path
+  // Centralized WebSocket connection management
   useEffect(() => {
-    if (isAuthenticated && token && !isLoading) {
-      // Check if user is currently in a specialized WebSocket-dependent page
-      const isInExamTaking = currentPath.startsWith('/exam-taking/');
-      const isInProctorMonitoring = currentPath.startsWith('/monitor-exam/');
-      
-      // If user is not in exam taking AND not in proctor monitoring, ensure lobby connection is active
-      if (!isInExamTaking && !isInProctorMonitoring) {
+    if (!isLoading) {
+      if (isAuthenticated && token) {
+        // Determine the correct WebSocket endpoint based on current path
+        let desiredEndpoint = '/ws/lobby'; // Default endpoint
+        
+        // Check if user is in exam-taking page
+        if (currentPath.startsWith('/exam-taking/')) {
+          const sessionId = currentPath.split('/').pop();
+          if (sessionId) {
+            // Extract examId from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const examIdParam = urlParams.get('examId');
+            
+            if (examIdParam) {
+              try {
+                const decodedExamId = atob(examIdParam.padEnd(examIdParam.length + (4 - examIdParam.length % 4) % 4, '='));
+                desiredEndpoint = `/ws/exam-room/${decodedExamId}`;
+              } catch (error) {
+                console.warn('Failed to decode examId, using sessionId as fallback');
+                desiredEndpoint = `/ws/exam-room/${sessionId}`;
+              }
+            } else {
+              desiredEndpoint = `/ws/exam-room/${sessionId}`;
+            }
+          }
+        }
+        // Check if user is in proctor monitoring page
+        else if (currentPath.startsWith('/monitor-exam/')) {
+          const examId = currentPath.split('/').pop();
+          if (examId) {
+            desiredEndpoint = `/ws/exam-room/${examId}`;
+          }
+        }
+        
+        // Get current WebSocket endpoint
         const currentEndpoint = websocketService.getCurrentEndpoint();
         
-        if (currentEndpoint !== '/ws/lobby') {
-          websocketService.connect(token, '/ws/lobby');
-        }
-      }
-      // If user is in exam, let StudentExamTakingPage handle the connection
-    } else if (!isAuthenticated && !isLoading) {
-      // User is not authenticated, disconnect WebSocket
-      websocketService.disconnect();
-    }
+        // Only connect if endpoint is different or no connection exists
+        if (currentEndpoint !== desiredEndpoint) {
+          console.log(`WebSocket: Switching from ${currentEndpoint || 'none'} to ${desiredEndpoint}`);
+          
+          // Disconnect existing connection cleanly
+          if (currentEndpoint) {
+            websocketService.disconnect();
+          }
+          
+          // Wait a bit before connecting to ensure clean disconnection
+          setTimeout(() => {
+            const onAuthError = () => {
+              console.error('WebSocket authentication failed');
+              logout();
+            };
 
-    // Cleanup function to ensure proper connection management
-    return () => {
-      // Only disconnect if we're about to change paths or unmount
-      // This prevents unnecessary disconnections during normal operation
-      if (!isAuthenticated && !isLoading) {
+            const onStatusChange = (status: 'connected' | 'disconnected' | 'error' | 'reconnecting') => {
+              console.log(`WebSocket status changed to: ${status} for endpoint: ${desiredEndpoint}`);
+              
+              // Handle reconnection logic more carefully
+              if (status === 'disconnected' || status === 'error') {
+                // Only attempt reconnection if we're still on the same path and authenticated
+                const currentDesiredEndpoint = getCurrentDesiredEndpoint();
+                if (currentDesiredEndpoint === desiredEndpoint && isAuthenticated && token) {
+                  console.log('WebSocket: Connection lost, will attempt reconnection...');
+                }
+              }
+            };
+
+            websocketService.connect(token, desiredEndpoint, onAuthError, onStatusChange);
+          }, 100);
+        }
+      } else {
+        // User is not authenticated, disconnect WebSocket
+        console.log('WebSocket: User not authenticated, disconnecting');
         websocketService.disconnect();
       }
-    };
+    }
+
+    // Helper function to get current desired endpoint
+    function getCurrentDesiredEndpoint(): string {
+      if (!isAuthenticated) return '';
+      
+      if (currentPath.startsWith('/exam-taking/')) {
+        const sessionId = currentPath.split('/').pop();
+        if (sessionId) {
+          const urlParams = new URLSearchParams(window.location.search);
+          const examIdParam = urlParams.get('examId');
+          
+          if (examIdParam) {
+            try {
+              const decodedExamId = atob(examIdParam.padEnd(examIdParam.length + (4 - examIdParam.length % 4) % 4, '='));
+              return `/ws/exam-room/${decodedExamId}`;
+            } catch (error) {
+              return `/ws/exam-room/${sessionId}`;
+            }
+          } else {
+            return `/ws/exam-room/${sessionId}`;
+          }
+        }
+      } else if (currentPath.startsWith('/monitor-exam/')) {
+        const examId = currentPath.split('/').pop();
+        if (examId) {
+          return `/ws/exam-room/${examId}`;
+        }
+      }
+      
+      return '/ws/lobby';
+    }
   }, [isAuthenticated, token, isLoading, currentPath]);
 
   const login = async (username: string, password: string): Promise<void> => {

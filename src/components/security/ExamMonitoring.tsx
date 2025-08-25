@@ -62,53 +62,12 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 
   // Add WebSocket message logging for debugging
   useEffect(() => {
-    // Listen for activity events from students
-    const handleActivityEvent = (data: any) => {
-      // Handle activity events silently
-    };
-
-    // Listen for violation events from students
-    const handleViolationEvent = (data: any) => {
-      // Handle violation events silently
-    };
-
-    // Listen for session status updates
-    const handleSessionStatus = (data: any) => {
-      // Handle session status silently
-    };
-
-    // Listen for student leave events
-    const handleStudentLeave = (data: any) => {
-      // Handle student leave events silently
-    };
-
-    // Listen for exam activity events
-    const handleExamActivity = (data: any) => {
-      // Handle exam activity events silently
-    };
-
-    // Listen for presence updates
-    const handlePresenceUpdate = (data: any) => {
-      // Handle presence updates silently
-    };
-
-    // Register all message listeners
-    websocketService.onMessage('activity_event', handleActivityEvent);
-    websocketService.onMessage('violation_event', handleViolationEvent);
-    websocketService.onMessage('session_status', handleSessionStatus);
-    websocketService.onMessage('student_leave', handleStudentLeave);
-    websocketService.onMessage('exam_activity', handleExamActivity);
-    websocketService.onMessage('presence_update', handlePresenceUpdate);
+    // WebSocket message handlers are now managed by AuthContext
+    // This component only needs to send messages, not manage connections
+    console.log('ExamMonitoring: Component mounted for exam', examId);
     
-
-    // Cleanup function
     return () => {
-      websocketService.offMessage('activity_event');
-      websocketService.offMessage('violation_event');
-      websocketService.offMessage('session_status');
-      websocketService.offMessage('student_leave');
-      websocketService.offMessage('exam_activity');
-      websocketService.offMessage('presence_update');
+      console.log('ExamMonitoring: Component unmounted for exam', examId);
     };
   }, [examId, studentId, sessionId]);
 

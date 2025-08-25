@@ -215,40 +215,35 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
 
   }, []); // Empty dependency array - all dependencies are now stable
 
-  // Initialize WebSocket connection
+  // WebSocket message handlers setup (AuthContext manages the actual connection)
   useEffect(() => {
     if (!examId || !token) return;
-    
-    const onAuthError = () => {
-      toast.error('Authentication failed');
-      navigate('/login');
-    };
 
-    const onStatusChange = (status: 'connected' | 'disconnected' | 'error') => {
-      setConnectionStatus(status);
-      if (status === 'connected') {
+    // Monitor WebSocket connection status
+    const checkConnectionStatus = () => {
+      const isConnected = websocketService.isConnected();
+      setConnectionStatus(isConnected ? 'connected' : 'disconnected');
+      
+      if (isConnected) {
         setLastHeartbeat(new Date());
-        toast.success('Terhubung ke sistem monitoring');
-      } else if (status === 'error') {
-        toast.error('Error koneksi monitoring');
-      } else if (status === 'disconnected') {
-        toast.error('Koneksi monitoring terputus');
       }
     };
 
-    // Use same endpoint as students
-    websocketService.connect(token, `/ws/exam-room/${examId}`, onAuthError, onStatusChange);
+    // Check status immediately and then periodically
+    checkConnectionStatus();
+    const statusInterval = setInterval(checkConnectionStatus, 5000);
     
     setupMessageHandlers();
     
     return () => {
+      clearInterval(statusInterval);
       websocketService.offMessage('violation_event');
       websocketService.offMessage('activity_event');
       websocketService.offMessage('presence_update');
       websocketService.offMessage('student_connected');
       websocketService.offMessage('student_disconnected');
     };
-  }, [examId, token, setupMessageHandlers, navigate]);
+  }, [examId, token, setupMessageHandlers]);
 
   // Client-side ping to keep connection alive during idle periods
   useEffect(() => {

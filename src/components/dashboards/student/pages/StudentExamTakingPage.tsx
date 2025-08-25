@@ -108,36 +108,30 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     }
   }, []);
 
-  // WebSocket connection setup
+  // WebSocket status monitoring (AuthContext manages the actual connection)
   useEffect(() => {
-    if (!token || !sessionId || !securityPassed) return;
+    if (!securityPassed) return;
 
-    const wsEndpoint = `/ws/exam-room/${actualExamId}`;
-    
-    const handleAuthError = () => {
-      console.error('WebSocket authentication failed, redirecting to login');
-      navigate('/login');
+    // Monitor WebSocket connection status
+    const checkConnectionStatus = () => {
+      const isConnected = websocketService.isConnected();
+      setWsConnectionStatus(isConnected ? 'connected' : 'disconnected');
     };
 
-    const handleStatusChange = (status: 'connected' | 'disconnected' | 'error') => {
-      setWsConnectionStatus(status);
-      if (status === 'disconnected' || status === 'error') {
-        setWsConnectionStatus('reconnecting');
-      }
-    };
+    // Check status immediately and then periodically
+    checkConnectionStatus();
+    const statusInterval = setInterval(checkConnectionStatus, 5000);
 
-    websocketService.connect(token, wsEndpoint, handleAuthError, handleStatusChange);
-
-    // Listen for proctor messages (optional for future use)
+    // Listen for proctor messages
     websocketService.onMessage('proctor_message', (data) => {
       console.log('Proctor message received:', data);
     });
 
     return () => {
-      // Don't disconnect WebSocket here - let AuthContext manage it
-      // websocketService.disconnect();
+      clearInterval(statusInterval);
+      websocketService.offMessage('proctor_message');
     };
-  }, [token, sessionId, securityPassed, navigate]);
+  }, [securityPassed]);
 
   // Heartbeat for activity monitoring
   useEffect(() => {
