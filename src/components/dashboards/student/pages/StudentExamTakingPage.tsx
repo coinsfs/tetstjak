@@ -32,6 +32,7 @@ interface StudentExamTakingPageProps {
 }
 
 
+
 const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ 
   user, 
   sessionId 
