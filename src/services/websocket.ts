@@ -5,13 +5,14 @@ class WebSocketService {
   private reconnectInterval = 1000;
   private messageHandlers: Map<string, (data: any) => void> = new Map();
   private messageQueue: any[] = [];
-  private statusChangeCallback: ((status: 'connected' | 'disconnected' | 'error') => void) | null = null;
+  private statusChangeCallback: ((status: 'connected' | 'disconnected' | 'error' | 'reconnecting') => void) | null = null;
   private authErrorCallback: (() => void) | null = null;
   private genericHandler: ((data: any) => void) | null = null;
   private currentToken: string | null = null;
   private currentEndpoint: string | null = null;
   private currentWsUrl: string | null = null;
   private isReconnecting: boolean = false;
+  private reconnectTimeoutId: NodeJS.Timeout | null = null;
 
   getCurrentEndpoint(): string | null {
     return this.currentEndpoint;
@@ -76,13 +77,18 @@ class WebSocketService {
       this.ws = null;
     }
 
+    // Clear any pending reconnect timeout
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = null;
+    }
+
     try {
       this.currentToken = token;
       this.currentEndpoint = endpointSuffix;
       this.authErrorCallback = onAuthError || null;
       this.statusChangeCallback = onStatusChange || null;
       this.currentWsUrl = newWsUrl;
-      this.isReconnecting = false;
       
       console.log('WebSocketService: Attempting to connect to:', {
         url: newWsUrl,
@@ -174,7 +180,6 @@ class WebSocketService {
           endpoint: this.currentEndpoint
         });
         this.statusChangeCallback?.('error');
-        this.isReconnecting = false;
       };
     } catch (error) {
       console.error('Failed to connect to WebSocket:', {
@@ -195,6 +200,12 @@ class WebSocketService {
       return;
     }
 
+    // Clear any existing reconnect timeout
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = null;
+    }
+
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       this.isReconnecting = true;
@@ -205,7 +216,7 @@ class WebSocketService {
         url: this.currentWsUrl
       });
       
-      setTimeout(() => {
+      this.reconnectTimeoutId = setTimeout(() => {
         // Double-check that we still need to reconnect
         if (this.currentToken && this.currentEndpoint && this.isReconnecting) {
           this.connect(this.currentToken, this.currentEndpoint, this.authErrorCallback || undefined, this.statusChangeCallback || undefined);
@@ -310,6 +321,12 @@ class WebSocketService {
       endpoint: this.currentEndpoint,
       readyState: this.ws?.readyState
     });
+
+    // Clear any pending reconnect timeout
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = null;
+    }
 
     // Only close if there's an active WebSocket instance
     if (this.ws) {

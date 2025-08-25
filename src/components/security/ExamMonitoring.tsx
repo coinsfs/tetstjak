@@ -14,6 +14,7 @@ interface ExamMonitoringProps {
   sessionId: string;
   token: string | null;
   user: UserProfile | null;
+  onCriticalViolation: (reason: string) => void;
   onViolationUpdate: (count: number) => void;
 }
 
@@ -30,6 +31,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   sessionId,
   token,
   user,
+  onCriticalViolation,
   onViolationUpdate
 }) => {
   const [isTabActive, setIsTabActive] = useState(true);
@@ -51,6 +53,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     currentHeight: window.innerHeight,
     violations: 0
   });
+  const criticalViolationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setupMonitoring();
@@ -68,6 +71,11 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     
     return () => {
       console.log('ExamMonitoring: Component unmounted for exam', examId);
+      
+      // Clear any pending critical violation timeout
+      if (criticalViolationTimeoutRef.current) {
+        clearTimeout(criticalViolationTimeoutRef.current);
+      }
     };
   }, [examId, studentId, sessionId]);
 
@@ -356,35 +364,45 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   const setupFullscreenMonitoring = () => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
-        // Log fullscreen exit activity
-        logActivity('fullscreen_exit', {
-          timestamp: new Date().toISOString(),
-          full_name: user?.profile_details?.full_name
-        });
+        console.warn('User exited fullscreen during exam');
         
-        websocketService.send({
-          type: 'activity_event',
-          details: {
-            eventType: 'fullscreen_exit',
-            timestamp: new Date().toISOString(),
-            studentId,
-            examId,
-            sessionId,
-          },
-        });
-        
+        // Log the violation first
         logViolation('fullscreen_exit', 'high', {
           timestamp: Date.now()
         });
         
-        // Try to re-enter fullscreen
-        setTimeout(() => {
-          if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen().catch((e) => {
-              onCriticalViolation('Gagal mempertahankan mode fullscreen. Ujian dihentikan.');
-            });
+        // Use useEffect to handle critical violation to avoid setState during render
+        if (criticalViolationTimeoutRef.current) {
+          clearTimeout(criticalViolationTimeoutRef.current);
+        }
+        
+        criticalViolationTimeoutRef.current = setTimeout(() => {
+          // Show user-friendly prompt instead of forcing fullscreen
+          const userConfirmed = window.confirm(
+            'Mode fullscreen diperlukan untuk ujian. Klik OK untuk masuk kembali ke mode fullscreen, atau Cancel untuk menghentikan ujian.'
+          );
+          
+          if (userConfirmed) {
+            // User agreed to re-enter fullscreen
+            const enterFullscreen = () => {
+              if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch((error) => {
+                  console.error('Failed to re-enter fullscreen:', error);
+                  onCriticalViolation('Gagal masuk kembali ke mode fullscreen. Ujian dihentikan.');
+                });
+              }
+            };
+            
+            // Add click event listener for user gesture
+            document.addEventListener('click', enterFullscreen, { once: true });
+            
+            // Show instruction to user
+            alert('Klik di mana saja pada halaman untuk masuk ke mode fullscreen.');
+          } else {
+            // User declined to re-enter fullscreen
+            onCriticalViolation('Mode fullscreen diperlukan untuk ujian. Ujian dihentikan.');
           }
-        }, 1000);
+        }, 100); // Small delay to avoid setState during render
       }
     };
 
@@ -522,7 +540,12 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       const newCounts = { ...prev };
       newCounts[severity] += 1;
       const totalViolations = newCounts.low + newCounts.medium + newCounts.high + newCounts.critical;
-      onViolationUpdate(totalViolations);
+      
+      // Use setTimeout to avoid setState during render
+      setTimeout(() => {
+        onViolationUpdate(totalViolations);
+      }, 0);
+      
       return newCounts;
     });
 
@@ -554,6 +577,10 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   const cleanup = () => {
     if (monitoringInterval.current) {
       clearInterval(monitoringInterval.current);
+    }
+    
+    if (criticalViolationTimeoutRef.current) {
+      clearTimeout(criticalViolationTimeoutRef.current);
     }
   };
 

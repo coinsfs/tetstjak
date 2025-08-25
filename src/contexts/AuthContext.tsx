@@ -103,28 +103,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             websocketService.disconnect();
           }
           
-          // Wait a bit before connecting to ensure clean disconnection
-          setTimeout(() => {
-            const onAuthError = () => {
-              console.error('WebSocket authentication failed');
-              logout();
-            };
+          // Connect immediately without setTimeout
+          const onAuthError = () => {
+            console.error('WebSocket authentication failed');
+            logout();
+          };
 
-            const onStatusChange = (status: 'connected' | 'disconnected' | 'error' | 'reconnecting') => {
-              console.log(`WebSocket status changed to: ${status} for endpoint: ${desiredEndpoint}`);
-              
-              // Handle reconnection logic more carefully
-              if (status === 'disconnected' || status === 'error') {
-                // Only attempt reconnection if we're still on the same path and authenticated
-                const currentDesiredEndpoint = getCurrentDesiredEndpoint();
-                if (currentDesiredEndpoint === desiredEndpoint && isAuthenticated && token) {
-                  console.log('WebSocket: Connection lost, will attempt reconnection...');
-                }
+          const onStatusChange = (status: 'connected' | 'disconnected' | 'error' | 'reconnecting') => {
+            console.log(`WebSocket status changed to: ${status} for endpoint: ${desiredEndpoint}`);
+            
+            // Handle reconnection logic more carefully
+            if (status === 'disconnected' || status === 'error') {
+              // Only attempt reconnection if we're still on the same path and authenticated
+              const currentDesiredEndpoint = getCurrentDesiredEndpoint();
+              if (currentDesiredEndpoint === desiredEndpoint && isAuthenticated && token) {
+                console.log('WebSocket: Connection lost, will attempt reconnection...');
               }
-            };
+            }
+          };
 
-            websocketService.connect(token, desiredEndpoint, onAuthError, onStatusChange);
-          }, 100);
+          websocketService.connect(token, desiredEndpoint, onAuthError, onStatusChange);
         }
       } else {
         // User is not authenticated, disconnect WebSocket

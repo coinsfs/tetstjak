@@ -2,35 +2,33 @@ import React, { useEffect, useState, useRef } from 'react';
 import { AlertTriangle, Shield, Wifi, Monitor, Lock, Eye } from 'lucide-react';
 
 interface SecurityCheckProps {
-  onSecurityPassed: () => void;
-  onSecurityFailed: (reason: string) => void;
-  examId: string;
-  studentId: string;
-}
-
-interface SecurityCheckResult {
-  passed: boolean;
-  reason?: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-}
-
-const SecurityCheck: React.FC<SecurityCheckProps> = ({
-  onSecurityPassed,
-  onSecurityFailed,
-  examId,
-  studentId
-}) => {
-  const [currentCheck, setCurrentCheck] = useState<string>('Memulai pemeriksaan keamanan...');
-  const [progress, setProgress] = useState(0);
-  const [isChecking, setIsChecking] = useState(true);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const componentRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    performSecurityChecks();
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+        console.warn('User exited fullscreen mode');
+        
+        // Show user-friendly prompt instead of forcing fullscreen
+        const userConfirmed = window.confirm(
+          'Mode fullscreen diperlukan untuk ujian. Klik OK untuk masuk kembali ke mode fullscreen, atau Cancel untuk keluar dari ujian.'
+        );
+        
+        if (userConfirmed) {
+          // User agreed to re-enter fullscreen
+          const enterFullscreen = () => {
+            if (document.documentElement.requestFullscreen) {
+              document.documentElement.requestFullscreen().catch((error) => {
+                console.error('Failed to re-enter fullscreen:', error);
+                onSecurityFailed('Gagal masuk ke mode fullscreen. Ujian tidak dapat dilanjutkan.');
+              });
+            }
+          };
+          
+          // Add click event listener for user gesture
+          document.addEventListener('click', enterFullscreen, { once: true });
+          
+          // Show instruction to user
+          alert('Klik di mana saja pada halaman untuk masuk ke mode fullscreen.');
+        } else {
+          // User declined to re-enter fullscreen
+          onSecurityFailed('Mode fullscreen diperlukan untuk ujian. Ujian dihentikan.');
+        }
       }
     };
   }, []);

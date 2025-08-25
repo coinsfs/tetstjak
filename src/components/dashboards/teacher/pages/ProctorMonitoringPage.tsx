@@ -155,13 +155,12 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     });
 
     websocketService.onMessage('presence_update', (data: any) => {
-      // Update total active students count from presence_update message
-      if (data.student_count !== undefined) {
-        setTotalActiveStudents(data.student_count);
-      }
+      console.log('PRESENCE UPDATE RECEIVED:', data);
       
+      // Completely replace the connected students list with server data
+      // This ensures accuracy and corrects any discrepancies
       if (data.users && Array.isArray(data.users)) {
-        setConnectedStudents(data.users.map((user: any) => ({
+        const updatedStudents = data.users.map((user: any) => ({
           studentId: user.id || user.studentId,
           full_name: user.full_name || 'Unknown Student',
           connectionTime: new Date(user.connectionTime || Date.now()),
@@ -170,12 +169,22 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           status: user.status || 'active',
           currentQuestion: user.currentQuestion || 0,
           answersSubmitted: user.answersSubmitted || 0
-        })));
+        }));
+        
+        setConnectedStudents(updatedStudents);
+        setTotalActiveStudents(updatedStudents.length);
+        
+        console.log(`Updated connected students list: ${updatedStudents.length} students`);
+      } else if (data.student_count !== undefined) {
+        // Fallback: just update the count if detailed user list is not provided
+        setTotalActiveStudents(data.student_count);
+        console.log(`Updated student count only: ${data.student_count} students`);
       }
     });
 
     // Handle student connection events
     websocketService.onMessage('student_connected', (data: any) => {
+      console.log('STUDENT CONNECTED:', data);
       const studentId = data.studentId || data.student_id;
       const studentName = data.full_name || data.student_name || 'Unknown Student';
       
@@ -183,7 +192,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
         setConnectedStudents(prevStudents => {
           const exists = prevStudents.some(s => s.studentId === studentId);
           if (!exists) {
-            return [...prevStudents, {
+            const newStudents = [...prevStudents, {
               studentId,
               full_name: studentName,
               connectionTime: new Date(),
@@ -193,6 +202,10 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
               currentQuestion: 0,
               answersSubmitted: 0
             }];
+            
+            // Update total count as well
+            setTotalActiveStudents(newStudents.length);
+            return newStudents;
           }
           return prevStudents;
         });
@@ -201,15 +214,63 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
 
     // Handle student disconnection events
     websocketService.onMessage('student_disconnected', (data: any) => {
+      console.log('STUDENT DISCONNECTED:', data);
       const studentId = data.studentId || data.student_id;
       
       if (studentId) {
         // Immediately remove disconnected student from the list
         setConnectedStudents(prevStudents => 
-          prevStudents.filter(student => student.studentId !== studentId)
+          const filteredStudents = prevStudents.filter(student => student.studentId !== studentId);
+          
+          // Update total count as well
+          setTotalActiveStudents(filteredStudents.length);
+          
+          console.log(`Student ${studentId} disconnected and removed from monitoring list. Remaining: ${filteredStudents.length}`);
+          return filteredStudents;
+        });
+      }
+    });
+
+    // Handle general connection count updates
+    websocketService.onMessage('active_users_count', (data: any) => {
+      if (data.type === 'active_users_count' && typeof data.count === 'number') {
+        console.log('ACTIVE USERS COUNT UPDATE:', data.count);
+        setTotalActiveStudents(data.count);
+      }
+    });
+
+    // Handle new activity logs from WebSocket
+    websocketService.onMessage('new_activity_log', (data: any) => {
+      if (data.type === 'new_activity_log' && data.data) {
+        // Transform WebSocket data to match ActivityLog interface
+        const newActivity: ActivityLog = {
+          _id: `ws_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          user_data: {
+            user_id: data.data.user_id || 'unknown',
+            full_name: data.data.full_name,
+            user_roles: ['student'] // Default role, could be enhanced
+          },
+          activity: 'login',
+          description: data.data.description,
+          ip_address: '0.0.0.0', // Not provided in WebSocket data
+          device_info: {
+            device_type: 'desktop', // Default, could be enhanced
+            os_name: 'Unknown OS',
+            os_version: 'Unknown',
+            browser_name: data.data.browser_name,
+            browser_version: 'Unknown',
+            user_agent: 'Unknown'
+          },
+          status: 'success',
+          details: {
+            method: 'POST',
+            endpoint: '/auth/login'
+          },
+          created_at: data.data.timestamp
+        };
         );
         
-        console.log(`Student ${studentId} disconnected and removed from monitoring list`);
+        handleNewActivity(newActivity);
       }
     });
 
