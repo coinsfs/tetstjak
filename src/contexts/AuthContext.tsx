@@ -4,6 +4,7 @@ import { authService } from '@/services/auth';
 import { websocketService } from '@/services/websocket';
 import { useRouter } from '@/hooks/useRouter';
 
+
 interface AuthContextType {
   user: UserProfile | null;
   token: string | null;
