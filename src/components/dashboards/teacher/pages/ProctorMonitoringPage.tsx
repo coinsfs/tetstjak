@@ -127,7 +127,10 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   // Setup WebSocket message handlers
   const setupMessageHandlers = useCallback(() => {
     websocketService.onMessage('violation_event', (data: any) => {
-      console.log('VIOLATION HANDLER CALLED:', new Date().toISOString());
+      console.log('ProctorMonitoring: VIOLATION HANDLER CALLED:', {
+        timestamp: new Date().toISOString(),
+        data: data
+      });
 
       // Enhanced violation event handling with better data extraction
       const enhancedData = {
@@ -144,7 +147,12 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     });
 
     websocketService.onMessage('activity_event', (data: any) => {
-      console.log('ACTIVITY HANDLER CALLED:', new Date().toISOString());
+      console.log('ProctorMonitoring: ACTIVITY HANDLER CALLED:', {
+        timestamp: new Date().toISOString(),
+        activityType: data.activityType,
+        studentId: data.studentId,
+        data: data
+      });
 
       setExamActivityEvents(prevEvents => [data, ...prevEvents].slice(0, 100));
       
@@ -157,6 +165,15 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     });
 
     websocketService.onMessage('presence_update', (data: any) => {
+      console.log('ProctorMonitoring: PRESENCE UPDATE RECEIVED:', {
+        timestamp: new Date().toISOString(),
+        student_count: data.student_count,
+        proctor_count: data.proctor_count,
+        hasUsers: !!data.users,
+        usersLength: data.users ? data.users.length : 0,
+        data: data
+      });
+      
       // Update total active students count from presence_update message
       if (data.student_count !== undefined) {
         setTotalActiveStudents(data.student_count);
@@ -182,11 +199,20 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
         });
         
         setConnectedStudents(updatedStudents);
+      } else {
+        console.log('ProctorMonitoring: No users array in presence_update, keeping existing connected students');
       }
     });
 
     // Handle student connection events
     websocketService.onMessage('student_connected', (data: any) => {
+      console.log('ProctorMonitoring: STUDENT CONNECTED:', {
+        timestamp: new Date().toISOString(),
+        studentId: data.studentId || data.student_id,
+        studentName: data.full_name || data.student_name,
+        data: data
+      });
+      
       const studentId = data.studentId || data.student_id;
       const studentName = data.full_name || data.student_name || 'Unknown Student';
       
@@ -194,6 +220,10 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
         setConnectedStudents(prevStudents => {
           const exists = prevStudents.some(s => s.studentId === studentId);
           if (!exists) {
+            console.log('ProctorMonitoring: Adding new student to connected list:', {
+              studentId,
+              studentName
+            });
             return [...prevStudents, {
               studentId,
               full_name: studentName,
@@ -205,6 +235,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
               answersSubmitted: 0
             }];
           }
+          console.log('ProctorMonitoring: Student already in connected list:', studentId);
           return prevStudents;
         });
       }
@@ -212,6 +243,13 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
 
     // Handle student disconnection events
     websocketService.onMessage('student_disconnected', (data: any) => {
+      console.log('ProctorMonitoring: STUDENT DISCONNECTED:', {
+        timestamp: new Date().toISOString(),
+        studentId: data.studentId || data.student_id,
+        studentName: data.full_name || data.student_name,
+        data: data
+      });
+      
       const studentId = data.studentId || data.student_id;
       
       if (studentId) {

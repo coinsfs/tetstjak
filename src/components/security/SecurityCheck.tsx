@@ -25,6 +25,8 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
   const [currentCheck, setCurrentCheck] = useState<string>('Memulai pemeriksaan keamanan...');
   const [progress, setProgress] = useState(0);
   const [isChecking, setIsChecking] = useState(true);
+  const [needsUserGesture, setNeedsUserGesture] = useState(false);
+  const [gestureMessage, setGestureMessage] = useState('');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const componentRef = useRef<HTMLDivElement>(null);
 
@@ -37,6 +39,45 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
     };
   }, []);
 
+  const handleUserGesture = async () => {
+    try {
+      // Try to enter fullscreen after user gesture
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+        console.log('SecurityCheck: Fullscreen enabled after user gesture');
+      }
+      
+      // Continue with security check completion
+      setNeedsUserGesture(false);
+      updateProgress('Pemeriksaan keamanan selesai!', 100);
+      await sleep(300);
+      setIsChecking(false);
+      
+      // Self-destruct: Remove this component from DOM after use
+      setTimeout(() => {
+        if (componentRef.current) {
+          componentRef.current.remove();
+        }
+      }, 1000);
+      
+      onSecurityPassed();
+    } catch (error) {
+      console.warn('SecurityCheck: Fullscreen request failed after user gesture:', error);
+      // Continue anyway - fullscreen is not critical for exam functionality
+      setNeedsUserGesture(false);
+      updateProgress('Pemeriksaan keamanan selesai!', 100);
+      await sleep(300);
+      setIsChecking(false);
+      
+      setTimeout(() => {
+        if (componentRef.current) {
+          componentRef.current.remove();
+        }
+      }, 1000);
+      
+      onSecurityPassed();
+    }
+  };
   const updateProgress = (checkName: string, progressValue: number) => {
     setCurrentCheck(checkName);
     setProgress(Math.min(progressValue, 100)); // Ensure progress never exceeds 100%
@@ -93,16 +134,11 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
       // All checks passed
       updateProgress('Pemeriksaan keamanan selesai!', 100);
       await sleep(300);
-      setIsChecking(false);
       
-      // Self-destruct: Remove this component from DOM after use
-      setTimeout(() => {
-        if (componentRef.current) {
-          componentRef.current.remove();
-        }
-      }, 1000);
+      // Check if we need user gesture for fullscreen
+      setNeedsUserGesture(true);
+      setGestureMessage('Klik tombol di bawah untuk masuk mode fullscreen dan melanjutkan ujian');
       
-      onSecurityPassed();
 
     } catch (error) {
       console.error('Security check error:', error);
@@ -547,14 +583,8 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
   // 4. Security Environment Setup
   const setupSecurityEnvironment = (): SecurityCheckResult => {
     try {
-      // Force fullscreen
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch((error) => {
-          console.warn('Fullscreen request failed:', error);
-          // Don't fail the security check just because fullscreen failed
-          // Some browsers or security policies might block this
-        });
-      }
+      // Note: Fullscreen will be requested after user gesture
+      console.log('SecurityCheck: Fullscreen will be requested after user gesture');
 
       // Disable context menu
       document.addEventListener('contextmenu', (e) => {
@@ -683,7 +713,7 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
         WebkitUserSelect: 'none',
         MozUserSelect: 'none',
         msUserSelect: 'none',
-        pointerEvents: 'none'
+        pointerEvents: needsUserGesture ? 'auto' : 'none'
       }}
     >
       <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
@@ -701,6 +731,24 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
             Memverifikasi lingkungan ujian untuk memastikan integritas
           </p>
 
+          {needsUserGesture ? (
+            /* User Gesture Required */
+            <div className="space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <p className="text-blue-800 text-sm">
+                  {gestureMessage}
+                </p>
+              </div>
+              <button
+                onClick={handleUserGesture}
+                className="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-blue-700 transition-colors focus:outline-none focus:ring-4 focus:ring-blue-200"
+              >
+                Masuk Mode Fullscreen & Lanjutkan
+              </button>
+            </div>
+          ) : (
+            /* Normal Progress Display */
+            <>
           {/* Progress Bar */}
           <div className="mb-6">
             <div className="flex justify-between text-sm text-gray-600 mb-2">
@@ -740,6 +788,8 @@ const SecurityCheck: React.FC<SecurityCheckProps> = ({
               <span>Device Check</span>
             </div>
           </div>
+            </>
+          )}
         </div>
       </div>
     </div>

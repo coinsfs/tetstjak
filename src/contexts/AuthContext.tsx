@@ -95,13 +95,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Get current WebSocket endpoint
         const currentEndpoint = websocketService.getCurrentEndpoint();
+        const isConnected = websocketService.isConnected();
+        const connectionState = websocketService.getConnectionState();
         
-        // Only connect if endpoint is different or no connection exists
-        if (currentEndpoint !== desiredEndpoint) {
+        console.log('AuthContext: WebSocket connection check:', {
+          currentEndpoint,
+          desiredEndpoint,
+          isConnected,
+          connectionState,
+          currentPath
+        });
+        
+        // Only connect if endpoint is different, no connection exists, or connection is broken
+        const shouldConnect = currentEndpoint !== desiredEndpoint || 
+                             !isConnected || 
+                             (connectionState.readyState !== undefined && 
+                              connectionState.readyState !== WebSocket.OPEN && 
+                              !connectionState.isReconnecting);
+        
+        if (shouldConnect) {
           console.log(`WebSocket: Switching from ${currentEndpoint || 'none'} to ${desiredEndpoint}`);
           
           // Disconnect existing connection cleanly
-          if (currentEndpoint) {
+          if (currentEndpoint && isConnected) {
+            console.log('AuthContext: Disconnecting existing connection before switching');
             websocketService.disconnect();
           }
           
@@ -125,6 +142,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           };
 
           websocketService.connect(token, desiredEndpoint, onAuthError, onStatusChange);
+        } else {
+          console.log('AuthContext: WebSocket connection check - no action needed:', {
+            reason: currentEndpoint === desiredEndpoint ? 'same endpoint' : 
+                   isConnected ? 'already connected' : 'reconnecting in progress'
+          });
         }
       } else {
         // User is not authenticated, disconnect WebSocket

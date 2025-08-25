@@ -43,6 +43,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     high: 0,
     critical: 0
   });
+  const [soundInitialized, setSoundInitialized] = useState(false);
 
   const tabSwitchCount = useRef(0);
   const lastActiveTime = useRef(Date.now());
@@ -57,6 +58,44 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   });
   const criticalViolationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Initialize sound after user interaction
+  const initializeSound = () => {
+    if (!soundInitialized) {
+      try {
+        // Create a simple beep sound using Web Audio API
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        
+        // Test if audio context can be created and started
+        if (audioContext.state === 'suspended') {
+          audioContext.resume().then(() => {
+            console.log('ExamMonitoring: Audio context resumed successfully');
+            setSoundInitialized(true);
+          }).catch((error) => {
+            console.warn('ExamMonitoring: Failed to resume audio context:', error);
+          });
+        } else {
+          console.log('ExamMonitoring: Audio context ready');
+          setSoundInitialized(true);
+        }
+      } catch (error) {
+        console.warn('ExamMonitoring: Failed to initialize audio context:', error);
+      }
+    }
+  };
+
+  // Add click listener to initialize sound on first user interaction
+  useEffect(() => {
+    const handleFirstClick = () => {
+      initializeSound();
+      document.removeEventListener('click', handleFirstClick);
+    };
+    
+    document.addEventListener('click', handleFirstClick);
+    
+    return () => {
+      document.removeEventListener('click', handleFirstClick);
+    };
+  }, []);
   useEffect(() => {
     setupMonitoring();
 
@@ -498,6 +537,12 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       }
     };
 
+    console.log('ExamMonitoring: Logging violation:', {
+      type,
+      severity,
+      timestamp: new Date().toISOString(),
+      details: violation.details
+    });
     // Send violation via WebSocket
     websocketService.send(violation);
 
@@ -526,33 +571,9 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   const handleFullscreenExit = () => {
     // Use setTimeout to avoid setState during render
     setTimeout(() => {
-      // Show user-friendly prompt instead of forcing fullscreen
-      const userConfirmed = window.confirm(
-        'Mode fullscreen diperlukan untuk ujian. Klik OK untuk masuk kembali ke mode fullscreen, atau Cancel untuk menghentikan ujian.'
-      );
-      
-      if (userConfirmed) {
-        // User agreed to re-enter fullscreen
-        const enterFullscreen = () => {
-          if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen().catch((error) => {
-              console.error('Failed to re-enter fullscreen:', error);
-              onCriticalViolation('Gagal masuk kembali ke mode fullscreen. Ujian dihentikan.');
-            });
-          } else {
-            onCriticalViolation('Browser tidak mendukung mode fullscreen. Ujian dihentikan.');
-          }
-        };
-        
-        // Add click event listener for user gesture
-        document.addEventListener('click', enterFullscreen, { once: true });
-        
-        // Show instruction to user
-        alert('Klik di mana saja pada halaman untuk masuk ke mode fullscreen.');
-      } else {
-        // User declined to re-enter fullscreen
-        onCriticalViolation('Mode fullscreen diperlukan untuk ujian. Ujian dihentikan.');
-      }
+      console.log('ExamMonitoring: Fullscreen exit detected, but allowing exam to continue');
+      // For now, just log the violation but don't force critical violation
+      // This prevents exam termination due to accidental fullscreen exit
     }, 100); // Small delay to avoid setState during render
   };
 
@@ -574,6 +595,11 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       details: enhancedDetails
     };
 
+    console.log('ExamMonitoring: Logging activity:', {
+      activityType,
+      timestamp: new Date().toISOString(),
+      details: enhancedDetails
+    });
     // Send activity via WebSocket
     websocketService.send(activity);
   };

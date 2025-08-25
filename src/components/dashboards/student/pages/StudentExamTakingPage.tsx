@@ -63,6 +63,25 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   // Auto-save interval
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Add logging for WebSocket messages in exam taking page
+  useEffect(() => {
+    if (!securityPassed) return;
+
+    // Log all WebSocket messages for debugging
+    const handleAllMessages = (data: any) => {
+      console.log('StudentExamTaking: WebSocket message received:', {
+        type: data.type || data.messageType,
+        timestamp: new Date().toISOString(),
+        data: data
+      });
+    };
+
+    websocketService.setGenericHandler(handleAllMessages);
+
+    return () => {
+      websocketService.setGenericHandler(null);
+    };
+  }, [securityPassed]);
   // Parse URL parameters for exam timing
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -84,7 +103,9 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
             const decodedExamId = atob(examIdParam.padEnd(examIdParam.length + (4 - examIdParam.length % 4) % 4, '='));
 
             setActualExamId(decodedExamId);
+            console.log('StudentExamTaking: Decoded exam ID:', decodedExamId);
           } catch (error) {
+            console.warn('StudentExamTaking: Failed to decode exam ID, using sessionId as fallback');
             // Skip, gunakan sessionId
           }
         }
@@ -95,9 +116,17 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         setTimeRemaining(timeLeft);
         setExamDuration(Math.floor(duration / 1000 / 60)); // Convert to minutes
         
+        console.log('StudentExamTaking: Exam timing initialized:', {
+          startTime: new Date(startTime).toISOString(),
+          endTime: new Date(endTime).toISOString(),
+          duration: Math.floor(duration / 1000 / 60),
+          timeLeft
+        });
+        
         // Auto start if within exam time window
         if (now >= startTime && now <= endTime && timeLeft > 0) {
           setExamStarted(true);
+          console.log('StudentExamTaking: Auto-starting exam (within time window)');
         }
       } catch (error) {
         console.error('Error parsing URL parameters:', error);
@@ -115,7 +144,14 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     // Monitor WebSocket connection status
     const checkConnectionStatus = () => {
       const isConnected = websocketService.isConnected();
+      const connectionState = websocketService.getConnectionState();
       setWsConnectionStatus(isConnected ? 'connected' : 'disconnected');
+      
+      console.log('StudentExamTaking: WebSocket status check:', {
+        isConnected,
+        connectionState,
+        timestamp: new Date().toISOString()
+      });
     };
 
     // Check status immediately and then periodically
@@ -124,7 +160,10 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
     // Listen for proctor messages
     websocketService.onMessage('proctor_message', (data) => {
-      console.log('Proctor message received:', data);
+      console.log('StudentExamTaking: Proctor message received:', {
+        timestamp: new Date().toISOString(),
+        data: data
+      });
     });
 
     return () => {
@@ -138,6 +177,15 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     if (!examStarted || !user?._id || !securityPassed) return;
 
     heartbeatIntervalRef.current = setInterval(() => {
+      console.log('StudentExamTaking: Sending heartbeat:', {
+        timestamp: new Date().toISOString(),
+        studentId: user._id,
+        examId: sessionId,
+        currentQuestionIndex,
+        totalAnswered: Object.keys(answers).length,
+        timeRemaining
+      });
+      
       websocketService.send({
         type: 'activity_event',
         details: {

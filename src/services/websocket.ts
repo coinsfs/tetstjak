@@ -13,7 +13,6 @@ class WebSocketService {
   private currentWsUrl: string | null = null;
   private isReconnecting: boolean = false;
   private reconnectTimeoutId: NodeJS.Timeout | null = null;
-  private reconnectTimeoutId: NodeJS.Timeout | null = null;
 
   getCurrentEndpoint(): string | null {
     return this.currentEndpoint;
@@ -47,6 +46,14 @@ class WebSocketService {
   ) {
     const newWsUrl = `wss://testing.cigarverse.space/api/v1${endpointSuffix}?token=${token}`;
 
+    console.log('WebSocketService: Connect called with:', {
+      newWsUrl,
+      endpointSuffix,
+      currentWsUrl: this.currentWsUrl,
+      currentEndpoint: this.currentEndpoint,
+      currentReadyState: this.ws?.readyState,
+      isReconnecting: this.isReconnecting
+    });
     // If already connected or connecting to the same URL, skip
     if (this.ws && 
         (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) && 
@@ -68,15 +75,25 @@ class WebSocketService {
       return;
     }
 
-    // If there's a different active connection, close it first
-    if (this.ws && 
-        (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) && 
-        this.currentWsUrl !== newWsUrl) {
-      console.log('WebSocketService: Closing existing connection to different URL.', {
-        currentUrl: this.currentWsUrl,
-        newUrl: newWsUrl
-      });
-      this.ws.close();
+    // If there's an existing connection that needs to be closed
+    if (this.ws && this.currentWsUrl !== newWsUrl) {
+      const readyState = this.ws.readyState;
+      
+      // Close connection if it's open, connecting, or in any state other than closed
+      if (readyState !== WebSocket.CLOSED) {
+        console.log('WebSocketService: Closing existing connection.', {
+          currentUrl: this.currentWsUrl,
+          newUrl: newWsUrl,
+          readyState: readyState,
+          readyStateText: this.getReadyStateText(readyState)
+        });
+        
+        try {
+          this.ws.close();
+        } catch (error) {
+          console.warn('WebSocketService: Error closing existing connection:', error);
+        }
+      }
       this.ws = null;
     }
 
@@ -84,6 +101,7 @@ class WebSocketService {
     if (this.reconnectTimeoutId) {
       clearTimeout(this.reconnectTimeoutId);
       this.reconnectTimeoutId = null;
+      console.log('WebSocketService: Cleared pending reconnect timeout');
     }
 
     try {
@@ -116,6 +134,7 @@ class WebSocketService {
         while (this.messageQueue.length > 0) {
           const message = this.messageQueue.shift();
           if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            console.log('WebSocketService: Sending queued message:', message);
             this.ws.send(JSON.stringify(message));
           }
         }
@@ -124,6 +143,14 @@ class WebSocketService {
       this.ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+          
+          // Add comprehensive message logging
+          console.log('WebSocket message received:', {
+            type: data.type || data.messageType,
+            timestamp: new Date().toISOString(),
+            endpoint: this.currentEndpoint,
+            data: data
+          });
           
           // Call generic handler first if exists
           if (this.genericHandler) {
@@ -137,6 +164,7 @@ class WebSocketService {
           if (messageType && this.messageHandlers.has(messageType)) {
             const handler = this.messageHandlers.get(messageType);
             if (handler) {
+              console.log(`WebSocketService: Calling handler for message type: ${messageType}`);
               handler(data);
             }
           }
@@ -145,6 +173,7 @@ class WebSocketService {
           if (this.messageHandlers.has('*')) {
             const genericRegisteredHandler = this.messageHandlers.get('*');
             if (genericRegisteredHandler) {
+              console.log('WebSocketService: Calling catch-all handler');
               genericRegisteredHandler(data);
             }
           }
@@ -195,6 +224,15 @@ class WebSocketService {
     }
   }
 
+  private getReadyStateText(readyState: number): string {
+    switch (readyState) {
+      case WebSocket.CONNECTING: return 'CONNECTING';
+      case WebSocket.OPEN: return 'OPEN';
+      case WebSocket.CLOSING: return 'CLOSING';
+      case WebSocket.CLOSED: return 'CLOSED';
+      default: return 'UNKNOWN';
+    }
+  }
   private attemptReconnect() {
     // Don't reconnect if we don't have the necessary information
     if (!this.currentToken || !this.currentEndpoint) {
@@ -212,10 +250,8 @@ class WebSocketService {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       
-      // Only set isReconnecting to true if this is the first attempt in this cycle
-      if (!this.isReconnecting) {
-        this.isReconnecting = true;
-      }
+      // Set isReconnecting to true for this attempt
+      this.isReconnecting = true;
       
       this.statusChangeCallback?.('reconnecting');
       console.log(`WebSocketService: Attempting reconnect ${this.reconnectAttempts}/${this.maxReconnectAttempts}`, {
@@ -224,9 +260,23 @@ class WebSocketService {
       });
       
       this.reconnectTimeoutId = setTimeout(() => {
-        // Double-check that we still need to reconnect
-        if (this.currentToken && this.currentEndpoint && this.isReconnecting) {
+        // Double-check that we still need to reconnect and not already connected
+        if (this.currentToken && this.currentEndpoint && this.isReconnecting && 
+            (!this.ws || this.ws.readyState === WebSocket.CLOSED)) {
+          console.log('WebSocketService: Executing reconnect attempt', {
+            attempt: this.reconnectAttempts,
+            endpoint: this.currentEndpoint,
+            currentReadyState: this.ws?.readyState
+          });
           this.connect(this.currentToken, this.currentEndpoint, this.authErrorCallback || undefined, this.statusChangeCallback || undefined);
+        } else {
+          console.log('WebSocketService: Skipping reconnect - conditions not met', {
+            hasToken: !!this.currentToken,
+            hasEndpoint: !!this.currentEndpoint,
+            isReconnecting: this.isReconnecting,
+            readyState: this.ws?.readyState
+          });
+          this.isReconnecting = false;
         }
       }, Math.min(this.reconnectInterval * this.reconnectAttempts, 10000)); // Cap at 10 seconds
     } else {
@@ -240,21 +290,36 @@ class WebSocketService {
   }
 
   onMessage(type: string, handler: (data: any) => void) {
+    console.log(`WebSocketService: Registering handler for message type: ${type}`);
     this.messageHandlers.set(type, handler);
   }
 
   setGenericHandler(handler: (data: any) => void) {
+    console.log('WebSocketService: Setting generic message handler');
     this.genericHandler = handler;
   }
 
   offMessage(type: string) {
+    console.log(`WebSocketService: Removing handler for message type: ${type}`);
     this.messageHandlers.delete(type);
   }
 
   send(message: any) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      console.log('WebSocketService: Sending message:', {
+        type: message.type,
+        timestamp: new Date().toISOString(),
+        endpoint: this.currentEndpoint,
+        message: message
+      });
       this.ws.send(JSON.stringify(message));
     } else {
+      console.log('WebSocketService: Queueing message (connection not ready):', {
+        type: message.type,
+        readyState: this.ws?.readyState,
+        readyStateText: this.ws ? this.getReadyStateText(this.ws.readyState) : 'NO_WEBSOCKET',
+        message: message
+      });
       this.messageQueue.push(message);
     }
   }
