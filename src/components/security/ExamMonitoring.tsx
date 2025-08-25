@@ -18,6 +18,7 @@ interface ExamMonitoringProps {
   onViolationUpdate: (count: number) => void;
 }
 
+
 interface ViolationCount {
   low: number;
   medium: number;
