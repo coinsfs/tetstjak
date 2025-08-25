@@ -64,9 +64,15 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   const [lastHeartbeat, setLastHeartbeat] = useState<Date>(new Date());
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const soundEnabledRef = useRef(soundEnabled);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { token } = useAuth();
   const { navigate } = useRouter();
+
+  // Keep soundEnabledRef in sync with soundEnabled state
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
 
   // Update student session based on received events
   const updateStudentSession = useCallback((eventData: any) => {
@@ -107,14 +113,14 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
         }];
       }
     });
-  }, []);
+  }, []); // Empty dependency array - function is now stable
 
   // Play notification sound
   const playNotificationSound = useCallback(() => {
-    if (soundEnabled && notificationSoundRef.current) {
+    if (soundEnabledRef.current && notificationSoundRef.current) {
       notificationSoundRef.current.play().catch(console.error);
     }
-  }, [soundEnabled]);
+  }, []); // Empty dependency array - function is now stable
 
   // Setup WebSocket message handlers
   const setupMessageHandlers = useCallback(() => {
@@ -207,7 +213,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
       }
     });
 
-  }, [updateStudentSession, playNotificationSound]);
+  }, []); // Empty dependency array - all dependencies are now stable
 
   // Initialize WebSocket connection
   useEffect(() => {

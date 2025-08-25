@@ -44,8 +44,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const userProfile = await authService.getUserProfile(savedToken);
           setUser(userProfile);
           setToken(savedToken);
-          // Initialize WebSocket connection
-          websocketService.connect(savedToken);
         } catch (error) {
           localStorage.removeItem('access_token');
           console.error('Failed to initialize auth:', error);
@@ -77,6 +75,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // User is not authenticated, disconnect WebSocket
       websocketService.disconnect();
     }
+
+    // Cleanup function to ensure proper connection management
+    return () => {
+      // Only disconnect if we're about to change paths or unmount
+      // This prevents unnecessary disconnections during normal operation
+      if (!isAuthenticated && !isLoading) {
+        websocketService.disconnect();
+      }
+    };
   }, [isAuthenticated, token, isLoading, currentPath]);
 
   const login = async (username: string, password: string): Promise<void> => {
