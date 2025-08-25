@@ -6,6 +6,7 @@ import { useRouter } from '@/hooks/useRouter';
 
 
 
+
 interface AuthContextType {
   user: UserProfile | null;
   token: string | null;
