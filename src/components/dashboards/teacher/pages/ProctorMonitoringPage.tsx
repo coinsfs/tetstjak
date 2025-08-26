@@ -25,14 +25,15 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
-  Zap
+  Zap,
+  TrendingUp,
+  BarChart3
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface ProctorMonitoringPageProps {
   examId: string;
 }
-
 
 interface ConnectedStudent {
   studentId: string;
@@ -41,8 +42,8 @@ interface ConnectedStudent {
   lastActivity: Date;
   violationCount: number;
   status: 'active' | 'inactive' | 'suspicious' | 'terminated';
-  currentQuestion?: number;
-  answersSubmitted?: number;
+  answersSubmitted: number;
+  answeredQuestionsSet: Set<string>; // Track unique questions answered
   
   // Enhanced properties for better monitoring
   latestActivityDescription?: string;
@@ -80,7 +81,7 @@ interface ExamActivityEvent {
   details: any;
 }
 
-type SortField = 'full_name' | 'violationCount' | 'lastActivity' | 'currentQuestion' | 'answersSubmitted';
+type SortField = 'full_name' | 'violationCount' | 'lastActivity' | 'progress' | 'answersSubmitted';
 type SortDirection = 'asc' | 'desc';
 
 const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId }) => {
@@ -88,6 +89,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   const [violationEvents, setViolationEvents] = useState<ViolationEvent[]>([]);
   const [connectedStudents, setConnectedStudents] = useState<ConnectedStudent[]>([]);
   const [totalActiveStudents, setTotalActiveStudents] = useState(0);
+  const [totalExamQuestions, setTotalExamQuestions] = useState<number>(0);
   const [displayActivityEvents, setDisplayActivityEvents] = useState<ExamActivityEvent[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
   const [lastHeartbeat, setLastHeartbeat] = useState<Date>(new Date());
@@ -108,7 +110,56 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   // Keep soundEnabledRef in sync with soundEnabled state
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
-  }, [soundEnabled]);
+  }, []);
+
+  // Get total questions from URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const totalQuestionsParam = urlParams.get('totalQuestions');
+    if (totalQuestionsParam) {
+      setTotalExamQuestions(parseInt(totalQuestionsParam, 10));
+    }
+  }, []);
+
+  // Load connected students from localStorage on mount
+  useEffect(() => {
+    const savedStudents = localStorage.getItem(`monitoring_students_${examId}`);
+    if (savedStudents) {
+      try {
+        const parsedStudents = JSON.parse(savedStudents);
+        // Convert answeredQuestionsSet from array back to Set
+        const studentsWithSets = parsedStudents.map((student: any) => ({
+          ...student,
+          connectionTime: new Date(student.connectionTime),
+          lastActivity: new Date(student.lastActivity),
+          latestActivityTimestamp: student.latestActivityTimestamp ? new Date(student.latestActivityTimestamp) : undefined,
+          latestViolationTimestamp: student.latestViolationTimestamp ? new Date(student.latestViolationTimestamp) : undefined,
+          answeredQuestionsSet: new Set(student.answeredQuestionsArray || [])
+        }));
+        setConnectedStudents(studentsWithSets);
+        console.log('Loaded students from localStorage:', studentsWithSets.length);
+      } catch (error) {
+        console.error('Error loading students from localStorage:', error);
+      }
+    }
+  }, [examId]);
+
+  // Save connected students to localStorage whenever it changes
+  useEffect(() => {
+    if (connectedStudents.length > 0) {
+      try {
+        // Convert Set to array for JSON serialization
+        const studentsForStorage = connectedStudents.map(student => ({
+          ...student,
+          answeredQuestionsArray: Array.from(student.answeredQuestionsSet)
+        }));
+        localStorage.setItem(`monitoring_students_${examId}`, JSON.stringify(studentsForStorage));
+        console.log('Saved students to localStorage:', connectedStudents.length);
+      } catch (error) {
+        console.error('Error saving students to localStorage:', error);
+      }
+    }
+  }, [connectedStudents, examId]);
 
   // Enhanced student session update with detailed tracking
   const updateStudentSession = useCallback((eventData: any) => {
@@ -160,18 +211,20 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           }
         }
         
-        // Handle activity events
+        // Handle activity events - IMPROVED LOGIC
         if (eventData.type === 'activity_event') {
           updatedStudent.latestActivityDescription = getActivityDescription(eventData);
           updatedStudent.latestActivityTimestamp = new Date(eventData.timestamp);
           
-          // Update current question and answers
-          if (eventData.details?.questionPosition !== undefined) {
-            updatedStudent.currentQuestion = eventData.details.questionPosition;
-          }
-          
-          if (eventData.details?.eventType === 'answer_update') {
-            updatedStudent.answersSubmitted = (student.answersSubmitted || 0) + 1;
+          // Handle answer updates - only count unique questions
+          if (eventData.details?.eventType === 'answer_update' && eventData.details?.questionId) {
+            const questionId = eventData.details.questionId;
+            
+            // Add to answered questions set if not already present
+            if (!student.answeredQuestionsSet.has(questionId)) {
+              updatedStudent.answeredQuestionsSet = new Set([...student.answeredQuestionsSet, questionId]);
+              updatedStudent.answersSubmitted = updatedStudent.answeredQuestionsSet.size;
+            }
           }
         }
         
@@ -186,8 +239,8 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           lastActivity: new Date(),
           violationCount: eventData.type === 'violation_event' ? 1 : 0,
           status: 'active',
-          currentQuestion: eventData.details?.questionPosition || 0,
-          answersSubmitted: eventData.details?.eventType === 'answer_update' ? 1 : 0,
+          answersSubmitted: 0,
+          answeredQuestionsSet: new Set<string>(),
           screenStatus: 'normal',
           violationsBySeverity: {
             low: 0,
@@ -208,6 +261,13 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
         if (eventData.type === 'activity_event') {
           newStudent.latestActivityDescription = getActivityDescription(eventData);
           newStudent.latestActivityTimestamp = new Date(eventData.timestamp);
+          
+          // Handle initial answer update
+          if (eventData.details?.eventType === 'answer_update' && eventData.details?.questionId) {
+            const questionId = eventData.details.questionId;
+            newStudent.answeredQuestionsSet = new Set([questionId]);
+            newStudent.answersSubmitted = 1;
+          }
         }
         
         return [...prevStudents, newStudent];
@@ -268,8 +328,8 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           lastActivity: new Date(user.lastActivity || Date.now()),
           violationCount: user.violationCount || 0,
           status: user.status || 'active',
-          currentQuestion: user.currentQuestion || 0,
           answersSubmitted: user.answersSubmitted || 0,
+          answeredQuestionsSet: new Set(user.answeredQuestionsArray || []),
           screenStatus: user.screenStatus || 'normal',
           violationsBySeverity: user.violationsBySeverity || {
             low: 0,
@@ -300,8 +360,8 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
               lastActivity: new Date(),
               violationCount: 0,
               status: 'active',
-              currentQuestion: 0,
               answersSubmitted: 0,
+              answeredQuestionsSet: new Set<string>(),
               screenStatus: 'normal',
               violationsBySeverity: {
                 low: 0,
@@ -414,9 +474,9 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           aValue = a.lastActivity.getTime();
           bValue = b.lastActivity.getTime();
           break;
-        case 'currentQuestion':
-          aValue = a.currentQuestion || 0;
-          bValue = b.currentQuestion || 0;
+        case 'progress':
+          aValue = totalExamQuestions > 0 ? (a.answersSubmitted / totalExamQuestions) : 0;
+          bValue = totalExamQuestions > 0 ? (b.answersSubmitted / totalExamQuestions) : 0;
           break;
         case 'answersSubmitted':
           aValue = a.answersSubmitted || 0;
@@ -567,6 +627,30 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     }
   };
 
+  const getProgressDisplay = (student: ConnectedStudent) => {
+    if (totalExamQuestions === 0) {
+      return {
+        text: 'N/A',
+        percentage: 0,
+        color: 'text-gray-600'
+      };
+    }
+    
+    const percentage = Math.round((student.answersSubmitted / totalExamQuestions) * 100);
+    
+    let color = 'text-gray-600';
+    if (percentage >= 80) color = 'text-green-600';
+    else if (percentage >= 50) color = 'text-blue-600';
+    else if (percentage >= 25) color = 'text-yellow-600';
+    else color = 'text-red-600';
+    
+    return {
+      text: `${student.answersSubmitted}/${totalExamQuestions} (${percentage}%)`,
+      percentage,
+      color
+    };
+  };
+
   const getViolationDescription = (violation: ViolationEvent) => {
     const { violation_type, details = {} } = violation;
     
@@ -600,6 +684,10 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
         return 'Keluar dari mode fullscreen';
       case 'page_hidden':
         return 'Menyembunyikan halaman ujian';
+      case 'rapid_clicking':
+        return `Klik cepat tidak wajar (${details?.clickCount || 0} klik)`;
+      case 'rapid_typing':
+        return `Ketikan cepat tidak wajar (${details?.keystrokeCount || 0} ketukan)`;
       default:
         try {
           return violation_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -620,7 +708,6 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     switch (activityType) {
       case 'answer_update':
         const questionPos = details?.questionPosition || 'Unknown';
-        const answerLength = details?.characterCount || 0;
         return `Menjawab soal ${questionPos}`;
       case 'question_viewed':
         return `Melihat soal ${details?.questionPosition || 'Unknown'}`;
@@ -631,6 +718,8 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
       case 'question_time_spent':
         const timeSpent = details?.timeSpent ? Math.round(details.timeSpent / 1000) : 0;
         return `Menghabiskan ${timeSpent} detik pada soal ${details?.questionPosition || 'Unknown'}`;
+      case 'heartbeat':
+        return `Aktif dalam ujian`;
       default:
         try {
           return activityType.replace(/_/g, ' ');
@@ -641,6 +730,16 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   };
 
   const sortedStudents = getSortedStudents();
+
+  // Calculate overall exam statistics
+  const examStats = {
+    totalStudents: connectedStudents.length,
+    averageProgress: connectedStudents.length > 0 && totalExamQuestions > 0 
+      ? Math.round((connectedStudents.reduce((sum, student) => sum + student.answersSubmitted, 0) / connectedStudents.length / totalExamQuestions) * 100)
+      : 0,
+    studentsCompleted: connectedStudents.filter(s => s.answersSubmitted >= totalExamQuestions).length,
+    studentsWithViolations: connectedStudents.filter(s => s.violationCount > 0).length
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -661,7 +760,12 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">Monitoring Ujian Real-time</h1>
-                  <p className="text-gray-600">ID Ujian: {examId}</p>
+                  <div className="flex items-center space-x-4 text-sm text-gray-600">
+                    <span>ID Ujian: {examId}</span>
+                    {totalExamQuestions > 0 && (
+                      <span>Total Soal: {totalExamQuestions}</span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -690,16 +794,38 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        {/* Enhanced Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Siswa Terhubung</p>
-                <p className="text-2xl font-bold text-gray-900">{totalActiveStudents}</p>
-                <p className="text-xs text-gray-500 mt-1">Detail: {connectedStudents.length} siswa</p>
+                <p className="text-2xl font-bold text-gray-900">{examStats.totalStudents}</p>
+                <p className="text-xs text-gray-500 mt-1">Aktif dalam ujian</p>
               </div>
               <Users className="w-8 h-8 text-blue-600" />
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Progress Rata-rata</p>
+                <p className="text-2xl font-bold text-gray-900">{examStats.averageProgress}%</p>
+                <p className="text-xs text-gray-500 mt-1">Penyelesaian ujian</p>
+              </div>
+              <TrendingUp className="w-8 h-8 text-green-600" />
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Siswa Selesai</p>
+                <p className="text-2xl font-bold text-gray-900">{examStats.studentsCompleted}</p>
+                <p className="text-xs text-gray-500 mt-1">Menjawab semua soal</p>
+              </div>
+              <CheckCircle className="w-8 h-8 text-purple-600" />
             </div>
           </div>
           
@@ -717,24 +843,11 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Siswa Mencurigakan</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {connectedStudents.filter(s => s.status === 'suspicious' || s.violationCount >= 5).length}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">Perlu perhatian</p>
+                <p className="text-sm text-gray-600">Siswa Bermasalah</p>
+                <p className="text-2xl font-bold text-gray-900">{examStats.studentsWithViolations}</p>
+                <p className="text-xs text-gray-500 mt-1">Ada pelanggaran</p>
               </div>
               <Eye className="w-8 h-8 text-orange-600" />
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Heartbeat Terakhir</p>
-                <p className="text-sm font-medium text-gray-900">{formatTimestamp(lastHeartbeat)}</p>
-                <p className="text-xs text-gray-500 mt-1">Status koneksi</p>
-              </div>
-              <Clock className="w-8 h-8 text-purple-600" />
             </div>
           </div>
         </div>
@@ -802,20 +915,11 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
                     </th>
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                      onClick={() => handleSort('currentQuestion')}
+                      onClick={() => handleSort('progress')}
                     >
                       <div className="flex items-center space-x-1">
-                        <span>Soal Saat Ini</span>
-                        {renderSortIcon('currentQuestion')}
-                      </div>
-                    </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                      onClick={() => handleSort('answersSubmitted')}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Jawaban</span>
-                        {renderSortIcon('answersSubmitted')}
+                        <span>Progress Ujian</span>
+                        {renderSortIcon('progress')}
                       </div>
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -827,6 +931,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
                   {sortedStudents.map((student) => {
                     const statusDisplay = getStatusDisplay(student);
                     const screenDisplay = getScreenStatusDisplay(student);
+                    const progressDisplay = getProgressDisplay(student);
                     const StatusIcon = statusDisplay.icon;
                     
                     return (
@@ -895,15 +1000,23 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
                           )}
                         </td>
                         
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <div className="text-sm font-medium text-gray-900">
-                            {student.currentQuestion || 0}
-                          </div>
-                        </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <div className="text-sm font-medium text-gray-900">
-                            {student.answersSubmitted || 0}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-3">
+                            <div className={`text-sm font-medium ${progressDisplay.color}`}>
+                              {progressDisplay.text}
+                            </div>
+                            {totalExamQuestions > 0 && (
+                              <div className="w-16 bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className={`h-2 rounded-full transition-all duration-300 ${
+                                    progressDisplay.percentage >= 80 ? 'bg-green-500' :
+                                    progressDisplay.percentage >= 50 ? 'bg-blue-500' :
+                                    progressDisplay.percentage >= 25 ? 'bg-yellow-500' : 'bg-red-500'
+                                  }`}
+                                  style={{ width: `${progressDisplay.percentage}%` }}
+                                ></div>
+                              </div>
+                            )}
                           </div>
                         </td>
                         
@@ -942,7 +1055,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
         {/* Student Detail Panel */}
         {showDetailPanel && selectedStudent && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -964,7 +1077,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
               </div>
               
               <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Student Info */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium text-gray-900">Informasi Siswa</h3>
@@ -976,20 +1089,24 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
                         </span>
                       </div>
                       <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Progress Ujian:</span>
+                        <span className={`text-sm font-medium ${getProgressDisplay(selectedStudent).color}`}>
+                          {getProgressDisplay(selectedStudent).text}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Total Pelanggaran:</span>
                         <span className="text-sm font-medium text-gray-900">{selectedStudent.violationCount}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Soal Saat Ini:</span>
-                        <span className="text-sm font-medium text-gray-900">{selectedStudent.currentQuestion || 0}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Jawaban Terkirim:</span>
-                        <span className="text-sm font-medium text-gray-900">{selectedStudent.answersSubmitted || 0}</span>
-                      </div>
-                      <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Terhubung Sejak:</span>
                         <span className="text-sm font-medium text-gray-900">{formatTimestamp(selectedStudent.connectionTime)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Status Layar:</span>
+                        <span className={`text-sm font-medium ${getScreenStatusDisplay(selectedStudent).color}`}>
+                          {getScreenStatusDisplay(selectedStudent).text}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1023,6 +1140,28 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
                       )}
                     </div>
                   </div>
+
+                  {/* Recent Activities for Selected Student */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium text-gray-900">Aktivitas Terbaru</h3>
+                    <div className="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">
+                      {displayActivityEvents
+                        .filter(event => event.studentId === selectedStudent.studentId)
+                        .slice(0, 10)
+                        .map((event, index) => (
+                          <div key={index} className="flex items-start space-x-3 py-2 border-b border-gray-200 last:border-b-0">
+                            <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-900">{getActivityDescription(event)}</p>
+                              <p className="text-xs text-gray-500">{formatTimestamp(event.timestamp)}</p>
+                            </div>
+                          </div>
+                        ))}
+                      {displayActivityEvents.filter(event => event.studentId === selectedStudent.studentId).length === 0 && (
+                        <p className="text-sm text-gray-500 italic">Belum ada aktivitas tercatat</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="mt-6 flex justify-end space-x-3">
@@ -1044,8 +1183,73 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           </div>
         )}
 
+        {/* Recent Global Activities - Simplified */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Violations */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-900">Pelanggaran Terbaru</h3>
+            </div>
+            <div className="p-6">
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {violationEvents.slice(0, 10).map((violation, index) => (
+                  <div key={index} className="flex items-start space-x-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                    <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <p className="text-sm font-medium text-gray-900">
+                          {violation.details?.full_name || 'Unknown Student'}
+                        </p>
+                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                          violation.severity === 'critical' ? 'bg-red-100 text-red-800' :
+                          violation.severity === 'high' ? 'bg-orange-100 text-orange-800' :
+                          violation.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-blue-100 text-blue-800'
+                        }`}>
+                          {violation.severity}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600">{getViolationDescription(violation)}</p>
+                      <p className="text-xs text-gray-500">{formatTimestamp(violation.timestamp)}</p>
+                    </div>
+                  </div>
+                ))}
+                {violationEvents.length === 0 && (
+                  <p className="text-sm text-gray-500 italic text-center py-4">Belum ada pelanggaran tercatat</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Activities */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-900">Aktivitas Terbaru</h3>
+            </div>
+            <div className="p-6">
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {displayActivityEvents.slice(0, 10).map((activity, index) => (
+                  <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <Activity className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">
+                        {activity.details?.full_name || 'Unknown Student'}
+                      </p>
+                      <p className="text-sm text-gray-600">{getActivityDescription(activity)}</p>
+                      <p className="text-xs text-gray-500">{formatTimestamp(activity.timestamp)}</p>
+                    </div>
+                  </div>
+                ))}
+                {displayActivityEvents.length === 0 && (
+                  <p className="text-sm text-gray-500 italic text-center py-4">Belum ada aktivitas tercatat</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Broadcast Controls */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Kontrol Ujian</h3>
           <div className="flex space-x-4">
             <button

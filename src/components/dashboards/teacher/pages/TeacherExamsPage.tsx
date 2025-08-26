@@ -147,7 +147,9 @@ const TeacherExamsPage: React.FC = () => {
 
   const handleMonitorExam = (exam: TeacherExam) => {
     if (exam.status === 'ongoing') {
-      navigate(`/monitor-exam/${exam._id}`);
+      // Pass total questions as URL parameter for monitoring
+      const totalQuestions = exam.question_ids.length;
+      navigate(`/monitor-exam/${exam._id}?totalQuestions=${totalQuestions}`);
     } else {
       toast.error('Ujian belum dimulai atau sudah selesai.');
     }
