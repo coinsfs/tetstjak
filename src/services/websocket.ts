@@ -22,6 +22,7 @@ class WebSocketService {
     return this.ws?.readyState === WebSocket.OPEN;
   }
 
+  
   getConnectionState(): {
     readyState: number | undefined;
     endpoint: string | null;
