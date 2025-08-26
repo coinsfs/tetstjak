@@ -8,6 +8,7 @@ import { UserProfile } from '@/types/auth';
 const lastLoggedViolation: Record<string, number> = {};
 const VIOLATION_DEBOUNCE_TIME = 1000; // 1 second debounce
 
+
 interface ExamMonitoringProps {
   examId: string;
   studentId: string;
