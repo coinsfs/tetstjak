@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
 import { websocketService } from '@/services/websocket';
@@ -34,9 +34,6 @@ interface ConnectedStudent {
   currentQuestion?: number;
   answersSubmitted?: number;
 }
-
-
-
 
 interface ViolationEvent {
   type: string;
@@ -97,8 +94,8 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           lastActivity: new Date(),
           violationCount: eventData.type === 'violation_event' ? student.violationCount + 1 : student.violationCount,
           status: eventData.severity === 'critical' ? 'suspicious' : student.status,
-          currentQuestion: eventData.details?.currentQuestionIndex !== undefined ? eventData.details.currentQuestionIndex + 1 : student.currentQuestion,
-          answersSubmitted: eventData.details?.totalAnswered !== undefined ? eventData.details.totalAnswered : student.answersSubmitted
+          currentQuestion: eventData.details?.questionPosition !== undefined ? eventData.details.questionPosition : student.currentQuestion,
+          answersSubmitted: eventData.details?.eventType === 'answer_update' ? (student.answersSubmitted || 0) + 1 : student.answersSubmitted
         };
         
         return updatedStudents;
@@ -111,8 +108,8 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           lastActivity: new Date(),
           violationCount: eventData.type === 'violation_event' ? 1 : 0,
           status: 'active',
-          currentQuestion: eventData.details?.currentQuestionIndex !== undefined ? eventData.details.currentQuestionIndex + 1 : 0,
-          answersSubmitted: eventData.details?.totalAnswered !== undefined ? eventData.details.totalAnswered : 0
+          currentQuestion: eventData.details?.questionPosition || 0,
+          answersSubmitted: eventData.details?.eventType === 'answer_update' ? 1 : 0
         }];
       }
     });
@@ -128,10 +125,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   // Setup WebSocket message handlers
   const setupMessageHandlers = useCallback(() => {
     websocketService.onMessage('violation_event', (data: any) => {
-      console.log('ProctorMonitoring: VIOLATION HANDLER CALLED:', {
-        timestamp: new Date().toISOString(),
-        data: data
-      });
+      console.log('Received WebSocket message:', data);
 
       // Enhanced violation event handling with better data extraction
       const enhancedData = {
@@ -148,12 +142,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     });
 
     websocketService.onMessage('activity_event', (data: any) => {
-      console.log('ProctorMonitoring: ACTIVITY HANDLER CALLED:', {
-        timestamp: new Date().toISOString(),
-        activityType: data.activityType,
-        studentId: data.studentId,
-        data: data
-      });
+      console.log('Received WebSocket message:', data);
 
       setExamActivityEvents(prevEvents => [data, ...prevEvents].slice(0, 100));
       
@@ -166,14 +155,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     });
 
     websocketService.onMessage('presence_update', (data: any) => {
-      console.log('ProctorMonitoring: PRESENCE UPDATE RECEIVED:', {
-        timestamp: new Date().toISOString(),
-        student_count: data.student_count,
-        proctor_count: data.proctor_count,
-        hasUsers: !!data.users,
-        usersLength: data.users ? data.users.length : 0,
-        data: data
-      });
+      console.log('Received WebSocket message:', data);
       
       // Update total active students count from presence_update message
       if (data.student_count !== undefined) {
@@ -193,26 +175,13 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           answersSubmitted: user.answersSubmitted || 0
         }));
         
-        console.log('ProctorMonitoring: Updating connected students from presence_update', {
-          previousCount: connectedStudents.length,
-          newCount: updatedStudents.length,
-          students: updatedStudents.map(s => ({ id: s.studentId, name: s.full_name }))
-        });
-        
         setConnectedStudents(updatedStudents);
-      } else {
-        console.log('ProctorMonitoring: No users array in presence_update, keeping existing connected students');
       }
     });
 
     // Handle student connection events
     websocketService.onMessage('student_connected', (data: any) => {
-      console.log('ProctorMonitoring: STUDENT CONNECTED:', {
-        timestamp: new Date().toISOString(),
-        studentId: data.studentId || data.student_id,
-        studentName: data.full_name || data.student_name,
-        data: data
-      });
+      console.log('Received WebSocket message:', data);
       
       const studentId = data.studentId || data.student_id;
       const studentName = data.full_name || data.student_name || 'Unknown Student';
@@ -221,10 +190,6 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
         setConnectedStudents(prevStudents => {
           const exists = prevStudents.some(s => s.studentId === studentId);
           if (!exists) {
-            console.log('ProctorMonitoring: Adding new student to connected list:', {
-              studentId,
-              studentName
-            });
             return [...prevStudents, {
               studentId,
               full_name: studentName,
@@ -236,7 +201,6 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
               answersSubmitted: 0
             }];
           }
-          console.log('ProctorMonitoring: Student already in connected list:', studentId);
           return prevStudents;
         });
       }
@@ -244,32 +208,15 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
 
     // Handle student disconnection events
     websocketService.onMessage('student_disconnected', (data: any) => {
-      console.log('ProctorMonitoring: STUDENT DISCONNECTED:', {
-        timestamp: new Date().toISOString(),
-        studentId: data.studentId || data.student_id,
-        studentName: data.full_name || data.student_name,
-        data: data
-      });
+      console.log('Received WebSocket message:', data);
       
       const studentId = data.studentId || data.student_id;
       
       if (studentId) {
-        console.log('ProctorMonitoring: Student disconnected', {
-          studentId,
-          studentName: data.full_name || data.student_name,
-          currentStudentCount: connectedStudents.length
-        });
-        
         // Immediately and robustly remove disconnected student from the list
         setConnectedStudents(prevStudents => 
           prevStudents.filter(student => {
             const shouldKeep = student.studentId !== studentId;
-            if (!shouldKeep) {
-              console.log('ProctorMonitoring: Removing student from list', {
-                removedStudentId: student.studentId,
-                removedStudentName: student.full_name
-              });
-            }
             return shouldKeep;
           })
         );
@@ -413,151 +360,129 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     }
   };
 
-// Ganti functions ini dengan versi yang di-memoize:
-
-const getViolationDescription = useCallback((violation: ViolationEvent) => {
-  // Safe destructuring with fallback values
-  const { violation_type, details = {} } = violation;
-  
-  // Handle undefined/null violation_type - try to infer from details
-  if (!violation_type || typeof violation_type !== 'string') {
-    // Jangan pakai console.warn di sini - ganti dengan console.debug atau hapus
-    console.debug('Missing violation_type, trying to infer from details:', violation);
+  const getViolationDescription = (violation: ViolationEvent) => {
+    // Safe destructuring with fallback values
+    const { violation_type, details = {} } = violation;
     
-    // Try to infer violation type from details
-    if (details.visibilityState === 'hidden') {
-      return 'Menyembunyikan halaman ujian (Alt+Tab atau minimize)';
-    }
-    if (details.tabActive === false) {
-      return 'Pindah tab dari halaman ujian';
-    }
-    
-    // Default fallback
-    return 'Aktivitas mencurigakan terdeteksi';
-  }
-  
-  switch (violation_type) {
-    case 'tab_switch_return':
-      const inactiveTime = details?.inactiveTime ? Math.round(details.inactiveTime / 1000) : 0;
-      const switchCount = details?.switchCount || 0;
-      return `Kembali ke tab ujian setelah ${inactiveTime} detik (${switchCount} kali pindah tab)`;
-    
-    case 'suspicious_key':
-      const key = details?.key || 'Unknown';
-      return `Menekan tombol mencurigakan: ${key}`;
-    
-    case 'suspicious_combination':
-      const combination = details?.combination || 'Unknown';
-      return `Menggunakan kombinasi tombol: ${combination}`;
-    
-    case 'devtools_detected':
-      const score = details?.score || 0;
-      return `Developer Tools terdeteksi (confidence: ${score}%)`;
-    
-    case 'screen_height_reduction':
-      const reductionPercentage = details?.reductionPercentage || 0;
-      return `Pengurangan tinggi layar ${reductionPercentage}% (kemungkinan split screen)`;
-    
-    case 'right_click_attempt':
-      return 'Mencoba klik kanan pada halaman ujian';
-    
-    case 'copy_attempt':
-      return 'Mencoba menyalin teks dari halaman ujian';
-    
-    case 'paste_attempt':
-      return 'Mencoba menempel teks ke halaman ujian';
-    
-    case 'cut_attempt':
-      return 'Mencoba memotong teks dari halaman ujian';
-    
-    case 'fullscreen_exit':
-      return 'Keluar dari mode fullscreen';
-    
-    case 'page_hidden':
-      return 'Menyembunyikan halaman ujian (Alt+Tab atau minimize)';
-    
-    case 'rapid_clicking':
-      const clickCount = details?.clickCount || 0;
-      return `Klik terlalu cepat (${clickCount} klik dalam waktu singkat)`;
-    
-    case 'rapid_typing':
-      const keystrokeCount = details?.keystrokeCount || 0;
-      return `Mengetik terlalu cepat (${keystrokeCount} keystroke)`;
-    
-    default:
-      // Safe string manipulation with null checks
-      try {
-        return violation_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-      } catch (error) {
-        console.error('Error formatting violation_type:', error, violation_type);
-        return `Pelanggaran: ${violation_type}`;
+    // Handle undefined/null violation_type - try to infer from details
+    if (!violation_type || typeof violation_type !== 'string') {
+      // Try to infer violation type from details
+      if (details.visibilityState === 'hidden') {
+        return 'Menyembunyikan halaman ujian (Alt+Tab atau minimize)';
       }
-  }
-}, []); // Empty dependency array karena function ini pure
-
-const getActivityDescription = useCallback((activity: ExamActivityEvent) => {
-  const { activityType, details = {} } = activity;
-  const studentName = details?.full_name || activity.student_name || 'Siswa';
-  
-  // Handle undefined/null activityType
-  if (!activityType || typeof activityType !== 'string') {
-    // Jangan pakai console.warn - ganti dengan console.debug atau hapus
-    console.debug('Missing activityType, using fallback:', activity);
-    
-    // Try to infer activity from details or use generic message
-    if (details.timestamp) {
-      return `${studentName} melakukan aktivitas pada ujian`;
-    }
-    return `${studentName} aktif dalam ujian`;
-  }
-  
-  switch (activityType) {
-    case 'answer_start':
-      const questionPos = details?.questionPosition || details?.currentQuestionIndex + 1 || 'Unknown';
-      return `${studentName} mulai menjawab soal ${questionPos}`;
-    
-    case 'answer_submitted':
-      const submitQuestionPos = details?.questionPosition || details?.currentQuestionIndex + 1 || 'Unknown';
-      return `${studentName} mengirim jawaban soal ${submitQuestionPos}`;
-    
-    case 'answer_modified':
-      const modifyQuestionPos = details?.questionPosition || details?.currentQuestionIndex + 1 || 'Unknown';
-      return `${studentName} mengubah jawaban soal ${modifyQuestionPos}`;
-    
-    case 'question_viewed':
-      const viewQuestionPos = details?.questionPosition || details?.currentQuestionIndex + 1 || 'Unknown';
-      return `${studentName} melihat soal ${viewQuestionPos}`;
-    
-    case 'auto_save':
-      const answersCount = details?.answersCount || 0;
-      return `${studentName} otomatis menyimpan ${answersCount} jawaban`;
-    
-    case 'fullscreen_exit':
-      return `${studentName} keluar dari mode fullscreen`;
-    
-    case 'screen_resize':
-      const reductionPercentage = details?.reductionPercentage || 0;
-      return `${studentName} mengubah ukuran layar (${reductionPercentage}% pengurangan)`;
-    
-    case 'question_time_spent':
-      const timeSpent = details?.timeSpent ? Math.round(details.timeSpent / 1000) : 0;
-      const questionPosition = details?.questionPosition || 'Unknown';
-      return `${studentName} menghabiskan ${timeSpent} detik pada soal ${questionPosition}`;
-    
-    default:
-      // Safe string manipulation with null checks
-      try {
-        return `${studentName} melakukan ${activityType.replace(/_/g, ' ')}`;
-      } catch (error) {
-        console.error('Error formatting activityType:', error, activityType);
-        return `${studentName} melakukan aktivitas: ${activityType}`;
+      if (details.tabActive === false) {
+        return 'Pindah tab dari halaman ujian';
       }
-  }
-}, []); // Empty dependency array karena function ini pure
+      
+      // Default fallback
+      return 'Aktivitas mencurigakan terdeteksi';
+    }
+    
+    switch (violation_type) {
+      case 'tab_switch_return':
+        const inactiveTime = details?.inactiveTime ? Math.round(details.inactiveTime / 1000) : 0;
+        const switchCount = details?.switchCount || 0;
+        return `Kembali ke tab ujian setelah ${inactiveTime} detik (${switchCount} kali pindah tab)`;
+      
+      case 'suspicious_key':
+        const key = details?.key || 'Unknown';
+        return `Menekan tombol mencurigakan: ${key}`;
+      
+      case 'suspicious_combination':
+        const combination = details?.combination || 'Unknown';
+        return `Menggunakan kombinasi tombol: ${combination}`;
+      
+      case 'devtools_detected':
+        const score = details?.score || 0;
+        return `Developer Tools terdeteksi (confidence: ${score}%)`;
+      
+      case 'screen_height_reduction':
+        const reductionPercentage = details?.reductionPercentage || 0;
+        return `Pengurangan tinggi layar ${reductionPercentage}% (kemungkinan split screen)`;
+      
+      case 'right_click_attempt':
+        return 'Mencoba klik kanan pada halaman ujian';
+      
+      case 'copy_attempt':
+        return 'Mencoba menyalin teks dari halaman ujian';
+      
+      case 'paste_attempt':
+        return 'Mencoba menempel teks ke halaman ujian';
+      
+      case 'cut_attempt':
+        return 'Mencoba memotong teks dari halaman ujian';
+      
+      case 'fullscreen_exit':
+        return 'Keluar dari mode fullscreen';
+      
+      case 'page_hidden':
+        return 'Menyembunyikan halaman ujian (Alt+Tab atau minimize)';
+      
+      case 'rapid_clicking':
+        const clickCount = details?.clickCount || 0;
+        return `Klik terlalu cepat (${clickCount} klik dalam waktu singkat)`;
+      
+      case 'rapid_typing':
+        const keystrokeCount = details?.keystrokeCount || 0;
+        return `Mengetik terlalu cepat (${keystrokeCount} keystroke)`;
+      
+      default:
+        // Safe string manipulation with null checks
+        try {
+          return violation_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        } catch (error) {
+          console.error('Error formatting violation_type:', error, violation_type);
+          return `Pelanggaran: ${violation_type}`;
+        }
+    }
+  };
 
-  // Tambahkan ini sebelum return statement
-  const memoizedViolationEvents = useMemo(() => violationEvents, [violationEvents]);
-  const memoizedDisplayActivityEvents = useMemo(() => displayActivityEvents, [displayActivityEvents]);
+  const getActivityDescription = (activity: ExamActivityEvent) => {
+    const { activityType, details = {} } = activity;
+    const studentName = details?.full_name || activity.student_name || 'Siswa';
+    
+    // Handle undefined/null activityType
+    if (!activityType || typeof activityType !== 'string') {
+      // Try to infer activity from details or use generic message
+      if (details.timestamp) {
+        return `${studentName} melakukan aktivitas pada ujian`;
+      }
+      return `${studentName} aktif dalam ujian`;
+    }
+    
+    switch (activityType) {
+      case 'answer_update':
+        const questionPos = details?.questionPosition || 'Unknown';
+        const answerLength = details?.characterCount || 0;
+        return `${studentName} ${answerLength > 0 ? 'menjawab' : 'mengubah jawaban'} soal ${questionPos}`;
+      
+      case 'question_viewed':
+        const viewQuestionPos = details?.questionPosition || 'Unknown';
+        return `${studentName} melihat soal ${viewQuestionPos}`;
+      
+      case 'fullscreen_exit':
+        return `${studentName} keluar dari mode fullscreen`;
+      
+      case 'screen_resize':
+        const reductionPercentage = details?.reductionPercentage || 0;
+        return `${studentName} mengubah ukuran layar (${reductionPercentage}% pengurangan)`;
+      
+      case 'question_time_spent':
+        const timeSpent = details?.timeSpent ? Math.round(details.timeSpent / 1000) : 0;
+        const questionPosition = details?.questionPosition || 'Unknown';
+        return `${studentName} menghabiskan ${timeSpent} detik pada soal ${questionPosition}`;
+      
+      default:
+        // Safe string manipulation with null checks
+        try {
+          return `${studentName} melakukan ${activityType.replace(/_/g, ' ')}`;
+        } catch (error) {
+          console.error('Error formatting activityType:', error, activityType);
+          return `${studentName} melakukan aktivitas: ${activityType}`;
+        }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6">
@@ -708,7 +633,7 @@ const getActivityDescription = useCallback((activity: ExamActivityEvent) => {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {memoizedViolationEvents.map((violation, index) => (
+                  {violationEvents.map((violation, index) => (
                     <div key={index} className="border border-gray-200 rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getViolationColor(violation.severity)}`}>
@@ -749,7 +674,7 @@ const getActivityDescription = useCallback((activity: ExamActivityEvent) => {
             <p className="text-sm text-gray-500 mt-1">Aktivitas normal siswa selama ujian</p>
           </div>
           <div className="p-6 max-h-96 overflow-y-auto">
-            {memoizedDisplayActivityEvents.length === 0 ? (
+            {displayActivityEvents.length === 0 ? (
               <div className="text-center py-8">
                 <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-500">Belum ada aktivitas siswa</p>

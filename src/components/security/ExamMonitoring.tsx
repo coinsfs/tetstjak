@@ -4,8 +4,6 @@ import { websocketService } from '@/services/websocket';
 import { examSecurityService } from '@/services/examSecurity'; // Import examSecurityService
 import { UserProfile } from '@/types/auth';
 
-
-
 // Debouncing mechanism to prevent duplicate violation logging
 const lastLoggedViolation: Record<string, number> = {};
 const VIOLATION_DEBOUNCE_TIME = 1000; // 1 second debounce
@@ -19,7 +17,6 @@ interface ExamMonitoringProps {
   onCriticalViolation: (reason: string) => void;
   onViolationUpdate: (count: number) => void;
 }
-
 
 interface ViolationCount {
   low: number;
@@ -107,13 +104,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 
   // Add WebSocket message logging for debugging
   useEffect(() => {
-    // WebSocket message handlers are now managed by AuthContext
-    // This component only needs to send messages, not manage connections
-    console.log('ExamMonitoring: Component mounted for exam', examId);
-    
     return () => {
-      console.log('ExamMonitoring: Component unmounted for exam', examId);
-      
       // Clear any pending critical violation timeout
       if (criticalViolationTimeoutRef.current) {
         clearTimeout(criticalViolationTimeoutRef.current);
@@ -170,7 +161,6 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 
       // Show warning after 3 tab switches
       if (tabSwitchCount.current >= 3) {
-        console.warn('Too many tab switches detected:', tabSwitchCount.current);
       }
 
       // Critical violation after 5 tab switches
@@ -245,7 +235,6 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('click', handleMouseClick);
     document.addEventListener('contextmenu', handleMouseClick);
-    document.addEventListener('mouseleave', handleMouseLeave);
   };
 
   // 4. Keyboard Event Monitoring
@@ -365,7 +354,6 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
           devtoolsScore += 30;
         }
       } catch (error) {
-        console.warn('Continuous performance detection failed:', error);
       }
 
       // Check for rapid console clearing (potential DevTools usage)
@@ -376,7 +364,6 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
         }
         window.lastConsoleCheck = now;
       } catch (error) {
-        console.warn('Console check timing failed:', error);
       }
 
       if (devtoolsScore >= threshold) {
@@ -389,7 +376,6 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
           }
         });
         
-        console.warn(`Suspicious activity detected. DevTools score: ${devtoolsScore}`);
       } else if (devtoolsScore >= 40) {
         logViolation('devtools_suspected', 'medium', {
           timestamp: Date.now(),
@@ -406,8 +392,6 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   const setupFullscreenMonitoring = () => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
-        console.warn('User exited fullscreen during exam');
-        
         // Log the violation first
         logViolation('fullscreen_exit', 'high', {
           timestamp: Date.now()
@@ -434,27 +418,6 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       // Detect significant height reduction (possible split screen)
       if (reductionPercentage > 30) { // More than 30% height reduction
         screenHeightTracker.current.violations += 1;
-        
-        // Log screen resize activity
-        logActivity('screen_resize', {
-          originalHeight,
-          currentHeight,
-          reductionPercentage: Math.round(reductionPercentage)
-        });
-        
-        websocketService.send({
-          type: 'activity_event',
-          details: {
-            eventType: 'screen_resize',
-            originalHeight,
-            currentHeight,
-            reductionPercentage: Math.round(reductionPercentage),
-            timestamp: new Date().toISOString(),
-            studentId,
-            examId,
-            sessionId,
-          },
-        });
         
         logViolation('screen_height_reduction', 'high', {
           originalHeight,
@@ -549,12 +512,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 
     // Store in localStorage for backup
     const violationsKey = `exam_violations_${examId}_${studentId}`;
-    const existingViolations = JSON.parse(localStorage.getItem(violationsKey) || '[]');
-    existingViolations.push(violation);
-    localStorage.setItem(violationsKey, JSON.stringify(existingViolations));
-
-    // Update local violation counts for display
-    setViolationCounts(prev => {
+  console.log('Sending WebSocket message:', violation);
       const newCounts = { ...prev };
       newCounts[severity] += 1;
       const totalViolations = newCounts.low + newCounts.medium + newCounts.high + newCounts.critical;
@@ -607,39 +565,11 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 
   // Cleanup
   const cleanup = () => {
-    if (monitoringInterval.current) {
       clearInterval(monitoringInterval.current);
     }
     
     if (criticalViolationTimeoutRef.current) {
       clearTimeout(criticalViolationTimeoutRef.current);
-    }
-  };
-
-  return (
-    <>
-      {/* Tab Inactive Overlay */}
-      {!isTabActive && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-md mx-4 text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <EyeOff className="w-8 h-8 text-red-600" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              Tab Tidak Aktif
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Kembali ke tab ujian untuk melanjutkan. Perpindahan tab telah dicatat.
-            </p>
-            <div className="text-sm text-red-600">
-              Peringatan: {tabSwitchCount.current}/5 perpindahan tab
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Violation Counter (for debugging - remove in production) */}
-      {process.env.NODE_ENV === 'development' && (
         <div className="fixed bottom-4 left-4 bg-gray-800 text-white px-4 py-2 rounded-lg text-xs z-40">
           <div>Violations: L:{violationCounts.low} M:{violationCounts.medium} H:{violationCounts.high} C:{violationCounts.critical}</div>
           <div>Tab Switches: {tabSwitchCount.current}</div>

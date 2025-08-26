@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile } from '@/types/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
@@ -31,8 +31,6 @@ interface StudentExamTakingPageProps {
   sessionId: string;
 }
 
-
-
 const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ 
   user, 
   sessionId 
@@ -58,7 +56,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [actualExamId, setActualExamId] = useState<string>('');
   const questionStartTimeRef = useRef<Record<string, number>>({});
-  const answerDebounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Auto-save interval
@@ -66,23 +63,14 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
   // Add logging for WebSocket messages in exam taking page
   useEffect(() => {
-    if (!securityPassed) return;
-
-    // Log all WebSocket messages for debugging
-    const handleAllMessages = (data: any) => {
-      console.log('StudentExamTaking: WebSocket message received:', {
-        type: data.type || data.messageType,
-        timestamp: new Date().toISOString(),
-        data: data
-      });
-    };
-
-    websocketService.setGenericHandler(handleAllMessages);
-
-    return () => {
-      websocketService.setGenericHandler(null);
-    };
+    // WebSocket message handling is now centralized in websocketService
   }, [securityPassed]);
+
+  // Helper function to get localStorage key for exam answers
+  const getExamAnswersKey = () => {
+    return `exam_answers_${sessionId}_${user?._id}`;
+  };
+
   // Parse URL parameters for exam timing
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -104,9 +92,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
             const decodedExamId = atob(examIdParam.padEnd(examIdParam.length + (4 - examIdParam.length % 4) % 4, '='));
 
             setActualExamId(decodedExamId);
-            console.log('StudentExamTaking: Decoded exam ID:', decodedExamId);
           } catch (error) {
-            console.warn('StudentExamTaking: Failed to decode exam ID, using sessionId as fallback');
             // Skip, gunakan sessionId
           }
         }
@@ -117,26 +103,31 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         setTimeRemaining(timeLeft);
         setExamDuration(Math.floor(duration / 1000 / 60)); // Convert to minutes
         
-        console.log('StudentExamTaking: Exam timing initialized:', {
-          startTime: new Date(startTime).toISOString(),
-          endTime: new Date(endTime).toISOString(),
-          duration: Math.floor(duration / 1000 / 60),
-          timeLeft
-        });
-        
         // Auto start if within exam time window
         if (now >= startTime && now <= endTime && timeLeft > 0) {
           setExamStarted(true);
-          console.log('StudentExamTaking: Auto-starting exam (within time window)');
         }
       } catch (error) {
-        console.error('Error parsing URL parameters:', error);
         setError('Parameter ujian tidak valid');
       }
     } else {
       setError('Parameter ujian tidak ditemukan');
     }
   }, []);
+
+  // Load answers from localStorage on mount
+  useEffect(() => {
+    if (!user?._id || !sessionId) return;
+
+    try {
+      const savedAnswers = localStorage.getItem(getExamAnswersKey());
+      if (savedAnswers) {
+        setAnswers(JSON.parse(savedAnswers));
+      }
+    } catch (error) {
+      // Ignore localStorage errors
+    }
+  }, [user?._id, sessionId]);
 
   // WebSocket status monitoring (AuthContext manages the actual connection)
   useEffect(() => {
@@ -147,12 +138,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       const isConnected = websocketService.isConnected();
       const connectionState = websocketService.getConnectionState();
       setWsConnectionStatus(isConnected ? 'connected' : 'disconnected');
-      
-      console.log('StudentExamTaking: WebSocket status check:', {
-        isConnected,
-        connectionState,
-        timestamp: new Date().toISOString()
-      });
     };
 
     // Check status immediately and then periodically
@@ -160,12 +145,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     const statusInterval = setInterval(checkConnectionStatus, 5000);
 
     // Listen for proctor messages
-    websocketService.onMessage('proctor_message', (data) => {
-      console.log('StudentExamTaking: Proctor message received:', {
-        timestamp: new Date().toISOString(),
-        data: data
-      });
-    });
+    websocketService.onMessage('proctor_message', (data) => {});
 
     return () => {
       clearInterval(statusInterval);
@@ -178,15 +158,15 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     if (!examStarted || !user?._id || !securityPassed) return;
 
     heartbeatIntervalRef.current = setInterval(() => {
-      console.log('StudentExamTaking: Sending heartbeat:', {
-        timestamp: new Date().toISOString(),
-        studentId: user._id,
-        examId: sessionId,
-        currentQuestionIndex,
-        totalAnswered: Object.keys(answers).length,
-        timeRemaining
+      console.log('Sending WebSocket message:', {
+        type: 'activity_event',
+        details: {
+          eventType: 'heartbeat',
+          studentId: user._id,
+          examId: sessionId,
+          sessionId: sessionId,
+        }
       });
-      
       websocketService.send({
         type: 'activity_event',
         details: {
@@ -226,7 +206,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         const errorMessage = err instanceof Error ? err.message : 'Gagal memuat soal ujian';
         setError(errorMessage);
         toast.error(errorMessage);
-        console.error('Error loading exam questions:', err);
       } finally {
         setLoading(false);
       }
@@ -235,15 +214,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     loadExamQuestions();
   }, [token, sessionId]);
 
-  // Timer countdown
-  // Di timer effect (sekitar baris 193)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const sParam = urlParams.get('s');
     const eParam = urlParams.get('e');
     const dParam = urlParams.get('d');
     const examIdParam = urlParams.get('examId');
-  
+
     if (sParam && eParam && dParam) {
       try {
         // Decode parameters - FIX BASE64 PADDING
@@ -261,7 +238,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
           setExamStarted(true);
         }
       } catch (error) {
-        console.error('Error parsing URL parameters:', error);
         setError('Parameter ujian tidak valid');
       }
     }
@@ -282,7 +258,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     };
   }, [examStarted, answers]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (autoSaveIntervalRef.current) {
@@ -291,65 +266,62 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       if (heartbeatIntervalRef.current) {
         clearInterval(heartbeatIntervalRef.current);
       }
-      if (answerDebounceTimeoutRef.current) {
-        clearTimeout(answerDebounceTimeoutRef.current);
-      }
     };
   }, []);
 
   const handleAnswerChange = (questionId: string, answer: any) => {
-    const questionIndex = questions.findIndex(q => q.id === questionId);
-    const wasAnswered = !!answers[questionId];
-    
+    // Update answers state
     setAnswers(prev => ({
       ...prev,
       [questionId]: answer
     }));
 
-    // Clear existing debounce timeout
-    if (answerDebounceTimeoutRef.current) {
-      clearTimeout(answerDebounceTimeoutRef.current);
+    // Save to localStorage immediately
+    const updatedAnswers = { ...answers, [questionId]: answer };
+    try {
+      localStorage.setItem(getExamAnswersKey(), JSON.stringify(updatedAnswers));
+    } catch (error) {
+      // Ignore localStorage errors
     }
 
-    // Send answer_start event if this is the first interaction with this question
-    if (!wasAnswered) {
-      websocketService.send({
-        type: 'activity_event',
-        details: {
-          eventType: 'answer_start',
-          questionId: questionId,
-          questionPosition: questionIndex + 1,
-          timestamp: new Date().toISOString(),
-          studentId: user?._id,
-          examId: sessionId,
-          sessionId: sessionId,
-        },
-      });
-    }
+    // Send answer update event to proctor
+    const questionIndex = questions.findIndex(q => q.id === questionId);
+    const timeSpentOnQuestion = questionStartTimeRef.current[questionId] 
+      ? Date.now() - questionStartTimeRef.current[questionId] 
+      : 0;
 
-    // Debounced answer submission/modification event
-    answerDebounceTimeoutRef.current = setTimeout(() => {
-      const eventType = wasAnswered ? 'answer_modified' : 'answer_submitted';
-      const timeSpentOnQuestion = questionStartTimeRef.current[questionId] 
-        ? Date.now() - questionStartTimeRef.current[questionId] 
-        : 0;
-
-      websocketService.send({
-        type: 'activity_event',
-        details: {
-          eventType: eventType,
-          questionId: questionId,
-          questionPosition: questionIndex + 1,
-          answerContent: answer,
-          characterCount: typeof answer === 'string' ? answer.length : 0,
-          timeSpent: timeSpentOnQuestion,
-          timestamp: new Date().toISOString(),
-          studentId: user?._id,
-          examId: sessionId,
-          sessionId: sessionId,
-        },
-      });
-    }, 2000); // 2 seconds debounce
+    console.log('Sending WebSocket message:', {
+      type: 'activity_event',
+      details: {
+        eventType: 'answer_update',
+        questionId: questionId,
+        questionPosition: questionIndex + 1,
+        answerContent: answer,
+        characterCount: typeof answer === 'string' ? answer.length : 0,
+        timeSpent: timeSpentOnQuestion,
+        timestamp: new Date().toISOString(),
+        studentId: user?._id,
+        full_name: user?.profile_details?.full_name || 'Unknown Student',
+        examId: sessionId,
+        sessionId: sessionId,
+      }
+    });
+    websocketService.send({
+      type: 'activity_event',
+      details: {
+        eventType: 'answer_update',
+        questionId: questionId,
+        questionPosition: questionIndex + 1,
+        answerContent: answer,
+        characterCount: typeof answer === 'string' ? answer.length : 0,
+        timeSpent: timeSpentOnQuestion,
+        timestamp: new Date().toISOString(),
+        studentId: user?._id,
+        full_name: user?.profile_details?.full_name || 'Unknown Student',
+        examId: sessionId,
+        sessionId: sessionId,
+      },
+    });
   };
 
   const handleSaveAnswers = async () => {
@@ -357,27 +329,10 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     
     try {
       setSaving(true);
-      // TODO: Implement save answers to backend
-      // await studentExamService.saveAnswers(token!, sessionId, answers);
       setLastSaved(new Date());
-      // Remove toast notification for auto-save to avoid spam
-
-      // Send auto-save activity via WebSocket
-      websocketService.send({
-        type: 'activity_event',
-        details: {
-          eventType: 'auto_save',
-          timestamp: new Date().toISOString(),
-          studentId: user?._id,
-          examId: sessionId,
-          sessionId: sessionId,
-          answersCount: Object.keys(answers).length,
-        },
-      });
+      // Auto-save is handled by localStorage in handleAnswerChange
 
     } catch (error) {
-      console.error('Error saving answers:', error);
-      // Only show error toast for failed saves
       toast.error('Gagal menyimpan jawaban', { duration: 3000 });
     } finally {
       setSaving(false);
@@ -411,13 +366,19 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       // Clean up and redirect
       examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
       
+      // Clear localStorage answers
+      try {
+        localStorage.removeItem(getExamAnswersKey());
+      } catch (error) {
+        // Ignore localStorage errors
+      }
+      
       // Clear all local data
       setAnswers({});
       setQuestions([]);
       
       window.location.href = '/student/exams';
     }).catch((error) => {
-      console.error('Error submitting exam after time up:', error);
       // Force redirect even if submission fails
       examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
       window.location.href = '/student/exams';
@@ -430,9 +391,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       if (autoSaveIntervalRef.current) {
         clearInterval(autoSaveIntervalRef.current);
       }
-      
-      // This will be handled by ExamMonitoring component
-      console.log('Security check passed, exam monitoring will handle session events');
       
       // Generate security report
       const securityReport = examSecurityService.generateSecurityReport(
@@ -454,6 +412,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       // Clean up security data
       examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
       
+      // Clear localStorage answers
+      try {
+        localStorage.removeItem(getExamAnswersKey());
+      } catch (error) {
+        // Ignore localStorage errors
+      }
+      
       // Clear all local data
       setAnswers({});
       setQuestions([]);
@@ -461,7 +426,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       toast.success('Ujian telah selesai dikerjakan.');
       window.location.href = '/student/exams';
     } catch (error) {
-      console.error('Error finishing exam:', error);
       toast.error('Gagal menyelesaikan ujian');
     }
   };
@@ -512,6 +476,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       // Clean up and redirect
       examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
       
+      // Clear localStorage answers
+      try {
+        localStorage.removeItem(getExamAnswersKey());
+      } catch (error) {
+        // Ignore localStorage errors
+      }
+      
       // Clear all local data
       setAnswers({});
       setQuestions([]);
@@ -520,7 +491,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         window.location.href = '/student';
       }, 2000);
     }).catch((error) => {
-      console.error('Error submitting exam after violation:', error);
       // Force redirect even if submission fails
       examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
       setTimeout(() => {
@@ -578,28 +548,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     const element = document.getElementById(`question-${questionIndex}`);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      
-      // Send question_viewed event
-      websocketService.send({
-        type: 'activity_event',
-        activityType: 'question_viewed',
-        timestamp: Date.now(),
-        studentId: user?._id,
-        examId: sessionId,
-        sessionId: sessionId,
-        details: {
-          questionId: newQuestionId,
-          questionPosition: questionIndex + 1,
-        }
-      });
-
-      // Send navigation_action event if this is not the initial view
-      if (prevQuestionIndex !== questionIndex) {
-        const direction = questionIndex > prevQuestionIndex ? 'next' : 
-                         questionIndex < prevQuestionIndex ? 'previous' : 'jump';
-        
-        // Navigation action tracked
-      }
     }
   };
 

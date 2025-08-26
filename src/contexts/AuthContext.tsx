@@ -4,9 +4,6 @@ import { authService } from '@/services/auth';
 import { websocketService } from '@/services/websocket';
 import { useRouter } from '@/hooks/useRouter';
 
-
-
-
 interface AuthContextType {
   user: UserProfile | null;
   token: string | null;
@@ -75,10 +72,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             
             if (examIdParam) {
               try {
-                const decodedExamId = atob(examIdParam.padEnd(examIdParam.length + (4 - examIdParam.length % 4) % 4, '='));
+                const decodedExamId = atob(examIdParam + '='.repeat((4 - examIdParam.length % 4) % 4));
                 desiredEndpoint = `/ws/exam-room/${decodedExamId}`;
               } catch (error) {
-                console.warn('Failed to decode examId, using sessionId as fallback');
                 desiredEndpoint = `/ws/exam-room/${sessionId}`;
               }
             } else {
@@ -99,14 +95,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const isConnected = websocketService.isConnected();
         const connectionState = websocketService.getConnectionState();
         
-        console.log('AuthContext: WebSocket connection check:', {
-          currentEndpoint,
-          desiredEndpoint,
-          isConnected,
-          connectionState,
-          currentPath
-        });
-        
         // Only connect if endpoint is different, no connection exists, or connection is broken
         const shouldConnect = currentEndpoint !== desiredEndpoint || 
                              !isConnected || 
@@ -115,43 +103,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                               !connectionState.isReconnecting);
         
         if (shouldConnect) {
-          console.log(`WebSocket: Switching from ${currentEndpoint || 'none'} to ${desiredEndpoint}`);
-          
           // Disconnect existing connection cleanly
           if (currentEndpoint && isConnected) {
-            console.log('AuthContext: Disconnecting existing connection before switching');
             websocketService.disconnect();
           }
           
           // Connect immediately - no setTimeout wrapper needed
           const onAuthError = () => {
-            console.error('WebSocket authentication failed');
             logout();
           };
 
           const onStatusChange = (status: 'connected' | 'disconnected' | 'error' | 'reconnecting') => {
-            console.log(`WebSocket status changed to: ${status} for endpoint: ${desiredEndpoint}`);
-            
             // Handle reconnection logic more carefully
             if (status === 'disconnected' || status === 'error') {
               // Only attempt reconnection if we're still on the same path and authenticated
               const currentDesiredEndpoint = getCurrentDesiredEndpoint();
               if (currentDesiredEndpoint === desiredEndpoint && isAuthenticated && token) {
-                console.log('WebSocket: Connection lost, will attempt reconnection...');
               }
             }
           };
 
           websocketService.connect(token, desiredEndpoint, onAuthError, onStatusChange);
-        } else {
-          console.log('AuthContext: WebSocket connection check - no action needed:', {
-            reason: currentEndpoint === desiredEndpoint ? 'same endpoint' : 
-                   isConnected ? 'already connected' : 'reconnecting in progress'
-          });
         }
       } else {
         // User is not authenticated, disconnect WebSocket
-        console.log('WebSocket: User not authenticated, disconnecting');
         websocketService.disconnect();
       }
     }
@@ -168,7 +143,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           
           if (examIdParam) {
             try {
-              const decodedExamId = atob(examIdParam.padEnd(examIdParam.length + (4 - examIdParam.length % 4) % 4, '='));
+              const decodedExamId = atob(examIdParam + '='.repeat((4 - examIdParam.length % 4) % 4));
               return `/ws/exam-room/${decodedExamId}`;
             } catch (error) {
               return `/ws/exam-room/${sessionId}`;
