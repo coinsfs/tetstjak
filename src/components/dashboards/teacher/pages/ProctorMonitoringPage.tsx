@@ -16,14 +16,22 @@ import {
   StopCircle,
   ArrowLeft,
   Wifi,
-  WifiOff
+  WifiOff,
+  Monitor,
+  FileText,
+  ChevronUp,
+  ChevronDown,
+  Info,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Zap
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface ProctorMonitoringPageProps {
   examId: string;
 }
-
 
 interface ConnectedStudent {
   studentId: string;
@@ -34,6 +42,22 @@ interface ConnectedStudent {
   status: 'active' | 'inactive' | 'suspicious' | 'terminated';
   currentQuestion?: number;
   answersSubmitted?: number;
+  
+  // Enhanced properties for better monitoring
+  latestActivityDescription?: string;
+  latestActivityTimestamp?: Date;
+  latestViolationDescription?: string;
+  latestViolationTimestamp?: Date;
+  screenStatus: 'normal' | 'reduced' | 'very_small';
+  originalScreenHeight?: number;
+  currentScreenHeight?: number;
+  screenReductionPercentage?: number;
+  violationsBySeverity: {
+    low: number;
+    medium: number;
+    high: number;
+    critical: number;
+  };
 }
 
 interface ViolationEvent {
@@ -55,6 +79,9 @@ interface ExamActivityEvent {
   details: any;
 }
 
+type SortField = 'full_name' | 'violationCount' | 'lastActivity' | 'currentQuestion' | 'answersSubmitted';
+type SortDirection = 'asc' | 'desc';
+
 const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId }) => {
   const [examActivityEvents, setExamActivityEvents] = useState<ExamActivityEvent[]>([]);
   const [violationEvents, setViolationEvents] = useState<ViolationEvent[]>([]);
@@ -63,6 +90,13 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   const [displayActivityEvents, setDisplayActivityEvents] = useState<ExamActivityEvent[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
   const [lastHeartbeat, setLastHeartbeat] = useState<Date>(new Date());
+  const [selectedStudent, setSelectedStudent] = useState<ConnectedStudent | null>(null);
+  const [showDetailPanel, setShowDetailPanel] = useState(false);
+  
+  // Sorting state
+  const [sortField, setSortField] = useState<SortField>('violationCount');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const soundEnabledRef = useRef(soundEnabled);
@@ -75,7 +109,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
 
-  // Update student session based on received events
+  // Enhanced student session update with detailed tracking
   const updateStudentSession = useCallback((eventData: any) => {
     const studentId = eventData.studentId || eventData.student_id;
     const studentName = eventData.full_name || eventData.student_name || eventData.details?.full_name || 'Unknown Student';
@@ -90,19 +124,61 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
         const updatedStudents = [...prevStudents];
         const student = updatedStudents[existingIndex];
         
-        updatedStudents[existingIndex] = {
+        // Prepare updated student data
+        const updatedStudent: ConnectedStudent = {
           ...student,
           lastActivity: new Date(),
-          violationCount: eventData.type === 'violation_event' ? student.violationCount + 1 : student.violationCount,
-          status: eventData.severity === 'critical' ? 'suspicious' : student.status,
-          currentQuestion: eventData.details?.questionPosition !== undefined ? eventData.details.questionPosition : student.currentQuestion,
-          answersSubmitted: eventData.details?.eventType === 'answer_update' ? (student.answersSubmitted || 0) + 1 : student.answersSubmitted
         };
+
+        // Handle violation events
+        if (eventData.type === 'violation_event') {
+          updatedStudent.violationCount = student.violationCount + 1;
+          updatedStudent.violationsBySeverity = {
+            ...student.violationsBySeverity,
+            [eventData.severity]: (student.violationsBySeverity[eventData.severity] || 0) + 1
+          };
+          updatedStudent.latestViolationDescription = getViolationDescription(eventData);
+          updatedStudent.latestViolationTimestamp = new Date(eventData.timestamp);
+          
+          // Update status based on severity
+          if (eventData.severity === 'critical') {
+            updatedStudent.status = 'suspicious';
+          }
+          
+          // Handle screen-related violations
+          if (eventData.violation_type === 'screen_height_reduction' && eventData.details) {
+            updatedStudent.originalScreenHeight = eventData.details.originalHeight;
+            updatedStudent.currentScreenHeight = eventData.details.currentHeight;
+            updatedStudent.screenReductionPercentage = eventData.details.reductionPercentage;
+            
+            if (eventData.details.reductionPercentage > 50) {
+              updatedStudent.screenStatus = 'very_small';
+            } else if (eventData.details.reductionPercentage > 20) {
+              updatedStudent.screenStatus = 'reduced';
+            }
+          }
+        }
         
+        // Handle activity events
+        if (eventData.type === 'activity_event') {
+          updatedStudent.latestActivityDescription = getActivityDescription(eventData);
+          updatedStudent.latestActivityTimestamp = new Date(eventData.timestamp);
+          
+          // Update current question and answers
+          if (eventData.details?.questionPosition !== undefined) {
+            updatedStudent.currentQuestion = eventData.details.questionPosition;
+          }
+          
+          if (eventData.details?.eventType === 'answer_update') {
+            updatedStudent.answersSubmitted = (student.answersSubmitted || 0) + 1;
+          }
+        }
+        
+        updatedStudents[existingIndex] = updatedStudent;
         return updatedStudents;
       } else {
-        // Add new student if not present
-        return [...prevStudents, {
+        // Add new student with enhanced properties
+        const newStudent: ConnectedStudent = {
           studentId,
           full_name: studentName,
           connectionTime: new Date(),
@@ -110,25 +186,46 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           violationCount: eventData.type === 'violation_event' ? 1 : 0,
           status: 'active',
           currentQuestion: eventData.details?.questionPosition || 0,
-          answersSubmitted: eventData.details?.eventType === 'answer_update' ? 1 : 0
-        }];
+          answersSubmitted: eventData.details?.eventType === 'answer_update' ? 1 : 0,
+          screenStatus: 'normal',
+          violationsBySeverity: {
+            low: 0,
+            medium: 0,
+            high: 0,
+            critical: 0
+          }
+        };
+        
+        // Set initial violation data if this is a violation event
+        if (eventData.type === 'violation_event') {
+          newStudent.violationsBySeverity[eventData.severity] = 1;
+          newStudent.latestViolationDescription = getViolationDescription(eventData);
+          newStudent.latestViolationTimestamp = new Date(eventData.timestamp);
+        }
+        
+        // Set initial activity data if this is an activity event
+        if (eventData.type === 'activity_event') {
+          newStudent.latestActivityDescription = getActivityDescription(eventData);
+          newStudent.latestActivityTimestamp = new Date(eventData.timestamp);
+        }
+        
+        return [...prevStudents, newStudent];
       }
     });
-  }, []); // Empty dependency array - function is now stable
+  }, []);
 
   // Play notification sound
   const playNotificationSound = useCallback(() => {
     if (soundEnabledRef.current && notificationSoundRef.current) {
       notificationSoundRef.current.play().catch(console.error);
     }
-  }, []); // Empty dependency array - function is now stable
+  }, []);
 
   // Setup WebSocket message handlers
   const setupMessageHandlers = useCallback(() => {
     websocketService.onMessage('violation_event', (data: any) => {
-      console.log('Received WebSocket message:', data);
+      console.log('Received violation event:', data);
 
-      // Enhanced violation event handling with better data extraction
       const enhancedData = {
         ...data,
         full_name: data.details?.full_name || data.student_name || data.full_name || 'Unknown Student',
@@ -143,7 +240,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     });
 
     websocketService.onMessage('activity_event', (data: any) => {
-      console.log('Received WebSocket message:', data);
+      console.log('Received activity event:', data);
 
       setExamActivityEvents(prevEvents => [data, ...prevEvents].slice(0, 100));
       
@@ -156,15 +253,13 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     });
 
     websocketService.onMessage('presence_update', (data: any) => {
-      console.log('Received WebSocket message:', data);
+      console.log('Received presence update:', data);
       
-      // Update total active students count from presence_update message
       if (data.student_count !== undefined) {
         setTotalActiveStudents(data.student_count);
       }
       
       if (data.users && Array.isArray(data.users)) {
-        // Completely replace the connected students list with server data
         const updatedStudents = data.users.map((user: any) => ({
           studentId: user.id || user.studentId,
           full_name: user.full_name || 'Unknown Student',
@@ -173,16 +268,22 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           violationCount: user.violationCount || 0,
           status: user.status || 'active',
           currentQuestion: user.currentQuestion || 0,
-          answersSubmitted: user.answersSubmitted || 0
+          answersSubmitted: user.answersSubmitted || 0,
+          screenStatus: user.screenStatus || 'normal',
+          violationsBySeverity: user.violationsBySeverity || {
+            low: 0,
+            medium: 0,
+            high: 0,
+            critical: 0
+          }
         }));
         
         setConnectedStudents(updatedStudents);
       }
     });
 
-    // Handle student connection events
     websocketService.onMessage('student_connected', (data: any) => {
-      console.log('Received WebSocket message:', data);
+      console.log('Student connected:', data);
       
       const studentId = data.studentId || data.student_id;
       const studentName = data.full_name || data.student_name || 'Unknown Student';
@@ -199,7 +300,14 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
               violationCount: 0,
               status: 'active',
               currentQuestion: 0,
-              answersSubmitted: 0
+              answersSubmitted: 0,
+              screenStatus: 'normal',
+              violationsBySeverity: {
+                low: 0,
+                medium: 0,
+                high: 0,
+                critical: 0
+              }
             }];
           }
           return prevStudents;
@@ -207,33 +315,25 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
       }
     });
 
-    // Handle student disconnection events
     websocketService.onMessage('student_disconnected', (data: any) => {
-      console.log('Received WebSocket message:', data);
+      console.log('Student disconnected:', data);
       
       const studentId = data.studentId || data.student_id;
       
       if (studentId) {
-        // Immediately and robustly remove disconnected student from the list
         setConnectedStudents(prevStudents => 
-          prevStudents.filter(student => {
-            const shouldKeep = student.studentId !== studentId;
-            return shouldKeep;
-          })
+          prevStudents.filter(student => student.studentId !== studentId)
         );
-        
-        // Also update total count immediately
         setTotalActiveStudents(prev => Math.max(0, prev - 1));
       }
     });
 
-  }, []); // Empty dependency array - all dependencies are now stable
+  }, [playNotificationSound, updateStudentSession]);
 
-  // WebSocket message handlers setup (AuthContext manages the actual connection)
+  // WebSocket setup
   useEffect(() => {
     if (!examId || !token) return;
 
-    // Monitor WebSocket connection status
     const checkConnectionStatus = () => {
       const isConnected = websocketService.isConnected();
       setConnectionStatus(isConnected ? 'connected' : 'disconnected');
@@ -243,7 +343,6 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
       }
     };
 
-    // Check status immediately and then periodically
     checkConnectionStatus();
     const statusInterval = setInterval(checkConnectionStatus, 5000);
     
@@ -259,11 +358,10 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     };
   }, [examId, token, setupMessageHandlers]);
 
-  // Client-side ping to keep connection alive during idle periods
+  // Client-side ping
   useEffect(() => {
     if (!examId || !token) return;
 
-    // Send ping every 20 seconds to keep connection alive
     pingIntervalRef.current = setInterval(() => {
       websocketService.send({
         type: 'proctor_ping',
@@ -273,7 +371,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
       });
       
       setLastHeartbeat(new Date());
-    }, 20000); // 20 seconds
+    }, 20000);
 
     return () => {
       if (pingIntervalRef.current) {
@@ -286,6 +384,61 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   useEffect(() => {
     notificationSoundRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
   }, []);
+
+  // Sorting functionality
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const getSortedStudents = () => {
+    return [...connectedStudents].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortField) {
+        case 'full_name':
+          aValue = a.full_name.toLowerCase();
+          bValue = b.full_name.toLowerCase();
+          break;
+        case 'violationCount':
+          aValue = a.violationCount;
+          bValue = b.violationCount;
+          break;
+        case 'lastActivity':
+          aValue = a.lastActivity.getTime();
+          bValue = b.lastActivity.getTime();
+          break;
+        case 'currentQuestion':
+          aValue = a.currentQuestion || 0;
+          bValue = b.currentQuestion || 0;
+          break;
+        case 'answersSubmitted':
+          aValue = a.answersSubmitted || 0;
+          bValue = b.answersSubmitted || 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ChevronUp className="w-4 h-4 text-gray-300" />;
+    }
+    return sortDirection === 'asc' ? 
+      <ChevronUp className="w-4 h-4 text-blue-600" /> : 
+      <ChevronDown className="w-4 h-4 text-blue-600" />;
+  };
 
   // Send broadcast message to all students
   const sendBroadcastMessage = useCallback((message: string, type: 'info' | 'warning' | 'critical' = 'info') => {
@@ -317,21 +470,19 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   }, [examId]);
 
   // Format timestamp for display
-  const formatTimestamp = (timestamp: string | number) => {
-    // Enhanced timestamp formatting with validation
+  const formatTimestamp = (timestamp: string | number | Date) => {
     let dateValue: Date;
     
-    if (typeof timestamp === 'number') {
-      // Handle numeric timestamp
+    if (timestamp instanceof Date) {
+      dateValue = timestamp;
+    } else if (typeof timestamp === 'number') {
       dateValue = new Date(timestamp);
     } else if (typeof timestamp === 'string') {
-      // Handle string timestamp
       dateValue = new Date(timestamp);
     } else {
       return 'Invalid Date';
     }
     
-    // Check if date is valid
     if (isNaN(dateValue.getTime())) {
       return 'Invalid Date';
     }
@@ -339,100 +490,119 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     return dateValue.toLocaleTimeString('id-ID');
   };
 
-  // Get status color
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'text-green-600 bg-green-100';
-      case 'inactive': return 'text-yellow-600 bg-yellow-100';
-      case 'suspicious': return 'text-red-600 bg-red-100';
-      case 'terminated': return 'text-gray-600 bg-gray-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
+  const formatRelativeTime = (timestamp: Date) => {
+    const now = new Date();
+    const diffMs = now.getTime() - timestamp.getTime();
+    const diffSeconds = Math.floor(diffMs / 1000);
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    
+    if (diffSeconds < 10) return 'Baru saja';
+    if (diffSeconds < 60) return `${diffSeconds} detik lalu`;
+    if (diffMinutes < 60) return `${diffMinutes} menit lalu`;
+    return formatTimestamp(timestamp);
   };
 
-  // Get violation severity color
-  const getViolationColor = (severity: string) => {
-    switch (severity) {
-      case 'low': return 'text-blue-600 bg-blue-100';
-      case 'medium': return 'text-yellow-600 bg-yellow-100';
-      case 'high': return 'text-orange-600 bg-orange-100';
-      case 'critical': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
+  // Get status color and icon
+  const getStatusDisplay = (student: ConnectedStudent) => {
+    const now = new Date();
+    const timeSinceLastActivity = now.getTime() - student.lastActivity.getTime();
+    const isInactive = timeSinceLastActivity > 60000; // 1 minute
+    
+    if (student.status === 'terminated') {
+      return {
+        color: 'text-red-600 bg-red-100',
+        icon: XCircle,
+        text: 'Dihentikan'
+      };
+    }
+    
+    if (student.status === 'suspicious' || student.violationCount >= 5) {
+      return {
+        color: 'text-red-600 bg-red-100',
+        icon: AlertTriangle,
+        text: 'Mencurigakan'
+      };
+    }
+    
+    if (isInactive) {
+      return {
+        color: 'text-yellow-600 bg-yellow-100',
+        icon: Clock,
+        text: 'Tidak Aktif'
+      };
+    }
+    
+    return {
+      color: 'text-green-600 bg-green-100',
+      icon: CheckCircle,
+      text: 'Aktif'
+    };
+  };
+
+  const getViolationBadgeColor = (count: number) => {
+    if (count === 0) return 'bg-gray-100 text-gray-600';
+    if (count <= 2) return 'bg-yellow-100 text-yellow-800';
+    if (count <= 5) return 'bg-orange-100 text-orange-800';
+    return 'bg-red-100 text-red-800';
+  };
+
+  const getScreenStatusDisplay = (student: ConnectedStudent) => {
+    switch (student.screenStatus) {
+      case 'very_small':
+        return {
+          color: 'text-red-600',
+          text: `Sangat Kecil (${student.screenReductionPercentage || 0}%)`
+        };
+      case 'reduced':
+        return {
+          color: 'text-yellow-600',
+          text: `Berkurang (${student.screenReductionPercentage || 0}%)`
+        };
+      default:
+        return {
+          color: 'text-green-600',
+          text: 'Normal'
+        };
     }
   };
 
   const getViolationDescription = (violation: ViolationEvent) => {
-    // Safe destructuring with fallback values
     const { violation_type, details = {} } = violation;
     
-    // Handle undefined/null violation_type - try to infer from details
     if (!violation_type || typeof violation_type !== 'string') {
-      // Try to infer violation type from details
       if (details.visibilityState === 'hidden') {
-        return 'Menyembunyikan halaman ujian (Alt+Tab atau minimize)';
+        return 'Menyembunyikan halaman ujian';
       }
       if (details.tabActive === false) {
         return 'Pindah tab dari halaman ujian';
       }
-      
-      // Default fallback
       return 'Aktivitas mencurigakan terdeteksi';
     }
     
     switch (violation_type) {
       case 'tab_switch_return':
         const inactiveTime = details?.inactiveTime ? Math.round(details.inactiveTime / 1000) : 0;
-        const switchCount = details?.switchCount || 0;
-        return `Kembali ke tab ujian setelah ${inactiveTime} detik (${switchCount} kali pindah tab)`;
-      
+        return `Kembali ke tab ujian setelah ${inactiveTime} detik`;
       case 'suspicious_key':
-        const key = details?.key || 'Unknown';
-        return `Menekan tombol mencurigakan: ${key}`;
-      
-      case 'suspicious_combination':
-        const combination = details?.combination || 'Unknown';
-        return `Menggunakan kombinasi tombol: ${combination}`;
-      
+        return `Menekan tombol mencurigakan: ${details?.key || 'Unknown'}`;
       case 'devtools_detected':
-        const score = details?.score || 0;
-        return `Developer Tools terdeteksi (confidence: ${score}%)`;
-      
+        return `Developer Tools terdeteksi`;
       case 'screen_height_reduction':
-        const reductionPercentage = details?.reductionPercentage || 0;
-        return `Pengurangan tinggi layar ${reductionPercentage}% (kemungkinan split screen)`;
-      
+        return `Pengurangan tinggi layar ${details?.reductionPercentage || 0}%`;
       case 'right_click_attempt':
         return 'Mencoba klik kanan pada halaman ujian';
-      
       case 'copy_attempt':
-        return 'Mencoba menyalin teks dari halaman ujian';
-      
+        return 'Mencoba menyalin teks';
       case 'paste_attempt':
-        return 'Mencoba menempel teks ke halaman ujian';
-      
-      case 'cut_attempt':
-        return 'Mencoba memotong teks dari halaman ujian';
-      
+        return 'Mencoba menempel teks';
       case 'fullscreen_exit':
         return 'Keluar dari mode fullscreen';
-      
       case 'page_hidden':
-        return 'Menyembunyikan halaman ujian (Alt+Tab atau minimize)';
-      
-      case 'rapid_clicking':
-        const clickCount = details?.clickCount || 0;
-        return `Klik terlalu cepat (${clickCount} klik dalam waktu singkat)`;
-      
-      case 'rapid_typing':
-        const keystrokeCount = details?.keystrokeCount || 0;
-        return `Mengetik terlalu cepat (${keystrokeCount} keystroke)`;
-      
+        return 'Menyembunyikan halaman ujian';
       default:
-        // Safe string manipulation with null checks
         try {
           return violation_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         } catch (error) {
-          console.error('Error formatting violation_type:', error, violation_type);
           return `Pelanggaran: ${violation_type}`;
         }
     }
@@ -442,47 +612,34 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
     const { activityType, details = {} } = activity;
     const studentName = details?.full_name || activity.student_name || 'Siswa';
     
-    // Handle undefined/null activityType
     if (!activityType || typeof activityType !== 'string') {
-      // Try to infer activity from details or use generic message
-      if (details.timestamp) {
-        return `${studentName} melakukan aktivitas pada ujian`;
-      }
-      return `${studentName} aktif dalam ujian`;
+      return `${studentName} melakukan aktivitas pada ujian`;
     }
     
     switch (activityType) {
       case 'answer_update':
         const questionPos = details?.questionPosition || 'Unknown';
         const answerLength = details?.characterCount || 0;
-        return `${studentName} ${answerLength > 0 ? 'menjawab' : 'mengubah jawaban'} soal ${questionPos}`;
-      
+        return `Menjawab soal ${questionPos}`;
       case 'question_viewed':
-        const viewQuestionPos = details?.questionPosition || 'Unknown';
-        return `${studentName} melihat soal ${viewQuestionPos}`;
-      
+        return `Melihat soal ${details?.questionPosition || 'Unknown'}`;
       case 'fullscreen_exit':
-        return `${studentName} keluar dari mode fullscreen`;
-      
+        return `Keluar dari mode fullscreen`;
       case 'screen_resize':
-        const reductionPercentage = details?.reductionPercentage || 0;
-        return `${studentName} mengubah ukuran layar (${reductionPercentage}% pengurangan)`;
-      
+        return `Mengubah ukuran layar`;
       case 'question_time_spent':
         const timeSpent = details?.timeSpent ? Math.round(details.timeSpent / 1000) : 0;
-        const questionPosition = details?.questionPosition || 'Unknown';
-        return `${studentName} menghabiskan ${timeSpent} detik pada soal ${questionPosition}`;
-      
+        return `Menghabiskan ${timeSpent} detik pada soal ${details?.questionPosition || 'Unknown'}`;
       default:
-        // Safe string manipulation with null checks
         try {
-          return `${studentName} melakukan ${activityType.replace(/_/g, ' ')}`;
+          return activityType.replace(/_/g, ' ');
         } catch (error) {
-          console.error('Error formatting activityType:', error, activityType);
-          return `${studentName} melakukan aktivitas: ${activityType}`;
+          return `Aktivitas: ${activityType}`;
         }
     }
   };
+
+  const sortedStudents = getSortedStudents();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -502,7 +659,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
                   <Shield className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Monitoring Ujian</h1>
+                  <h1 className="text-2xl font-bold text-gray-900">Monitoring Ujian Real-time</h1>
                   <p className="text-gray-600">ID Ujian: {examId}</p>
                 </div>
               </div>
@@ -550,6 +707,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
               <div>
                 <p className="text-sm text-gray-600">Total Pelanggaran</p>
                 <p className="text-2xl font-bold text-gray-900">{violationEvents.length}</p>
+                <p className="text-xs text-gray-500 mt-1">Semua tingkat</p>
               </div>
               <AlertTriangle className="w-8 h-8 text-red-600" />
             </div>
@@ -558,10 +716,13 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Aktivitas</p>
-                <p className="text-2xl font-bold text-gray-900">{examActivityEvents.length}</p>
+                <p className="text-sm text-gray-600">Siswa Mencurigakan</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {connectedStudents.filter(s => s.status === 'suspicious' || s.violationCount >= 5).length}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Perlu perhatian</p>
               </div>
-              <Activity className="w-8 h-8 text-green-600" />
+              <Eye className="w-8 h-8 text-orange-600" />
             </div>
           </div>
           
@@ -569,158 +730,321 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Heartbeat Terakhir</p>
-                <p className="text-sm font-medium text-gray-900">{formatTimestamp(lastHeartbeat.getTime())}</p>
+                <p className="text-sm font-medium text-gray-900">{formatTimestamp(lastHeartbeat)}</p>
+                <p className="text-xs text-gray-500 mt-1">Status koneksi</p>
               </div>
               <Clock className="w-8 h-8 text-purple-600" />
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Connected Students */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Siswa Terhubung</h3>
-              <p className="text-sm text-gray-500 mt-1">Total aktif: {totalActiveStudents} siswa</p>
-            </div>
-            <div className="p-6 max-h-96 overflow-y-auto">
-              {connectedStudents.length === 0 ? (
-                <div className="text-center py-8">
-                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Belum ada siswa yang terhubung</p>
+        {/* Main Student Monitoring Table */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Monitoring Siswa Real-time</h3>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-500">
+                  {connectedStudents.length} siswa terhubung
+                </span>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-gray-500">Live</span>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {connectedStudents.map((student) => (
-                    <div key={student.studentId} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-gray-900">{student.full_name}</h4>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(student.status)}`}>
-                          {student.status}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                        <div>Soal: {student.currentQuestion || 0}</div>
-                        <div>Jawaban: {student.answersSubmitted || 0}</div>
-                        <div>Pelanggaran: {student.violationCount}</div>
-                        <div>Terakhir aktif: {formatTimestamp(student.lastActivity.getTime())}</div>
-                      </div>
-                      <div className="mt-3 flex space-x-2">
-                        <button
-                          onClick={() => terminateExam(student.studentId)}
-                          className="flex items-center space-x-1 px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm"
-                        >
-                          <StopCircle className="w-3 h-3" />
-                          <span>Hentikan</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              </div>
             </div>
           </div>
-
-          {/* Recent Violations */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Pelanggaran Terbaru</h3>
+          
+          {connectedStudents.length === 0 ? (
+            <div className="text-center py-16">
+              <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h4 className="text-lg font-medium text-gray-900 mb-2">Belum Ada Siswa Terhubung</h4>
+              <p className="text-gray-500">Siswa akan muncul di sini ketika mereka mulai mengerjakan ujian</p>
             </div>
-            <div className="p-6 max-h-96 overflow-y-auto">
-              {violationEvents.length === 0 ? (
-                <div className="text-center py-8">
-                  <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Belum ada pelanggaran</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {violationEvents.map((violation, index) => (
-                    <div key={index} className="border border-gray-200 rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getViolationColor(violation.severity)}`}>
-                          {violation.severity}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {formatTimestamp(violation.timestamp)}
-                        </span>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => handleSort('full_name')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Nama Siswa</span>
+                        {renderSortIcon('full_name')}
                       </div>
-                      <p className="text-sm font-medium text-gray-900 mb-2">
-                        {getViolationDescription(violation)}
-                      </p>
-                      <p className="text-xs text-gray-600">Siswa: {violation.full_name || violation.details?.full_name || 'Unknown Student'}</p>
-                      {violation.details && Object.keys(violation.details).length > 0 && (
-                        <details className="mt-2">
-                          <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
-                            Detail teknis
-                          </summary>
-                          <div className="mt-1 text-xs text-gray-400 bg-gray-50 p-2 rounded">
-                            <pre className="whitespace-pre-wrap">
-                              {JSON.stringify(violation.details, null, 2)}
-                            </pre>
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => handleSort('violationCount')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Pelanggaran</span>
+                        {renderSortIcon('violationCount')}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => handleSort('lastActivity')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Aktivitas Terakhir</span>
+                        {renderSortIcon('lastActivity')}
+                      </div>
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status Layar
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => handleSort('currentQuestion')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Soal Saat Ini</span>
+                        {renderSortIcon('currentQuestion')}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => handleSort('answersSubmitted')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Jawaban</span>
+                        {renderSortIcon('answersSubmitted')}
+                      </div>
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Aksi
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {sortedStudents.map((student) => {
+                    const statusDisplay = getStatusDisplay(student);
+                    const screenDisplay = getScreenStatusDisplay(student);
+                    const StatusIcon = statusDisplay.icon;
+                    
+                    return (
+                      <tr 
+                        key={student.studentId} 
+                        className="hover:bg-blue-50 transition-colors cursor-pointer"
+                        onClick={() => {
+                          setSelectedStudent(student);
+                          setShowDetailPanel(true);
+                        }}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10">
+                              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                <span className="text-sm font-medium text-blue-600">
+                                  {student.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{student.full_name}</div>
+                              <div className="text-sm text-gray-500">ID: {student.studentId.slice(-8)}</div>
+                            </div>
                           </div>
-                        </details>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+                        </td>
+                        
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusDisplay.color}`}>
+                            <StatusIcon className="w-3 h-3 mr-1" />
+                            {statusDisplay.text}
+                          </span>
+                        </td>
+                        
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getViolationBadgeColor(student.violationCount)}`}>
+                              {student.violationCount}
+                            </span>
+                            {student.violationCount > 0 && (
+                              <div className="text-xs text-gray-500">
+                                <div>K: {student.violationsBySeverity.critical}</div>
+                                <div>T: {student.violationsBySeverity.high}</div>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">
+                            {student.latestActivityDescription || 'Belum ada aktivitas'}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {student.latestActivityTimestamp ? formatRelativeTime(student.latestActivityTimestamp) : '-'}
+                          </div>
+                        </td>
+                        
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className={`text-sm font-medium ${screenDisplay.color}`}>
+                            {screenDisplay.text}
+                          </div>
+                          {student.originalScreenHeight && student.currentScreenHeight && (
+                            <div className="text-xs text-gray-500">
+                              {student.originalScreenHeight}px → {student.currentScreenHeight}px
+                            </div>
+                          )}
+                        </td>
+                        
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <div className="text-sm font-medium text-gray-900">
+                            {student.currentQuestion || 0}
+                          </div>
+                        </td>
+                        
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <div className="text-sm font-medium text-gray-900">
+                            {student.answersSubmitted || 0}
+                          </div>
+                        </td>
+                        
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <div className="flex items-center justify-center space-x-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedStudent(student);
+                                setShowDetailPanel(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+                            >
+                              Detail
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                terminateExam(student.studentId);
+                              }}
+                              className="text-red-600 hover:text-red-900 text-sm font-medium"
+                            >
+                              Hentikan
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Student Activities */}
-        <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Aktivitas Siswa Terbaru</h3>
-            <p className="text-sm text-gray-500 mt-1">Aktivitas normal siswa selama ujian</p>
-          </div>
-          <div className="p-6 max-h-96 overflow-y-auto">
-            {displayActivityEvents.length === 0 ? (
-              <div className="text-center py-8">
-                <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Belum ada aktivitas siswa</p>
+        {/* Student Detail Panel */}
+        {showDetailPanel && selectedStudent && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-lg font-medium text-blue-600">
+                      {selectedStudent.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">{selectedStudent.full_name}</h2>
+                    <p className="text-sm text-gray-500">Detail Monitoring Siswa</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowDetailPanel(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <XCircle className="w-5 h-5 text-gray-500" />
+                </button>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {displayActivityEvents.map((activity, index) => (
-                  <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900">
-                        {getActivityDescription(activity)}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {formatTimestamp(activity.timestamp)}
-                      </p>
-                      {activity.details && Object.keys(activity.details).filter(key => 
-                        !['full_name', 'timestamp', 'studentId', 'examId', 'sessionId'].includes(key)
-                      ).length > 0 && (
-                        <details className="mt-2">
-                          <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">
-                            Detail aktivitas
-                          </summary>
-                          <div className="mt-1 text-xs text-gray-400 bg-white p-2 rounded border">
-                            {Object.entries(activity.details)
-                              .filter(([key]) => !['full_name', 'timestamp', 'studentId', 'examId', 'sessionId'].includes(key))
-                              .map(([key, value]) => (
-                                <div key={key} className="flex justify-between">
-                                  <span className="font-medium">{key}:</span>
-                                  <span>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
-                                </div>
-                              ))
-                            }
-                          </div>
-                        </details>
+              
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Student Info */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium text-gray-900">Informasi Siswa</h3>
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Status:</span>
+                        <span className={`text-sm font-medium ${getStatusDisplay(selectedStudent).color.split(' ')[0]}`}>
+                          {getStatusDisplay(selectedStudent).text}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Total Pelanggaran:</span>
+                        <span className="text-sm font-medium text-gray-900">{selectedStudent.violationCount}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Soal Saat Ini:</span>
+                        <span className="text-sm font-medium text-gray-900">{selectedStudent.currentQuestion || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Jawaban Terkirim:</span>
+                        <span className="text-sm font-medium text-gray-900">{selectedStudent.answersSubmitted || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Terhubung Sejak:</span>
+                        <span className="text-sm font-medium text-gray-900">{formatTimestamp(selectedStudent.connectionTime)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Violation Summary */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium text-gray-900">Ringkasan Pelanggaran</h3>
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Kritis:</span>
+                        <span className="text-sm font-medium text-red-600">{selectedStudent.violationsBySeverity.critical}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Tinggi:</span>
+                        <span className="text-sm font-medium text-orange-600">{selectedStudent.violationsBySeverity.high}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Sedang:</span>
+                        <span className="text-sm font-medium text-yellow-600">{selectedStudent.violationsBySeverity.medium}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Rendah:</span>
+                        <span className="text-sm font-medium text-blue-600">{selectedStudent.violationsBySeverity.low}</span>
+                      </div>
+                      {selectedStudent.latestViolationDescription && (
+                        <div className="pt-2 border-t border-gray-200">
+                          <span className="text-sm text-gray-600">Pelanggaran Terakhir:</span>
+                          <p className="text-sm font-medium text-gray-900 mt-1">{selectedStudent.latestViolationDescription}</p>
+                          <p className="text-xs text-gray-500">{selectedStudent.latestViolationTimestamp ? formatRelativeTime(selectedStudent.latestViolationTimestamp) : ''}</p>
+                        </div>
                       )}
                     </div>
                   </div>
-                ))}
+                </div>
+                
+                <div className="mt-6 flex justify-end space-x-3">
+                  <button
+                    onClick={() => terminateExam(selectedStudent.studentId)}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Hentikan Ujian Siswa
+                  </button>
+                  <button
+                    onClick={() => setShowDetailPanel(false)}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    Tutup
+                  </button>
+                </div>
               </div>
-            )}
+            </div>
           </div>
-        </div>
+        )}
+
         {/* Broadcast Controls */}
-        <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Kontrol Ujian</h3>
           <div className="flex space-x-4">
             <button

@@ -499,7 +499,11 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
         url: window.location.href,
         tabActive: isTabActive,
         mousePosition: mouseTracker.current,
-        keyboardStats: keyboardTracker.current
+        keyboardStats: keyboardTracker.current,
+        // Enhanced details for better monitoring
+        originalScreenHeight: screenHeightTracker.current.originalHeight,
+        currentScreenHeight: screenHeightTracker.current.currentHeight,
+        screenReductionPercentage: details?.reductionPercentage || 0
       }
     };
 
@@ -545,7 +549,11 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     // Add common details
     const enhancedDetails = {
       ...details,
-      full_name: user?.profile_details?.full_name
+      full_name: user?.profile_details?.full_name,
+      // Enhanced details for better monitoring
+      currentScreenHeight: screenHeightTracker.current.currentHeight,
+      originalScreenHeight: screenHeightTracker.current.originalHeight,
+      tabActive: isTabActive
     };
     
     const activity = {
