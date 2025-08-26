@@ -186,6 +186,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     websocketService.disconnect();
   };
 
+
   const refreshUser = async () => {
     if (!token) return;
     
