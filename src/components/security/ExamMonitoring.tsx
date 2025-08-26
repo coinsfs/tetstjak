@@ -513,7 +513,9 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 
     // Store in localStorage for backup
     const violationsKey = `exam_violations_${examId}_${studentId}`;
-  console.log('Sending WebSocket message:', violation);
+    console.log('Sending WebSocket message:', violation);
+    
+    setViolationCounts(prev => {
       const newCounts = { ...prev };
       newCounts[severity] += 1;
       const totalViolations = newCounts.low + newCounts.medium + newCounts.high + newCounts.critical;
