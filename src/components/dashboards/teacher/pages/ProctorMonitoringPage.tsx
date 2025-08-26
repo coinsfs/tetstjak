@@ -24,6 +24,7 @@ interface ProctorMonitoringPageProps {
   examId: string;
 }
 
+
 interface ConnectedStudent {
   studentId: string;
   full_name: string;
