@@ -236,6 +236,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('click', handleMouseClick);
     document.addEventListener('contextmenu', handleMouseClick);
+    document.addEventListener('mouseleave', handleMouseLeave);
   };
 
   // 4. Keyboard Event Monitoring
@@ -568,11 +569,18 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 
   // Cleanup
   const cleanup = () => {
+    if (monitoringInterval.current) {
       clearInterval(monitoringInterval.current);
     }
     
     if (criticalViolationTimeoutRef.current) {
       clearTimeout(criticalViolationTimeoutRef.current);
+    }
+  };
+
+  return (
+    <>
+      {process.env.NODE_ENV === 'development' && (
         <div className="fixed bottom-4 left-4 bg-gray-800 text-white px-4 py-2 rounded-lg text-xs z-40">
           <div>Violations: L:{violationCounts.low} M:{violationCounts.medium} H:{violationCounts.high} C:{violationCounts.critical}</div>
           <div>Tab Switches: {tabSwitchCount.current}</div>
