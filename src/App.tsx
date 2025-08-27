@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
@@ -14,12 +13,25 @@ const AppContent: React.FC = () => {
   const { currentPath, navigate } = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
 
+  // Helper function to extract clean path without query parameters
+  const getCleanPath = (path: string): string => {
+    return path.split('?')[0];
+  };
+
+  // Helper function to extract ID from path
+  const extractIdFromPath = (path: string): string | null => {
+    const cleanPath = getCleanPath(path);
+    const segments = cleanPath.split('/').filter(segment => segment.length > 0);
+    return segments.length > 0 ? segments[segments.length - 1] : null;
+  };
+
   useEffect(() => {
     if (isAuthenticated && user) {
       const userRole = user.roles[0];
+      const cleanPath = getCleanPath(currentPath);
       
       // Handle root and login redirects
-      if (currentPath === '/' || currentPath === '/login') {
+      if (cleanPath === '/' || cleanPath === '/login') {
         switch (userRole) {
           case 'admin':
             navigate('/admin');
@@ -35,8 +47,9 @@ const AppContent: React.FC = () => {
         }
       }
     } else if (!isAuthenticated && !isLoading) {
+      const cleanPath = getCleanPath(currentPath);
       // Redirect to login if not authenticated and not on login page
-      if (currentPath !== '/login' && currentPath !== '/') {
+      if (cleanPath !== '/login' && cleanPath !== '/') {
         navigate('/login');
       }
     }
@@ -44,9 +57,9 @@ const AppContent: React.FC = () => {
 
   // Force re-render when currentPath changes to ensure proper navigation
   useEffect(() => {
-    // This effect ensures the component re-renders when the path changes
     console.log('Current path changed to:', currentPath);
   }, [currentPath]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -63,10 +76,13 @@ const AppContent: React.FC = () => {
     return <LoginForm />;
   }
 
+  const cleanPath = getCleanPath(currentPath);
+
   // Handle student exam-taking route
-  if (currentPath.startsWith('/exam-taking/')) {
-    const sessionId = currentPath.split('/').pop();
+  if (cleanPath.startsWith('/exam-taking/')) {
+    const sessionId = extractIdFromPath(cleanPath);
     if (sessionId) {
+      console.log('Exam taking route detected, sessionId:', sessionId);
       return (
         <ProtectedRoute requiredRole="student">
           <StudentExamTakingPage user={user} sessionId={sessionId} />
@@ -76,9 +92,10 @@ const AppContent: React.FC = () => {
   }
 
   // Handle proctor monitoring route
-  if (currentPath.startsWith('/monitor-exam/')) {
-    const examId = currentPath.split('/').pop();
+  if (cleanPath.startsWith('/monitor-exam/')) {
+    const examId = extractIdFromPath(cleanPath);
     if (examId) {
+      console.log('Monitor exam route detected, examId:', examId);
       return (
         <ProtectedRoute requiredRole="teacher">
           <ProctorMonitoringPage examId={examId} />
@@ -88,19 +105,19 @@ const AppContent: React.FC = () => {
   }
 
   // Route based on current path
-  if (currentPath.startsWith('/admin') || currentPath.startsWith('/manage/')) {
+  if (cleanPath.startsWith('/admin') || cleanPath.startsWith('/manage/')) {
     return (
       <ProtectedRoute requiredRole="admin">
         <AdminDashboard />
       </ProtectedRoute>
     );
-  } else if (currentPath.startsWith('/teacher')) {
+  } else if (cleanPath.startsWith('/teacher')) {
     return (
       <ProtectedRoute requiredRole="teacher">
         <TeacherDashboard />
       </ProtectedRoute>
     );
-  } else if (currentPath.startsWith('/student')) {
+  } else if (cleanPath.startsWith('/student')) {
     return (
       <ProtectedRoute requiredRole="student">
         <StudentDashboard />

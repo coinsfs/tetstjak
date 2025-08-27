@@ -36,6 +36,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const isAuthenticated = !!user && !!token;
 
+  // Helper function to extract clean path without query parameters
+  const getCleanPath = (path: string): string => {
+    return path.split('?')[0]; // Remove query parameters
+  };
+
+  // Helper function to extract ID from path
+  const extractIdFromPath = (path: string): string | null => {
+    const cleanPath = getCleanPath(path);
+    const segments = cleanPath.split('/').filter(segment => segment.length > 0);
+    return segments.length > 0 ? segments[segments.length - 1] : null;
+  };
+
   useEffect(() => {
     const initializeAuth = async () => {
       const savedToken = localStorage.getItem('access_token');
@@ -55,40 +67,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
   }, []);
 
+  // Helper function to get current desired endpoint
+  const getCurrentDesiredEndpoint = (): string => {
+    if (!isAuthenticated) return '';
+    
+    const cleanPath = getCleanPath(currentPath);
+    
+    if (cleanPath.startsWith('/exam-taking/')) {
+      const sessionId = extractIdFromPath(cleanPath);
+      if (sessionId) {
+        // Extract examId from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const examIdParam = urlParams.get('examId');
+        
+        if (examIdParam) {
+          try {
+            const decodedExamId = atob(examIdParam + '='.repeat((4 - examIdParam.length % 4) % 4));
+            return `/ws/exam-room/${decodedExamId}`;
+          } catch (error) {
+            console.warn('Failed to decode examId, using sessionId:', error);
+            return `/ws/exam-room/${sessionId}`;
+          }
+        } else {
+          return `/ws/exam-room/${sessionId}`;
+        }
+      }
+    } else if (cleanPath.startsWith('/monitor-exam/')) {
+      const examId = extractIdFromPath(cleanPath);
+      if (examId) {
+        console.log('Monitor exam detected, examId:', examId); // Debug log
+        return `/ws/exam-room/${examId}`;
+      }
+    }
+    
+    return '/ws/lobby';
+  };
+
   // Centralized WebSocket connection management
   useEffect(() => {
     if (!isLoading) {
       if (isAuthenticated && token) {
         // Determine the correct WebSocket endpoint based on current path
-        let desiredEndpoint = '/ws/lobby'; // Default endpoint
+        const desiredEndpoint = getCurrentDesiredEndpoint();
         
-        // Check if user is in exam-taking page
-        if (currentPath.startsWith('/exam-taking/')) {
-          const sessionId = currentPath.split('/').pop();
-          if (sessionId) {
-            // Extract examId from URL parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const examIdParam = urlParams.get('examId');
-            
-            if (examIdParam) {
-              try {
-                const decodedExamId = atob(examIdParam + '='.repeat((4 - examIdParam.length % 4) % 4));
-                desiredEndpoint = `/ws/exam-room/${decodedExamId}`;
-              } catch (error) {
-                desiredEndpoint = `/ws/exam-room/${sessionId}`;
-              }
-            } else {
-              desiredEndpoint = `/ws/exam-room/${sessionId}`;
-            }
-          }
-        }
-        // Check if user is in proctor monitoring page
-        else if (currentPath.startsWith('/monitor-exam/')) {
-          const examId = currentPath.split('/').pop();
-          if (examId) {
-            desiredEndpoint = `/ws/exam-room/${examId}`;
-          }
-        }
+        console.log('Current path:', currentPath); // Debug log
+        console.log('Clean path:', getCleanPath(currentPath)); // Debug log
+        console.log('Desired endpoint:', desiredEndpoint); // Debug log
         
         // Get current WebSocket endpoint
         const currentEndpoint = websocketService.getCurrentEndpoint();
@@ -103,6 +127,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                               !connectionState.isReconnecting);
         
         if (shouldConnect) {
+          console.log('WebSocket connection needed:', {
+            currentEndpoint,
+            desiredEndpoint,
+            isConnected,
+            shouldConnect
+          }); // Debug log
+          
           // Disconnect existing connection cleanly
           if (currentEndpoint && isConnected) {
             websocketService.disconnect();
@@ -110,15 +141,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           
           // Connect immediately - no setTimeout wrapper needed
           const onAuthError = () => {
+            console.error('WebSocket auth error');
             logout();
           };
 
           const onStatusChange = (status: 'connected' | 'disconnected' | 'error' | 'reconnecting') => {
+            console.log('WebSocket status changed:', status); // Debug log
             // Handle reconnection logic more carefully
             if (status === 'disconnected' || status === 'error') {
               // Only attempt reconnection if we're still on the same path and authenticated
               const currentDesiredEndpoint = getCurrentDesiredEndpoint();
               if (currentDesiredEndpoint === desiredEndpoint && isAuthenticated && token) {
+                console.log('Will attempt reconnection if needed'); // Debug log
               }
             }
           };
@@ -129,37 +163,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // User is not authenticated, disconnect WebSocket
         websocketService.disconnect();
       }
-    }
-
-    // Helper function to get current desired endpoint
-    function getCurrentDesiredEndpoint(): string {
-      if (!isAuthenticated) return '';
-      
-      if (currentPath.startsWith('/exam-taking/')) {
-        const sessionId = currentPath.split('/').pop();
-        if (sessionId) {
-          const urlParams = new URLSearchParams(window.location.search);
-          const examIdParam = urlParams.get('examId');
-          
-          if (examIdParam) {
-            try {
-              const decodedExamId = atob(examIdParam + '='.repeat((4 - examIdParam.length % 4) % 4));
-              return `/ws/exam-room/${decodedExamId}`;
-            } catch (error) {
-              return `/ws/exam-room/${sessionId}`;
-            }
-          } else {
-            return `/ws/exam-room/${sessionId}`;
-          }
-        }
-      } else if (currentPath.startsWith('/monitor-exam/')) {
-        const examId = currentPath.split('/').pop();
-        if (examId) {
-          return `/ws/exam-room/${examId}`;
-        }
-      }
-      
-      return '/ws/lobby';
     }
   }, [isAuthenticated, token, isLoading, currentPath]);
 
@@ -185,7 +188,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('access_token');
     websocketService.disconnect();
   };
-
 
   const refreshUser = async () => {
     if (!token) return;
