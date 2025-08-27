@@ -52,6 +52,9 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const [violationCount, setViolationCount] = useState(0);
   const [examStartTime, setExamStartTime] = useState<number>(0);
 
+  // Track if initial data has been sent to proctor
+  const [initialDataSent, setInitialDataSent] = useState(false);
+
   // WebSocket and activity tracking state
   const [wsConnectionStatus, setWsConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting' | 'error'>('disconnected');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -189,6 +192,43 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       }
     };
   }, [examStarted, user, sessionId, currentQuestionIndex, answers, timeRemaining, securityPassed]);
+
+  // Send initial student data when exam starts and security passes
+  useEffect(() => {
+    if (securityPassed && examStarted && user && !initialDataSent) {
+      console.log('Sending initial student data to proctor:', {
+        studentId: user._id,
+        full_name: user.profile_details?.full_name,
+        examId: sessionId,
+        sessionId: sessionId
+      });
+      
+      websocketService.send({
+        type: 'activity_event',
+        details: {
+          eventType: 'student_joined_exam',
+          timestamp: new Date().toISOString(),
+          studentId: user._id,
+          full_name: user.profile_details?.full_name || 'Unknown Student',
+          examId: sessionId,
+          sessionId: sessionId,
+          userAgent: navigator.userAgent,
+          screenResolution: {
+            width: window.screen.width,
+            height: window.screen.height
+          },
+          viewportSize: {
+            width: window.innerWidth,
+            height: window.innerHeight
+          },
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          language: navigator.language
+        },
+      });
+      
+      setInitialDataSent(true);
+    }
+  }, [securityPassed, examStarted, user, sessionId, initialDataSent]);
 
   // Load exam questions
   useEffect(() => {
