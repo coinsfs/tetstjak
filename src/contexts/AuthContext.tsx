@@ -64,7 +64,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Check if user is in exam-taking page
         if (currentPath.startsWith('/exam-taking/')) {
-          const sessionId = currentPath.split('/').pop();
+          // Parse the URL properly to separate path from query parameters
+          const pathParts = currentPath.split('?')[0].split('/');
+          const sessionId = pathParts[pathParts.length - 1];
+          
           if (sessionId) {
             // Extract examId from URL parameters
             const urlParams = new URLSearchParams(window.location.search);
@@ -84,9 +87,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         // Check if user is in proctor monitoring page
         else if (currentPath.startsWith('/monitor-exam/')) {
-          const examId = currentPath.split('/').pop();
+          // Parse the URL properly to separate examId from query parameters
+          const pathParts = currentPath.split('?')[0].split('/');
+          const examId = pathParts[pathParts.length - 1];
+          
           if (examId) {
+            // Extract query parameters if needed for WebSocket endpoint
+            const urlParams = new URLSearchParams(currentPath.includes('?') ? currentPath.split('?')[1] : '');
+            const totalQuestions = urlParams.get('totalQuestions');
+            
+            // Build endpoint with proper query parameters
             desiredEndpoint = `/ws/exam-room/${examId}`;
+            if (totalQuestions) {
+              desiredEndpoint += `?totalQuestions=${totalQuestions}`;
+            }
           }
         }
         
@@ -136,7 +150,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!isAuthenticated) return '';
       
       if (currentPath.startsWith('/exam-taking/')) {
-        const sessionId = currentPath.split('/').pop();
+        const pathParts = currentPath.split('?')[0].split('/');
+        const sessionId = pathParts[pathParts.length - 1];
+        
         if (sessionId) {
           const urlParams = new URLSearchParams(window.location.search);
           const examIdParam = urlParams.get('examId');
@@ -153,9 +169,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         }
       } else if (currentPath.startsWith('/monitor-exam/')) {
-        const examId = currentPath.split('/').pop();
+        const pathParts = currentPath.split('?')[0].split('/');
+        const examId = pathParts[pathParts.length - 1];
+        
         if (examId) {
-          return `/ws/exam-room/${examId}`;
+          // Extract query parameters for consistent endpoint building
+          const urlParams = new URLSearchParams(currentPath.includes('?') ? currentPath.split('?')[1] : '');
+          const totalQuestions = urlParams.get('totalQuestions');
+          
+          let endpoint = `/ws/exam-room/${examId}`;
+          if (totalQuestions) {
+            endpoint += `?totalQuestions=${totalQuestions}`;
+          }
+          return endpoint;
         }
       }
       
