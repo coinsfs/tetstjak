@@ -162,15 +162,23 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     if (!examStarted || !user?._id || !securityPassed) return;
 
     heartbeatIntervalRef.current = setInterval(() => {
-      websocketService.send({
+      console.log('Sending WebSocket message:', {
         type: 'activity_event',
-        timestamp: Date.now(),
-        examId: sessionId,
-        studentId: user._id,
-        sessionId: sessionId,
         details: {
           eventType: 'heartbeat',
-          full_name: user?.profile_details?.full_name || 'Unknown Student',
+          studentId: user._id,
+          examId: sessionId,
+          sessionId: sessionId,
+        }
+      });
+      websocketService.send({
+        type: 'activity_event',
+        details: {
+          eventType: 'heartbeat',
+          timestamp: new Date().toISOString(),
+          studentId: user._id,
+          examId: sessionId,
+          sessionId: sessionId,
           currentQuestionIndex: currentQuestionIndex,
           totalAnswered: Object.keys(answers).length,
           timeRemaining: timeRemaining,
@@ -197,13 +205,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       
       websocketService.send({
         type: 'activity_event',
-        timestamp: Date.now(),
-        examId: sessionId,
-        studentId: user._id,
-        sessionId: sessionId,
         details: {
           eventType: 'student_joined_exam',
+          timestamp: new Date().toISOString(),
+          studentId: user._id,
           full_name: user.profile_details?.full_name || 'Unknown Student',
+          examId: sessionId,
+          sessionId: sessionId,
           userAgent: navigator.userAgent,
           screenResolution: {
             width: window.screen.width,
@@ -323,12 +331,8 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       ? Date.now() - questionStartTimeRef.current[questionId] 
       : 0;
 
-    websocketService.send({
+    console.log('Sending WebSocket message:', {
       type: 'activity_event',
-      timestamp: Date.now(),
-      examId: sessionId,
-      studentId: user?._id,
-      sessionId: sessionId,
       details: {
         eventType: 'answer_update',
         questionId: questionId,
@@ -336,7 +340,27 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         answerContent: answer,
         characterCount: typeof answer === 'string' ? answer.length : 0,
         timeSpent: timeSpentOnQuestion,
+        timestamp: new Date().toISOString(),
+        studentId: user?._id,
         full_name: user?.profile_details?.full_name || 'Unknown Student',
+        examId: sessionId,
+        sessionId: sessionId,
+      }
+    });
+    websocketService.send({
+      type: 'activity_event',
+      details: {
+        eventType: 'answer_update',
+        questionId: questionId,
+        questionPosition: questionIndex + 1,
+        answerContent: answer,
+        characterCount: typeof answer === 'string' ? answer.length : 0,
+        timeSpent: timeSpentOnQuestion,
+        timestamp: new Date().toISOString(),
+        studentId: user?._id,
+        full_name: user?.profile_details?.full_name || 'Unknown Student',
+        examId: sessionId,
+        sessionId: sessionId,
       },
     });
   };
@@ -541,16 +565,15 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       const timeSpent = Date.now() - questionStartTimeRef.current[prevQuestionId];
       websocketService.send({
         type: 'activity_event',
+        activityType: 'question_time_spent',
         timestamp: Date.now(),
-        examId: sessionId,
         studentId: user?._id,
+        examId: sessionId,
         sessionId: sessionId,
         details: {
-          eventType: 'question_time_spent',
           questionId: prevQuestionId,
           questionPosition: prevQuestionIndex + 1,
           timeSpent: timeSpent,
-          full_name: user?.profile_details?.full_name || 'Unknown Student',
         }
       });
     }
