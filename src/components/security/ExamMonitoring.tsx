@@ -558,16 +558,18 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     
     const activity = {
       type: 'activity_event',
-      activityType,
       timestamp: Date.now(),
       examId,
       studentId,
       sessionId,
-      details: enhancedDetails
+      details: {
+        eventType: activityType,
+        ...enhancedDetails
+      }
     };
 
     console.log('ExamMonitoring: Logging activity:', {
-      activityType,
+      eventType: activityType,
       timestamp: new Date().toISOString(),
       details: enhancedDetails
     });
