@@ -356,11 +356,17 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
             return [...prevStudents, {
               studentId,
               full_name: studentName,
+            });
+          }
+        });
+      }
+    };
+
     // Handle streamlined student events
     const handleStudentHeartbeat = (data: any) => {
       if (data.type === 'student_heartbeat') {
         // Just update last activity - no complex processing needed
-        setStudents(prevStudents => 
+        setStudents(prevStudents =>
           prevStudents.map(student => 
             student.studentId === data.student_id
               ? { ...student, lastActivity: new Date(data.timestamp).toISOString() }
