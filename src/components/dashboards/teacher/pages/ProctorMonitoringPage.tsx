@@ -110,7 +110,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   // Keep soundEnabledRef in sync with soundEnabled state
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
-  }, []);
+  }, [soundEnabled]);
 
   // Get total questions from URL parameters
   useEffect(() => {
@@ -376,6 +376,67 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
       }
     });
 
+    // Handle streamlined student events
+    const handleStudentHeartbeat = (data: any) => {
+      if (data.type === 'student_heartbeat') {
+        // Just update last activity - no complex processing needed
+        setConnectedStudents(prevStudents =>
+          prevStudents.map(student => 
+            student.studentId === data.student_id
+              ? { ...student, lastActivity: new Date(data.timestamp) }
+              : student
+          )
+        );
+      }
+    };
+
+    const handleStudentExamStart = (data: any) => {
+      if (data.type === 'student_exam_start') {
+        setConnectedStudents(prevStudents => 
+          prevStudents.map(student => 
+            student.studentId === data.student_id
+              ? { 
+                  ...student, 
+                  full_name: data.full_name,
+                  lastActivity: new Date(data.timestamp)
+                }
+              : student
+          )
+        );
+      }
+    };
+
+    const handleStudentAnswerUpdate = (data: any) => {
+      if (data.type === 'student_answer_update') {
+        setConnectedStudents(prevStudents => 
+          prevStudents.map(student => 
+            student.studentId === data.student_id
+              ? { 
+                  ...student, 
+                  lastActivity: new Date(data.timestamp)
+                }
+              : student
+          )
+        );
+      }
+    };
+
+    const handleStudentViolation = (data: any) => {
+      if (data.type === 'student_violation') {
+        setConnectedStudents(prevStudents => 
+          prevStudents.map(student => 
+            student.studentId === data.student_id
+              ? { 
+                  ...student, 
+                  violationCount: student.violationCount + 1,
+                  lastActivity: new Date(data.timestamp)
+                }
+              : student
+          )
+        );
+      }
+    };
+
     websocketService.onMessage('student_disconnected', (data: any) => {
       console.log('Student disconnected:', data);
       
@@ -404,60 +465,25 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
       }
     };
 
-    const connectWebSocket = async () => {
-      try {
-        setConnectionStatus('connecting');
-        await websocketService.connect(token);
-        
-        // Join proctor room for this exam
-        websocketService.send({
-          type: 'join_proctor_room',
-          examId: examId
-        });
-        
-        setupMessageHandlers();
-        setConnectionStatus('connected');
-        setLastHeartbeat(new Date());
-        
-        // Setup ping interval
-        pingIntervalRef.current = setInterval(() => {
-          if (websocketService.isConnected()) {
-            websocketService.send({ type: 'ping' });
-            setLastHeartbeat(new Date());
-          } else {
-            setConnectionStatus('disconnected');
-          }
-        }, 30000);
-        
-      } catch (error) {
-        console.error('WebSocket connection failed:', error);
-        setConnectionStatus('error');
+    const handleStudentActivity = (data: any) => {
+      if (data.type === 'student_activity') {
+        updateStudentSession(data);
       }
     };
 
-    connectWebSocket();
-
-    return () => {
-      if (pingIntervalRef.current) {
-        clearInterval(pingIntervalRef.current);
-      }
-      websocketService.disconnect();
-    };
-  }, [examId, token, setupMessageHandlers]);
-
-  // Connection status check interval
-  useEffect(() => {
-    const statusInterval = setInterval(() => {
-      const isConnected = websocketService.isConnected();
-      setConnectionStatus(isConnected ? 'connected' : 'disconnected');
-    }, 20000);
+    // Initialize WebSocket connection
+    websocketService.connect(token, examId);
+    setupMessageHandlers();
+    
+    // Check connection status periodically
+    pingIntervalRef.current = setInterval(checkConnectionStatus, 20000);
 
     return () => {
       if (pingIntervalRef.current) {
         clearInterval(pingIntervalRef.current);
       }
     };
-  }, [examId, token]);
+  }, [examId, token, setupMessageHandlers, updateStudentSession]);
 
   // Initialize notification sound
   useEffect(() => {
@@ -1293,3 +1319,4 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
 };
 
 export default ProctorMonitoringPage;
+
