@@ -484,35 +484,21 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     
     lastLoggedViolation[violationKey] = now;
 
+    // Send streamlined violation data
     const violation = {
-      type: 'violation_event',
+      type: 'student_violation',
+      student_id: studentId,
+      exam_id: examId,
+      session_id: sessionId,
       violation_type: type,
       severity,
-      timestamp: Date.now(),
-      examId,
-      studentId,
-      sessionId,
-      details: {
-        ...details,
-        full_name: user?.profile_details?.full_name || 'Unknown Student',
-        userAgent: navigator.userAgent,
-        url: window.location.href,
-        tabActive: isTabActive,
-        mousePosition: mouseTracker.current,
-        keyboardStats: keyboardTracker.current,
-        // Enhanced details for better monitoring
-        originalScreenHeight: screenHeightTracker.current.originalHeight,
-        currentScreenHeight: screenHeightTracker.current.currentHeight,
-        screenReductionPercentage: details?.reductionPercentage || 0
-      }
+      timestamp: now,
+      // Only send essential details
+      tab_active: isTabActive,
+      screen_height: screenHeightTracker.current.currentHeight,
+      ...(details?.reductionPercentage && { screen_reduction: details.reductionPercentage })
     };
 
-    console.log('ExamMonitoring: Logging violation:', {
-      type,
-      severity,
-      timestamp: new Date().toISOString(),
-      details: violation.details
-    });
     // Send violation via WebSocket
     websocketService.send(violation);
 
@@ -546,31 +532,18 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 
   // Activity Logging - For non-violation events
   const logActivity = (activityType: string, details?: any) => {
-    // Add common details
-    const enhancedDetails = {
-      ...details,
-      full_name: user?.profile_details?.full_name,
-      // Enhanced details for better monitoring
-      currentScreenHeight: screenHeightTracker.current.currentHeight,
-      originalScreenHeight: screenHeightTracker.current.originalHeight,
-      tabActive: isTabActive
-    };
-    
+    // Send streamlined activity data
     const activity = {
-      type: 'activity_event',
-      activityType,
+      type: 'student_activity',
+      student_id: studentId,
+      exam_id: examId,
+      session_id: sessionId,
+      activity_type: activityType,
       timestamp: Date.now(),
-      examId,
-      studentId,
-      sessionId,
-      details: enhancedDetails
+      // Only essential details
+      ...(details && Object.keys(details).length > 0 && { details })
     };
 
-    console.log('ExamMonitoring: Logging activity:', {
-      activityType,
-      timestamp: new Date().toISOString(),
-      details: enhancedDetails
-    });
     // Send activity via WebSocket
     websocketService.send(activity);
   };
