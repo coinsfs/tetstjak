@@ -101,9 +101,20 @@ const AdminDashboard: React.FC = () => {
   }, [token]);
 
   useEffect(() => {
-    const handleActiveUsersCount = (data: any) => {
-      if (data.type === 'active_users_count' && typeof data.count === 'number') {
-        setOnlineUsers(data.count);
+    // Generic handler to log all WebSocket messages
+    const handleGenericMessage = (data: any) => {
+      console.log('WebSocket message received:', data);
+    };
+
+    const handleUserConnected = (data: any) => {
+      if (data.type === 'user_connected' && data.stats && typeof data.stats.total_count === 'number') {
+        setOnlineUsers(data.stats.total_count);
+      }
+    };
+
+    const handleUserDisconnected = (data: any) => {
+      if (data.type === 'user_disconnected' && data.stats && typeof data.stats.total_count === 'number') {
+        setOnlineUsers(data.stats.total_count);
       }
     };
 
@@ -113,18 +124,18 @@ const AdminDashboard: React.FC = () => {
         const newActivity: ActivityLog = {
           _id: `ws_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           user_data: {
-            user_id: data.data.user_id || 'unknown',
+            user_id: data.data.user_id || 'unknown', 
             full_name: data.data.full_name,
-            user_roles: ['student'] // Default role, could be enhanced
+            user_roles: data.data.roles || ['user'] // Use roles from data if available
           },
           activity: 'login',
           description: data.data.description,
           ip_address: '0.0.0.0', // Not provided in WebSocket data
           device_info: {
-            device_type: 'desktop', // Default, could be enhanced
+            device_type: data.data.device_type || 'desktop',
             os_name: 'Unknown OS',
             os_version: 'Unknown',
-            browser_name: data.data.browser_name,
+            browser_name: data.data.browser_name || 'Unknown',
             browser_version: 'Unknown',
             user_agent: 'Unknown'
           },
@@ -139,11 +150,19 @@ const AdminDashboard: React.FC = () => {
         handleNewActivity(newActivity);
       }
     };
-    websocketService.onMessage('active_users_count', handleActiveUsersCount);
+    
+    // Set generic handler for logging all messages
+    websocketService.setGenericHandler(handleGenericMessage);
+    
+    // Set specific message handlers
+    websocketService.onMessage('user_connected', handleUserConnected);
+    websocketService.onMessage('user_disconnected', handleUserDisconnected);
     websocketService.onMessage('new_activity_log', handleNewActivityLog);
 
     return () => {
-      websocketService.offMessage('active_users_count');
+      websocketService.setGenericHandler(null);
+      websocketService.offMessage('user_connected');
+      websocketService.offMessage('user_disconnected');
       websocketService.offMessage('new_activity_log');
     };
   }, []);
