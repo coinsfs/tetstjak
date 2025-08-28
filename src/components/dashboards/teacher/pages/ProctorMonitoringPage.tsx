@@ -356,17 +356,69 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
             return [...prevStudents, {
               studentId,
               full_name: studentName,
-              connectionTime: new Date(),
-              lastActivity: new Date(),
-              violationCount: 0,
-              status: 'active',
-              answersSubmitted: 0,
-              answeredQuestionsSet: new Set<string>(),
-              screenStatus: 'normal',
-              violationsBySeverity: {
-                low: 0,
-                medium: 0,
-                high: 0,
+    // Handle streamlined student events
+    const handleStudentHeartbeat = (data: any) => {
+      if (data.type === 'student_heartbeat') {
+        // Just update last activity - no complex processing needed
+        setStudents(prevStudents => 
+          prevStudents.map(student => 
+            student.studentId === data.student_id
+              ? { ...student, lastActivity: new Date(data.timestamp).toISOString() }
+              : student
+          )
+        );
+      }
+    };
+
+    const handleStudentExamStart = (data: any) => {
+      if (data.type === 'student_exam_start') {
+        setStudents(prevStudents => 
+          prevStudents.map(student => 
+            student.studentId === data.student_id
+              ? { 
+                  ...student, 
+                  fullName: data.full_name,
+                  deviceInfo: data.device_info,
+                  lastActivity: new Date(data.timestamp).toISOString()
+                }
+              : student
+          )
+        );
+      }
+    };
+
+    const handleStudentAnswerUpdate = (data: any) => {
+      if (data.type === 'student_answer_update') {
+        setStudents(prevStudents => 
+          prevStudents.map(student => 
+            student.studentId === data.student_id
+              ? { 
+                  ...student, 
+                  currentQuestion: data.question_number,
+                  totalAnswered: data.total_answered,
+                  lastActivity: new Date(data.timestamp).toISOString()
+                }
+              : student
+          )
+        );
+      }
+    };
+
+    const handleStudentViolation = (data: any) => {
+      if (data.type === 'student_violation') {
+        const violation: ViolationEvent = {
+          id: `${data.timestamp}-${Math.random()}`,
+          studentId: data.student_id,
+          studentName: students.find(s => s.studentId === data.student_id)?.fullName || 'Unknown Student',
+          type: data.violation_type,
+          severity: data.severity,
+          timestamp: data.timestamp,
+          details: {
+            tab_active: data.tab_active,
+            screen_height: data.screen_height,
+            screen_reduction: data.screen_reduction
+          }
+        };
                 critical: 0
               }
             }];
@@ -376,11 +428,11 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
       }
     });
 
-    websocketService.onMessage('student_disconnected', (data: any) => {
+            student.studentId === data.student_id
       console.log('Student disconnected:', data);
       
       const studentId = data.studentId || data.student_id;
-      
+                  lastActivity: new Date(data.timestamp).toISOString()
       if (studentId) {
         setConnectedStudents(prevStudents => 
           prevStudents.filter(student => student.studentId !== studentId)
@@ -404,34 +456,8 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
       }
     };
 
-    checkConnectionStatus();
-    const statusInterval = setInterval(checkConnectionStatus, 5000);
-    
-    setupMessageHandlers();
-    
-    return () => {
-      clearInterval(statusInterval);
-      websocketService.offMessage('violation_event');
-      websocketService.offMessage('activity_event');
-      websocketService.offMessage('presence_update');
-      websocketService.offMessage('student_connected');
-      websocketService.offMessage('student_disconnected');
-    };
-  }, [examId, token, setupMessageHandlers]);
-
-  // Client-side ping
-  useEffect(() => {
-    if (!examId || !token) return;
-
-    pingIntervalRef.current = setInterval(() => {
-      websocketService.send({
-        type: 'proctor_ping',
-        examId: examId,
-        timestamp: Date.now(),
-        message: 'keep-alive'
-      });
-      
-      setLastHeartbeat(new Date());
+    const handleStudentActivity = (data: any) => {
+      if (data.type === 'student_activity') {
     }, 20000);
 
     return () => {
