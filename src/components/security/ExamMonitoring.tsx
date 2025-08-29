@@ -486,28 +486,39 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 
     const violation = {
       type: 'violation_event',
+      violation_type: type,
+      severity,
+      timestamp: Date.now(),
+      examId,
+      studentId,
+      sessionId,
       details: {
-        eventType: 'security_violation',
-        timestamp: new Date().toISOString(),
-        studentId,
+        ...details,
         full_name: user?.profile_details?.full_name || 'Unknown Student',
-        examId,
-        sessionId,
-        // Simplified violation data
-        violation: {
-          type: type,
-          severity: severity,
-          description: getViolationDescription(type, severity),
-          details: details || {}
-        }
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+        tabActive: isTabActive,
+        mousePosition: mouseTracker.current,
+        keyboardStats: keyboardTracker.current,
+        // Enhanced details for better monitoring
+        originalScreenHeight: screenHeightTracker.current.originalHeight,
+        currentScreenHeight: screenHeightTracker.current.currentHeight,
+        screenReductionPercentage: details?.reductionPercentage || 0
       }
     };
 
+    console.log('ExamMonitoring: Logging violation:', {
+      type,
+      severity,
+      timestamp: new Date().toISOString(),
+      details: violation.details
+    });
     // Send violation via WebSocket
     websocketService.send(violation);
 
     // Store in localStorage for backup
     const violationsKey = `exam_violations_${examId}_${studentId}`;
+    console.log('Sending WebSocket message:', violation);
     
     setViolationCounts(prev => {
       const newCounts = { ...prev };
@@ -522,31 +533,6 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       return newCounts;
     });
 
-  };
-
-  // Helper function to get human-readable violation descriptions
-  const getViolationDescription = (type: string, severity: string): string => {
-    const descriptions: Record<string, string> = {
-      'tab_switch_return': 'Kembali ke tab ujian',
-      'page_hidden': 'Meninggalkan halaman ujian',
-      'page_visible': 'Kembali ke halaman ujian',
-      'right_click_attempt': 'Mencoba klik kanan',
-      'rapid_clicking': 'Klik terlalu cepat',
-      'mouse_leave_window': 'Mouse keluar dari jendela',
-      'suspicious_key': 'Menekan tombol mencurigakan',
-      'suspicious_combination': 'Kombinasi tombol mencurigakan',
-      'rapid_typing': 'Mengetik terlalu cepat',
-      'copy_attempt': 'Mencoba menyalin teks',
-      'paste_attempt': 'Mencoba menempel teks',
-      'cut_attempt': 'Mencoba memotong teks',
-      'devtools_detected': 'Developer Tools terdeteksi',
-      'devtools_suspected': 'Developer Tools dicurigai',
-      'fullscreen_exit': 'Keluar dari mode fullscreen',
-      'screen_height_reduction': 'Pengurangan tinggi layar',
-      'very_small_screen_height': 'Tinggi layar terlalu kecil'
-    };
-    
-    return descriptions[type] || `Pelanggaran: ${type}`;
   };
 
   const handleFullscreenExit = () => {

@@ -1,17 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { UserProfile } from '@/types/auth';
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from '@/hooks/useRouter';
-import { studentExamService, ExamQuestion } from '@/services/studentExam';
-import { SecurityCheck, ExamMonitoring } from '@/components/security';
-import { examSecurityService } from '@/services/examSecurity';
-import { websocketService } from '@/services/websocket';
-import { 
-  FileText, 
-  Clock, 
-  AlertCircle, 
-  ArrowLeft, 
-  Play, 
+import React, { useState, useEffect, useRef } from "react";
+import { UserProfile } from "@/types/auth";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "@/hooks/useRouter";
+import { studentExamService, ExamQuestion } from "@/services/studentExam";
+import { SecurityCheck, ExamMonitoring } from "@/components/security";
+import { examSecurityService } from "@/services/examSecurity";
+import { websocketService } from "@/services/websocket";
+import {
+  FileText,
+  Clock,
+  AlertCircle,
+  ArrowLeft,
+  Play,
   CheckCircle,
   User,
   Calendar,
@@ -22,19 +22,18 @@ import {
   Hash,
   Award,
   Wifi,
-  WifiOff
-} from 'lucide-react';
-import toast from 'react-hot-toast';
+  WifiOff,
+} from "lucide-react";
+import toast from "react-hot-toast";
 
 interface StudentExamTakingPageProps {
   user: UserProfile | null;
   sessionId: string;
 }
 
-
-const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({ 
-  user, 
-  sessionId 
+const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
+  user,
+  sessionId,
 }) => {
   const { token } = useAuth();
   const { navigate } = useRouter();
@@ -44,7 +43,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [examStarted, setExamStarted] = useState(false);
-  const [examTitle, setExamTitle] = useState<string>('');
+  const [examTitle, setExamTitle] = useState<string>("");
   const [examDuration, setExamDuration] = useState<number>(0);
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -56,12 +55,14 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const [initialDataSent, setInitialDataSent] = useState(false);
 
   // WebSocket and activity tracking state
-  const [wsConnectionStatus, setWsConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting' | 'error'>('disconnected');
+  const [wsConnectionStatus, setWsConnectionStatus] = useState<
+    "connected" | "disconnected" | "reconnecting" | "error"
+  >("disconnected");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [actualExamId, setActualExamId] = useState<string>('');
+  const [actualExamId, setActualExamId] = useState<string>("");
   const questionStartTimeRef = useRef<Record<string, number>>({});
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // Debounce refs for essay answers
   const essayDebounceTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
   const lastEssayAnswerRef = useRef<Record<string, string>>({});
@@ -82,44 +83,49 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   // Parse URL parameters for exam timing
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const sParam = urlParams.get('s');
-    const eParam = urlParams.get('e');
-    const dParam = urlParams.get('d');
-    const examIdParam = urlParams.get('examId');
+    const sParam = urlParams.get("s");
+    const eParam = urlParams.get("e");
+    const dParam = urlParams.get("d");
+    const examIdParam = urlParams.get("examId");
 
     if (sParam && eParam && dParam) {
       try {
         // Decode parameters
-        const startTime = parseInt(atob(sParam + '=='));
-        const endTime = parseInt(atob(eParam + '=='));
-        const duration = parseInt(atob(dParam + '=='));
-        
+        const startTime = parseInt(atob(sParam + "=="));
+        const endTime = parseInt(atob(eParam + "=="));
+        const duration = parseInt(atob(dParam + "=="));
+
         // Decode exam ID if provided
         if (examIdParam) {
           try {
-            const decodedExamId = atob(examIdParam.padEnd(examIdParam.length + (4 - examIdParam.length % 4) % 4, '='));
+            const decodedExamId = atob(
+              examIdParam.padEnd(
+                examIdParam.length + ((4 - (examIdParam.length % 4)) % 4),
+                "="
+              )
+            );
 
             setActualExamId(decodedExamId);
           } catch (error) {
             // Skip, gunakan sessionId
           }
         }
-        
+
         const now = Date.now();
         const timeLeft = Math.max(0, Math.floor((endTime - now) / 1000));
-        
+
         setTimeRemaining(timeLeft);
         setExamDuration(Math.floor(duration / 1000 / 60)); // Convert to minutes
-        
+
         // Auto start if within exam time window
         if (now >= startTime && now <= endTime && timeLeft > 0) {
           setExamStarted(true);
         }
       } catch (error) {
-        setError('Parameter ujian tidak valid');
+        setError("Parameter ujian tidak valid");
       }
     } else {
-      setError('Parameter ujian tidak ditemukan');
+      setError("Parameter ujian tidak ditemukan");
     }
   }, []);
 
@@ -145,7 +151,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     const checkConnectionStatus = () => {
       const isConnected = websocketService.isConnected();
       const connectionState = websocketService.getConnectionState();
-      setWsConnectionStatus(isConnected ? 'connected' : 'disconnected');
+      setWsConnectionStatus(isConnected ? "connected" : "disconnected");
     };
 
     // Check status immediately and then periodically
@@ -153,11 +159,11 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     const statusInterval = setInterval(checkConnectionStatus, 5000);
 
     // Listen for proctor messages
-    websocketService.onMessage('proctor_message', (data) => {});
+    websocketService.onMessage("proctor_message", (data) => {});
 
     return () => {
       clearInterval(statusInterval);
-      websocketService.offMessage('proctor_message');
+      websocketService.offMessage("proctor_message");
     };
   }, [securityPassed]);
 
@@ -167,16 +173,14 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
     heartbeatIntervalRef.current = setInterval(() => {
       websocketService.send({
-        type: 'activity_event',
+        type: "activity_event",
         details: {
-          eventType: 'heartbeat',
+          eventType: "heartbeat",
           timestamp: new Date().toISOString(),
           studentId: user._id,
-          full_name: user?.profile_details?.full_name || 'Unknown Student',
+          full_name: user?.profile_details?.full_name || "Unknown Student",
           examId: sessionId,
           sessionId: sessionId,
-          // Simplified heartbeat data - only essential info
-          status: 'active',
           current_question: currentQuestionIndex + 1,
           total_answered: Object.keys(answers).length,
           time_remaining: timeRemaining,
@@ -189,29 +193,36 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         clearInterval(heartbeatIntervalRef.current);
       }
     };
-  }, [examStarted, user, sessionId, currentQuestionIndex, answers, timeRemaining, securityPassed]);
+  }, [
+    examStarted,
+    user,
+    sessionId,
+    currentQuestionIndex,
+    answers,
+    timeRemaining,
+    securityPassed,
+  ]);
 
   // Send initial student data when exam starts and security passes
   useEffect(() => {
     if (securityPassed && examStarted && user && !initialDataSent) {
       websocketService.send({
-        type: 'activity_event',
+        type: "activity_event",
         details: {
-          eventType: 'student_joined_exam',
+          eventType: "student_joined_exam",
           timestamp: new Date().toISOString(),
           studentId: user._id,
-          full_name: user.profile_details?.full_name || 'Unknown Student',
+          full_name: user.profile_details?.full_name || "Unknown Student",
           examId: sessionId,
           sessionId: sessionId,
-          // Simplified join data
           device_info: {
             screen_size: `${window.screen.width}x${window.screen.height}`,
-            browser: navigator.userAgent.split(' ').pop() || 'Unknown',
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-          }
+            browser: navigator.userAgent.split(" ").pop() || "Unknown",
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
         },
       });
-      
+
       setInitialDataSent(true);
     }
   }, [securityPassed, examStarted, user, sessionId, initialDataSent]);
@@ -224,13 +235,16 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       try {
         setLoading(true);
         setError(null);
-        
+
         // Get exam questions using session ID
-        const questionsData = await studentExamService.getExamQuestions(token, sessionId);
+        const questionsData = await studentExamService.getExamQuestions(
+          token,
+          sessionId
+        );
         setQuestions(questionsData);
-        
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Gagal memuat soal ujian';
+        const errorMessage =
+          err instanceof Error ? err.message : "Gagal memuat soal ujian";
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
@@ -243,29 +257,41 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const sParam = urlParams.get('s');
-    const eParam = urlParams.get('e');
-    const dParam = urlParams.get('d');
-    const examIdParam = urlParams.get('examId');
+    const sParam = urlParams.get("s");
+    const eParam = urlParams.get("e");
+    const dParam = urlParams.get("d");
+    const examIdParam = urlParams.get("examId");
 
     if (sParam && eParam && dParam) {
       try {
         // Decode parameters - FIX BASE64 PADDING
-        const startTime = parseInt(atob(sParam.padEnd(sParam.length + (4 - sParam.length % 4) % 4, '=')));
-        const endTime = parseInt(atob(eParam.padEnd(eParam.length + (4 - eParam.length % 4) % 4, '=')));
-        const duration = parseInt(atob(dParam.padEnd(dParam.length + (4 - dParam.length % 4) % 4, '=')));
-        
+        const startTime = parseInt(
+          atob(
+            sParam.padEnd(sParam.length + ((4 - (sParam.length % 4)) % 4), "=")
+          )
+        );
+        const endTime = parseInt(
+          atob(
+            eParam.padEnd(eParam.length + ((4 - (eParam.length % 4)) % 4), "=")
+          )
+        );
+        const duration = parseInt(
+          atob(
+            dParam.padEnd(dParam.length + ((4 - (dParam.length % 4)) % 4), "=")
+          )
+        );
+
         const now = Date.now();
         const timeLeft = Math.max(0, Math.floor((endTime - now) / 1000));
-        
+
         setTimeRemaining(timeLeft);
         setExamDuration(Math.floor(duration / 1000 / 60));
-        
+
         if (now >= startTime && now <= endTime && timeLeft > 0) {
           setExamStarted(true);
         }
       } catch (error) {
-        setError('Parameter ujian tidak valid');
+        setError("Parameter ujian tidak valid");
       }
     }
   }, []);
@@ -294,20 +320,27 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         clearInterval(heartbeatIntervalRef.current);
       }
       // Clean up essay debounce timeouts
-      Object.values(essayDebounceTimeoutRef.current).forEach(timeout => {
+      Object.values(essayDebounceTimeoutRef.current).forEach((timeout) => {
         if (timeout) clearTimeout(timeout);
       });
     };
   }, []);
 
   const handleAnswerChange = (questionId: string, answer: any) => {
-    const question = questions.find(q => q.id === questionId);
+    const question = questions.find((q) => q.id === questionId);
     if (!question) return;
 
+    // Check if this is a new answer or modification
+    const previousAnswer = answers[questionId];
+    const isNewAnswer =
+      previousAnswer === undefined ||
+      previousAnswer === null ||
+      previousAnswer === "";
+
     // Update answers state
-    setAnswers(prev => ({
+    setAnswers((prev) => ({
       ...prev,
-      [questionId]: answer
+      [questionId]: answer,
     }));
 
     // Save to localStorage immediately
@@ -318,68 +351,85 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       // Ignore localStorage errors
     }
 
-    const questionIndex = questions.findIndex(q => q.id === questionId);
+    const questionIndex = questions.findIndex((q) => q.id === questionId);
 
     // Handle different question types with appropriate transmission logic
-    if (question.question_type === 'multiple_choice') {
+    if (question.question_type === "multiple_choice") {
       // For multiple choice, send immediately
-      sendAnswerUpdate(questionId, questionIndex, answer, 'multiple_choice');
-    } else if (question.question_type === 'essay') {
+      sendAnswerUpdate(
+        questionId,
+        questionIndex,
+        answer,
+        "multiple_choice",
+        isNewAnswer
+      );
+    } else if (question.question_type === "essay") {
       // For essay, debounce the transmission
-      handleEssayAnswerDebounce(questionId, questionIndex, answer);
+      handleEssayAnswerDebounce(questionId, questionIndex, answer, isNewAnswer);
     }
   };
 
   const sendAnswerUpdate = (
-    questionId: string, 
-    questionIndex: number, 
-    answer: any, 
-    questionType: 'multiple_choice' | 'essay'
+    questionId: string,
+    questionIndex: number,
+    answer: any,
+    questionType: "multiple_choice" | "essay",
+    isNewAnswer: boolean
   ) => {
+    // Determine the correct event type based on whether this is new or modified
+    const eventType = isNewAnswer ? "answer_submitted" : "answer_updated";
+
     // Prepare simplified answer data based on question type
     let answerData: any = {};
-    
-    if (questionType === 'multiple_choice') {
+
+    if (questionType === "multiple_choice") {
       // For multiple choice, find the option text
-      const question = questions.find(q => q.id === questionId);
-      const selectedOption = question?.options?.find(opt => opt.id === answer);
+      const question = questions.find((q) => q.id === questionId);
+      const selectedOption = question?.options?.find(
+        (opt) => opt.id === answer
+      );
       answerData = {
-        type: 'multiple_choice',
-        selected_option: selectedOption?.text || 'Unknown Option',
-        option_id: answer
+        selected_option: selectedOption?.text || "Unknown Option",
       };
-    } else if (questionType === 'essay') {
-      // For essay, send truncated text for efficiency
-      const fullText = typeof answer === 'string' ? answer : '';
+    } else if (questionType === "essay") {
+      // For essay, send character and word count
+      const fullText = typeof answer === "string" ? answer : "";
       answerData = {
-        type: 'essay',
-        text_preview: fullText.substring(0, 100) + (fullText.length > 100 ? '...' : ''),
         character_count: fullText.length,
-        word_count: fullText.trim().split(/\s+/).filter(word => word.length > 0).length
+        word_count: fullText
+          .trim()
+          .split(/\s+/)
+          .filter((word) => word.length > 0).length,
       };
     }
 
+    // Send clean, minimal data structure
     websocketService.send({
-      type: 'activity_event',
+      type: "activity_event",
       details: {
-        eventType: 'answer_update',
+        eventType: eventType,
         timestamp: new Date().toISOString(),
         studentId: user?._id,
-        full_name: user?.profile_details?.full_name || 'Unknown Student',
+        full_name: user?.profile_details?.full_name || "Unknown Student",
         examId: sessionId,
         sessionId: sessionId,
-        // Simplified and efficient data structure
+        questionId: questionId,
+        questionPosition: questionIndex + 1,
         question: {
-          id: questionId,
           number: questionIndex + 1,
-          type: questionType
+          type: questionType,
         },
-        answer: answerData
+        answer: answerData,
       },
     });
   };
 
-  const handleEssayAnswerDebounce = (questionId: string, questionIndex: number, answer: string) => {
+  const handleEssayAnswerDebounce = (
+    questionId: string,
+    questionIndex: number,
+    answer: string,
+    isNewAnswer: boolean
+  ) => {
     // Clear existing timeout for this question
     if (essayDebounceTimeoutRef.current[questionId]) {
       clearTimeout(essayDebounceTimeoutRef.current[questionId]);
@@ -392,9 +442,15 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     essayDebounceTimeoutRef.current[questionId] = setTimeout(() => {
       const currentAnswer = lastEssayAnswerRef.current[questionId];
       if (currentAnswer !== undefined) {
-        sendAnswerUpdate(questionId, questionIndex, currentAnswer, 'essay');
+        sendAnswerUpdate(
+          questionId,
+          questionIndex,
+          currentAnswer,
+          "essay",
+          isNewAnswer
+        );
       }
-      
+
       // Clean up timeout reference
       delete essayDebounceTimeoutRef.current[questionId];
     }, 2000); // 2 second debounce
@@ -402,63 +458,65 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
   const handleSaveAnswers = async () => {
     if (saving) return;
-    
+
     try {
       setSaving(true);
       setLastSaved(new Date());
       // Auto-save is handled by localStorage in handleAnswerChange
-
     } catch (error) {
-      toast.error('Gagal menyimpan jawaban', { duration: 3000 });
+      toast.error("Gagal menyimpan jawaban", { duration: 3000 });
     } finally {
       setSaving(false);
     }
   };
 
   const handleTimeUp = () => {
-    toast.error('Waktu ujian telah habis! Jawaban akan otomatis dikumpulkan.');
-    
+    toast.error("Waktu ujian telah habis! Jawaban akan otomatis dikumpulkan.");
+
     // Clear auto-save interval
     if (autoSaveIntervalRef.current) {
       clearInterval(autoSaveIntervalRef.current);
     }
-    
+
     // Generate security report for time up
     const securityReport = examSecurityService.generateSecurityReport(
       sessionId,
-      user?._id || '',
+      user?._id || "",
       sessionId,
       examStartTime
     );
 
     // Submit exam with time up
-    examSecurityService.submitExamWithSecurity(token!, {
-      examId: sessionId,
-      sessionId: sessionId,
-      answers: answers,
-      securityReport: securityReport,
-      submissionType: 'auto_time'
-    }).then(() => {
-      // Clean up and redirect
-      examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
-      
-      // Clear localStorage answers
-      try {
-        localStorage.removeItem(getExamAnswersKey());
-      } catch (error) {
-        // Ignore localStorage errors
-      }
-      
-      // Clear all local data
-      setAnswers({});
-      setQuestions([]);
-      
-      window.location.href = '/student/exams';
-    }).catch((error) => {
-      // Force redirect even if submission fails
-      examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
-      window.location.href = '/student/exams';
-    });
+    examSecurityService
+      .submitExamWithSecurity(token!, {
+        examId: sessionId,
+        sessionId: sessionId,
+        answers: answers,
+        securityReport: securityReport,
+        submissionType: "auto_time",
+      })
+      .then(() => {
+        // Clean up and redirect
+        examSecurityService.cleanupSecurityData(sessionId, user?._id || "");
+
+        // Clear localStorage answers
+        try {
+          localStorage.removeItem(getExamAnswersKey());
+        } catch (error) {
+          // Ignore localStorage errors
+        }
+
+        // Clear all local data
+        setAnswers({});
+        setQuestions([]);
+
+        window.location.href = "/student/exams";
+      })
+      .catch((error) => {
+        // Force redirect even if submission fails
+        examSecurityService.cleanupSecurityData(sessionId, user?._id || "");
+        window.location.href = "/student/exams";
+      });
   };
 
   const handleFinishExam = async () => {
@@ -467,11 +525,11 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       if (autoSaveIntervalRef.current) {
         clearInterval(autoSaveIntervalRef.current);
       }
-      
+
       // Generate security report
       const securityReport = examSecurityService.generateSecurityReport(
         sessionId,
-        user?._id || '',
+        user?._id || "",
         sessionId,
         examStartTime
       );
@@ -482,97 +540,100 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         sessionId: sessionId,
         answers: answers,
         securityReport: securityReport,
-        submissionType: 'manual'
+        submissionType: "manual",
       });
 
       // Clean up security data
-      examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
-      
+      examSecurityService.cleanupSecurityData(sessionId, user?._id || "");
+
       // Clear localStorage answers
       try {
         localStorage.removeItem(getExamAnswersKey());
       } catch (error) {
         // Ignore localStorage errors
       }
-      
+
       // Clear all local data
       setAnswers({});
       setQuestions([]);
-      
-      toast.success('Ujian telah selesai dikerjakan.');
-      window.location.href = '/student/exams';
+
+      toast.success("Ujian telah selesai dikerjakan.");
+      window.location.href = "/student/exams";
     } catch (error) {
-      toast.error('Gagal menyelesaikan ujian');
+      toast.error("Gagal menyelesaikan ujian");
     }
   };
 
   const handleBackToExams = () => {
     if (examStarted && timeRemaining > 0) {
       const confirmLeave = window.confirm(
-        'Anda sedang mengerjakan ujian. Apakah Anda yakin ingin keluar? Jawaban yang belum disimpan akan hilang.'
+        "Anda sedang mengerjakan ujian. Apakah Anda yakin ingin keluar? Jawaban yang belum disimpan akan hilang."
       );
       if (!confirmLeave) return;
     }
-    window.location.href = '/student/exams';
+    window.location.href = "/student/exams";
   };
 
   const handleSecurityPassed = () => {
     setSecurityPassed(true);
     setExamStartTime(Date.now());
-    
+
     // Security check passed, exam can start
   };
 
   const handleSecurityFailed = (reason: string) => {
     toast.error(reason);
     setTimeout(() => {
-      window.location.href = '/student';
+      window.location.href = "/student";
     }, 3000);
   };
 
   const handleCriticalViolation = (reason: string) => {
     toast.error(reason);
-    
+
     // Generate security report for critical violation
     const securityReport = examSecurityService.generateSecurityReport(
       sessionId,
-      user?._id || '',
+      user?._id || "",
       sessionId,
       examStartTime
     );
 
     // Submit exam with critical violation
-    examSecurityService.submitExamWithSecurity(token!, {
-      examId: sessionId,
-      sessionId: sessionId,
-      answers: answers,
-      securityReport: securityReport,
-      submissionType: 'auto_violation'
-    }).then(() => {
-      // Clean up and redirect
-      examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
-      
-      // Clear localStorage answers
-      try {
-        localStorage.removeItem(getExamAnswersKey());
-      } catch (error) {
-        // Ignore localStorage errors
-      }
-      
-      // Clear all local data
-      setAnswers({});
-      setQuestions([]);
-      
-      setTimeout(() => {
-        window.location.href = '/student';
-      }, 2000);
-    }).catch((error) => {
-      // Force redirect even if submission fails
-      examSecurityService.cleanupSecurityData(sessionId, user?._id || '');
-      setTimeout(() => {
-        window.location.href = '/student';
-      }, 2000);
-    });
+    examSecurityService
+      .submitExamWithSecurity(token!, {
+        examId: sessionId,
+        sessionId: sessionId,
+        answers: answers,
+        securityReport: securityReport,
+        submissionType: "auto_violation",
+      })
+      .then(() => {
+        // Clean up and redirect
+        examSecurityService.cleanupSecurityData(sessionId, user?._id || "");
+
+        // Clear localStorage answers
+        try {
+          localStorage.removeItem(getExamAnswersKey());
+        } catch (error) {
+          // Ignore localStorage errors
+        }
+
+        // Clear all local data
+        setAnswers({});
+        setQuestions([]);
+
+        setTimeout(() => {
+          window.location.href = "/student";
+        }, 2000);
+      })
+      .catch((error) => {
+        // Force redirect even if submission fails
+        examSecurityService.cleanupSecurityData(sessionId, user?._id || "");
+        setTimeout(() => {
+          window.location.href = "/student";
+        }, 2000);
+      });
   };
 
   const handleViolationUpdate = (count: number) => {
@@ -583,11 +644,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
+
     if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      return `${hours}:${minutes.toString().padStart(2, "0")}:${secs
+        .toString()
+        .padStart(2, "0")}`;
     }
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+    return `${minutes}:${secs.toString().padStart(2, "0")}`;
   };
 
   const scrollToQuestion = (questionIndex: number) => {
@@ -596,24 +659,28 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     const newQuestionId = questions[questionIndex]?.id;
 
     // Calculate time spent on previous question
-    if (prevQuestionId && questionStartTimeRef.current[prevQuestionId] && prevQuestionIndex !== questionIndex) {
-      const timeSpent = Date.now() - questionStartTimeRef.current[prevQuestionId];
+    if (
+      prevQuestionId &&
+      questionStartTimeRef.current[prevQuestionId] &&
+      prevQuestionIndex !== questionIndex
+    ) {
+      const timeSpent =
+        Date.now() - questionStartTimeRef.current[prevQuestionId];
       websocketService.send({
-        type: 'activity_event',
+        type: "activity_event",
         details: {
-          eventType: 'question_navigation',
+          eventType: "question_navigation",
           timestamp: new Date().toISOString(),
           studentId: user?._id,
-          full_name: user?.profile_details?.full_name || 'Unknown Student',
+          full_name: user?.profile_details?.full_name || "Unknown Student",
           examId: sessionId,
           sessionId: sessionId,
-          // Simplified navigation data
           navigation: {
             from_question: prevQuestionIndex + 1,
             to_question: questionIndex + 1,
-            time_spent_seconds: Math.round(timeSpent / 1000)
-          }
-        }
+            time_spent_seconds: Math.round(timeSpent / 1000),
+          },
+        },
       });
     }
 
@@ -627,13 +694,14 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
     const element = document.getElementById(`question-${questionIndex}`);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
 
   const totalQuestions = questions.length;
   const answeredQuestions = Object.keys(answers).length;
-  const progressPercentage = totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
+  const progressPercentage =
+    totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
 
   // Show security check first
   if (!securityPassed) {
@@ -642,7 +710,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         onSecurityPassed={handleSecurityPassed}
         onSecurityFailed={handleSecurityFailed}
         examId={sessionId}
-        studentId={user?._id || ''}
+        studentId={user?._id || ""}
       />
     );
   }
@@ -669,10 +737,10 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
             <AlertCircle className="w-10 h-10 text-red-600" />
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            {error ? 'Gagal Memuat Soal Ujian' : 'Soal Ujian Tidak Tersedia'}
+            {error ? "Gagal Memuat Soal Ujian" : "Soal Ujian Tidak Tersedia"}
           </h2>
           <p className="text-gray-600 mb-6">
-            {error || 'Soal ujian tidak ditemukan atau tidak dapat diakses.'}
+            {error || "Soal ujian tidak ditemukan atau tidak dapat diakses."}
           </p>
           <button
             onClick={handleBackToExams}
@@ -698,7 +766,11 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
             Ujian Siap Dimulai
           </h2>
           <p className="text-gray-600 mb-6">
-            Anda memiliki waktu <span className="font-semibold text-blue-600">{examDuration} menit</span> untuk menyelesaikan ujian ini.
+            Anda memiliki waktu{" "}
+            <span className="font-semibold text-blue-600">
+              {examDuration} menit
+            </span>{" "}
+            untuk menyelesaikan ujian ini.
           </p>
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
             <div className="flex items-center justify-center space-x-2 text-yellow-800 mb-2">
@@ -742,7 +814,8 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
             Waktu Ujian Habis
           </h2>
           <p className="text-gray-600 mb-6">
-            Waktu untuk mengerjakan ujian telah berakhir. Jawaban Anda akan otomatis dikumpulkan.
+            Waktu untuk mengerjakan ujian telah berakhir. Jawaban Anda akan
+            otomatis dikumpulkan.
           </p>
           <button
             onClick={handleFinishExam}
@@ -761,7 +834,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       {/* Security Monitoring */}
       <ExamMonitoring
         examId={actualExamId || sessionId}
-        studentId={user?._id || ''}
+        studentId={user?._id || ""}
         sessionId={sessionId}
         token={token}
         user={user}
@@ -784,9 +857,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
             {/* Timer */}
             {examStarted && (
-              <div className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-mono text-lg font-bold shadow-lg ${
-                timeRemaining <= 300 ? 'bg-red-100 text-red-800 animate-pulse' : 'bg-blue-100 text-blue-800'
-              }`}>
+              <div
+                className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-mono text-lg font-bold shadow-lg ${
+                  timeRemaining <= 300
+                    ? "bg-red-100 text-red-800 animate-pulse"
+                    : "bg-blue-100 text-blue-800"
+                }`}
+              >
                 <Clock className="w-5 h-5" />
                 <span>{formatTime(timeRemaining)}</span>
                 {timeRemaining <= 300 && (
@@ -800,21 +877,24 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
             {/* Connection Status */}
             {examStarted && (
               <div className="flex items-center space-x-2">
-                {wsConnectionStatus === 'connected' && (
+                {wsConnectionStatus === "connected" && (
                   <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-800 rounded-lg text-xs">
                     <Wifi className="w-3 h-3" />
                     <span className="hidden sm:inline">Terkoneksi</span>
                   </div>
                 )}
-                {(wsConnectionStatus === 'disconnected' || wsConnectionStatus === 'reconnecting') && (
+                {(wsConnectionStatus === "disconnected" ||
+                  wsConnectionStatus === "reconnecting") && (
                   <div className="flex items-center space-x-1 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-lg text-xs animate-pulse">
                     <WifiOff className="w-3 h-3" />
                     <span className="hidden sm:inline">
-                      {wsConnectionStatus === 'reconnecting' ? 'Menyambung...' : 'Terputus'}
+                      {wsConnectionStatus === "reconnecting"
+                        ? "Menyambung..."
+                        : "Terputus"}
                     </span>
                   </div>
                 )}
-                {wsConnectionStatus === 'error' && (
+                {wsConnectionStatus === "error" && (
                   <div className="flex items-center space-x-1 px-2 py-1 bg-red-100 text-red-800 rounded-lg text-xs">
                     <AlertCircle className="w-3 h-3" />
                     <span className="hidden sm:inline">Koneksi Error</span>
@@ -832,7 +912,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
                   <span>{violationCount} peringatan</span>
                 </div>
               )}
-              
+
               <div className="hidden sm:flex items-center space-x-2">
                 <User className="w-5 h-5 text-gray-400" />
                 <span className="text-sm font-medium text-gray-700">
@@ -855,19 +935,23 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
               {/* Progress Card */}
               <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Progress Ujian</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Progress Ujian
+                  </h3>
                   <Award className="w-6 h-6 text-blue-600" />
                 </div>
-                
+
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between text-sm text-gray-600 mb-2">
                       <span>Soal Dijawab</span>
-                      <span>{answeredQuestions}/{totalQuestions}</span>
+                      <span>
+                        {answeredQuestions}/{totalQuestions}
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div 
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500" 
+                      <div
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500"
                         style={{ width: `${progressPercentage}%` }}
                       ></div>
                     </div>
@@ -878,7 +962,9 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">Durasi:</span>
-                    <span className="font-medium text-gray-900">{examDuration} menit</span>
+                    <span className="font-medium text-gray-900">
+                      {examDuration} menit
+                    </span>
                   </div>
 
                   {lastSaved && (
@@ -892,7 +978,9 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
               {/* Question Navigation */}
               <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Navigasi Soal</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Navigasi Soal
+                </h3>
                 <div className="grid grid-cols-5 gap-2">
                   {questions.map((question, index) => (
                     <button
@@ -900,10 +988,12 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
                       onClick={() => scrollToQuestion(index)}
                       className={`w-10 h-10 text-sm font-medium rounded-lg transition-all duration-200 ${
                         answers[question.id]
-                          ? 'bg-green-100 text-green-800 border-2 border-green-300 shadow-sm'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent'
+                          ? "bg-green-100 text-green-800 border-2 border-green-300 shadow-sm"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-transparent"
                       }`}
-                      title={`Soal ${index + 1}${answers[question.id] ? ' (Sudah dijawab)' : ''}`}
+                      title={`Soal ${index + 1}${
+                        answers[question.id] ? " (Sudah dijawab)" : ""
+                      }`}
                     >
                       {index + 1}
                     </button>
@@ -964,7 +1054,9 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
                       </div>
                       <div className="flex items-center space-x-2 text-sm text-gray-600">
                         <Award className="w-4 h-4" />
-                        <span className="font-medium">{question.points} poin</span>
+                        <span className="font-medium">
+                          {question.points} poin
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -974,56 +1066,63 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
                     <div className="space-y-6">
                       {/* Question Text */}
                       <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                        <div 
+                        <div
                           className="prose prose-sm max-w-none text-gray-900"
-                          dangerouslySetInnerHTML={{ __html: question.question_text }}
+                          dangerouslySetInnerHTML={{
+                            __html: question.question_text,
+                          }}
                         />
                       </div>
 
                       {/* Answer Options (for multiple choice) */}
-                      {question.question_type === 'multiple_choice' && question.options && (
-                        <div className="space-y-3">
-                          <h4 className="font-medium text-gray-900 flex items-center">
-                            <ChevronRight className="w-4 h-4 mr-2 text-blue-600" />
-                            Pilih jawaban yang benar:
-                          </h4>
+                      {question.question_type === "multiple_choice" &&
+                        question.options && (
                           <div className="space-y-3">
-                            {question.options.map((option, optionIndex) => (
-                              <label 
-                                key={option.id} 
-                                className={`flex items-start space-x-4 p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md ${
-                                  answers[question.id] === option.id
-                                    ? 'border-blue-500 bg-blue-50 shadow-md'
-                                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                                }`}
-                              >
-                                <input
-                                  type="radio"
-                                  name={`question-${question.id}`}
-                                  value={option.id}
-                                  checked={answers[question.id] === option.id}
-                                  onChange={() => handleAnswerChange(question.id, option.id)}
-                                  className="mt-1 h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300"
-                                />
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-2 mb-2">
-                                    <span className="inline-flex items-center justify-center w-6 h-6 bg-gray-200 text-gray-700 text-sm font-medium rounded-full">
-                                      {String.fromCharCode(65 + optionIndex)}
-                                    </span>
-                                  </div>
-                                  <div 
-                                    className="text-gray-900 leading-relaxed"
-                                    dangerouslySetInnerHTML={{ __html: option.text }}
+                            <h4 className="font-medium text-gray-900 flex items-center">
+                              <ChevronRight className="w-4 h-4 mr-2 text-blue-600" />
+                              Pilih jawaban yang benar:
+                            </h4>
+                            <div className="space-y-3">
+                              {question.options.map((option, optionIndex) => (
+                                <label
+                                  key={option.id}
+                                  className={`flex items-start space-x-4 p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md ${
+                                    answers[question.id] === option.id
+                                      ? "border-blue-500 bg-blue-50 shadow-md"
+                                      : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                                  }`}
+                                >
+                                  <input
+                                    type="radio"
+                                    name={`question-${question.id}`}
+                                    value={option.id}
+                                    checked={answers[question.id] === option.id}
+                                    onChange={() =>
+                                      handleAnswerChange(question.id, option.id)
+                                    }
+                                    className="mt-1 h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300"
                                   />
-                                </div>
-                              </label>
-                            ))}
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-2 mb-2">
+                                      <span className="inline-flex items-center justify-center w-6 h-6 bg-gray-200 text-gray-700 text-sm font-medium rounded-full">
+                                        {String.fromCharCode(65 + optionIndex)}
+                                      </span>
+                                    </div>
+                                    <div
+                                      className="text-gray-900 leading-relaxed"
+                                      dangerouslySetInnerHTML={{
+                                        __html: option.text,
+                                      }}
+                                    />
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
 
                       {/* Essay Answer (for essay questions) */}
-                      {question.question_type === 'essay' && (
+                      {question.question_type === "essay" && (
                         <div className="space-y-3">
                           <h4 className="font-medium text-gray-900 flex items-center">
                             <ChevronRight className="w-4 h-4 mr-2 text-blue-600" />
@@ -1031,13 +1130,17 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
                           </h4>
                           <textarea
                             rows={8}
-                            value={answers[question.id] || ''}
-                            onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                            value={answers[question.id] || ""}
+                            onChange={(e) =>
+                              handleAnswerChange(question.id, e.target.value)
+                            }
                             className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all resize-none"
                             placeholder="Tulis jawaban Anda di sini..."
                           />
                           <div className="text-sm text-gray-500">
-                            {answers[question.id] ? `${answers[question.id].length} karakter` : '0 karakter'}
+                            {answers[question.id]
+                              ? `${answers[question.id].length} karakter`
+                              : "0 karakter"}
                           </div>
                         </div>
                       )}
@@ -1057,10 +1160,12 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
                       Selesaikan Ujian
                     </h3>
                     <p className="text-gray-600 mb-4">
-                      Pastikan semua jawaban sudah benar sebelum mengumpulkan ujian.
+                      Pastikan semua jawaban sudah benar sebelum mengumpulkan
+                      ujian.
                     </p>
                     <div className="text-sm text-gray-500 mb-6">
-                      {answeredQuestions} dari {totalQuestions} soal telah dijawab
+                      {answeredQuestions} dari {totalQuestions} soal telah
+                      dijawab
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
