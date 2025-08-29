@@ -4,10 +4,10 @@ src/components/SubjectManagement.tsx
 src/components/StudentPerformanceTable.tsx
 src/components/StudentManagement.tsx
 src/components/StudentFilter.tsx
-src/components/Sidebar.tsx
+
 src/components/QuestionDisplay.tsx
 src/components/ProtectedRoute.tsx
-src/components/ProfileManagement.tsx
+
 src/components/Pagination.tsx
 src/components/LoginForm.tsx
 src/components/ExpertiseProgramManagement.tsx
@@ -46,7 +46,7 @@ src/components/modals/details/SubjectDetailModal.tsx
 src/components/modals/details/StudentDetailModal.tsx
 src/components/modals/details/ExpertiseProgramDetailModal.tsx
 src/components/modals/details/ClassDetailModal.tsx
-src/components/dashboards/AdminDashboard.tsx
+
 src/components/dashboards/teacher/pages/TeacherClassesPage.tsx
 src/components/dashboards/teacher/pages/TeacherProfilePage.tsx
 src/components/dashboards/teacher/pages/TeacherAnalyticsPage.tsx
@@ -109,7 +109,7 @@ src/components/dashboards/student/pages/StudentExamsPage.tsx
 src/components/dashboards/student/pages/StudentProfilePage.tsx
 src/components/dashboards/student/pages/StudentResultsPage.tsx
 src/components/profile/index.ts
-src/components/dashboards/teacher/pages/modals/QuestionSetPermissionModal.tsx
+src/components/dashboards/student/pages/StudentExamTakingPage.tsx
 
 
 src/services/questionSubmission.ts
