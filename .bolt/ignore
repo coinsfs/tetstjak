@@ -109,6 +109,7 @@ src/components/dashboards/student/pages/StudentExamsPage.tsx
 src/components/dashboards/student/pages/StudentProfilePage.tsx
 src/components/dashboards/student/pages/StudentResultsPage.tsx
 src/components/profile/index.ts
+src/components/dashboards/teacher/pages/modals/QuestionSetPermissionModal.tsx
 
 
 src/services/questionSubmission.ts
