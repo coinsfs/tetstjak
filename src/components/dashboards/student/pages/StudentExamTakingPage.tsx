@@ -61,6 +61,10 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const [actualExamId, setActualExamId] = useState<string>('');
   const questionStartTimeRef = useRef<Record<string, number>>({});
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Debounce refs for essay answers
+  const essayDebounceTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const lastEssayAnswerRef = useRef<Record<string, string>>({});
 
   // Auto-save interval
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -162,26 +166,20 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     if (!examStarted || !user?._id || !securityPassed) return;
 
     heartbeatIntervalRef.current = setInterval(() => {
-      console.log('Sending WebSocket message:', {
-        type: 'activity_event',
-        details: {
-          eventType: 'heartbeat',
-          studentId: user._id,
-          examId: sessionId,
-          sessionId: sessionId,
-        }
-      });
       websocketService.send({
         type: 'activity_event',
         details: {
           eventType: 'heartbeat',
           timestamp: new Date().toISOString(),
           studentId: user._id,
+          full_name: user?.profile_details?.full_name || 'Unknown Student',
           examId: sessionId,
           sessionId: sessionId,
-          currentQuestionIndex: currentQuestionIndex,
-          totalAnswered: Object.keys(answers).length,
-          timeRemaining: timeRemaining,
+          // Simplified heartbeat data - only essential info
+          status: 'active',
+          current_question: currentQuestionIndex + 1,
+          total_answered: Object.keys(answers).length,
+          time_remaining: timeRemaining,
         },
       });
     }, 30000); // Every 30 seconds
@@ -196,13 +194,6 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   // Send initial student data when exam starts and security passes
   useEffect(() => {
     if (securityPassed && examStarted && user && !initialDataSent) {
-      console.log('Sending initial student data to proctor:', {
-        studentId: user._id,
-        full_name: user.profile_details?.full_name,
-        examId: sessionId,
-        sessionId: sessionId
-      });
-      
       websocketService.send({
         type: 'activity_event',
         details: {
@@ -212,17 +203,12 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
           full_name: user.profile_details?.full_name || 'Unknown Student',
           examId: sessionId,
           sessionId: sessionId,
-          userAgent: navigator.userAgent,
-          screenResolution: {
-            width: window.screen.width,
-            height: window.screen.height
-          },
-          viewportSize: {
-            width: window.innerWidth,
-            height: window.innerHeight
-          },
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          language: navigator.language
+          // Simplified join data
+          device_info: {
+            screen_size: `${window.screen.width}x${window.screen.height}`,
+            browser: navigator.userAgent.split(' ').pop() || 'Unknown',
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          }
         },
       });
       
@@ -307,10 +293,17 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       if (heartbeatIntervalRef.current) {
         clearInterval(heartbeatIntervalRef.current);
       }
+      // Clean up essay debounce timeouts
+      Object.values(essayDebounceTimeoutRef.current).forEach(timeout => {
+        if (timeout) clearTimeout(timeout);
+      });
     };
   }, []);
 
   const handleAnswerChange = (questionId: string, answer: any) => {
+    const question = questions.find(q => q.id === questionId);
+    if (!question) return;
+
     // Update answers state
     setAnswers(prev => ({
       ...prev,
@@ -325,44 +318,86 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       // Ignore localStorage errors
     }
 
-    // Send answer update event to proctor
     const questionIndex = questions.findIndex(q => q.id === questionId);
-    const timeSpentOnQuestion = questionStartTimeRef.current[questionId] 
-      ? Date.now() - questionStartTimeRef.current[questionId] 
-      : 0;
 
-    console.log('Sending WebSocket message:', {
-      type: 'activity_event',
-      details: {
-        eventType: 'answer_update',
-        questionId: questionId,
-        questionPosition: questionIndex + 1,
-        answerContent: answer,
-        characterCount: typeof answer === 'string' ? answer.length : 0,
-        timeSpent: timeSpentOnQuestion,
-        timestamp: new Date().toISOString(),
-        studentId: user?._id,
-        full_name: user?.profile_details?.full_name || 'Unknown Student',
-        examId: sessionId,
-        sessionId: sessionId,
-      }
-    });
+    // Handle different question types with appropriate transmission logic
+    if (question.question_type === 'multiple_choice') {
+      // For multiple choice, send immediately
+      sendAnswerUpdate(questionId, questionIndex, answer, 'multiple_choice');
+    } else if (question.question_type === 'essay') {
+      // For essay, debounce the transmission
+      handleEssayAnswerDebounce(questionId, questionIndex, answer);
+    }
+  };
+
+  const sendAnswerUpdate = (
+    questionId: string, 
+    questionIndex: number, 
+    answer: any, 
+    questionType: 'multiple_choice' | 'essay'
+  ) => {
+    // Prepare simplified answer data based on question type
+    let answerData: any = {};
+    
+    if (questionType === 'multiple_choice') {
+      // For multiple choice, find the option text
+      const question = questions.find(q => q.id === questionId);
+      const selectedOption = question?.options?.find(opt => opt.id === answer);
+      answerData = {
+        type: 'multiple_choice',
+        selected_option: selectedOption?.text || 'Unknown Option',
+        option_id: answer
+      };
+    } else if (questionType === 'essay') {
+      // For essay, send truncated text for efficiency
+      const fullText = typeof answer === 'string' ? answer : '';
+      answerData = {
+        type: 'essay',
+        text_preview: fullText.substring(0, 100) + (fullText.length > 100 ? '...' : ''),
+        character_count: fullText.length,
+        word_count: fullText.trim().split(/\s+/).filter(word => word.length > 0).length
+      };
+    }
+
     websocketService.send({
       type: 'activity_event',
       details: {
         eventType: 'answer_update',
-        questionId: questionId,
-        questionPosition: questionIndex + 1,
-        answerContent: answer,
-        characterCount: typeof answer === 'string' ? answer.length : 0,
-        timeSpent: timeSpentOnQuestion,
         timestamp: new Date().toISOString(),
         studentId: user?._id,
         full_name: user?.profile_details?.full_name || 'Unknown Student',
         examId: sessionId,
         sessionId: sessionId,
+        // Simplified and efficient data structure
+        question: {
+          id: questionId,
+          number: questionIndex + 1,
+          type: questionType
+        },
+        answer: answerData
       },
     });
+  };
+
+  const handleEssayAnswerDebounce = (questionId: string, questionIndex: number, answer: string) => {
+    // Clear existing timeout for this question
+    if (essayDebounceTimeoutRef.current[questionId]) {
+      clearTimeout(essayDebounceTimeoutRef.current[questionId]);
+    }
+
+    // Store the current answer
+    lastEssayAnswerRef.current[questionId] = answer;
+
+    // Set new timeout for debounced transmission
+    essayDebounceTimeoutRef.current[questionId] = setTimeout(() => {
+      const currentAnswer = lastEssayAnswerRef.current[questionId];
+      if (currentAnswer !== undefined) {
+        sendAnswerUpdate(questionId, questionIndex, currentAnswer, 'essay');
+      }
+      
+      // Clean up timeout reference
+      delete essayDebounceTimeoutRef.current[questionId];
+    }, 2000); // 2 second debounce
   };
 
   const handleSaveAnswers = async () => {
@@ -565,15 +600,19 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       const timeSpent = Date.now() - questionStartTimeRef.current[prevQuestionId];
       websocketService.send({
         type: 'activity_event',
-        activityType: 'question_time_spent',
-        timestamp: Date.now(),
-        studentId: user?._id,
-        examId: sessionId,
-        sessionId: sessionId,
         details: {
-          questionId: prevQuestionId,
-          questionPosition: prevQuestionIndex + 1,
-          timeSpent: timeSpent,
+          eventType: 'question_navigation',
+          timestamp: new Date().toISOString(),
+          studentId: user?._id,
+          full_name: user?.profile_details?.full_name || 'Unknown Student',
+          examId: sessionId,
+          sessionId: sessionId,
+          // Simplified navigation data
+          navigation: {
+            from_question: prevQuestionIndex + 1,
+            to_question: questionIndex + 1,
+            time_spent_seconds: Math.round(timeSpent / 1000)
+          }
         }
       });
     }

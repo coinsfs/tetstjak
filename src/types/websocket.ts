@@ -69,14 +69,25 @@ export interface StudentAnswerUpdateMessage extends BaseWebSocketMessage {
   full_name: string;
   examId: string;
   raw_message: {
-    type: 'student_answer_update';
+    type: 'activity_event';
+    eventType: 'answer_update';
     student_id: string;
+    full_name: string;
     exam_id: string;
     session_id: string;
-    question_id: string;
-    question_number: number;
-    answer_length: number;
-    total_answered: number;
+    question: {
+      id: string;
+      number: number;
+      type: 'multiple_choice' | 'essay';
+    };
+    answer: {
+      type: 'multiple_choice' | 'essay';
+      selected_option?: string;
+      option_id?: string;
+      text_preview?: string;
+      character_count?: number;
+      word_count?: number;
+    };
     timestamp: number;
   };
 }
@@ -90,16 +101,19 @@ export interface StudentViolationMessage extends BaseWebSocketMessage {
   full_name: string;
   examId: string;
   raw_message: {
-    type: 'student_violation';
+    type: 'activity_event';
+    eventType: 'security_violation';
     student_id: string;
+    full_name: string;
     exam_id: string;
     session_id: string;
-    violation_type: string;
-    severity: 'low' | 'medium' | 'high' | 'critical';
+    violation: {
+      type: string;
+      severity: 'low' | 'medium' | 'high' | 'critical';
+      description: string;
+      details: any;
+    };
     timestamp: number;
-    tab_active: boolean;
-    screen_height: number;
-    screen_reduction?: number;
   };
 }
 
@@ -111,22 +125,92 @@ export interface StudentActivityMessage extends BaseWebSocketMessage {
   full_name: string;
   examId: string;
   raw_message: {
-    type: 'student_activity';
+    type: 'activity_event';
+    eventType: string;
     student_id: string;
+    full_name: string;
     exam_id: string;
     session_id: string;
-    activity_type: string;
     timestamp: number;
     details?: any;
+  };
+}
+
+// New interface for heartbeat messages (separate from activity)
+export interface StudentHeartbeatMessage extends BaseWebSocketMessage {
+  type: 'student_heartbeat';
+  student_id: string;
+  student_name: string;
+  full_name: string;
+  examId: string;
+  raw_message: {
+    type: 'activity_event';
+    eventType: 'heartbeat';
+    student_id: string;
+    full_name: string;
+    exam_id: string;
+    session_id: string;
+    status: 'active';
+    current_question: number;
+    total_answered: number;
+    time_remaining: number;
+    timestamp: number;
+  };
+}
+
+// New interface for question navigation
+export interface StudentNavigationMessage extends BaseWebSocketMessage {
+  type: 'student_navigation';
+  student_id: string;
+  student_name: string;
+  full_name: string;
+  examId: string;
+  raw_message: {
+    type: 'activity_event';
+    eventType: 'question_navigation';
+    student_id: string;
+    full_name: string;
+    exam_id: string;
+    session_id: string;
+    navigation: {
+      from_question: number;
+      to_question: number;
+      time_spent_seconds: number;
+    };
+    timestamp: number;
+  };
+}
+
+// New interface for student joining exam
+export interface StudentJoinMessage extends BaseWebSocketMessage {
+  type: 'student_join';
+  student_id: string;
+  student_name: string;
+  full_name: string;
+  examId: string;
+  raw_message: {
+    type: 'activity_event';
+    eventType: 'student_joined_exam';
+    student_id: string;
+    full_name: string;
+    exam_id: string;
+    session_id: string;
+    device_info: {
+      screen_size: string;
+      browser: string;
+      timezone: string;
+    };
+    timestamp: number;
   };
 }
 
 // Union type for all proctor monitoring messages
 export type ProctorMonitoringMessage = 
   | RoomUserEvent
-  | StudentExamStartMessage
+  | StudentJoinMessage
   | StudentHeartbeatMessage
   | StudentAnswerUpdateMessage
+  | StudentNavigationMessage
   | StudentViolationMessage
   | StudentActivityMessage;
 
