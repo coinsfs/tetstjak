@@ -107,6 +107,29 @@ const AppContent: React.FC = () => {
   // Route based on current path
   if (cleanPath.startsWith('/admin') || cleanPath.startsWith('/manage/')) {
     return (
+    } else if (cleanPath.startsWith('/profile')) {
+      // Handle profile route - determine which dashboard to render based on user role
+      const userRole = user?.roles[0];
+      
+      if (userRole === 'admin') {
+        return (
+          <ProtectedRoute requiredRole="admin">
+            <AdminDashboard />
+          </ProtectedRoute>
+        );
+      } else if (userRole === 'teacher') {
+        return (
+          <ProtectedRoute requiredRole="teacher">
+            <TeacherDashboard />
+          </ProtectedRoute>
+        );
+      } else if (userRole === 'student') {
+        return (
+          <ProtectedRoute requiredRole="student">
+            <StudentDashboard />
+          </ProtectedRoute>
+        );
+      }
       <ProtectedRoute requiredRole="admin">
         <AdminDashboard />
       </ProtectedRoute>
@@ -129,7 +152,8 @@ const AppContent: React.FC = () => {
       const userRole = user.roles[0];
       
       switch (userRole) {
-        case 'admin':
+            // Remove automatic redirect for unknown routes to prevent conflicts
+            // setTimeout(() => navigate('/admin'), 0);
           setTimeout(() => navigate('/admin'), 0);
           return (
             <ProtectedRoute requiredRole="admin">
