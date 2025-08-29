@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { websocketService } from '@/services/websocket';
-import { examSecurityService } from '@/services/examSecurity'; // Import examSecurityService
+import { examSecurityService } from '@/services/examSecurity';
 import { UserProfile } from '@/types/auth';
 import { 
   ProctorMonitoringMessage,
@@ -19,7 +19,6 @@ import {
 // Debouncing mechanism to prevent duplicate violation logging
 const lastLoggedViolation: Record<string, number> = {};
 const VIOLATION_DEBOUNCE_TIME = 1000; // 1 second debounce
-
 
 interface ExamMonitoringProps {
   examId: string;
@@ -75,7 +74,6 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   const mouseTracker = useRef({ x: 0, y: 0, clicks: 0 });
   const keyboardTracker = useRef({ keystrokes: 0, suspiciousKeys: 0 });
   const screenHeightTracker = useRef({ 
-    // Initial height captured when component mounts
     originalHeight: window.innerHeight,
     currentHeight: window.innerHeight,
     violations: 0
@@ -86,10 +84,8 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   const initializeSound = () => {
     if (!soundInitialized) {
       try {
-        // Create a simple beep sound using Web Audio API
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
         
-        // Test if audio context can be created and started
         if (audioContext.state === 'suspended') {
           audioContext.resume().then(() => {
             console.log('ExamMonitoring: Audio context resumed successfully');
@@ -120,17 +116,444 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       document.removeEventListener('click', handleFirstClick);
     };
   }, []);
-  useEffect(() => {
-    setupMonitoring();
+
+  // Define logViolation as useCallback to ensure it uses latest values
+  const logViolation = useCallback((type: string, severity: 'low' | 'medium' | 'high' | 'critical', details?: any) => {
+    // Implement debouncing to prevent duplicate violations
+    const now = Date.now();
+    const violationKey = `${type}_${severity}`;
+    
+    if (lastLoggedViolation[violationKey] && (now - lastLoggedViolation[violationKey]) < VIOLATION_DEBOUNCE_TIME) {
+      return;
+    }
+    
+    lastLoggedViolation[violationKey] = now;
+
+    // Send streamlined violation data
+    const violation = {
+      type: 'student_violation',
+      student_id: studentId,
+      exam_id: examId,
+      session_id: sessionId,
+      violation_type: type,
+      severity,
+      timestamp: now,
+      tab_active: isTabActive,
+      screen_height: screenHeightTracker.current.currentHeight,
+      ...(details?.reductionPercentage && { screen_reduction: details.reductionPercentage })
+    };
+
+    // Send violation via WebSocket
+    websocketService.send(violation);
+
+    // Store in localStorage for backup
+    const violationsKey = `exam_violations_${examId}_${studentId}`;
+    const existingViolations = JSON.parse(localStorage.getItem(violationsKey) || '[]');
+    existingViolations.push(violation);
+    localStorage.setItem(violationsKey, JSON.stringify(existingViolations));
+    
+    setViolationCounts(prev => {
+      const newCounts = { ...prev };
+      newCounts[severity] += 1;
+      const totalViolations = newCounts.low + newCounts.medium + newCounts.high + newCounts.critical;
+      
+      setTimeout(() => {
+        onViolationUpdate(totalViolations);
+      }, 0);
+      
+      return newCounts;
+    });
+
+    console.warn('Security violation logged:', violation);
+  }, [examId, studentId, sessionId, isTabActive, onViolationUpdate]);
+
+  // Define reportCriticalViolation as useCallback
+  const reportCriticalViolation = useCallback(async (reason: string) => {
+    if (!token || !user?._id) return;
+
+    const violation: any = {
+      type: 'critical_violation_event',
+      violation_type: 'exam_terminated_by_system',
+      severity: 'critical',
+      timestamp: Date.now(),
+      examId,
+      studentId: user._id,
+      sessionId,
+      details: {
+        reason,
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+        full_name: user?.profile_details?.full_name || 'Unknown Student'
+      },
+    };
+
+    await examSecurityService.reportCriticalViolation(token, examId, user._id, violation);
+    onCriticalViolation(reason);
+  }, [token, user, examId, sessionId, onCriticalViolation]);
+
+  // Setup monitoring functions that return cleanup functions
+  const setupFocusMonitoring = useCallback(() => {
+    const handleFocus = () => {
+      setIsTabActive(true);
+      const inactiveTime = Date.now() - lastActiveTime.current;
+      
+      if (inactiveTime > 5000) {
+        logViolation('tab_switch_return', 'medium', {
+          inactiveTime: inactiveTime,
+          switchCount: tabSwitchCount.current
+        });
+      }
+    };
+
+    const handleBlur = () => {
+      setIsTabActive(false);
+      lastActiveTime.current = Date.now();
+      tabSwitchCount.current += 1;
+      
+      if (tabSwitchCount.current >= 3) {
+        // Show warning
+      }
+
+      if (tabSwitchCount.current >= 5) {
+        reportCriticalViolation('Terlalu banyak perpindahan tab. Ujian dihentikan untuk menjaga integritas.');
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
 
     return () => {
-      cleanup();
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
     };
+  }, [logViolation, reportCriticalViolation]);
+
+  const setupVisibilityMonitoring = useCallback(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        logViolation('page_hidden', 'high', {
+          timestamp: Date.now(),
+          visibilityState: document.visibilityState
+        });
+      } else {
+        logViolation('page_visible', 'medium', {
+          timestamp: Date.now(),
+          visibilityState: document.visibilityState
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [logViolation]);
+
+  const setupMouseTracking = useCallback(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseTracker.current.x = e.clientX;
+      mouseTracker.current.y = e.clientY;
+    };
+
+    const handleMouseClick = (e: MouseEvent) => {
+      mouseTracker.current.clicks += 1;
+      
+      if (e.button === 2) {
+        logViolation('right_click_attempt', 'medium', {
+          x: e.clientX,
+          y: e.clientY,
+          timestamp: Date.now()
+        });
+      }
+
+      const rapidClickThreshold = 10;
+      if (mouseTracker.current.clicks > rapidClickThreshold) {
+        const timeWindow = 5000;
+        setTimeout(() => {
+          mouseTracker.current.clicks = Math.max(0, mouseTracker.current.clicks - rapidClickThreshold);
+        }, timeWindow);
+
+        logViolation('rapid_clicking', 'high', {
+          clickCount: mouseTracker.current.clicks,
+          timestamp: Date.now()
+        });
+      }
+    };
+
+    const handleMouseLeave = () => {
+      logViolation('mouse_leave_window', 'low', {
+        timestamp: Date.now()
+      });
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('click', handleMouseClick);
+    document.addEventListener('contextmenu', handleMouseClick);
+    document.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('click', handleMouseClick);
+      document.removeEventListener('contextmenu', handleMouseClick);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [logViolation]);
+
+  const setupKeyboardTracking = useCallback(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      keyboardTracker.current.keystrokes += 1;
+
+      const suspiciousKeys = [
+        'F12', 'F5', 'F11',
+        'PrintScreen', 'Insert', 'Delete'
+      ];
+
+      const suspiciousCombinations = [
+        { ctrl: true, shift: true, key: 'I' },
+        { ctrl: true, shift: true, key: 'J' },
+        { ctrl: true, shift: true, key: 'C' },
+        { ctrl: true, key: 'U' },
+        { ctrl: true, key: 'S' },
+        { ctrl: true, key: 'A' },
+        { ctrl: true, key: 'C' },
+        { ctrl: true, key: 'V' },
+        { alt: true, key: 'Tab' },
+        { alt: true, key: 'F4' }
+      ];
+
+      if (suspiciousKeys.includes(e.key)) {
+        keyboardTracker.current.suspiciousKeys += 1;
+        logViolation('suspicious_key', 'high', {
+          key: e.key,
+          timestamp: Date.now()
+        });
+      }
+
+      for (const combo of suspiciousCombinations) {
+        if (
+          (combo.ctrl === undefined || combo.ctrl === e.ctrlKey) &&
+          (combo.shift === undefined || combo.shift === e.shiftKey) &&
+          (combo.alt === undefined || combo.alt === e.altKey) &&
+          combo.key.toLowerCase() === e.key.toLowerCase()
+        ) {
+          keyboardTracker.current.suspiciousKeys += 1;
+          logViolation('suspicious_combination', 'high', {
+            combination: `${combo.ctrl ? 'Ctrl+' : ''}${combo.shift ? 'Shift+' : ''}${combo.alt ? 'Alt+' : ''}${combo.key}`,
+            timestamp: Date.now()
+          });
+        }
+      }
+
+      const typingSpeed = keyboardTracker.current.keystrokes;
+      if (typingSpeed > 200) {
+        logViolation('rapid_typing', 'medium', {
+          keystrokeCount: typingSpeed,
+          timestamp: Date.now()
+        });
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [logViolation]);
+
+  const setupClipboardMonitoring = useCallback(() => {
+    const handleCopy = () => {
+      logViolation('copy_attempt', 'high', {
+        timestamp: Date.now()
+      });
+    };
+
+    const handlePaste = () => {
+      logViolation('paste_attempt', 'high', {
+        timestamp: Date.now()
+      });
+    };
+
+    const handleCut = () => {
+      logViolation('cut_attempt', 'high', {
+        timestamp: Date.now()
+      });
+    };
+
+    document.addEventListener('copy', handleCopy);
+    document.addEventListener('paste', handlePaste);
+    document.addEventListener('cut', handleCut);
+
+    return () => {
+      document.removeEventListener('copy', handleCopy);
+      document.removeEventListener('paste', handlePaste);
+      document.removeEventListener('cut', handleCut);
+    };
+  }, [logViolation]);
+
+  const setupDevToolsMonitoring = useCallback(() => {
+    const checkDevTools = () => {
+      let devtoolsScore = 0;
+      const threshold = 80;
+
+      try {
+        const heightDiff = window.outerHeight - window.innerHeight;
+        const widthDiff = window.outerWidth - window.innerWidth;
+        
+        if (heightDiff > 300 && widthDiff > 350) {
+          devtoolsScore += 40;
+        } else if (heightDiff > 250 || widthDiff > 300) {
+          devtoolsScore += 20;
+        }
+      } catch (error) {
+        console.warn('Continuous window size detection failed:', error);
+      }
+
+      try {
+        const start = performance.now();
+        const end = performance.now();
+        
+        if (end - start > 300) {
+          devtoolsScore += 30;
+        }
+      } catch (error) {
+        // Ignore
+      }
+
+      try {
+        const now = Date.now();
+        if (window.lastConsoleCheck && (now - window.lastConsoleCheck) < 1000) {
+          devtoolsScore += 10;
+        }
+        window.lastConsoleCheck = now;
+      } catch (error) {
+        // Ignore
+      }
+
+      if (devtoolsScore >= threshold) {
+        logViolation('devtools_detected', 'critical', {
+          timestamp: Date.now(),
+          score: devtoolsScore,
+          windowSize: {
+            outer: { width: window.outerWidth, height: window.outerHeight },
+            inner: { width: window.innerWidth, height: window.innerHeight }
+          }
+        });
+      } else if (devtoolsScore >= 40) {
+        logViolation('devtools_suspected', 'medium', {
+          timestamp: Date.now(),
+          score: devtoolsScore
+        });
+      }
+    };
+
+    const interval = setInterval(checkDevTools, 3000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [logViolation]);
+
+  const setupFullscreenMonitoring = useCallback(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        logViolation('fullscreen_exit', 'high', {
+          timestamp: Date.now()
+        });
+        
+        handleFullscreenExit();
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [logViolation]);
+
+  const setupScreenHeightMonitoring = useCallback(() => {
+    const handleResize = () => {
+      const currentHeight = window.innerHeight;
+      const originalHeight = screenHeightTracker.current.originalHeight;
+      const heightReduction = originalHeight - currentHeight;
+      const reductionPercentage = (heightReduction / originalHeight) * 100;
+      
+      screenHeightTracker.current.currentHeight = currentHeight;
+      
+      if (reductionPercentage > 30) {
+        screenHeightTracker.current.violations += 1;
+        
+        logViolation('screen_height_reduction', 'high', {
+          originalHeight,
+          currentHeight,
+          reductionPercentage: Math.round(reductionPercentage),
+          violationCount: screenHeightTracker.current.violations,
+          timestamp: Date.now()
+        });
+        
+        if (screenHeightTracker.current.violations >= 3) {
+          reportCriticalViolation(`Split screen atau pengurangan tinggi layar terdeteksi (${Math.round(reductionPercentage)}% pengurangan). Ujian dihentikan.`);
+        }
+      }
+      
+      if (currentHeight < 400) {
+        logViolation('very_small_screen_height', 'medium', {
+          currentHeight,
+          timestamp: Date.now()
+        });
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [logViolation, reportCriticalViolation]);
+
+  const handleFullscreenExit = useCallback(() => {
+    setTimeout(() => {
+      console.log('ExamMonitoring: Fullscreen exit detected, but allowing exam to continue');
+    }, 100);
   }, []);
 
-  // Add WebSocket message logging for debugging
+  // Setup all monitoring with proper cleanup
+  const setupMonitoring = useCallback(() => {
+    const cleanupFunctions: (() => void)[] = [];
+
+    cleanupFunctions.push(setupFocusMonitoring());
+    cleanupFunctions.push(setupVisibilityMonitoring());
+    cleanupFunctions.push(setupMouseTracking());
+    cleanupFunctions.push(setupKeyboardTracking());
+    cleanupFunctions.push(setupClipboardMonitoring());
+    cleanupFunctions.push(setupDevToolsMonitoring());
+    cleanupFunctions.push(setupFullscreenMonitoring());
+    cleanupFunctions.push(setupScreenHeightMonitoring());
+
+    return () => {
+      cleanupFunctions.forEach(cleanup => cleanup());
+    };
+  }, [
+    setupFocusMonitoring,
+    setupVisibilityMonitoring,
+    setupMouseTracking,
+    setupKeyboardTracking,
+    setupClipboardMonitoring,
+    setupDevToolsMonitoring,
+    setupFullscreenMonitoring,
+    setupScreenHeightMonitoring
+  ]);
+
+  // Main monitoring setup effect
   useEffect(() => {
-    if (!securityPassed) return;
+    const cleanup = setupMonitoring();
+    return cleanup;
+  }, [setupMonitoring]);
+
+  // WebSocket message handlers
+  useEffect(() => {
+    console.log('🔧 ExamMonitoring: Setting up WebSocket handlers');
 
     // Handler for room user events (connect/disconnect)
     const handleRoomUserEvent = (data: RoomUserEvent) => {
@@ -143,10 +566,10 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
           updated[data.user.user_id] = {
             user_id: data.user.user_id,
             username: data.user.username,
-            full_name: data.user.username, // Use username as fallback
+            full_name: data.user.username,
             roles: data.user.roles,
             user_type: data.user.user_type,
-            connected_at: data.user.timestamp * 1000, // Convert to milliseconds
+            connected_at: data.user.timestamp * 1000,
             last_activity: Date.now()
           };
         } else if (data.action === 'disconnected') {
@@ -234,7 +657,6 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
         updatedViolations[data.severity] += 1;
         
         const recentViolations = [...current.recent_violations, data];
-        // Keep only last 10 violations
         if (recentViolations.length > 10) {
           recentViolations.shift();
         }
@@ -249,10 +671,8 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
         };
       });
       
-      // Add to violations log
       setViolationsLog(prev => {
         const updated = [...prev, data];
-        // Keep only last 50 violations
         if (updated.length > 50) {
           updated.shift();
         }
@@ -286,8 +706,11 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     websocketService.onMessage('student_violation', handleStudentViolation);
     websocketService.onMessage('student_activity', handleStudentActivity);
 
+    console.log('✅ ExamMonitoring: WebSocket handlers registered');
+
     // Cleanup function
     return () => {
+      console.log('🧹 ExamMonitoring: Cleaning up WebSocket handlers');
       websocketService.offMessage('room_user_event');
       websocketService.offMessage('student_exam_start');
       websocketService.offMessage('student_heartbeat');
@@ -295,458 +718,24 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       websocketService.offMessage('student_violation');
       websocketService.offMessage('student_activity');
       
-      // Clear any pending critical violation timeout
       if (criticalViolationTimeoutRef.current) {
         clearTimeout(criticalViolationTimeoutRef.current);
       }
     };
-  }, [examId, studentId, sessionId, securityPassed]);
+  }, [examId, studentId, sessionId]);
 
-  const setupMonitoring = () => {
-    // 1. Tab/Window Focus Monitoring
-    setupFocusMonitoring();
-    
-    // 2. Visibility Change Detection
-    setupVisibilityMonitoring();
-    
-    // 3. Mouse Behavior Tracking
-    setupMouseTracking();
-    
-    // 4. Keyboard Event Monitoring
-    setupKeyboardTracking();
-    
-    // 5. Clipboard Monitoring
-    setupClipboardMonitoring();
-    
-    // 6. DevTools Continuous Check
-    setupDevToolsMonitoring();
-    
-    // 7. Fullscreen Monitoring
-    setupFullscreenMonitoring();
-    
-    // 8. Screen Height Monitoring (Split Screen Detection)
-    setupScreenHeightMonitoring();
-  };
-
-  // 1. Tab/Window Focus Monitoring
-  const setupFocusMonitoring = () => {
-    const handleFocus = () => {
-      setIsTabActive(true);
-      const inactiveTime = Date.now() - lastActiveTime.current;
-      
-      if (inactiveTime > 5000) { // 5 seconds
-        logViolation('tab_switch_return', 'medium', {
-          inactiveTime: inactiveTime,
-          switchCount: tabSwitchCount.current
-        });
-      }
-    };
-
-    const handleBlur = () => {
-      setIsTabActive(false);
-      lastActiveTime.current = Date.now();
-      tabSwitchCount.current += 1;
-      
-      // Tab switch will be handled by visibility change event to avoid duplication
-
-      // Show warning after 3 tab switches
-      if (tabSwitchCount.current >= 3) {
-      }
-
-      // Critical violation after 5 tab switches
-      if (tabSwitchCount.current >= 5) {
-        reportCriticalViolation('Terlalu banyak perpindahan tab. Ujian dihentikan untuk menjaga integritas.');
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('blur', handleBlur);
-  };
-
-  // 2. Visibility Change Detection
-  const setupVisibilityMonitoring = () => {
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        logViolation('page_hidden', 'high', {
-          timestamp: Date.now(),
-          visibilityState: document.visibilityState
-        });
-      } else {
-        logViolation('page_visible', 'medium', {
-          timestamp: Date.now(),
-          visibilityState: document.visibilityState
-        });
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-  };
-
-  // 3. Mouse Behavior Tracking
-  const setupMouseTracking = () => {
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseTracker.current.x = e.clientX;
-      mouseTracker.current.y = e.clientY;
-    };
-
-    const handleMouseClick = (e: MouseEvent) => {
-      mouseTracker.current.clicks += 1;
-      
-      // Detect right clicks
-      if (e.button === 2) {
-        logViolation('right_click_attempt', 'medium', {
-          x: e.clientX,
-          y: e.clientY,
-          timestamp: Date.now()
-        });
-      }
-
-      // Detect rapid clicking (potential automation)
-      const rapidClickThreshold = 10;
-      if (mouseTracker.current.clicks > rapidClickThreshold) {
-        const timeWindow = 5000; // 5 seconds
-        setTimeout(() => {
-          mouseTracker.current.clicks = Math.max(0, mouseTracker.current.clicks - rapidClickThreshold);
-        }, timeWindow);
-
-        logViolation('rapid_clicking', 'high', {
-          clickCount: mouseTracker.current.clicks,
-          timestamp: Date.now()
-        });
-      }
-    };
-
-    const handleMouseLeave = () => {
-      logViolation('mouse_leave_window', 'low', {
-        timestamp: Date.now()
-      });
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('click', handleMouseClick);
-    document.addEventListener('contextmenu', handleMouseClick);
-    document.addEventListener('mouseleave', handleMouseLeave);
-  };
-
-  // 4. Keyboard Event Monitoring
-  const setupKeyboardTracking = () => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      keyboardTracker.current.keystrokes += 1;
-
-      // Monitor suspicious key combinations
-      const suspiciousKeys = [
-        'F12', 'F5', 'F11',
-        'PrintScreen', 'Insert', 'Delete'
-      ];
-
-      const suspiciousCombinations = [
-        { ctrl: true, shift: true, key: 'I' },
-        { ctrl: true, shift: true, key: 'J' },
-        { ctrl: true, shift: true, key: 'C' },
-        { ctrl: true, key: 'U' },
-        { ctrl: true, key: 'S' },
-        { ctrl: true, key: 'A' },
-        { ctrl: true, key: 'C' },
-        { ctrl: true, key: 'V' },
-        { alt: true, key: 'Tab' },
-        { alt: true, key: 'F4' }
-      ];
-
-      if (suspiciousKeys.includes(e.key)) {
-        keyboardTracker.current.suspiciousKeys += 1;
-        logViolation('suspicious_key', 'high', {
-          key: e.key,
-          timestamp: Date.now()
-        });
-      }
-
-      for (const combo of suspiciousCombinations) {
-        if (
-          (combo.ctrl === undefined || combo.ctrl === e.ctrlKey) &&
-          (combo.shift === undefined || combo.shift === e.shiftKey) &&
-          (combo.alt === undefined || combo.alt === e.altKey) &&
-          combo.key.toLowerCase() === e.key.toLowerCase()
-        ) {
-          keyboardTracker.current.suspiciousKeys += 1;
-          logViolation('suspicious_combination', 'high', {
-            combination: `${combo.ctrl ? 'Ctrl+' : ''}${combo.shift ? 'Shift+' : ''}${combo.alt ? 'Alt+' : ''}${combo.key}`,
-            timestamp: Date.now()
-          });
-        }
-      }
-
-      // Detect very fast typing (potential automation)
-      const typingSpeed = keyboardTracker.current.keystrokes;
-      if (typingSpeed > 200) { // 200 keystrokes in monitoring window
-        logViolation('rapid_typing', 'medium', {
-          keystrokeCount: typingSpeed,
-          timestamp: Date.now()
-        });
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-  };
-
-  // 5. Clipboard Monitoring
-  const setupClipboardMonitoring = () => {
-    const handleCopy = () => {
-      logViolation('copy_attempt', 'high', {
-        timestamp: Date.now()
-      });
-    };
-
-    const handlePaste = () => {
-      logViolation('paste_attempt', 'high', {
-        timestamp: Date.now()
-      });
-    };
-
-    const handleCut = () => {
-      logViolation('cut_attempt', 'high', {
-        timestamp: Date.now()
-      });
-    };
-
-    document.addEventListener('copy', handleCopy);
-    document.addEventListener('paste', handlePaste);
-    document.addEventListener('cut', handleCut);
-  };
-
-  // 6. DevTools Continuous Monitoring
-  const setupDevToolsMonitoring = () => {
-    const checkDevTools = () => {
-      let devtoolsScore = 0;
-      const threshold = 80; // Higher threshold for continuous monitoring
-
-      // Size-based detection (more lenient)
-      try {
-        const heightDiff = window.outerHeight - window.innerHeight;
-        const widthDiff = window.outerWidth - window.innerWidth;
-        
-        // Even more lenient for continuous monitoring
-        if (heightDiff > 300 && widthDiff > 350) {
-          devtoolsScore += 40;
-        } else if (heightDiff > 250 || widthDiff > 300) {
-          devtoolsScore += 20;
-        }
-      } catch (error) {
-        console.warn('Continuous window size detection failed:', error);
-      }
-
-      // Performance-based detection (less frequent)
-      try {
-        const start = performance.now();
-
-        const end = performance.now();
-        
-        // Higher threshold for continuous monitoring
-        if (end - start > 300) {
-          devtoolsScore += 30;
-        }
-      } catch (error) {
-      }
-
-      // Check for rapid console clearing (potential DevTools usage)
-      try {
-        const now = Date.now();
-        if (window.lastConsoleCheck && (now - window.lastConsoleCheck) < 1000) {
-          devtoolsScore += 10;
-        }
-        window.lastConsoleCheck = now;
-      } catch (error) {
-      }
-
-      if (devtoolsScore >= threshold) {
-        logViolation('devtools_detected', 'critical', {
-          timestamp: Date.now(),
-          score: devtoolsScore,
-          windowSize: {
-            outer: { width: window.outerWidth, height: window.outerHeight },
-            inner: { width: window.innerWidth, height: window.innerHeight }
-          }
-        });
-        
-      } else if (devtoolsScore >= 40) {
-        logViolation('devtools_suspected', 'medium', {
-          timestamp: Date.now(),
-          score: devtoolsScore
-        });
-      }
-    };
-
-    // Less frequent checking to reduce false positives
-    monitoringInterval.current = setInterval(checkDevTools, 3000); // Check every 3 seconds
-  };
-
-  // 7. Fullscreen Monitoring
-  const setupFullscreenMonitoring = () => {
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement) {
-        // Log the violation first
-        logViolation('fullscreen_exit', 'high', {
-          timestamp: Date.now()
-        });
-        
-        // Handle fullscreen exit with proper user gesture requirement
-        handleFullscreenExit();
-      }
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-  };
-
-  // 8. Screen Height Monitoring (Split Screen Detection)
-  const setupScreenHeightMonitoring = () => {
-    const handleResize = () => {
-      const currentHeight = window.innerHeight;
-      const originalHeight = screenHeightTracker.current.originalHeight;
-      const heightReduction = originalHeight - currentHeight;
-      const reductionPercentage = (heightReduction / originalHeight) * 100;
-      
-      screenHeightTracker.current.currentHeight = currentHeight;
-      
-      // Detect significant height reduction (possible split screen)
-      if (reductionPercentage > 30) { // More than 30% height reduction
-        screenHeightTracker.current.violations += 1;
-        
-        logViolation('screen_height_reduction', 'high', {
-          originalHeight,
-          currentHeight,
-          reductionPercentage: Math.round(reductionPercentage),
-          violationCount: screenHeightTracker.current.violations,
-          timestamp: Date.now()
-        });
-        
-        // Critical violation after multiple height reductions
-        if (screenHeightTracker.current.violations >= 3) {
-          reportCriticalViolation(`Split screen atau pengurangan tinggi layar terdeteksi (${Math.round(reductionPercentage)}% pengurangan). Ujian dihentikan.`);
-        }
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (monitoringInterval.current) {
+        clearInterval(monitoringInterval.current);
       }
       
-      // Also check for very small screen height (possible mobile split screen)
-      if (currentHeight < 400) {
-        logViolation('very_small_screen_height', 'medium', {
-          currentHeight,
-          timestamp: Date.now()
-        });
+      if (criticalViolationTimeoutRef.current) {
+        clearTimeout(criticalViolationTimeoutRef.current);
       }
     };
-    
-    window.addEventListener('resize', handleResize);
-  };
-
-  // Function to report critical violations to the backend
-  const reportCriticalViolation = async (reason: string) => {
-    if (!token || !user?._id) return;
-
-    const violation: any = {
-      type: 'critical_violation_event',
-      violation_type: 'exam_terminated_by_system',
-      severity: 'critical',
-      timestamp: Date.now(),
-      examId,
-      studentId: user._id,
-      sessionId,
-      details: {
-        reason,
-        userAgent: navigator.userAgent,
-        url: window.location.href,
-        full_name: user?.profile_details?.full_name || 'Unknown Student'
-      },
-    };
-
-    // Send critical violation to backend
-    await examSecurityService.reportCriticalViolation(token, examId, user._id, violation);
-  };
-
-  // Violation Logging - Modified to send via WebSocket
-  const logViolation = (type: string, severity: 'low' | 'medium' | 'high' | 'critical', details?: any) => {
-    // Implement debouncing to prevent duplicate violations
-    const now = Date.now();
-    const violationKey = `${type}_${severity}`;
-    
-    if (lastLoggedViolation[violationKey] && (now - lastLoggedViolation[violationKey]) < VIOLATION_DEBOUNCE_TIME) {
-      // Skip logging if same violation type was logged recently
-      return;
-    }
-    
-    lastLoggedViolation[violationKey] = now;
-
-    // Send streamlined violation data
-    const violation = {
-      type: 'student_violation',
-      student_id: studentId,
-      exam_id: examId,
-      session_id: sessionId,
-      violation_type: type,
-      severity,
-      timestamp: now,
-      // Only send essential details
-      tab_active: isTabActive,
-      screen_height: screenHeightTracker.current.currentHeight,
-      ...(details?.reductionPercentage && { screen_reduction: details.reductionPercentage })
-    };
-
-    // Send violation via WebSocket
-    websocketService.send(violation);
-
-    // Store in localStorage for backup
-    const violationsKey = `exam_violations_${examId}_${studentId}`;
-    console.log('Sending WebSocket message:', violation);
-    
-    setViolationCounts(prev => {
-      const newCounts = { ...prev };
-      newCounts[severity] += 1;
-      const totalViolations = newCounts.low + newCounts.medium + newCounts.high + newCounts.critical;
-      
-      // Use setTimeout to avoid setState during render
-      setTimeout(() => {
-        onViolationUpdate(totalViolations);
-      }, 0);
-      
-      return newCounts;
-    });
-
-  };
-
-  const handleFullscreenExit = () => {
-    // Use setTimeout to avoid setState during render
-    setTimeout(() => {
-      console.log('ExamMonitoring: Fullscreen exit detected, but allowing exam to continue');
-      // For now, just log the violation but don't force critical violation
-      // This prevents exam termination due to accidental fullscreen exit
-    }, 100); // Small delay to avoid setState during render
-  };
-
-  // Activity Logging - For non-violation events
-  const logActivity = (activityType: string, details?: any) => {
-    // Send streamlined activity data
-    const activity = {
-      type: 'student_activity',
-      student_id: studentId,
-      exam_id: examId,
-      session_id: sessionId,
-      activity_type: activityType,
-      timestamp: Date.now(),
-      // Only essential details
-      ...(details && Object.keys(details).length > 0 && { details })
-    };
-
-    // Send activity via WebSocket
-    websocketService.send(activity);
-  };
-
-  // Cleanup
-  const cleanup = () => {
-    if (monitoringInterval.current) {
-      clearInterval(monitoringInterval.current);
-    }
-    
-    if (criticalViolationTimeoutRef.current) {
-      clearTimeout(criticalViolationTimeoutRef.current);
-    }
-  };
+  }, []);
 
   return (
     <>
