@@ -678,7 +678,10 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         user={user}
         securityPassed={securityPassed}
         onCriticalViolation={handleCriticalViolation}
-        onViolationUpdate={handleViolationUpdate}
+        onViolationCountsChange={handleViolationCountsChange}
+        onConnectedUsersChange={handleConnectedUsersChange}
+        onStudentActivitiesChange={handleStudentActivitiesChange}
+        onRoomStatsChange={handleRoomStatsChange}
       />
 
       {/* Sticky Header */}

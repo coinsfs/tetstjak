@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
+import { ExamMonitoring } from '@/components/security';
+import { ConnectedUser, StudentActivity, RoomStats, ViolationCount } from '@/types/websocket';
 import { websocketService } from '@/services/websocket';
 import { 
   Users, 
@@ -85,13 +87,38 @@ type SortField = 'full_name' | 'violationCount' | 'lastActivity' | 'progress' | 
 type SortDirection = 'asc' | 'desc';
 
 const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId }) => {
+  const { token, user } = useAuth();
+  const { navigate } = useRouter();
+  
+  // WebSocket data state
+  const [connectedUsers, setConnectedUsers] = useState<Record<string, ConnectedUser>>({});
+  const [studentActivities, setStudentActivities] = useState<Record<string, StudentActivity>>({});
+  const [roomStats, setRoomStats] = useState<RoomStats>({ proctor_count: 0, student_count: 0, total_count: 0, last_updated: 0 });
+  const [violationCounts, setViolationCounts] = useState<ViolationCount>({ low: 0, medium: 0, high: 0, critical: 0 });
+  
+  // UI state
+  const [examData, setExamData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [totalQuestions, setTotalQuestions] = useState(0);
+  const [isConnected, setIsConnected] = useState(false);
+
+  // Calculate derived data
+  const totalViolations = violationCounts.low + violationCounts.medium + violationCounts.high + violationCounts.critical;
+  const studentsWithProblems = Object.values(studentActivities).filter(
+    student => student.violations.high > 0 || student.violations.critical > 0
+  ).length;
+  const averageProgress = Object.values(studentActivities).length > 0 
+    ? Math.round((Object.values(studentActivities).reduce((sum, student) => sum + student.total_answered, 0) / Object.values(studentActivities).length / Math.max(totalQuestions, 1)) * 100)
+    : 0;
+
   const [examActivityEvents, setExamActivityEvents] = useState<ExamActivityEvent[]>([]);
   const [violationEvents, setViolationEvents] = useState<ViolationEvent[]>([]);
   const [connectedStudents, setConnectedStudents] = useState<ConnectedStudent[]>([]);
   const [totalActiveStudents, setTotalActiveStudents] = useState(0);
   const [totalExamQuestions, setTotalExamQuestions] = useState<number>(0);
   const [displayActivityEvents, setDisplayActivityEvents] = useState<ExamActivityEvent[]>([]);
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
   const [lastHeartbeat, setLastHeartbeat] = useState<Date>(new Date());
   const [selectedStudent, setSelectedStudent] = useState<ConnectedStudent | null>(null);
   const [showDetailPanel, setShowDetailPanel] = useState(false);
@@ -104,13 +131,21 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   const [soundEnabled, setSoundEnabled] = useState(true);
   const soundEnabledRef = useRef(soundEnabled);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const { token } = useAuth();
-  const { navigate } = useRouter();
 
   // Keep soundEnabledRef in sync with soundEnabled state
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
+
+  useEffect(() => {
+    // Extract total questions from URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const totalQuestionsParam = urlParams.get('totalQuestions');
+    if (totalQuestionsParam) {
+      setTotalQuestions(parseInt(totalQuestionsParam, 10));
+      setTotalExamQuestions(parseInt(totalQuestionsParam, 10));
+    }
+  }, []);
 
   // Get total questions from URL parameters
   useEffect(() => {
@@ -786,10 +821,25 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      {/* Hidden ExamMonitoring component for data processing */}
+      <ExamMonitoring
+        examId={examId}
+        studentId={user?._id || ''}
+        sessionId={examId}
+        token={token}
+        user={user}
+        securityPassed={true}
+        onCriticalViolation={(reason) => console.warn('Critical violation in monitoring:', reason)}
+        onViolationCountsChange={setViolationCounts}
+        onConnectedUsersChange={setConnectedUsers}
+        onStudentActivitiesChange={setStudentActivities}
+        onRoomStatsChange={setRoomStats}
+      />
+
+      {/* Header */}
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
@@ -799,15 +849,15 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
                 <ArrowLeft className="w-5 h-5 text-gray-600" />
               </button>
               <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Shield className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">Monitoring Ujian Real-time</h1>
                   <div className="flex items-center space-x-4 text-sm text-gray-600">
                     <span>ID Ujian: {examId}</span>
-                    {totalExamQuestions > 0 && (
-                      <span>Total Soal: {totalExamQuestions}</span>
+                    {totalQuestions > 0 && (
+                      <span>Total Soal: {totalQuestions}</span>
                     )}
                   </div>
                 </div>
@@ -824,493 +874,160 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
                 {connectionStatus === 'connected' ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
                 <span className="text-sm font-medium capitalize">{connectionStatus}</span>
               </div>
-              
-              {/* Sound Toggle */}
-              <button
-                onClick={() => setSoundEnabled(!soundEnabled)}
-                className={`p-2 rounded-lg transition-colors ${
-                  soundEnabled ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
-                }`}
-              >
-                {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-              </button>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Enhanced Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Siswa Terhubung</p>
-                <p className="text-2xl font-bold text-gray-900">{examStats.totalStudents}</p>
-                <p className="text-xs text-gray-500 mt-1">Aktif dalam ujian</p>
-              </div>
               <Users className="w-8 h-8 text-blue-600" />
             </div>
+            <div>
+              <div className="text-3xl font-bold text-gray-900">{roomStats.student_count}</div>
+              <div className="text-sm text-gray-600">Aktif dalam ujian</div>
+            </div>
           </div>
           
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Progress Rata-rata</p>
-                <p className="text-2xl font-bold text-gray-900">{examStats.averageProgress}%</p>
-                <p className="text-xs text-gray-500 mt-1">Penyelesaian ujian</p>
-              </div>
               <TrendingUp className="w-8 h-8 text-green-600" />
             </div>
+            <div>
+              <div className="text-3xl font-bold text-gray-900">{averageProgress}%</div>
+              <div className="text-sm text-gray-600">Penyelesaian ujian</div>
+            </div>
           </div>
           
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Siswa Selesai</p>
-                <p className="text-2xl font-bold text-gray-900">{examStats.studentsCompleted}</p>
-                <p className="text-xs text-gray-500 mt-1">Menjawab semua soal</p>
-              </div>
               <CheckCircle className="w-8 h-8 text-purple-600" />
             </div>
+            <div>
+              <div className="text-3xl font-bold text-gray-900">{Object.values(studentActivities).filter(s => s.total_answered === totalQuestions).length}</div>
+              <div className="text-sm text-gray-600">Menjawab semua soal</div>
+            </div>
           </div>
           
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Pelanggaran</p>
-                <p className="text-2xl font-bold text-gray-900">{violationEvents.length}</p>
-                <p className="text-xs text-gray-500 mt-1">Semua tingkat</p>
-              </div>
               <AlertTriangle className="w-8 h-8 text-red-600" />
             </div>
+            <div>
+              <div className="text-3xl font-bold text-gray-900">{totalViolations}</div>
+              <div className="text-sm text-gray-600">Semua tingkat</div>
+            </div>
           </div>
           
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Siswa Bermasalah</p>
-                <p className="text-2xl font-bold text-gray-900">{examStats.studentsWithViolations}</p>
-                <p className="text-xs text-gray-500 mt-1">Ada pelanggaran</p>
-              </div>
               <Eye className="w-8 h-8 text-orange-600" />
             </div>
+            <div>
+              <div className="text-3xl font-bold text-gray-900">{studentsWithProblems}</div>
+              <div className="text-sm text-gray-600">Ada pelanggaran</div>
+            </div>
           </div>
         </div>
 
-        {/* Main Student Monitoring Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Monitoring Siswa Real-time</h3>
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-500">
-                  {connectedStudents.length} siswa terhubung
-                </span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs text-gray-500">Live</span>
-                </div>
-              </div>
-            </div>
+        {/* Student Monitoring */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+            <h2 className="text-xl font-semibold text-gray-900">Monitoring Siswa Real-time</h2>
+            <p className="text-sm text-gray-600 mt-1">{roomStats.student_count} siswa terhubung • Live</p>
           </div>
           
-          {connectedStudents.length === 0 ? (
-            <div className="text-center py-16">
-              <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h4 className="text-lg font-medium text-gray-900 mb-2">Belum Ada Siswa Terhubung</h4>
-              <p className="text-gray-500">Siswa akan muncul di sini ketika mereka mulai mengerjakan ujian</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                      onClick={() => handleSort('full_name')}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Nama Siswa</span>
-                        {renderSortIcon('full_name')}
-                      </div>
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                      onClick={() => handleSort('violationCount')}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Pelanggaran</span>
-                        {renderSortIcon('violationCount')}
-                      </div>
-                    </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                      onClick={() => handleSort('lastActivity')}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Aktivitas Terakhir</span>
-                        {renderSortIcon('lastActivity')}
-                      </div>
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status Layar
-                    </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                      onClick={() => handleSort('progress')}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Progress Ujian</span>
-                        {renderSortIcon('progress')}
-                      </div>
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Aksi
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {sortedStudents.map((student) => {
-                    const statusDisplay = getStatusDisplay(student);
-                    const screenDisplay = getScreenStatusDisplay(student);
-                    const progressDisplay = getProgressDisplay(student);
-                    const StatusIcon = statusDisplay.icon;
-                    
-                    return (
-                      <tr 
-                        key={student.studentId} 
-                        className="hover:bg-blue-50 transition-colors cursor-pointer"
-                        onClick={() => {
-                          setSelectedStudent(student);
-                          setShowDetailPanel(true);
-                        }}
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
-                              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                <span className="text-sm font-medium text-blue-600">
-                                  {student.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{student.full_name}</div>
-                              <div className="text-sm text-gray-500">ID: {student.studentId.slice(-8)}</div>
-                            </div>
-                          </div>
-                        </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusDisplay.color}`}>
-                            <StatusIcon className="w-3 h-3 mr-1" />
-                            {statusDisplay.text}
-                          </span>
-                        </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getViolationBadgeColor(student.violationCount)}`}>
-                              {student.violationCount}
-                            </span>
-                            {student.violationCount > 0 && (
-                              <div className="text-xs text-gray-500">
-                                <div>K: {student.violationsBySeverity.critical}</div>
-                                <div>T: {student.violationsBySeverity.high}</div>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900">
-                            {student.latestActivityDescription || 'Belum ada aktivitas'}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {student.latestActivityTimestamp ? formatRelativeTime(student.latestActivityTimestamp) : '-'}
-                          </div>
-                        </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className={`text-sm font-medium ${screenDisplay.color}`}>
-                            {screenDisplay.text}
-                          </div>
-                          {student.originalScreenHeight && student.currentScreenHeight && (
-                            <div className="text-xs text-gray-500">
-                              {student.originalScreenHeight}px → {student.currentScreenHeight}px
-                            </div>
-                          )}
-                        </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-3">
-                            <div className={`text-sm font-medium ${progressDisplay.color}`}>
-                              {progressDisplay.text}
-                            </div>
-                            {totalExamQuestions > 0 && (
-                              <div className="w-16 bg-gray-200 rounded-full h-2">
-                                <div 
-                                  className={`h-2 rounded-full transition-all duration-300 ${
-                                    progressDisplay.percentage >= 80 ? 'bg-green-500' :
-                                    progressDisplay.percentage >= 50 ? 'bg-blue-500' :
-                                    progressDisplay.percentage >= 25 ? 'bg-yellow-500' : 'bg-red-500'
-                                  }`}
-                                  style={{ width: `${progressDisplay.percentage}%` }}
-                                ></div>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <div className="flex items-center justify-center space-x-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedStudent(student);
-                                setShowDetailPanel(true);
-                              }}
-                              className="text-blue-600 hover:text-blue-900 text-sm font-medium"
-                            >
-                              Detail
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                terminateExam(student.studentId);
-                              }}
-                              className="text-red-600 hover:text-red-900 text-sm font-medium"
-                            >
-                              Hentikan
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Student Detail Panel */}
-        {showDetailPanel && selectedStudent && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-lg font-medium text-blue-600">
-                      {selectedStudent.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                    </span>
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">{selectedStudent.full_name}</h2>
-                    <p className="text-sm text-gray-500">Detail Monitoring Siswa</p>
-                  </div>
+          <div className="p-6">
+            {Object.keys(studentActivities).length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-12 h-12 text-gray-400" />
                 </div>
-                <button
-                  onClick={() => setShowDetailPanel(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <XCircle className="w-5 h-5 text-gray-500" />
-                </button>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Belum Ada Siswa Terhubung</h3>
+                <p className="text-gray-600">Siswa akan muncul di sini ketika mereka mulai mengerjakan ujian</p>
               </div>
-              
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Student Info */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-900">Informasi Siswa</h3>
-                    <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Status:</span>
-                        <span className={`text-sm font-medium ${getStatusDisplay(selectedStudent).color.split(' ')[0]}`}>
-                          {getStatusDisplay(selectedStudent).text}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Progress Ujian:</span>
-                        <span className={`text-sm font-medium ${getProgressDisplay(selectedStudent).color}`}>
-                          {getProgressDisplay(selectedStudent).text}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Total Pelanggaran:</span>
-                        <span className="text-sm font-medium text-gray-900">{selectedStudent.violationCount}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Terhubung Sejak:</span>
-                        <span className="text-sm font-medium text-gray-900">{formatTimestamp(selectedStudent.connectionTime)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Status Layar:</span>
-                        <span className={`text-sm font-medium ${getScreenStatusDisplay(selectedStudent).color}`}>
-                          {getScreenStatusDisplay(selectedStudent).text}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Violation Summary */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-900">Ringkasan Pelanggaran</h3>
-                    <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Kritis:</span>
-                        <span className="text-sm font-medium text-red-600">{selectedStudent.violationsBySeverity.critical}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Tinggi:</span>
-                        <span className="text-sm font-medium text-orange-600">{selectedStudent.violationsBySeverity.high}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Sedang:</span>
-                        <span className="text-sm font-medium text-yellow-600">{selectedStudent.violationsBySeverity.medium}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Rendah:</span>
-                        <span className="text-sm font-medium text-blue-600">{selectedStudent.violationsBySeverity.low}</span>
-                      </div>
-                      {selectedStudent.latestViolationDescription && (
-                        <div className="pt-2 border-t border-gray-200">
-                          <span className="text-sm text-gray-600">Pelanggaran Terakhir:</span>
-                          <p className="text-sm font-medium text-gray-900 mt-1">{selectedStudent.latestViolationDescription}</p>
-                          <p className="text-xs text-gray-500">{selectedStudent.latestViolationTimestamp ? formatRelativeTime(selectedStudent.latestViolationTimestamp) : ''}</p>
+            ) : (
+              <div className="space-y-4">
+                {Object.values(studentActivities).map((student) => (
+                  <div key={student.student_id} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <User className="w-5 h-5 text-blue-600" />
                         </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Recent Activities for Selected Student */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-900">Aktivitas Terbaru</h3>
-                    <div className="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">
-                      {displayActivityEvents
-                        .filter(event => event.studentId === selectedStudent.studentId)
-                        .slice(0, 10)
-                        .map((event, index) => (
-                          <div key={index} className="flex items-start space-x-3 py-2 border-b border-gray-200 last:border-b-0">
-                            <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-900">{getActivityDescription(event)}</p>
-                              <p className="text-xs text-gray-500">{formatTimestamp(event.timestamp)}</p>
-                            </div>
-                          </div>
-                        ))}
-                      {displayActivityEvents.filter(event => event.studentId === selectedStudent.studentId).length === 0 && (
-                        <p className="text-sm text-gray-500 italic">Belum ada aktivitas tercatat</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="mt-6 flex justify-end space-x-3">
-                  <button
-                    onClick={() => terminateExam(selectedStudent.studentId)}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    Hentikan Ujian Siswa
-                  </button>
-                  <button
-                    onClick={() => setShowDetailPanel(false)}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-                  >
-                    Tutup
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Recent Global Activities - Simplified */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Violations */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h3 className="text-lg font-semibold text-gray-900">Pelanggaran Terbaru</h3>
-            </div>
-            <div className="p-6">
-              <div className="space-y-3 max-h-64 overflow-y-auto">
-                {violationEvents.slice(0, 10).map((violation, index) => (
-                  <div key={index} className="flex items-start space-x-3 p-3 bg-red-50 rounded-lg border border-red-200">
-                    <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2">
-                        <p className="text-sm font-medium text-gray-900">
-                          {violation.details?.full_name || 'Unknown Student'}
-                        </p>
-                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                          violation.severity === 'critical' ? 'bg-red-100 text-red-800' :
-                          violation.severity === 'high' ? 'bg-orange-100 text-orange-800' :
-                          violation.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-blue-100 text-blue-800'
-                        }`}>
-                          {violation.severity}
-                        </span>
+                        <div>
+                          <h3 className="font-medium text-gray-900">{student.full_name}</h3>
+                          <p className="text-sm text-gray-600">ID: {student.student_id}</p>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600">{getViolationDescription(violation)}</p>
-                      <p className="text-xs text-gray-500">{formatTimestamp(violation.timestamp)}</p>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm text-green-600 font-medium">Online</span>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <div className="text-lg font-semibold text-gray-900">{student.current_question}</div>
+                        <div className="text-xs text-gray-600">Soal Saat Ini</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-semibold text-gray-900">{student.total_answered}</div>
+                        <div className="text-xs text-gray-600">Sudah Dijawab</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-semibold text-gray-900">
+                          {Math.round((student.total_answered / Math.max(totalQuestions, 1)) * 100)}%
+                        </div>
+                        <div className="text-xs text-gray-600">Progress</div>
+                      </div>
+                      <div className="text-center">
+                        <div className={`text-lg font-semibold ${
+                          (student.violations.high + student.violations.critical) > 0 ? 'text-red-600' : 'text-green-600'
+                        }`}>
+                          {student.violations.low + student.violations.medium + student.violations.high + student.violations.critical}
+                        </div>
+                        <div className="text-xs text-gray-600">Pelanggaran</div>
+                      </div>
+                    </div>
+                    
+                    {(student.violations.high > 0 || student.violations.critical > 0) && (
+                      <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <AlertTriangle className="w-4 h-4 text-red-600" />
+                          <span className="text-sm font-medium text-red-800">Pelanggaran Terdeteksi</span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-2 text-xs">
+                          <div className="text-center">
+                            <div className="font-medium text-gray-600">{student.violations.low}</div>
+                            <div className="text-gray-500">Rendah</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-medium text-yellow-600">{student.violations.medium}</div>
+                            <div className="text-gray-500">Sedang</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-medium text-orange-600">{student.violations.high}</div>
+                            <div className="text-gray-500">Tinggi</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-medium text-red-600">{student.violations.critical}</div>
+                            <div className="text-gray-500">Kritis</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="mt-3 text-xs text-gray-500">
+                      Terakhir aktif: {new Date(student.last_heartbeat).toLocaleTimeString()}
                     </div>
                   </div>
                 ))}
-                {violationEvents.length === 0 && (
-                  <p className="text-sm text-gray-500 italic text-center py-4">Belum ada pelanggaran tercatat</p>
-                )}
               </div>
-            </div>
-          </div>
-
-          {/* Recent Activities */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h3 className="text-lg font-semibold text-gray-900">Aktivitas Terbaru</h3>
-            </div>
-            <div className="p-6">
-              <div className="space-y-3 max-h-64 overflow-y-auto">
-                {displayActivityEvents.slice(0, 10).map((activity, index) => (
-                  <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <Activity className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">
-                        {activity.details?.full_name || 'Unknown Student'}
-                      </p>
-                      <p className="text-sm text-gray-600">{getActivityDescription(activity)}</p>
-                      <p className="text-xs text-gray-500">{formatTimestamp(activity.timestamp)}</p>
-                    </div>
-                  </div>
-                ))}
-                {displayActivityEvents.length === 0 && (
-                  <p className="text-sm text-gray-500 italic text-center py-4">Belum ada aktivitas tercatat</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Broadcast Controls */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Kontrol Ujian</h3>
-          <div className="flex space-x-4">
-            <button
-              onClick={() => sendBroadcastMessage('Peringatan: Tetap fokus pada ujian Anda', 'warning')}
-              className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
-            >
-              <Send className="w-4 h-4" />
-              <span>Kirim Peringatan</span>
-            </button>
-            
-            <button
-              onClick={() => terminateExam()}
-              className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              <StopCircle className="w-4 h-4" />
-              <span>Hentikan Semua Ujian</span>
-            </button>
+            )}
           </div>
         </div>
       </div>
