@@ -3,6 +3,18 @@ import { AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { websocketService } from '@/services/websocket';
 import { examSecurityService } from '@/services/examSecurity'; // Import examSecurityService
 import { UserProfile } from '@/types/auth';
+import { 
+  ProctorMonitoringMessage,
+  ConnectedUser,
+  StudentActivity,
+  RoomStats,
+  RoomUserEvent,
+  StudentExamStartMessage,
+  StudentHeartbeatMessage,
+  StudentAnswerUpdateMessage,
+  StudentViolationMessage,
+  StudentActivityMessage
+} from '@/types/websocket';
 
 // Debouncing mechanism to prevent duplicate violation logging
 const lastLoggedViolation: Record<string, number> = {};
@@ -43,6 +55,17 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     critical: 0
   });
   const [soundInitialized, setSoundInitialized] = useState(false);
+
+  // WebSocket monitoring state
+  const [connectedUsers, setConnectedUsers] = useState<Record<string, ConnectedUser>>({});
+  const [studentActivities, setStudentActivities] = useState<Record<string, StudentActivity>>({});
+  const [roomStats, setRoomStats] = useState<RoomStats>({
+    proctor_count: 0,
+    student_count: 0,
+    total_count: 0,
+    last_updated: Date.now()
+  });
+  const [violationsLog, setViolationsLog] = useState<StudentViolationMessage[]>([]);
 
   const tabSwitchCount = useRef(0);
   const lastActiveTime = useRef(Date.now());
@@ -105,13 +128,177 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 
   // Add WebSocket message logging for debugging
   useEffect(() => {
+    if (!securityPassed) return;
+
+    // Handler for room user events (connect/disconnect)
+    const handleRoomUserEvent = (data: RoomUserEvent) => {
+      console.log('📊 Room User Event:', data.action, data.user.username);
+      
+      setConnectedUsers(prev => {
+        const updated = { ...prev };
+        
+        if (data.action === 'connected') {
+          updated[data.user.user_id] = {
+            user_id: data.user.user_id,
+            username: data.user.username,
+            full_name: data.user.username, // Use username as fallback
+            roles: data.user.roles,
+            user_type: data.user.user_type,
+            connected_at: data.user.timestamp * 1000, // Convert to milliseconds
+            last_activity: Date.now()
+          };
+        } else if (data.action === 'disconnected') {
+          delete updated[data.user.user_id];
+        }
+        
+        return updated;
+      });
+      
+      setRoomStats({
+        proctor_count: data.room_stats.proctor_count,
+        student_count: data.room_stats.student_count,
+        total_count: data.room_stats.total_count,
+        last_updated: Date.now()
+      });
+    };
+
+    // Handler for student exam start
+    const handleStudentExamStart = (data: StudentExamStartMessage) => {
+      console.log('🎯 Student Exam Start:', data.full_name);
+      
+      setStudentActivities(prev => ({
+        ...prev,
+        [data.student_id]: {
+          student_id: data.student_id,
+          full_name: data.full_name,
+          last_heartbeat: data.timestamp as number,
+          last_answer_update: 0,
+          total_answered: 0,
+          current_question: 1,
+          device_info: data.raw_message.device_info,
+          violations: { low: 0, medium: 0, high: 0, critical: 0 },
+          recent_violations: []
+        }
+      }));
+    };
+
+    // Handler for student heartbeat
+    const handleStudentHeartbeat = (data: StudentHeartbeatMessage) => {
+      console.log('💓 Student Heartbeat:', data.full_name);
+      
+      setStudentActivities(prev => {
+        const current = prev[data.student_id];
+        if (!current) return prev;
+        
+        return {
+          ...prev,
+          [data.student_id]: {
+            ...current,
+            last_heartbeat: data.timestamp as number
+          }
+        };
+      });
+    };
+
+    // Handler for student answer updates
+    const handleStudentAnswerUpdate = (data: StudentAnswerUpdateMessage) => {
+      console.log('✏️ Student Answer Update:', data.full_name, 'Question', data.raw_message.question_number);
+      
+      setStudentActivities(prev => {
+        const current = prev[data.student_id];
+        if (!current) return prev;
+        
+        return {
+          ...prev,
+          [data.student_id]: {
+            ...current,
+            last_answer_update: data.timestamp as number,
+            total_answered: data.raw_message.total_answered,
+            current_question: data.raw_message.question_number
+          }
+        };
+      });
+    };
+
+    // Handler for student violations
+    const handleStudentViolation = (data: StudentViolationMessage) => {
+      console.log('⚠️ Student Violation:', data.full_name, data.violation_type, data.severity);
+      
+      setStudentActivities(prev => {
+        const current = prev[data.student_id];
+        if (!current) return prev;
+        
+        const updatedViolations = { ...current.violations };
+        updatedViolations[data.severity] += 1;
+        
+        const recentViolations = [...current.recent_violations, data];
+        // Keep only last 10 violations
+        if (recentViolations.length > 10) {
+          recentViolations.shift();
+        }
+        
+        return {
+          ...prev,
+          [data.student_id]: {
+            ...current,
+            violations: updatedViolations,
+            recent_violations: recentViolations
+          }
+        };
+      });
+      
+      // Add to violations log
+      setViolationsLog(prev => {
+        const updated = [...prev, data];
+        // Keep only last 50 violations
+        if (updated.length > 50) {
+          updated.shift();
+        }
+        return updated;
+      });
+    };
+
+    // Handler for student activities
+    const handleStudentActivity = (data: StudentActivityMessage) => {
+      console.log('📝 Student Activity:', data.full_name, data.activityType);
+      
+      setStudentActivities(prev => {
+        const current = prev[data.student_id];
+        if (!current) return prev;
+        
+        return {
+          ...prev,
+          [data.student_id]: {
+            ...current,
+            last_activity: data.timestamp as number
+          }
+        };
+      });
+    };
+
+    // Register all message handlers
+    websocketService.onMessage('room_user_event', handleRoomUserEvent);
+    websocketService.onMessage('student_exam_start', handleStudentExamStart);
+    websocketService.onMessage('student_heartbeat', handleStudentHeartbeat);
+    websocketService.onMessage('student_answer_update', handleStudentAnswerUpdate);
+    websocketService.onMessage('student_violation', handleStudentViolation);
+    websocketService.onMessage('student_activity', handleStudentActivity);
+
+    // Cleanup function
     return () => {
+      websocketService.offMessage('room_user_event');
+      websocketService.offMessage('student_exam_start');
+      websocketService.offMessage('student_heartbeat');
+      websocketService.offMessage('student_answer_update');
+      websocketService.offMessage('student_violation');
+      websocketService.offMessage('student_activity');
+      
       // Clear any pending critical violation timeout
       if (criticalViolationTimeoutRef.current) {
         clearTimeout(criticalViolationTimeoutRef.current);
       }
     };
-  }, [examId, studentId, sessionId]);
+  }, [examId, studentId, sessionId, securityPassed]);
 
   const setupMonitoring = () => {
     // 1. Tab/Window Focus Monitoring
@@ -562,11 +749,29 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   return (
     <>
       {process.env.NODE_ENV === 'development' && (
-        <div className="fixed bottom-4 left-4 bg-gray-800 text-white px-4 py-2 rounded-lg text-xs z-40">
-          <div>Violations: L:{violationCounts.low} M:{violationCounts.medium} H:{violationCounts.high} C:{violationCounts.critical}</div>
-          <div>Tab Switches: {tabSwitchCount.current}</div>
-          <div>Active: {isTabActive ? 'Yes' : 'No'}</div>
-          <div>Screen: {screenHeightTracker.current.currentHeight}px (Original: {screenHeightTracker.current.originalHeight}px)</div>
+        <div className="fixed bottom-4 left-4 bg-gray-800 text-white px-4 py-2 rounded-lg text-xs z-40 max-w-sm">
+          <div className="space-y-1">
+            <div className="font-semibold text-yellow-300">Local Violations:</div>
+            <div>L:{violationCounts.low} M:{violationCounts.medium} H:{violationCounts.high} C:{violationCounts.critical}</div>
+            <div>Tab Switches: {tabSwitchCount.current}</div>
+            <div>Active: {isTabActive ? 'Yes' : 'No'}</div>
+            <div>Screen: {screenHeightTracker.current.currentHeight}px</div>
+            
+            <div className="font-semibold text-green-300 mt-2">WebSocket Data:</div>
+            <div>Connected Users: {Object.keys(connectedUsers).length}</div>
+            <div>Students: {roomStats.student_count}</div>
+            <div>Proctors: {roomStats.proctor_count}</div>
+            <div>Active Students: {Object.keys(studentActivities).length}</div>
+            <div>Violations Log: {violationsLog.length}</div>
+            
+            {Object.values(studentActivities).map(student => (
+              <div key={student.student_id} className="border-t border-gray-600 pt-1 mt-1">
+                <div className="text-blue-300">{student.full_name}:</div>
+                <div>Q{student.current_question} ({student.total_answered} answered)</div>
+                <div>V: L:{student.violations.low} M:{student.violations.medium} H:{student.violations.high} C:{student.violations.critical}</div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </>

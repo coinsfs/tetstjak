@@ -9,3 +9,4 @@ export * from './common';
 export * from './assignment';
 export * from './expertise';
 export * from './questionSet';
+export * from './websocket';
