@@ -1319,4 +1319,3 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({ examId })
 };
 
 export default ProctorMonitoringPage;
-
