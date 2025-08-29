@@ -97,8 +97,7 @@ src/components/modals/AssignmentDeleteModal.tsx
 src/components/modals/CoordinatorConfirmationModal.tsx
 src/components/modals/ImportDataModal.tsx
 src/components/modals/details/ExamDetailModal.tsx
-src/components/profile/ProfilePictureUpload.tsx
-src/components/profile/SubjectFilter.tsx
+
 src/components/SubjectFilter.tsx
 src/components/dashboards/student/StudentHeader.tsx
 src/components/dashboards/student/StudentMainContent.tsx
@@ -108,7 +107,7 @@ src/components/dashboards/student/pages/StudentEvaluationPage.tsx
 src/components/dashboards/student/pages/StudentExamsPage.tsx
 src/components/dashboards/student/pages/StudentProfilePage.tsx
 src/components/dashboards/student/pages/StudentResultsPage.tsx
-src/components/profile/index.ts
+
 src/components/dashboards/student/pages/StudentExamTakingPage.tsx
 
 
