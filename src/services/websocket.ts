@@ -46,7 +46,21 @@ class WebSocketService {
     console.log('🔍 WebSocketService - connect() called with endpointSuffix:', endpointSuffix);
     console.log('🔍 WebSocketService - token length:', token ? token.length : 'null');
     
-    const newWsUrl = `wss://testing.cigarverse.space/api/v1${endpointSuffix}?token=${token}`;
+    // Extract base domain from API_BASE_URL and construct proper WebSocket URL
+    const baseUrl = this.baseURL; // https://testing.cigarverse.space/api/v1
+    console.log('🔍 WebSocketService - baseURL from service:', baseUrl);
+    
+    // Extract domain from baseURL (remove /api/v1 suffix)
+    const urlParts = baseUrl.replace('https://', '').replace('http://', '').split('/');
+    const domain = urlParts[0]; // testing.cigarverse.space
+    console.log('🔍 WebSocketService - extracted domain:', domain);
+    
+    // Ensure endpointSuffix starts with /
+    const cleanEndpointSuffix = endpointSuffix.startsWith('/') ? endpointSuffix : `/${endpointSuffix}`;
+    console.log('🔍 WebSocketService - cleanEndpointSuffix:', cleanEndpointSuffix);
+    
+    // Build proper WebSocket URL: wss://domain/api/v1/ws/...
+    const newWsUrl = `wss://${domain}/api/v1${cleanEndpointSuffix}?token=${token}`;
     console.log('🔍 WebSocketService - newWsUrl constructed:', newWsUrl);
 
     // If already connected or connecting to the same URL, skip

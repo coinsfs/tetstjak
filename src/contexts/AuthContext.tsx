@@ -123,6 +123,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log('Clean path:', getCleanPath(currentPath)); // Debug log
         console.log('🔍 AuthContext - Desired endpoint:', desiredEndpoint); // Debug log
         
+        // Add defensive logging and validation
+        console.log('🔍 AuthContext - About to call websocketService.connect with endpoint:', desiredEndpoint);
+        
+        // Defensive check: ensure endpoint has proper prefix
+        let validatedEndpoint = desiredEndpoint;
+        if (!desiredEndpoint.startsWith('/ws/')) {
+          console.warn('🚨 AuthContext - Invalid endpoint detected, fixing:', desiredEndpoint);
+          if (desiredEndpoint.length === 24) { // Looks like a MongoDB ObjectId
+            validatedEndpoint = `/ws/exam-room/${desiredEndpoint}`;
+          } else {
+            validatedEndpoint = '/ws/lobby';
+          }
+          console.log('🔍 AuthContext - Corrected endpoint to:', validatedEndpoint);
+        }
+        
         // Get current WebSocket endpoint
         const currentEndpoint = websocketService.getCurrentEndpoint();
         const isConnected = websocketService.isConnected();
@@ -136,7 +151,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         });
         
         // Only connect if endpoint is different, no connection exists, or connection is broken
-        const shouldConnect = currentEndpoint !== desiredEndpoint || 
+        const shouldConnect = currentEndpoint !== validatedEndpoint || 
                              !isConnected || 
                              (connectionState.readyState !== undefined && 
                               connectionState.readyState !== WebSocket.OPEN && 
@@ -144,9 +159,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (shouldConnect) {
           console.log('🔍 AuthContext - WebSocket connection needed, calling websocketService.connect with:', desiredEndpoint);
+          console.log('🔍 AuthContext - Final validated endpoint being sent:', validatedEndpoint);
           console.log('WebSocket connection needed:', {
             currentEndpoint,
-            desiredEndpoint,
+            desiredEndpoint: validatedEndpoint,
             isConnected,
             shouldConnect
           }); // Debug log
@@ -174,7 +190,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
           };
 
-          websocketService.connect(token, desiredEndpoint, onAuthError, onStatusChange);
+          websocketService.connect(token, validatedEndpoint, onAuthError, onStatusChange);
         }
       } else {
         // User is not authenticated, disconnect WebSocket
