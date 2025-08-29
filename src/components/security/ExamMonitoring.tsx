@@ -8,12 +8,7 @@ import {
   ConnectedUser,
   StudentActivity,
   RoomStats,
-  RoomUserEvent,
-  StudentExamStartMessage,
-  StudentHeartbeatMessage,
-  StudentAnswerUpdateMessage,
-  StudentViolationMessage,
-  StudentActivityMessage
+  ViolationCount
 } from '@/types/websocket';
 
 // Debouncing mechanism to prevent duplicate violation logging
@@ -28,14 +23,10 @@ interface ExamMonitoringProps {
   user: UserProfile | null;
   securityPassed: boolean;
   onCriticalViolation: (reason: string) => void;
-  onViolationUpdate: (count: number) => void;
-}
-
-interface ViolationCount {
-  low: number;
-  medium: number;
-  high: number;
-  critical: number;
+  onViolationCountsChange: (counts: ViolationCount) => void;
+  onConnectedUsersChange: (users: Record<string, ConnectedUser>) => void;
+  onStudentActivitiesChange: (activities: Record<string, StudentActivity>) => void;
+  onRoomStatsChange: (stats: RoomStats) => void;
 }
 
 const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
@@ -46,7 +37,10 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   user,
   securityPassed,
   onCriticalViolation,
-  onViolationUpdate
+  onViolationCountsChange,
+  onConnectedUsersChange,
+  onStudentActivitiesChange,
+  onRoomStatsChange
 }) => {
   const [isTabActive, setIsTabActive] = useState(true);
   const [violationCounts, setViolationCounts] = useState<ViolationCount>({
@@ -158,7 +152,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       const totalViolations = newCounts.low + newCounts.medium + newCounts.high + newCounts.critical;
       
       setTimeout(() => {
-        onViolationUpdate(totalViolations);
+        onViolationCountsChange(newCounts);
       }, 0);
       
       return newCounts;
@@ -542,7 +536,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     setupClipboardMonitoring,
     setupDevToolsMonitoring,
     setupFullscreenMonitoring,
-    setupScreenHeightMonitoring
+    onViolationCountsChange
   ]);
 
   // Main monitoring setup effect
@@ -556,7 +550,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     console.log('🔧 ExamMonitoring: Setting up WebSocket handlers');
 
     // Handler for room user events (connect/disconnect)
-    const handleRoomUserEvent = (data: RoomUserEvent) => {
+    const handleRoomUserEvent = (data: any) => {
       console.log('📊 Room User Event:', data.action, data.user.username);
       
       setConnectedUsers(prev => {
@@ -578,6 +572,9 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
         
         return updated;
       });
+
+      // Notify parent component
+      onConnectedUsersChange(updated);
       
       setRoomStats({
         proctor_count: data.room_stats.proctor_count,
@@ -585,10 +582,13 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
         total_count: data.room_stats.total_count,
         last_updated: Date.now()
       });
+
+      // Notify parent component
+      onRoomStatsChange(data.room_stats);
     };
 
     // Handler for student exam start
-    const handleStudentExamStart = (data: StudentExamStartMessage) => {
+    const handleStudentExamStart = (data: any) => {
       console.log('🎯 Student Exam Start:', data.full_name);
       
       setStudentActivities(prev => ({
@@ -605,10 +605,15 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
           recent_violations: []
         }
       }));
+
+      // Notify parent component
+      setTimeout(() => {
+        onStudentActivitiesChange(prev => ({ ...prev }));
+      }, 0);
     };
 
     // Handler for student heartbeat
-    const handleStudentHeartbeat = (data: StudentHeartbeatMessage) => {
+    const handleStudentHeartbeat = (data: any) => {
       console.log('💓 Student Heartbeat:', data.full_name);
       
       setStudentActivities(prev => {
@@ -623,10 +628,15 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
           }
         };
       });
+
+      // Notify parent component
+      setTimeout(() => {
+        onStudentActivitiesChange(prev => ({ ...prev }));
+      }, 0);
     };
 
     // Handler for student answer updates
-    const handleStudentAnswerUpdate = (data: StudentAnswerUpdateMessage) => {
+    const handleStudentAnswerUpdate = (data: any) => {
       console.log('✏️ Student Answer Update:', data.full_name, 'Question', data.raw_message.question_number);
       
       setStudentActivities(prev => {
@@ -643,10 +653,15 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
           }
         };
       });
+
+      // Notify parent component
+      setTimeout(() => {
+        onStudentActivitiesChange(prev => ({ ...prev }));
+      }, 0);
     };
 
     // Handler for student violations
-    const handleStudentViolation = (data: StudentViolationMessage) => {
+    const handleStudentViolation = (data: any) => {
       console.log('⚠️ Student Violation:', data.full_name, data.violation_type, data.severity);
       
       setStudentActivities(prev => {
@@ -670,6 +685,11 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
           }
         };
       });
+
+      // Notify parent component
+      setTimeout(() => {
+        onStudentActivitiesChange(prev => ({ ...prev }));
+      }, 0);
       
       setViolationsLog(prev => {
         const updated = [...prev, data];
@@ -681,7 +701,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     };
 
     // Handler for student activities
-    const handleStudentActivity = (data: StudentActivityMessage) => {
+    const handleStudentActivity = (data: any) => {
       console.log('📝 Student Activity:', data.full_name, data.activityType);
       
       setStudentActivities(prev => {
@@ -696,6 +716,11 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
           }
         };
       });
+
+      // Notify parent component
+      setTimeout(() => {
+        onStudentActivitiesChange(prev => ({ ...prev }));
+      }, 0);
     };
 
     // Register all message handlers

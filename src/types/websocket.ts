@@ -130,6 +130,14 @@ export type ProctorMonitoringMessage =
   | StudentViolationMessage
   | StudentActivityMessage;
 
+// Violation count interface
+export interface ViolationCount {
+  low: number;
+  medium: number;
+  high: number;
+  critical: number;
+}
+
 // Connected user data structure
 export interface ConnectedUser {
   user_id: string;
