@@ -27,6 +27,7 @@ interface ExamMonitoringProps {
   sessionId: string;
   token: string | null;
   user: UserProfile | null;
+  securityPassed: boolean;
   onCriticalViolation: (reason: string) => void;
   onViolationUpdate: (count: number) => void;
 }
@@ -44,6 +45,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
   sessionId,
   token,
   user,
+  securityPassed,
   onCriticalViolation,
   onViolationUpdate
 }) => {

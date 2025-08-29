@@ -676,6 +676,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         sessionId={sessionId}
         token={token}
         user={user}
+        securityPassed={securityPassed}
         onCriticalViolation={handleCriticalViolation}
         onViolationUpdate={handleViolationUpdate}
       />
