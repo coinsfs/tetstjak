@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  FileText, 
+import React, { useState, useEffect } from "react";
+import {
+  FileText,
   Play,
-  Plus, 
+  Plus,
   Filter,
   Calendar,
   Clock,
@@ -15,26 +15,26 @@ import {
   HelpCircle,
   CheckCircle,
   XCircle,
-  AlertCircle
-} from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from '@/hooks/useRouter';
-import { 
-  teacherExamService, 
-  TeacherExam, 
+  AlertCircle,
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "@/hooks/useRouter";
+import {
+  teacherExamService,
+  TeacherExam,
   TeacherExamFilters,
   AcademicPeriod,
-  ActiveAcademicPeriod
-} from '@/services/teacherExam';
-import { teacherService, TeachingClass } from '@/services/teacher';
-import TeacherExamFormModal from './modals/TeacherExamFormModal';
-import TeacherExamDeleteModal from './modals/TeacherExamDeleteModal';
-import TeacherExamEditModal from './modals/TeacherExamEditModal';
-import TeacherExamQuestionsModal from './modals/TeacherExamQuestionsModal';
-import TeacherExamStartConfirmationModal from './modals/TeacherExamStartConfirmationModal';
-import Pagination from '@/components/Pagination';
-import { formatDateTimeWithTimezone, convertUTCToWIB } from '@/utils/timezone';
-import toast from 'react-hot-toast';
+  ActiveAcademicPeriod,
+} from "@/services/teacherExam";
+import { teacherService, TeachingClass } from "@/services/teacher";
+import TeacherExamFormModal from "./modals/TeacherExamFormModal";
+import TeacherExamDeleteModal from "./modals/TeacherExamDeleteModal";
+import TeacherExamEditModal from "./modals/TeacherExamEditModal";
+import TeacherExamQuestionsModal from "./modals/TeacherExamQuestionsModal";
+import TeacherExamStartConfirmationModal from "./modals/TeacherExamStartConfirmationModal";
+import Pagination from "@/components/Pagination";
+import { formatDateTimeWithTimezone, convertUTCToWIB } from "@/utils/timezone";
+import toast from "react-hot-toast";
 
 const TeacherExamsPage: React.FC = () => {
   const { token, user } = useAuth();
@@ -45,20 +45,22 @@ const TeacherExamsPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [teachingClasses, setTeachingClasses] = useState<TeachingClass[]>([]);
-  const [activeAcademicPeriod, setActiveAcademicPeriod] = useState<ActiveAcademicPeriod | null>(null);
-  
+  const [activeAcademicPeriod, setActiveAcademicPeriod] =
+    useState<ActiveAcademicPeriod | null>(null);
+
   // Filters
   const [filters, setFilters] = useState<TeacherExamFilters>({
     page: 1,
-    limit: 10
+    limit: 10,
   });
-  
+
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showQuestionsModal, setShowQuestionsModal] = useState(false);
-  const [showStartConfirmationModal, setShowStartConfirmationModal] = useState(false);
+  const [showStartConfirmationModal, setShowStartConfirmationModal] =
+    useState(false);
   const [selectedExam, setSelectedExam] = useState<TeacherExam | null>(null);
 
   useEffect(() => {
@@ -73,18 +75,19 @@ const TeacherExamsPage: React.FC = () => {
     if (!token) return;
 
     try {
-      const [academicPeriodsData, teachingData, activeAcademicData] = await Promise.all([
-        teacherExamService.getAcademicPeriods(token),
-        teacherService.getTeachingSummary(token),
-        teacherExamService.getActiveAcademicPeriod(token)
-      ]);
-      
+      const [academicPeriodsData, teachingData, activeAcademicData] =
+        await Promise.all([
+          teacherExamService.getAcademicPeriods(token),
+          teacherService.getTeachingSummary(token),
+          teacherExamService.getActiveAcademicPeriod(token),
+        ]);
+
       setAcademicPeriods(academicPeriodsData);
       setTeachingClasses(teachingData.classes);
       setActiveAcademicPeriod(activeAcademicData);
     } catch (error) {
-      console.error('Error fetching initial data:', error);
-      toast.error('Gagal memuat data awal');
+      console.error("Error fetching initial data:", error);
+      toast.error("Gagal memuat data awal");
     }
   };
 
@@ -98,28 +101,30 @@ const TeacherExamsPage: React.FC = () => {
       setTotalItems(response.total_items);
       setCurrentPage(response.current_page);
     } catch (error) {
-      console.error('Error fetching exams:', error);
-      toast.error('Gagal memuat daftar ujian');
+      console.error("Error fetching exams:", error);
+      toast.error("Gagal memuat daftar ujian");
     } finally {
       setLoading(false);
     }
   };
 
   const handleFilterChange = (key: keyof TeacherExamFilters, value: any) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       [key]: value,
-      page: 1 // Reset to first page when filtering
+      page: 1, // Reset to first page when filtering
     }));
   };
 
   const handlePageChange = (page: number) => {
-    setFilters(prev => ({ ...prev, page }));
+    setFilters((prev) => ({ ...prev, page }));
   };
 
   const handleCreateExam = () => {
     if (!activeAcademicPeriod) {
-      toast.error('Tidak ada periode akademik yang aktif. Hubungi administrator.');
+      toast.error(
+        "Tidak ada periode akademik yang aktif. Hubungi administrator."
+      );
       return;
     }
     setShowCreateModal(true);
@@ -146,57 +151,61 @@ const TeacherExamsPage: React.FC = () => {
   };
 
   const handleMonitorExam = (exam: TeacherExam) => {
-    if (exam.status === 'ongoing') {
+    if (exam.status === "ongoing") {
       // Pass total questions as URL parameter for monitoring
       const totalQuestions = exam.question_ids.length;
       navigate(`/monitor-exam/${exam._id}?totalQuestions=${totalQuestions}`);
     } else {
-      toast.error('Ujian belum dimulai atau sudah selesai.');
+      toast.error("Ujian belum dimulai atau sudah selesai.");
     }
   };
 
   const handleAnalyticsExam = (exam: TeacherExam) => {
     // TODO: Implement analytics functionality
-    toast.success('Fitur analitik akan segera tersedia');
+    toast.success("Fitur analitik akan segera tersedia");
   };
 
   const getExamTypeLabel = (examType: string) => {
     const typeLabels: { [key: string]: string } = {
-      'quiz': 'Kuis',
-      'daily_test': 'Ulangan Harian (UH)',
+      quiz: "Kuis",
+      daily_test: "Ulangan Harian (UH)",
     };
     return typeLabels[examType] || examType;
   };
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'pending_questions': { 
-        label: 'Menunggu Soal', 
-        color: 'bg-yellow-100 text-yellow-800', 
-        icon: AlertCircle 
+      pending_questions: {
+        label: "Menunggu Soal",
+        color: "bg-yellow-100 text-yellow-800",
+        icon: AlertCircle,
       },
-      'ready': { 
-        label: 'Siap', 
-        color: 'bg-blue-100 text-blue-800', 
-        icon: CheckCircle 
+      ready: {
+        label: "Siap",
+        color: "bg-blue-100 text-blue-800",
+        icon: CheckCircle,
       },
-      'ongoing': { 
-        label: 'Berlangsung', 
-        color: 'bg-green-100 text-green-800', 
-        icon: Play 
+      ongoing: {
+        label: "Berlangsung",
+        color: "bg-green-100 text-green-800",
+        icon: Play,
       },
-      'completed': { 
-        label: 'Selesai', 
-        color: 'bg-purple-100 text-purple-800', 
-        icon: CheckCircle 
-      }
+      completed: {
+        label: "Selesai",
+        color: "bg-purple-100 text-purple-800",
+        icon: CheckCircle,
+      },
     };
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending_questions;
+
+    const config =
+      statusConfig[status as keyof typeof statusConfig] ||
+      statusConfig.pending_questions;
     const IconComponent = config.icon;
-    
+
     return (
-      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.color}`}>
+      <span
+        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.color}`}
+      >
         <IconComponent className="w-4 h-4 mr-1" />
         {config.label}
       </span>
@@ -207,56 +216,59 @@ const TeacherExamsPage: React.FC = () => {
     return formatDateTimeWithTimezone(dateString);
   };
 
-  
   const getActionButtons = (exam: TeacherExam) => {
-  const { status } = exam;
-  const buttons = [];
+    const { status } = exam;
+    const buttons = [];
 
-  // Monitor/Analytics Button - Based on status
-  if (status === 'ongoing') {
-    buttons.push(
-      <button
-        key="monitor"
-        onClick={() => handleMonitorExam(exam)}
-        className="flex items-center space-x-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium whitespace-nowrap shadow-sm"
-      >
-        <Eye className="w-3 h-3" />
-        <span>Monitoring</span>
-      </button>
-    );
-  } else if (status === 'completed') {
-    buttons.push(
-      <button
-        key="analytics"
-        onClick={() => handleAnalyticsExam(exam)}
-        className="flex items-center space-x-1 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium whitespace-nowrap shadow-sm"
-      >
-        <BarChart3 className="w-3 h-3" />
-        <span>Analitik</span>
-      </button>
-    );
-  }
+    // Monitor/Analytics Button - Based on status
+    if (status === "ongoing") {
+      buttons.push(
+        <button
+          key="monitor"
+          onClick={() => handleMonitorExam(exam)}
+          className="flex items-center space-x-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium whitespace-nowrap shadow-sm"
+        >
+          <Eye className="w-3 h-3" />
+          <span>Monitoring</span>
+        </button>
+      );
+    } else if (status === "completed") {
+      buttons.push(
+        <button
+          key="analytics"
+          onClick={() => handleAnalyticsExam(exam)}
+          className="flex items-center space-x-1 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium whitespace-nowrap shadow-sm"
+        >
+          <BarChart3 className="w-3 h-3" />
+          <span>Analitik</span>
+        </button>
+      );
+    }
 
-  // Input Questions Button - Always available for pending_questions and ready status (MOVED TO SECOND)
-  if (status === 'pending_questions' || status === 'ready') {
-    buttons.push(
-      <button
-        key="input-questions"
-        onClick={() => handleInputQuestions(exam)}
-        className="flex items-center space-x-1 px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium whitespace-nowrap shadow-sm"
-      >
-        <HelpCircle className="w-3 h-3" />
-        <span>Input Soal</span>
-      </button>
-    );
-  }
+    // Input Questions Button - Always available for pending_questions and ready status (MOVED TO SECOND)
+    if (status === "pending_questions" || status === "ready") {
+      buttons.push(
+        <button
+          key="input-questions"
+          onClick={() => handleInputQuestions(exam)}
+          className="flex items-center space-x-1 px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium whitespace-nowrap shadow-sm"
+        >
+          <HelpCircle className="w-3 h-3" />
+          <span>Input Soal</span>
+        </button>
+      );
+    }
 
-  return buttons;
-};
+    return buttons;
+  };
 
   const isDeleteDisabled = (exam: TeacherExam) => {
-    return exam.status === 'ongoing' || exam.status === 'completed' || 
-           exam.exam_type === 'official_uts' || exam.exam_type === 'official_uas';
+    return (
+      exam.status === "ongoing" ||
+      exam.status === "completed" ||
+      exam.exam_type === "official_uts" ||
+      exam.exam_type === "official_uas"
+    );
   };
 
   const totalPages = Math.ceil(totalItems / (filters.limit || 10));
@@ -271,16 +283,24 @@ const TeacherExamsPage: React.FC = () => {
               <FileText className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Manajemen Ujian</h1>
-              <p className="text-gray-600">Kelola ujian dan soal pembelajaran</p>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Manajemen Ujian
+              </h1>
+              <p className="text-gray-600">
+                Kelola ujian dan soal pembelajaran
+              </p>
             </div>
           </div>
-          
+
           <button
             onClick={handleCreateExam}
             disabled={!activeAcademicPeriod}
             className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title={!activeAcademicPeriod ? 'Tidak ada periode akademik aktif' : 'Buat ujian baru'}
+            title={
+              !activeAcademicPeriod
+                ? "Tidak ada periode akademik aktif"
+                : "Buat ujian baru"
+            }
           >
             <Plus className="w-5 h-5" />
             <span>Buat Ujian</span>
@@ -294,12 +314,17 @@ const TeacherExamsPage: React.FC = () => {
           <Filter className="w-5 h-5 text-gray-500" />
           <h3 className="text-lg font-semibold text-gray-900">Filter Ujian</h3>
         </div>
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Academic Period Filter */}
           <select
-            value={filters.academic_period_id || ''}
-            onChange={(e) => handleFilterChange('academic_period_id', e.target.value || undefined)}
+            value={filters.academic_period_id || ""}
+            onChange={(e) =>
+              handleFilterChange(
+                "academic_period_id",
+                e.target.value || undefined
+              )
+            }
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-sm"
           >
             <option value="">Semua Periode Akademik</option>
@@ -312,14 +337,18 @@ const TeacherExamsPage: React.FC = () => {
 
           {/* Class Filter */}
           <select
-            value={filters.class_id || ''}
-            onChange={(e) => handleFilterChange('class_id', e.target.value || undefined)}
+            value={filters.class_id || ""}
+            onChange={(e) =>
+              handleFilterChange("class_id", e.target.value || undefined)
+            }
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-sm"
           >
             <option value="">Semua Kelas</option>
             {teachingClasses.map((teachingClass, index) => (
               <option key={index} value={teachingClass.class_details._id}>
-                Kelas {teachingClass.class_details.grade_level} {teachingClass.expertise_details.abbreviation} {teachingClass.class_details.name}
+                Kelas {teachingClass.class_details.grade_level}{" "}
+                {teachingClass.expertise_details.abbreviation}{" "}
+                {teachingClass.class_details.name}
               </option>
             ))}
           </select>
@@ -336,8 +365,9 @@ const TeacherExamsPage: React.FC = () => {
                 Periode Akademik Tidak Aktif
               </h4>
               <p className="text-sm text-yellow-700">
-                Saat ini tidak ada periode akademik yang aktif. Anda tidak dapat membuat ujian baru. 
-                Silakan hubungi administrator untuk mengaktifkan periode akademik.
+                Saat ini tidak ada periode akademik yang aktif. Anda tidak dapat
+                membuat ujian baru. Silakan hubungi administrator untuk
+                mengaktifkan periode akademik.
               </p>
             </div>
           </div>
@@ -362,7 +392,8 @@ const TeacherExamsPage: React.FC = () => {
               Belum Ada Ujian
             </h3>
             <p className="text-gray-600 mb-4">
-              Anda belum membuat ujian apapun. Mulai dengan membuat ujian pertama Anda.
+              Anda belum membuat ujian apapun. Mulai dengan membuat ujian
+              pertama Anda.
             </p>
             <button
               onClick={handleCreateExam}
@@ -414,33 +445,39 @@ const TeacherExamsPage: React.FC = () => {
                         </p>
                       </div>
                     </td>
-                    
+
                     {/* Jenis */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                         {getExamTypeLabel(exam.exam_type)}
                       </span>
                     </td>
-                    
+
                     {/* Status */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(exam.status)}
                     </td>
-                    
+
                     {/* Jadwal */}
                     <td className="px-6 py-4">
                       <div className="text-sm space-y-1">
                         <div className="flex items-center space-x-1 text-gray-900">
                           <Calendar className="w-3 h-3" />
-                          <span className="truncate">Mulai: {formatDateTime(exam.availability_start_time)}</span>
+                          <span className="truncate">
+                            Mulai:{" "}
+                            {formatDateTime(exam.availability_start_time)}
+                          </span>
                         </div>
                         <div className="flex items-center space-x-1 text-gray-500">
                           <Calendar className="w-3 h-3" />
-                          <span className="truncate">Selesai: {formatDateTime(exam.availability_end_time)}</span>
+                          <span className="truncate">
+                            Selesai:{" "}
+                            {formatDateTime(exam.availability_end_time)}
+                          </span>
                         </div>
                       </div>
                     </td>
-                    
+
                     {/* Durasi */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-1 text-sm text-gray-900">
@@ -448,7 +485,7 @@ const TeacherExamsPage: React.FC = () => {
                         <span>{exam.duration_minutes} menit</span>
                       </div>
                     </td>
-                    
+
                     {/* Soal */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-1 text-sm text-gray-900">
@@ -456,65 +493,69 @@ const TeacherExamsPage: React.FC = () => {
                         <span>{exam.question_ids.length} soal</span>
                       </div>
                     </td>
-                    
+
                     {/* Aksi */}
                     <td className="px-6 py-4 whitespace-nowrap text-center text-right">
                       <div className="flex items-center justify-end space-x-2">
                         {/* Start Button - Always first, disabled if not ready */}
                         <button
                           onClick={() => handleStartExam(exam)}
-                          disabled={exam.status !== 'ready'}
+                          disabled={exam.status !== "ready"}
                           className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap shadow-sm ${
-                            exam.status === 'ready'
-                              ? 'bg-green-600 text-white hover:bg-green-700'
-                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            exam.status === "ready"
+                              ? "bg-green-600 text-white hover:bg-green-700"
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
                           }`}
                           title={
-                            exam.status === 'ready' 
-                              ? 'Mulai ujian' 
-                              : 'Ujian belum siap dimulai'
+                            exam.status === "ready"
+                              ? "Mulai ujian"
+                              : "Ujian belum siap dimulai"
                           }
                         >
                           <Play className="w-3 h-3" />
                           <span>Mulai</span>
                         </button>
-                        
+
                         {/* Action Buttons */}
                         {getActionButtons(exam).map((button, index) => (
-                          <React.Fragment key={index}>
-                            {button}
-                          </React.Fragment>
+                          <React.Fragment key={index}>{button}</React.Fragment>
                         ))}
-                        
+
                         {/* Edit Button */}
                         <button
                           onClick={() => handleEditExam(exam)}
-                          disabled={exam.status === 'ongoing' || exam.status === 'completed'}
+                          disabled={
+                            exam.status === "ongoing" ||
+                            exam.status === "completed"
+                          }
                           className={`p-2 rounded-lg transition-colors ${
-                            exam.status === 'ongoing' || exam.status === 'completed'
-                              ? 'text-gray-300 cursor-not-allowed'
-                              : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                            exam.status === "ongoing" ||
+                            exam.status === "completed"
+                              ? "text-gray-300 cursor-not-allowed"
+                              : "text-gray-400 hover:text-blue-600 hover:bg-blue-50"
                           }`}
                           title="Edit Ujian"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        
+
                         {/* Delete Button */}
                         <button
                           onClick={() => handleDeleteExam(exam)}
                           disabled={isDeleteDisabled(exam)}
                           className={`p-2 rounded-lg transition-colors ${
                             isDeleteDisabled(exam)
-                              ? 'text-gray-300 cursor-not-allowed' 
-                              : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                              ? "text-gray-300 cursor-not-allowed"
+                              : "text-gray-400 hover:text-red-600 hover:bg-red-50"
                           }`}
                           title={
-                            exam.exam_type === 'official_uts' || exam.exam_type === 'official_uas'
-                              ? 'Ujian resmi tidak dapat dihapus'
-                              : exam.status === 'ongoing' || exam.status === 'completed'
-                              ? 'Ujian yang sedang berlangsung atau selesai tidak dapat dihapus'
-                              : 'Hapus Ujian'
+                            exam.exam_type === "official_uts" ||
+                            exam.exam_type === "official_uas"
+                              ? "Ujian resmi tidak dapat dihapus"
+                              : exam.status === "ongoing" ||
+                                exam.status === "completed"
+                              ? "Ujian yang sedang berlangsung atau selesai tidak dapat dihapus"
+                              : "Hapus Ujian"
                           }
                         >
                           <Trash2 className="w-4 h-4" />
@@ -553,10 +594,7 @@ const TeacherExamsPage: React.FC = () => {
             fetchExams();
           }}
           teachingClasses={teachingClasses}
-          currentUserId={user?._id || ''}
-          activeAcademicPeriod={activeAcademicPeriod}
-          teachingClasses={teachingClasses}
-          currentUserId={user?._id || ''}
+          currentUserId={user?._id || ""}
           activeAcademicPeriod={activeAcademicPeriod}
         />
       )}

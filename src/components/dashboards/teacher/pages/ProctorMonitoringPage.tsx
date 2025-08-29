@@ -120,7 +120,7 @@ const ProctorMonitoringPage: React.FC<ProctorMonitoringPageProps> = ({
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const soundEnabledRef = useRef(soundEnabled);
-  const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pingIntervalRef = useRef<number | null>(null);
   const { token } = useAuth();
   const { navigate } = useRouter();
 

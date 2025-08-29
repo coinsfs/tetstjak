@@ -61,14 +61,14 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [actualExamId, setActualExamId] = useState<string>("");
   const questionStartTimeRef = useRef<Record<string, number>>({});
-  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatIntervalRef = useRef<number | null>(null);
 
   // Debounce refs for essay answers
-  const essayDebounceTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const essayDebounceTimeoutRef = useRef<Record<string, number>>({});
   const lastEssayAnswerRef = useRef<Record<string, string>>({});
 
   // Auto-save interval
-  const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveIntervalRef = useRef<number | null>(null);
 
   // Add logging for WebSocket messages in exam taking page
   useEffect(() => {
