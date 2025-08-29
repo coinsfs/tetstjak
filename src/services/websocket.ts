@@ -43,22 +43,29 @@ class WebSocketService {
     onAuthError?: () => void, 
     onStatusChange?: (status: 'connected' | 'disconnected' | 'error' | 'reconnecting') => void
   ) {
+    console.log('🔍 WebSocketService - connect() called with endpointSuffix:', endpointSuffix);
+    console.log('🔍 WebSocketService - token length:', token ? token.length : 'null');
+    
     const newWsUrl = `wss://testing.cigarverse.space/api/v1${endpointSuffix}?token=${token}`;
+    console.log('🔍 WebSocketService - newWsUrl constructed:', newWsUrl);
 
     // If already connected or connecting to the same URL, skip
     if (this.ws && 
         (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) && 
         this.currentWsUrl === newWsUrl) {
+      console.log('🔍 WebSocketService - Already connected to same URL, skipping connection');
       return;
     }
 
     // If reconnecting to the same URL, don't start new connection - let existing reconnect handle it
     if (this.isReconnecting && this.currentWsUrl === newWsUrl) {
+      console.log('🔍 WebSocketService - Already reconnecting to same URL, skipping');
       return;
     }
 
     // If there's an existing connection that needs to be closed
     if (this.ws && this.currentWsUrl !== newWsUrl) {
+      console.log('🔍 WebSocketService - Closing existing connection. Old URL:', this.currentWsUrl, 'New URL:', newWsUrl);
       const readyState = this.ws.readyState;
       
       // Close connection if it's open, connecting, or in any state other than closed
@@ -80,13 +87,17 @@ class WebSocketService {
     try {
       this.currentToken = token;
       this.currentEndpoint = endpointSuffix;
+      console.log('🔍 WebSocketService - Setting currentEndpoint to:', endpointSuffix);
       this.authErrorCallback = onAuthError || null;
       this.statusChangeCallback = onStatusChange || null;
       this.currentWsUrl = newWsUrl;
+      console.log('🔍 WebSocketService - Setting currentWsUrl to:', newWsUrl);
       
       this.ws = new WebSocket(newWsUrl);
+      console.log('🔍 WebSocketService - WebSocket instance created for URL:', newWsUrl);
       
       this.ws.onopen = () => {
+        console.log('🔍 WebSocketService - WebSocket connection opened successfully for:', newWsUrl);
         this.reconnectAttempts = 0;
         this.isReconnecting = false;
         this.statusChangeCallback?.('connected');
@@ -137,8 +148,10 @@ class WebSocketService {
       };
 
       this.ws.onclose = (event) => {
+        console.log('🔍 WebSocketService - WebSocket connection closed. Code:', event.code, 'Reason:', event.reason, 'URL:', this.currentWsUrl);
         // Handle authentication errors
         if (event.code === 1008) {
+          console.log('🔍 WebSocketService - Authentication error detected (code 1008)');
           this.isReconnecting = false;
           this.authErrorCallback?.();
           return;
@@ -152,9 +165,11 @@ class WebSocketService {
       };
 
       this.ws.onerror = (error) => {
+        console.log('🔍 WebSocketService - WebSocket error occurred:', error, 'URL:', this.currentWsUrl);
         this.statusChangeCallback?.('error');
       };
     } catch (error) {
+      console.log('🔍 WebSocketService - Exception during WebSocket creation:', error);
       this.statusChangeCallback?.('error');
       this.isReconnecting = false;
     }

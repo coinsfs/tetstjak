@@ -72,34 +72,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!isAuthenticated) return '';
     
     const cleanPath = getCleanPath(currentPath);
+    console.log('🔍 AuthContext - getCurrentDesiredEndpoint - cleanPath:', cleanPath);
     
     if (cleanPath.startsWith('/exam-taking/')) {
       const sessionId = extractIdFromPath(cleanPath);
+      console.log('🔍 AuthContext - exam-taking route - sessionId:', sessionId);
       if (sessionId) {
         // Extract examId from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const examIdParam = urlParams.get('examId');
+        console.log('🔍 AuthContext - examIdParam from URL:', examIdParam);
         
         if (examIdParam) {
           try {
             const decodedExamId = atob(examIdParam + '='.repeat((4 - examIdParam.length % 4) % 4));
+            console.log('🔍 AuthContext - decodedExamId:', decodedExamId);
             return `/ws/exam-room/${decodedExamId}`;
           } catch (error) {
             console.warn('Failed to decode examId, using sessionId:', error);
             return `/ws/exam-room/${sessionId}`;
           }
         } else {
+          console.log('🔍 AuthContext - no examIdParam, using sessionId for endpoint');
           return `/ws/exam-room/${sessionId}`;
         }
       }
     } else if (cleanPath.startsWith('/monitor-exam/')) {
       const examId = extractIdFromPath(cleanPath);
+      console.log('🔍 AuthContext - monitor-exam route - examId:', examId);
       if (examId) {
         console.log('Monitor exam detected, examId:', examId); // Debug log
-        return `/ws/exam-room/${examId}`;
+        const endpoint = `/ws/exam-room/${examId}`;
+        console.log('🔍 AuthContext - monitor-exam endpoint:', endpoint);
+        return endpoint;
       }
     }
     
+    console.log('🔍 AuthContext - default endpoint: /ws/lobby');
     return '/ws/lobby';
   };
 
@@ -112,12 +121,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         console.log('Current path:', currentPath); // Debug log
         console.log('Clean path:', getCleanPath(currentPath)); // Debug log
-        console.log('Desired endpoint:', desiredEndpoint); // Debug log
+        console.log('🔍 AuthContext - Desired endpoint:', desiredEndpoint); // Debug log
         
         // Get current WebSocket endpoint
         const currentEndpoint = websocketService.getCurrentEndpoint();
         const isConnected = websocketService.isConnected();
         const connectionState = websocketService.getConnectionState();
+        
+        console.log('🔍 AuthContext - Current WebSocket state:', {
+          currentEndpoint,
+          desiredEndpoint,
+          isConnected,
+          connectionState
+        });
         
         // Only connect if endpoint is different, no connection exists, or connection is broken
         const shouldConnect = currentEndpoint !== desiredEndpoint || 
@@ -127,6 +143,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                               !connectionState.isReconnecting);
         
         if (shouldConnect) {
+          console.log('🔍 AuthContext - WebSocket connection needed, calling websocketService.connect with:', desiredEndpoint);
           console.log('WebSocket connection needed:', {
             currentEndpoint,
             desiredEndpoint,
