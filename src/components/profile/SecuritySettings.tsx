@@ -103,7 +103,7 @@ const SecuritySettings: React.FC = () => {
     try {
       setLoading(true);
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://testing.cigarverse.space/api/v1'}/users/me/change-password`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://192.168.146.9:8000/api/v1'}/users/me/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

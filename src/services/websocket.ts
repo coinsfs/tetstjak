@@ -58,11 +58,11 @@ class WebSocketService {
     console.log('🔍 WebSocketService - extracted domain:', domain);
     
     // Ensure endpointSuffix starts with /
-    const cleanEndpointSuffix = endpointSuffix.startsWith('/') ? endpointSuffix : `/${endpointSuffix}`;
+    const cleanEndpointSuffix = endpointSuffix.startsWith('/') ? endpointSuffix : `/ws/exam-room/${endpointSuffix}`;
     console.log('🔍 WebSocketService - cleanEndpointSuffix:', cleanEndpointSuffix);
     
     // Build proper WebSocket URL: wss://domain/api/v1/ws/...
-    const newWsUrl = `wss://${domain}/api/v1${cleanEndpointSuffix}?token=${token}`;
+    const newWsUrl = `ws://${domain}/api/v1${cleanEndpointSuffix}?token=${token}`;
     console.log('🔍 WebSocketService - newWsUrl constructed:', newWsUrl);
 
     // If already connected or connecting to the same URL, skip
