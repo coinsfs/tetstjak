@@ -1,3 +1,5 @@
+import { API_BASE_URL } from '../constants/config';
+
 class WebSocketService {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
@@ -47,7 +49,7 @@ class WebSocketService {
     console.log('🔍 WebSocketService - token length:', token ? token.length : 'null');
     
     // Extract base domain from API_BASE_URL and construct proper WebSocket URL
-    const baseUrl = this.baseURL; // https://testing.cigarverse.space/api/v1
+    const baseUrl = API_BASE_URL; // https://testing.cigarverse.space/api/v1
     console.log('🔍 WebSocketService - baseURL from service:', baseUrl);
     
     // Extract domain from baseURL (remove /api/v1 suffix)
