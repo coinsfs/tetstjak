@@ -46,11 +46,11 @@ src/components/modals/details/SubjectDetailModal.tsx
 src/components/modals/details/StudentDetailModal.tsx
 src/components/modals/details/ExpertiseProgramDetailModal.tsx
 src/components/modals/details/ClassDetailModal.tsx
-
+src/components/dashboards/AdminDashboard.tsx
 src/components/dashboards/teacher/pages/TeacherClassesPage.tsx
 src/components/dashboards/teacher/pages/TeacherProfilePage.tsx
 src/components/dashboards/teacher/pages/TeacherAnalyticsPage.tsx
-
+src/components/dashboards/teacher/pages/TeacherExamsPage.tsx
 src/components/dashboards/teacher/pages/modals/TeacherExamDeleteModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherExamEditModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherExamFormModal.tsx
@@ -71,7 +71,7 @@ src/components/charts/BrowserUsageChart.tsx
 src/components/charts/StudentGrowthChart.tsx
 src/components/charts/StudentsByMajorChart.tsx
 src/components/dashboards/StudentDashboard.tsx
-
+src/components/dashboards/TeacherDashboard.tsx
 src/components/dashboards/teacher/pages/TeacherQuestionSetsPage.tsx
 src/components/dashboards/teacher/pages/TeacherQuestionsPage.tsx
 src/components/dashboards/teacher/pages/components/MyQuestionsTable.tsx
@@ -105,7 +105,8 @@ src/components/dashboards/student/StudentMainContent.tsx
 src/components/dashboards/student/StudentSidebar.tsx
 src/components/dashboards/student/pages/StudentDashboardPage.tsx
 src/components/dashboards/student/pages/StudentEvaluationPage.tsx
-
+src/components/dashboards/student/pages/StudentExamsPage.tsx
 src/components/dashboards/student/pages/StudentProfilePage.tsx
 src/components/dashboards/student/pages/StudentResultsPage.tsx
 src/components/profile/index.ts
+
