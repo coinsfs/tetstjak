@@ -521,7 +521,7 @@ const AdminDashboard: React.FC = () => {
               
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
-                <p className="text-sm text-gray-500 mt-0.5">Welcome back, {user?.login_id}</p>
+                <p className="text-sm text-gray-500 mt-0.5">Welcome back, {user?.profile_details?.full_name}</p>
               </div>
             </div>
             
