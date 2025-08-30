@@ -4,15 +4,15 @@ src/components/SubjectManagement.tsx
 src/components/StudentPerformanceTable.tsx
 src/components/StudentManagement.tsx
 src/components/StudentFilter.tsx
-
+src/components/Sidebar.tsx
 src/components/QuestionDisplay.tsx
 src/components/ProtectedRoute.tsx
-
+src/components/ProfileManagement.tsx
 src/components/Pagination.tsx
 src/components/LoginForm.tsx
 src/components/ExpertiseProgramManagement.tsx
 src/components/ExpertiseProgramFilter.tsx
-src/components/ExamManagement.tsx
+
 src/components/ClassManagement.tsx
 src/components/ClassFilter.tsx
 src/components/AssignmentMatrix.tsx
@@ -22,7 +22,7 @@ src/components/tables/TeacherTable.tsx
 src/components/tables/SubjectTable.tsx
 src/components/tables/StudentTable.tsx
 src/components/tables/ExpertiseProgramTable.tsx
-src/components/tables/ExamTable.tsx
+
 src/components/tables/ClassTable.tsx
 src/components/profile/UserActivity.tsx
 src/components/profile/SecuritySettings.tsx
@@ -39,14 +39,14 @@ src/components/modals/forms/TeacherFormModal.tsx
 src/components/modals/forms/SubjectFormModal.tsx
 src/components/modals/forms/StudentFormModal.tsx
 src/components/modals/forms/ExpertiseProgramFormModal.tsx
-src/components/modals/forms/ExamFormModal.tsx
+
 src/components/modals/forms/ClassFormModal.tsx
 src/components/modals/details/TeacherDetailModal.tsx
 src/components/modals/details/SubjectDetailModal.tsx
 src/components/modals/details/StudentDetailModal.tsx
 src/components/modals/details/ExpertiseProgramDetailModal.tsx
 src/components/modals/details/ClassDetailModal.tsx
-
+src/components/dashboards/AdminDashboard.tsx
 src/components/dashboards/teacher/pages/TeacherClassesPage.tsx
 src/components/dashboards/teacher/pages/TeacherProfilePage.tsx
 src/components/dashboards/teacher/pages/TeacherAnalyticsPage.tsx
@@ -96,8 +96,9 @@ src/components/modals/AssignmentConfirmationModal.tsx
 src/components/modals/AssignmentDeleteModal.tsx
 src/components/modals/CoordinatorConfirmationModal.tsx
 src/components/modals/ImportDataModal.tsx
-src/components/modals/details/ExamDetailModal.tsx
 
+src/components/profile/ProfilePictureUpload.tsx
+src/components/profile/SubjectFilter.tsx
 src/components/SubjectFilter.tsx
 src/components/dashboards/student/StudentHeader.tsx
 src/components/dashboards/student/StudentMainContent.tsx
@@ -107,7 +108,7 @@ src/components/dashboards/student/pages/StudentEvaluationPage.tsx
 src/components/dashboards/student/pages/StudentExamsPage.tsx
 src/components/dashboards/student/pages/StudentProfilePage.tsx
 src/components/dashboards/student/pages/StudentResultsPage.tsx
-
+src/components/profile/index.ts
 src/components/dashboards/student/pages/StudentExamTakingPage.tsx
 
 
