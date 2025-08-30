@@ -10,9 +10,9 @@ src/components/ProtectedRoute.tsx
 src/components/ProfileManagement.tsx
 src/components/Pagination.tsx
 src/components/LoginForm.tsx
-src/components/ExpertiseProgramManagement.tsx
-src/components/ExpertiseProgramFilter.tsx
 
+src/components/ExpertiseProgramFilter.tsx
+src/components/ExamManagement.tsx
 src/components/ClassManagement.tsx
 src/components/ClassFilter.tsx
 src/components/AssignmentMatrix.tsx
@@ -21,8 +21,8 @@ src/components/ActivityFeed.tsx
 src/components/tables/TeacherTable.tsx
 src/components/tables/SubjectTable.tsx
 src/components/tables/StudentTable.tsx
-src/components/tables/ExpertiseProgramTable.tsx
 
+src/components/tables/ExamTable.tsx
 src/components/tables/ClassTable.tsx
 src/components/profile/UserActivity.tsx
 src/components/profile/SecuritySettings.tsx
@@ -39,7 +39,7 @@ src/components/modals/forms/TeacherFormModal.tsx
 src/components/modals/forms/SubjectFormModal.tsx
 src/components/modals/forms/StudentFormModal.tsx
 src/components/modals/forms/ExpertiseProgramFormModal.tsx
-
+src/components/modals/forms/ExamFormModal.tsx
 src/components/modals/forms/ClassFormModal.tsx
 src/components/modals/details/TeacherDetailModal.tsx
 src/components/modals/details/SubjectDetailModal.tsx
@@ -50,10 +50,10 @@ src/components/dashboards/AdminDashboard.tsx
 src/components/dashboards/teacher/pages/TeacherClassesPage.tsx
 src/components/dashboards/teacher/pages/TeacherProfilePage.tsx
 src/components/dashboards/teacher/pages/TeacherAnalyticsPage.tsx
-
+src/components/dashboards/teacher/pages/TeacherExamsPage.tsx
 src/components/dashboards/teacher/pages/modals/TeacherExamDeleteModal.tsx
-
-
+src/components/dashboards/teacher/pages/modals/TeacherExamEditModal.tsx
+src/components/dashboards/teacher/pages/modals/TeacherExamFormModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherExamStartConfirmationModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherQuestionFormModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherQuestionDetailModal.tsx
@@ -96,7 +96,7 @@ src/components/modals/AssignmentConfirmationModal.tsx
 src/components/modals/AssignmentDeleteModal.tsx
 src/components/modals/CoordinatorConfirmationModal.tsx
 src/components/modals/ImportDataModal.tsx
-
+src/components/modals/details/ExamDetailModal.tsx
 src/components/profile/ProfilePictureUpload.tsx
 src/components/profile/SubjectFilter.tsx
 src/components/SubjectFilter.tsx
