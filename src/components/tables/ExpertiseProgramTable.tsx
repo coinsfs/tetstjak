@@ -82,9 +82,6 @@ const ExpertiseProgramTable: React.FC<ExpertiseProgramTableProps> = memo(({
               <th className="col-medium text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Kepala Jurusan
               </th>
-              <th className="col-narrow text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Dibuat
-              </th>
               <th className="col-actions text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Aksi
               </th>
@@ -94,7 +91,7 @@ const ExpertiseProgramTable: React.FC<ExpertiseProgramTableProps> = memo(({
             {expertisePrograms.map((expertiseProgram) => (
               <tr key={expertiseProgram._id} className="hover:bg-gray-50 transition-colors">
                 {/* Nama Jurusan */}
-                <td className="col-medium col-expertise-name">
+                <td className="col-wide" title={expertiseProgram.name}>
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <GraduationCap className="w-4 h-4 text-purple-600" />
@@ -115,7 +112,7 @@ const ExpertiseProgramTable: React.FC<ExpertiseProgramTableProps> = memo(({
                 </td>
 
                 {/* Deskripsi */}
-                <td className="col-wide col-expertise-description">
+                <td className="col-wide" title={expertiseProgram.description}>
                   <div className="text-sm text-gray-900">
                     {expertiseProgram.description}
                   </div>
@@ -138,13 +135,6 @@ const ExpertiseProgramTable: React.FC<ExpertiseProgramTableProps> = memo(({
                     <div className="text-sm text-gray-900">
                       {getHeadOfDepartmentName(expertiseProgram)}
                     </div>
-                  </div>
-                </td>
-
-                {/* Tanggal Dibuat */}
-                <td className="col-narrow">
-                  <div className="text-sm text-gray-500">
-                    {formatDate(expertiseProgram.created_at)}
                   </div>
                 </td>
 
