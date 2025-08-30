@@ -16,6 +16,8 @@ const ExpertiseProgramDetailModal: React.FC<ExpertiseProgramDetailModalProps> = 
 }) => {
   if (!isOpen) return null;
 
+  console.log(expertiseProgram)
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('id-ID', {
       weekday: 'long',
