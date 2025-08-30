@@ -7,7 +7,8 @@ import { Teacher } from '@/types/user';
 interface CoordinatorMatrixProps {
   matrix: CoordinatorMatrixType;
   subjects: Subject[];
-  availableTeachers: { [gradeLevel: string]: { [subjectId: string]: Teacher[] } };
+  teachersMap: Map<string, Teacher>;
+  availableTeacherIdsByCell: { [gradeLevel: string]: { [subjectId: string]: string[] } };
   onCellChange: (gradeLevel: number, subjectId: string, coordinatorId: string | null) => void;
 }
 
@@ -20,12 +21,12 @@ const GRADE_LEVELS = [
 const CoordinatorMatrix: React.FC<CoordinatorMatrixProps> = memo(({
   matrix,
   subjects,
-  availableTeachers,
+  teachersMap,
+  availableTeacherIdsByCell,
   onCellChange
 }) => {
-  const getTeacherName = (coordinatorId: string, gradeLevel: number, subjectId: string) => {
-    const teachers = availableTeachers[gradeLevel.toString()]?.[subjectId] || [];
-    const teacher = teachers.find(t => t._id === coordinatorId);
+  const getTeacherName = (coordinatorId: string) => {
+    const teacher = teachersMap.get(coordinatorId);
     return teacher?.profile_details?.full_name || teacher?.login_id || 'Unknown Teacher';
   };
 
@@ -35,7 +36,7 @@ const CoordinatorMatrix: React.FC<CoordinatorMatrixProps> = memo(({
   };
 
   // Add safety checks
-  if (!matrix || !subjects || !availableTeachers) {
+  if (!matrix || !subjects || !teachersMap || !availableTeacherIdsByCell) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
         <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -117,7 +118,7 @@ const CoordinatorMatrix: React.FC<CoordinatorMatrixProps> = memo(({
                   const cell = matrix[grade.level.toString()]?.[subject._id];
                   const currentCoordinatorId = cell?.selectedCoordinatorId || '';
                   const isDirty = cell?.isDirty || false;
-                  const availableTeachersForCell = availableTeachers[grade.level.toString()]?.[subject._id] || [];
+                  const availableTeacherIdsForCell = availableTeacherIdsByCell[grade.level.toString()]?.[subject._id] || [];
 
                   return (
                     <td
@@ -133,20 +134,23 @@ const CoordinatorMatrix: React.FC<CoordinatorMatrixProps> = memo(({
                               ? 'border-orange-300 bg-orange-50 text-orange-900'
                               : currentCoordinatorId
                               ? 'border-green-300 bg-green-50 text-green-900'
-                              : availableTeachersForCell.length > 0
+                              : availableTeacherIdsForCell.length > 0
                               ? 'border-gray-300 bg-white text-gray-900'
                               : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
                           }`}
-                          disabled={availableTeachersForCell.length === 0}
+                          disabled={availableTeacherIdsForCell.length === 0}
                         >
                           <option value="">
-                            {availableTeachersForCell.length > 0 ? '-- Pilih Koordinator --' : '-- Tidak Ada Guru --'}
+                            {availableTeacherIdsForCell.length > 0 ? '-- Pilih Koordinator --' : '-- Tidak Ada Guru --'}
                           </option>
-                          {availableTeachersForCell.map((teacher) => (
-                            <option key={teacher._id} value={teacher._id}>
-                              {teacher.profile_details?.full_name || teacher.login_id}
+                          {availableTeacherIdsForCell.map((teacherId) => {
+                            const teacher = teachersMap.get(teacherId);
+                            return (
+                            <option key={teacherId} value={teacherId}>
+                              {teacher?.profile_details?.full_name || teacher?.login_id || 'Unknown Teacher'}
                             </option>
-                          ))}
+                            );
+                          })}
                         </select>
                         
                         {/* Custom dropdown arrow */}
@@ -165,15 +169,15 @@ const CoordinatorMatrix: React.FC<CoordinatorMatrixProps> = memo(({
                         <div className="mt-2 flex items-center justify-center space-x-1">
                           <User className="w-3 h-3 text-gray-400" />
                           <span className="text-xs text-gray-600 truncate max-w-[180px]">
-                            {getTeacherName(currentCoordinatorId, grade.level, subject._id)}
+                            {getTeacherName(currentCoordinatorId)}
                           </span>
                         </div>
                       )}
 
                       {/* Available teachers count */}
-                      {availableTeachersForCell.length > 0 && (
+                      {availableTeacherIdsForCell.length > 0 && (
                         <div className="mt-1 text-xs text-gray-400">
-                          {availableTeachersForCell.length} guru tersedia
+                          {availableTeacherIdsForCell.length} guru tersedia
                         </div>
                       )}
                     </td>

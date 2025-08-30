@@ -13,10 +13,10 @@ const SubjectCoordinatorManagement: React.FC = () => {
   const { token } = useAuth();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [coordinators, setCoordinators] = useState<SubjectCoordinator[]>([]);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [teachersMap, setTeachersMap] = useState<Map<string, Teacher>>(new Map());
   const [teachingAssignments, setTeachingAssignments] = useState<any[]>([]);
   const [matrix, setMatrix] = useState<CoordinatorMatrix>({});
-  const [availableTeachers, setAvailableTeachers] = useState<{ [gradeLevel: string]: { [subjectId: string]: Teacher[] } }>({});
+  const [availableTeacherIdsByCell, setAvailableTeacherIdsByCell] = useState<{ [gradeLevel: string]: { [subjectId: string]: string[] } }>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -50,12 +50,19 @@ const SubjectCoordinatorManagement: React.FC = () => {
 
         setSubjects(subjectsResponse.data || []);
         setCoordinators(coordinatorsData);
-        setTeachers(teachersData);
+        
+        // Convert teachers array to Map for efficient lookup
+        const teachersMapData = new Map<string, Teacher>();
+        teachersData.forEach(teacher => {
+          teachersMapData.set(teacher._id, teacher);
+        });
+        setTeachersMap(teachersMapData);
+        
         setTeachingAssignments(teachingAssignmentsData);
         setActiveAcademicPeriod(academicPeriodData);
 
         console.log('Loaded coordinators:', coordinatorsData);
-        console.log('Loaded teachers:', teachersData);
+        console.log('Loaded teachers count:', teachersData.length);
         console.log('Loaded teaching assignments:', teachingAssignmentsData);
 
       } catch (error) {
@@ -69,10 +76,10 @@ const SubjectCoordinatorManagement: React.FC = () => {
     loadData();
   }, [token]);
 
-  // Build available teachers mapping based on teaching assignments
+  // Build available teacher IDs mapping based on teaching assignments
   useEffect(() => {
-    const buildAvailableTeachers = () => {
-      const mapping: { [gradeLevel: string]: { [subjectId: string]: Teacher[] } } = {};
+    const buildAvailableTeacherIdsByCell = () => {
+      const mapping: { [gradeLevel: string]: { [subjectId: string]: string[] } } = {};
 
       // Initialize structure
       GRADE_LEVELS.forEach(gradeLevel => {
@@ -82,33 +89,31 @@ const SubjectCoordinatorManagement: React.FC = () => {
         });
       });
 
-      // Fill with teachers based on teaching assignments
+      // Fill with teacher IDs based on teaching assignments
       teachingAssignments.forEach(assignment => {
         const gradeLevel = assignment.class_details.grade_level;
         const subjectId = assignment.subject_details._id;
         const teacherId = assignment.teacher_details._id;
 
         if (mapping[gradeLevel.toString()] && mapping[gradeLevel.toString()][subjectId]) {
-          // Find teacher in teachers array
-          const teacher = teachers.find(t => t._id === teacherId);
-          if (teacher) {
-            // Check if teacher is not already added
-            const exists = mapping[gradeLevel.toString()][subjectId].some(t => t._id === teacherId);
+          // Check if teacher exists in teachersMap and not already added
+          if (teachersMap.has(teacherId)) {
+            const exists = mapping[gradeLevel.toString()][subjectId].includes(teacherId);
             if (!exists) {
-              mapping[gradeLevel.toString()][subjectId].push(teacher);
+              mapping[gradeLevel.toString()][subjectId].push(teacherId);
             }
           }
         }
       });
 
-      console.log('Available teachers mapping:', mapping);
-      setAvailableTeachers(mapping);
+      console.log('Available teacher IDs mapping:', mapping);
+      setAvailableTeacherIdsByCell(mapping);
     };
 
-    if (subjects.length > 0 && teachers.length > 0 && teachingAssignments.length > 0) {
-      buildAvailableTeachers();
+    if (subjects.length > 0 && teachersMap.size > 0 && teachingAssignments.length > 0) {
+      buildAvailableTeacherIdsByCell();
     }
-  }, [subjects, teachers, teachingAssignments]);
+  }, [subjects, teachersMap, teachingAssignments]);
 
   // Build matrix from coordinators data
   useEffect(() => {
@@ -418,7 +423,8 @@ const SubjectCoordinatorManagement: React.FC = () => {
       <CoordinatorMatrix
         matrix={matrix}
         subjects={subjects}
-        availableTeachers={availableTeachers}
+        teachersMap={teachersMap}
+        availableTeacherIdsByCell={availableTeacherIdsByCell}
         onCellChange={handleCellChange}
       />
 
@@ -429,7 +435,8 @@ const SubjectCoordinatorManagement: React.FC = () => {
         onConfirm={handleConfirmSave}
         actions={pendingActions}
         subjects={subjects}
-        availableTeachers={availableTeachers}
+        teachersMap={teachersMap}
+        availableTeacherIdsByCell={availableTeacherIdsByCell}
         loading={saving}
       />
     </div>

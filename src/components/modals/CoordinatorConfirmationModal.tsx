@@ -10,7 +10,8 @@ interface CoordinatorConfirmationModalProps {
   onConfirm: () => void;
   actions: CoordinatorAction[];
   subjects: Subject[];
-  availableTeachers: { [gradeLevel: string]: { [subjectId: string]: Teacher[] } };
+  teachersMap: Map<string, Teacher>;
+  availableTeacherIdsByCell: { [gradeLevel: string]: { [subjectId: string]: string[] } };
   loading: boolean;
 }
 
@@ -26,7 +27,8 @@ const CoordinatorConfirmationModal: React.FC<CoordinatorConfirmationModalProps> 
   onConfirm,
   actions,
   subjects,
-  availableTeachers,
+  teachersMap,
+  availableTeacherIdsByCell,
   loading
 }) => {
   const [showDetails, setShowDetails] = useState(false);
@@ -35,16 +37,8 @@ const CoordinatorConfirmationModal: React.FC<CoordinatorConfirmationModalProps> 
 
   const deleteActions = actions.filter(action => action.type === 'delete');
   const updateActions = actions.filter(action => action.type === 'update');
-  const createActions = actions.filter(action => action.type === 'create');
-
-  const hasDeleteActions = deleteActions.length > 0;
-
-  const getGradeLabel = (gradeLevel: number) => {
-    const grade = GRADE_LEVELS.find(g => g.level === gradeLevel);
-    return grade ? grade.label : gradeLevel.toString();
-  };
-
-  const getSubjectName = (subjectId: string) => {
+    const teacher = teachersMap.get(teacherId);
+    return teacher?.profile_details?.full_name || teacher?.login_id || 'Unknown Teacher';
     const subject = subjects.find(s => s._id === subjectId);
     return subject ? `${subject.name} (${subject.code})` : 'Mata pelajaran tidak ditemukan';
   };
