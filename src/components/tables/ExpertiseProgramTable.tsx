@@ -94,7 +94,7 @@ const ExpertiseProgramTable: React.FC<ExpertiseProgramTableProps> = memo(({
             {expertisePrograms.map((expertiseProgram) => (
               <tr key={expertiseProgram._id} className="hover:bg-gray-50 transition-colors">
                 {/* Nama Jurusan */}
-                <td className="col-medium" title={expertiseProgram.name}>
+                <td className="col-medium col-expertise-name" title={expertiseProgram.name}>
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <GraduationCap className="w-4 h-4 text-purple-600" />
@@ -115,7 +115,7 @@ const ExpertiseProgramTable: React.FC<ExpertiseProgramTableProps> = memo(({
                 </td>
 
                 {/* Deskripsi */}
-                <td className="col-wide" title={expertiseProgram.description}>
+                <td className="col-wide col-expertise-description" title={expertiseProgram.description}>
                   <div className="text-sm text-gray-900">
                     {expertiseProgram.description}
                   </div>
