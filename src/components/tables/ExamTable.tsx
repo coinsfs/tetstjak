@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { Edit, Trash2, FileText, Calendar, Clock, User, BarChart3, Eye } from 'lucide-react';
 import { Exam } from '@/types/exam';
+import { formatDateTimeWithTimezone } from '@/utils/timezone';
 
 // Status configuration based on API data
 const EXAM_STATUS = [
@@ -40,16 +41,7 @@ const ExamTable: React.FC<ExamTableProps> = memo(({
   onAnalyticsExam
 }) => {
   const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('id-ID', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    }) + ' ' + date.toLocaleTimeString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
+    return formatDateTimeWithTimezone(dateString);
   };
 
   const getStatusBadge = (status: string) => {

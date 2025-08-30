@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, Users, Settings, Save, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { examService } from '@/services/exam';
-import { convertWIBToUTC, convertUTCToWIB, getCurrentWIBDateTime, validateTimeRange } from '@/utils/timezone';
+import { convertWIBToUTC, convertUTCToWIB, getCurrentWIBDateTime, validateTimeRange, formatDateTimeWithTimezone } from '@/utils/timezone';
 import { 
   Exam, 
   CreateExamRequest, 
@@ -128,9 +128,9 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
 
   const resetForm = () => {
     const now = getCurrentWIBDateTime();
-    const nowDate = new Date(now);
+    const nowDate = new Date(now + ':00'); // Add seconds for proper Date parsing
     const oneHourLater = new Date(nowDate.getTime() + 60 * 60 * 1000);
-    const oneHourLaterFormatted = convertUTCToWIB(oneHourLater.toISOString());
+    const oneHourLaterFormatted = oneHourLater.toISOString().slice(0, 16); // Format for datetime-local
 
     setFormData({
       title: '',
@@ -383,6 +383,7 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
                       Waktu Mulai *
                     </label>
                     <div className="text-xs text-gray-500 mb-1">Waktu dalam zona WIB (UTC+7)</div>
+                    <div className="text-xs text-gray-500 mb-1">Waktu dalam zona WIB (UTC+7)</div>
                     <input
                       type="datetime-local"
                       value={formData.availability_start_time}
@@ -396,6 +397,7 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Waktu Selesai *
                     </label>
+                    <div className="text-xs text-gray-500 mb-1">Waktu dalam zona WIB (UTC+7)</div>
                     <div className="text-xs text-gray-500 mb-1">Waktu dalam zona WIB (UTC+7)</div>
                     <input
                       type="datetime-local"

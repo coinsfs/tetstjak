@@ -4,6 +4,7 @@ import { Exam, Question } from '@/types/exam';
 import { examService } from '@/services/exam';
 import { useAuth } from '@/contexts/AuthContext';
 import QuestionDisplay from '@/components/QuestionDisplay';
+import { formatDateTimeWithTimezone } from '@/utils/timezone';
 import toast from 'react-hot-toast';
 
 interface ExamDetailModalProps {
@@ -45,13 +46,7 @@ const ExamDetailModal: React.FC<ExamDetailModalProps> = ({
   if (!isOpen) return null;
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('id-ID', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatDateTimeWithTimezone(dateString);
   };
 
   const getExamTypeLabel = (examType: string) => {
