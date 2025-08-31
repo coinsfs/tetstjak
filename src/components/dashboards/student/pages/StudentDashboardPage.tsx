@@ -122,7 +122,7 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
             </p>
             {user?.class_details && (
               <div className="mt-3 inline-flex items-center px-3 py-1 rounded-full bg-blue-500 bg-opacity-50 text-sm">
-                Kelas: {user.class_details.name} - {user.class_details.expertise_details?.name}
+                Kelas: {user.class_details.grade_level} - {user.class_details.expertise_details?.name}
               </div>
             )}
           </div>

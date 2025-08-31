@@ -32,6 +32,7 @@ import TeacherExamDeleteModal from "./modals/TeacherExamDeleteModal";
 import TeacherExamEditModal from "./modals/TeacherExamEditModal";
 import TeacherExamQuestionsModal from "./modals/TeacherExamQuestionsModal";
 import TeacherExamStartConfirmationModal from "./modals/TeacherExamStartConfirmationModal";
+import ExamDetailModal from "@/components/modals/details/ExamDetailModal";
 import Pagination from "@/components/Pagination";
 import { formatDateTimeWithTimezone, convertUTCToWIB } from "@/utils/timezone";
 import toast from "react-hot-toast";
@@ -59,6 +60,7 @@ const TeacherExamsPage: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showQuestionsModal, setShowQuestionsModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [showStartConfirmationModal, setShowStartConfirmationModal] =
     useState(false);
   const [selectedExam, setSelectedExam] = useState<TeacherExam | null>(null);
@@ -165,6 +167,32 @@ const TeacherExamsPage: React.FC = () => {
     toast.success("Fitur analitik akan segera tersedia");
   };
 
+  const handleViewExamDetail = (exam: TeacherExam) => {
+    setSelectedExam(exam);
+    setShowDetailModal(true);
+  };
+
+  // Convert TeacherExam to Exam format for ExamDetailModal
+  const convertToExamFormat = (teacherExam: TeacherExam): any => {
+    return {
+      ...teacherExam,
+      questions: teacherExam.question_ids, // For backward compatibility
+      question_ids: teacherExam.question_ids, // Ensure this field exists
+      teaching_assignment_details: {
+        ...teacherExam.teaching_assignment_details,
+        class_details: {
+          ...teacherExam.teaching_assignment_details.class_details,
+        },
+        subject_details: {
+          ...teacherExam.teaching_assignment_details.subject_details,
+        },
+        teacher_details: {
+          ...teacherExam.teaching_assignment_details.teacher_details,
+        }
+      }
+    };
+  };
+
   const getExamTypeLabel = (examType: string) => {
     const typeLabels: { [key: string]: string } = {
       quiz: "Kuis",
@@ -220,16 +248,28 @@ const TeacherExamsPage: React.FC = () => {
     const { status } = exam;
     const buttons = [];
 
+    // Detail Button - Always available as first button
+    buttons.push(
+      <button
+        key="detail"
+        onClick={() => handleViewExamDetail(exam)}
+        className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+        title="Lihat Detail Ujian"
+      >
+        <Eye className="w-4 h-4" />
+      </button>
+    );
+
     // Monitor/Analytics Button - Based on status
     if (status === "ongoing") {
       buttons.push(
         <button
           key="monitor"
           onClick={() => handleMonitorExam(exam)}
-          className="flex items-center space-x-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium whitespace-nowrap shadow-sm"
+          className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
+          title="Monitoring Ujian"
         >
-          <Eye className="w-3 h-3" />
-          <span>Monitoring</span>
+          <Eye className="w-4 h-4" />
         </button>
       );
     } else if (status === "completed") {
@@ -237,24 +277,24 @@ const TeacherExamsPage: React.FC = () => {
         <button
           key="analytics"
           onClick={() => handleAnalyticsExam(exam)}
-          className="flex items-center space-x-1 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium whitespace-nowrap shadow-sm"
+          className="p-2 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-lg transition-colors"
+          title="Lihat Analitik"
         >
-          <BarChart3 className="w-3 h-3" />
-          <span>Analitik</span>
+          <BarChart3 className="w-4 h-4" />
         </button>
       );
     }
 
-    // Input Questions Button - Always available for pending_questions and ready status (MOVED TO SECOND)
+    // Input Questions Button - Available for pending_questions and ready status
     if (status === "pending_questions" || status === "ready") {
       buttons.push(
         <button
           key="input-questions"
           onClick={() => handleInputQuestions(exam)}
-          className="flex items-center space-x-1 px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium whitespace-nowrap shadow-sm"
+          className="p-2 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 rounded-lg transition-colors"
+          title="Input Soal"
         >
-          <HelpCircle className="w-3 h-3" />
-          <span>Input Soal</span>
+          <HelpCircle className="w-4 h-4" />
         </button>
       );
     }
@@ -497,7 +537,7 @@ const TeacherExamsPage: React.FC = () => {
                     {/* Aksi */}
                     <td className="px-6 py-4 whitespace-nowrap text-center text-right">
                       <div className="flex items-center justify-end space-x-2">
-                        {/* Start Button - Always first, disabled if not ready */}
+                        {/* Start Button - Special styling for primary action */}
                         <button
                           onClick={() => handleStartExam(exam)}
                           disabled={exam.status !== "ready"}
@@ -516,7 +556,7 @@ const TeacherExamsPage: React.FC = () => {
                           <span>Mulai</span>
                         </button>
 
-                        {/* Action Buttons */}
+                        {/* Action Icon Buttons */}
                         {getActionButtons(exam).map((button, index) => (
                           <React.Fragment key={index}>{button}</React.Fragment>
                         ))}
@@ -659,6 +699,17 @@ const TeacherExamsPage: React.FC = () => {
             setShowStartConfirmationModal(false);
             setSelectedExam(null);
             fetchExams();
+          }}
+        />
+      )}
+      
+      {showDetailModal && selectedExam && (
+        <ExamDetailModal
+          exam={convertToExamFormat(selectedExam)}
+          isOpen={showDetailModal}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedExam(null);
           }}
         />
       )}

@@ -6,11 +6,10 @@ import {
   UpdateExamRequest,
   ExamSubject,
   ExamClassData,
-  TeacherResponse,
-  AcademicPeriod,
-  Question
+  TeacherResponse
 } from '@/types/exam';
-import { ExpertiseProgram } from '@/types/common';
+import { Question } from '@/services/questionBank';
+import { ExpertiseProgram, AcademicPeriod } from '@/types/common';
 import { BaseService } from './base';
 
 class ExamService extends BaseService {

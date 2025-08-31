@@ -12,7 +12,8 @@ export interface Exam extends BaseEntity {
   academic_period_id: string;
   teaching_assignment_id: string;
   proctor_ids: string[];
-  questions: string[];
+  questions: string[]; // For backward compatibility
+  question_ids?: string[]; // New field for question IDs
   teaching_assignment_details: TeachingAssignmentDetails;
   academic_period_details: AcademicPeriod;
 }

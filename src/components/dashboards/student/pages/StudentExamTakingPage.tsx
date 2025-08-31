@@ -379,6 +379,16 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     // Determine the correct event type based on whether this is new or modified
     const eventType = isNewAnswer ? "answer_submitted" : "answer_updated";
 
+    // Store interaction log for new API
+    const studentAnswer = typeof answer === 'string' ? answer : JSON.stringify(answer);
+    examSecurityService.storeInteractionLog(
+      sessionId,
+      questionId,
+      questionIndex + 1,
+      eventType,
+      studentAnswer
+    );
+
     // Prepare simplified answer data based on question type
     let answerData: any = {};
 
@@ -488,13 +498,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
     // Submit exam with time up
     examSecurityService
-      .submitExamWithSecurity(token!, {
-        examId: sessionId,
-        sessionId: sessionId,
-        answers: answers,
-        securityReport: securityReport,
-        submissionType: "auto_time",
-      })
+      .submitExam(
+        token!,
+        sessionId,
+        answers,
+        securityReport,
+        "auto_time"
+      )
       .then(() => {
         // Clean up and redirect
         examSecurityService.cleanupSecurityData(sessionId, user?._id || "");
@@ -535,13 +545,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       );
 
       // Submit exam with security data
-      await examSecurityService.submitExamWithSecurity(token!, {
-        examId: sessionId,
-        sessionId: sessionId,
-        answers: answers,
-        securityReport: securityReport,
-        submissionType: "manual",
-      });
+      await examSecurityService.submitExam(
+        token!,
+        sessionId,
+        answers,
+        securityReport,
+        "manual"
+      );
 
       // Clean up security data
       examSecurityService.cleanupSecurityData(sessionId, user?._id || "");
@@ -601,13 +611,13 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
     // Submit exam with critical violation
     examSecurityService
-      .submitExamWithSecurity(token!, {
-        examId: sessionId,
-        sessionId: sessionId,
-        answers: answers,
-        securityReport: securityReport,
-        submissionType: "auto_violation",
-      })
+      .submitExam(
+        token!,
+        sessionId,
+        answers,
+        securityReport,
+        "auto_violation"
+      )
       .then(() => {
         // Clean up and redirect
         examSecurityService.cleanupSecurityData(sessionId, user?._id || "");

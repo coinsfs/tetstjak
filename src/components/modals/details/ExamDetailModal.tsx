@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, FileText, Calendar, Clock, User, Users, Settings, BookOpen, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { Exam, Question } from '@/types/exam';
+import { Exam } from '@/types/exam';
+import { Question } from '@/services/questionBank';
 import { examService } from '@/services/exam';
+import { questionBankService } from '@/services/questionBank';
 import { useAuth } from '@/contexts/AuthContext';
 import QuestionDisplay from '@/components/QuestionDisplay';
 import { formatDateTimeWithTimezone } from '@/utils/timezone';
@@ -24,15 +26,32 @@ const ExamDetailModal: React.FC<ExamDetailModalProps> = ({
 
   useEffect(() => {
     const fetchQuestions = async () => {
-      if (!token || !exam.questions || exam.questions.length === 0) return;
+      // Check both possible field names for question IDs
+      const questionIds = (exam as any).question_ids || exam.questions || [];
+      
+      if (!token || !questionIds || questionIds.length === 0) {
+        // If no question IDs, show empty state instead of error
+        setQuestions([]);
+        return;
+      }
 
       setLoadingQuestions(true);
       try {
-        const questionsData = await examService.getQuestionsByIds(token, exam.questions);
-        setQuestions(questionsData);
+        // Try examService first
+        let questionsData;
+        try {
+          questionsData = await examService.getQuestionsByIds(token, questionIds);
+        } catch (examServiceError) {
+          // Fallback to questionBankService if examService fails
+          console.warn('examService failed, trying questionBankService:', examServiceError);
+          questionsData = await questionBankService.getQuestionsByIds(token, questionIds);
+        }
+        
+        setQuestions(questionsData || []);
       } catch (error) {
         console.error('Error fetching questions:', error);
         toast.error('Gagal memuat soal ujian');
+        setQuestions([]);
       } finally {
         setLoadingQuestions(false);
       }
@@ -41,7 +60,7 @@ const ExamDetailModal: React.FC<ExamDetailModalProps> = ({
     if (isOpen) {
       fetchQuestions();
     }
-  }, [isOpen, token, exam.questions]);
+  }, [isOpen, token, exam.questions, (exam as any).question_ids]);
 
   if (!isOpen) return null;
 
@@ -283,12 +302,22 @@ const ExamDetailModal: React.FC<ExamDetailModalProps> = ({
                   <span className="text-sm font-medium text-gray-700">Memuat soal...</span>
                 </div>
               </div>
-            ) : (
+            ) : questions.length > 0 ? (
               <QuestionDisplay
                 questions={questions}
                 mode="view"
                 className="max-h-96 overflow-y-auto"
               />
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <BookOpen className="w-12 h-12 text-gray-300 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Belum Ada Soal
+                </h3>
+                <p className="text-gray-600 max-w-md">
+                  Ujian ini belum memiliki soal. Silakan tambahkan soal melalui menu pengelolaan ujian.
+                </p>
+              </div>
             )}
           </div>
         </div>

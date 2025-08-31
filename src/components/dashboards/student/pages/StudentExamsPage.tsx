@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserProfile } from '@/types/auth';
-import { FileText, Clock, AlertCircle, Search, Filter, RotateCcw, ChevronUp, ChevronDown, Calendar, BookOpen, Play, CheckCircle } from 'lucide-react';
+import { FileText, Clock, AlertCircle, Search, Filter, RotateCcw, ChevronUp, ChevronDown, Calendar, BookOpen, Play, CheckCircle, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { studentExamService, StudentExam, StudentExamFilters, AcademicPeriod, ExamSession } from '@/services/studentExam';
 import { websocketService } from '@/services/websocket';
@@ -220,6 +220,11 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
     }
   };
 
+  const handleViewAnalytics = (exam: StudentExam) => {
+    // Navigate to results page with exam filter
+    navigate(`/student/results?exam_id=${exam._id}&exam_title=${encodeURIComponent(exam.title)}`);
+  };
+
   const renderActionButton = (exam: StudentExam) => {
     const isStarting = startingExam === exam._id;
     const now = new Date();
@@ -310,6 +315,18 @@ const StudentExamsPage: React.FC<StudentExamsPageProps> = ({ user }) => {
         );
       
       case 'completed':
+        // Check if results should be shown after submission
+        if (exam.settings?.show_results_after_submission) {
+          return (
+            <button 
+              onClick={() => handleViewAnalytics(exam)}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Lihat Analitik
+            </button>
+          );
+        }
         return (
           <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 text-sm font-medium rounded-lg">
             <CheckCircle className="w-4 h-4 mr-2" />
