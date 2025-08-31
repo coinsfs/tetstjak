@@ -256,13 +256,13 @@ const TeacherExamsTable: React.FC<TeacherExamsTableProps> = ({
                   <div className="flex items-center space-x-1 text-gray-900">
                     <Calendar className="w-3 h-3" />
                     <span className="truncate">
-                      Mulai: {formatDateTime(exam.availability_start_time)}
+                      Mulai: {formatDateTimeWithTimezone(exam.availability_start_time)}
                     </span>
                   </div>
                   <div className="flex items-center space-x-1 text-gray-500">
                     <Calendar className="w-3 h-3" />
                     <span className="truncate">
-                      Selesai: {formatDateTime(exam.availability_end_time)}
+                      Selesai: {formatDateTimeWithTimezone(exam.availability_end_time)}
                     </span>
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   FileText,
   Play,
@@ -53,7 +53,7 @@ const TeacherExamsPage: React.FC = () => {
   // Filters
   const [filters, setFilters] = useState<TeacherExamFilters>({
     page: 1,
-    limit: 10,
+    limit: 5,
   });
 
   // Modals
@@ -111,19 +111,27 @@ const TeacherExamsPage: React.FC = () => {
     }
   };
 
-  const handleFilterChange = (key: keyof TeacherExamFilters, value: any) => {
+  const handleFilterChange = useCallback((key: keyof TeacherExamFilters, value: any) => {
     setFilters((prev) => ({
       ...prev,
       [key]: value,
       page: 1, // Reset to first page when filtering
     }));
-  };
+  }, []);
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     setFilters((prev) => ({ ...prev, page }));
-  };
+  }, []);
 
-  const handleCreateExam = () => {
+  const handleItemsPerPageChange = useCallback((newLimit: number) => {
+    setFilters((prev) => ({
+      ...prev,
+      limit: newLimit,
+      page: 1, // Reset to first page when limit changes
+    }));
+  }, []);
+
+  const handleCreateExam = useCallback(() => {
     if (!activeAcademicPeriod) {
       toast.error(
         "Tidak ada periode akademik yang aktif. Hubungi administrator."
@@ -131,29 +139,29 @@ const TeacherExamsPage: React.FC = () => {
       return;
     }
     setShowCreateModal(true);
-  };
+  }, [activeAcademicPeriod]);
 
-  const handleEditExam = (exam: TeacherExam) => {
+  const handleEditExam = useCallback((exam: TeacherExam) => {
     setSelectedExam(exam);
     setShowEditModal(true);
-  };
+  }, []);
 
-  const handleDeleteExam = (exam: TeacherExam) => {
+  const handleDeleteExam = useCallback((exam: TeacherExam) => {
     setSelectedExam(exam);
     setShowDeleteModal(true);
-  };
+  }, []);
 
-  const handleInputQuestions = (exam: TeacherExam) => {
+  const handleInputQuestions = useCallback((exam: TeacherExam) => {
     setSelectedExam(exam);
     setShowQuestionsModal(true);
-  };
+  }, []);
 
-  const handleStartExam = (exam: TeacherExam) => {
+  const handleStartExam = useCallback((exam: TeacherExam) => {
     setSelectedExam(exam);
     setShowStartConfirmationModal(true);
-  };
+  }, []);
 
-  const handleMonitorExam = (exam: TeacherExam) => {
+  const handleMonitorExam = useCallback((exam: TeacherExam) => {
     if (exam.status === "ongoing") {
       // Pass total questions as URL parameter for monitoring
       const totalQuestions = exam.question_ids.length;
@@ -161,20 +169,20 @@ const TeacherExamsPage: React.FC = () => {
     } else {
       toast.error("Ujian belum dimulai atau sudah selesai.");
     }
-  };
+  }, [navigate]);
 
-  const handleAnalyticsExam = (exam: TeacherExam) => {
+  const handleAnalyticsExam = useCallback((exam: TeacherExam) => {
     // TODO: Implement analytics functionality
     toast.success("Fitur analitik akan segera tersedia");
-  };
+  }, []);
 
-  const handleViewExamDetail = (exam: TeacherExam) => {
+  const handleViewExamDetail = useCallback((exam: TeacherExam) => {
     setSelectedExam(exam);
     setShowDetailModal(true);
-  };
+  }, []);
 
   // Convert TeacherExam to Exam format for ExamDetailModal
-  const convertToExamFormat = (teacherExam: TeacherExam): any => {
+  const convertToExamFormat = useCallback((teacherExam: TeacherExam): any => {
     // Pastikan teaching_assignment_details adalah objek, bahkan jika aslinya null/undefined
     const taDetails = teacherExam.teaching_assignment_details || {};
 
@@ -192,9 +200,9 @@ const TeacherExamsPage: React.FC = () => {
         teacher_details: taDetails.teacher_details || {},
       }
     };
-  };
+  }, []);
 
-  const totalPages = Math.ceil(totalItems / (filters.limit || 10));
+  const totalPages = Math.ceil(totalItems / (filters.limit || 5));
 
   return (
     <div className="space-y-6">
@@ -302,7 +310,6 @@ const TeacherExamsPage: React.FC = () => {
         <TeacherExamsTable
           exams={exams}
           loading={loading}
-          onCreateExam={handleCreateExam}
           onStartExam={handleStartExam}
           onEditExam={handleEditExam}
           onDeleteExam={handleDeleteExam}
@@ -310,6 +317,7 @@ const TeacherExamsPage: React.FC = () => {
           onMonitorExam={handleMonitorExam}
           onAnalyticsExam={handleAnalyticsExam}
           onViewExamDetail={handleViewExamDetail}
+          onCreateExam={handleCreateExam}
         />
       </div>
 
@@ -321,8 +329,9 @@ const TeacherExamsPage: React.FC = () => {
             totalPages={totalPages}
             onPageChange={handlePageChange}
             totalItems={totalItems}
-            itemsPerPage={filters.limit || 10}
+            itemsPerPage={filters.limit || 5}
             itemName="ujian"
+            onItemsPerPageChange={handleItemsPerPageChange}
           />
         </div>
       )}
