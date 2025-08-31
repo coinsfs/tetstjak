@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { TeacherExam } from '@/services/teacherExam';
 import { formatDateTimeWithTimezone } from '@/utils/timezone';
-import { formatDateTimeWithTimezone } from '@/utils/timezone';
 
 interface TeacherExamsTableProps {
   exams: TeacherExam[];
