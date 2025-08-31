@@ -10,7 +10,7 @@ src/components/ProtectedRoute.tsx
 src/components/ProfileManagement.tsx
 src/components/Pagination.tsx
 src/components/LoginForm.tsx
-src/components/ExpertiseProgramManagement.tsx
+
 src/components/ExpertiseProgramFilter.tsx
 src/components/ExamManagement.tsx
 src/components/ClassManagement.tsx
@@ -21,7 +21,7 @@ src/components/ActivityFeed.tsx
 src/components/tables/TeacherTable.tsx
 src/components/tables/SubjectTable.tsx
 src/components/tables/StudentTable.tsx
-src/components/tables/ExpertiseProgramTable.tsx
+
 src/components/tables/ExamTable.tsx
 src/components/tables/ClassTable.tsx
 src/components/profile/UserActivity.tsx
@@ -65,8 +65,8 @@ src/components/dashboards/teacher/TeacherSidebar.tsx
 src/components/dashboards/teacher/TeacherStatsGrid.tsx
 src/components/dashboards/teacher/TeacherSubjectsList.tsx
 src/components/dashboards/teacher/TeacherWelcomeCard.tsx
-
-
+src/components/CoordinatorMatrix.tsx
+src/components/SubjectCoordinatorManagement.tsx
 src/components/charts/BrowserUsageChart.tsx
 src/components/charts/StudentGrowthChart.tsx
 src/components/charts/StudentsByMajorChart.tsx
