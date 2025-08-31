@@ -43,10 +43,6 @@ const TeacherExamsTable: React.FC<TeacherExamsTableProps> = ({
   onAnalyticsExam,
   onViewExamDetail,
 }) => {
-  console.log("🔍 TeacherExamsTable received exams:", exams); // Log exams array
-  console.log("🔍 TeacherExamsTable rendering", exams.length, "items."); // Log count of items being rendered
-  console.log("🔍 TeacherExamsTable loading state:", loading); // Log loading state
-
   const getExamTypeLabel = (examType: string) => {
     const typeLabels: { [key: string]: string } = {
       quiz: 'Kuis',

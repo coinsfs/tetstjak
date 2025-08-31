@@ -99,10 +99,7 @@ const TeacherExamsPage: React.FC = () => {
 
     try {
       setLoading(true);
-      console.log("🔍 Fetching exams with filters:", filters); // Log filters before API call
       const response = await teacherExamService.getTeacherExams(token, filters);
-      console.log("📊 API Response for exams:", response); // Log full API response
-      console.log("📊 API Response data length:", response.data?.length); // Log data array length
       setExams(response.data);
       setTotalItems(response.total_items);
       setCurrentPage(response.current_page);
@@ -127,10 +124,9 @@ const TeacherExamsPage: React.FC = () => {
   }, []);
 
   const handleItemsPerPageChange = useCallback((newLimit: number) => {
-    console.log("📝 Items per page changing to:", newLimit);
     setFilters((prev) => ({
       ...prev,
-      limit: Number(newLimit), // Pastikan newLimit adalah angka
+      limit: newLimit,
       page: 1, // Reset to first page when limit changes
     }));
   }, []);
@@ -207,16 +203,6 @@ const TeacherExamsPage: React.FC = () => {
   }, []);
 
   const totalPages = Math.ceil(totalItems / (filters.limit || 5));
-
-  // Log pagination props for debugging
-  console.log("🔢 Pagination Props:", {
-    currentPage: currentPage,
-    totalPages: totalPages,
-    totalItems: totalItems,
-    itemsPerPage: filters.limit || 5,
-    filtersLimit: filters.limit,
-    examsLength: exams.length
-  });
 
   return (
     <div className="space-y-6">
@@ -343,7 +329,7 @@ const TeacherExamsPage: React.FC = () => {
             totalPages={totalPages}
             onPageChange={handlePageChange}
             totalItems={totalItems}
-            itemsPerPage={Number(filters.limit || 5)} // Pastikan ini selalu angka
+            itemsPerPage={filters.limit || 5}
             itemName="ujian"
             onItemsPerPageChange={handleItemsPerPageChange}
           />
