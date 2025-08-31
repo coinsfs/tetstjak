@@ -1,4 +1,4 @@
-import { BaseEntity, ProfileDetails, DataTableResponse, SearchFilters, ExpertiseProgram } from './common';
+import { BaseEntity, DataTableResponse, SearchFilters, ExpertiseProgram } from './common';
 
 // Base User Interface
 export interface BaseUser extends BaseEntity {
@@ -20,6 +20,13 @@ export interface BaseUser extends BaseEntity {
 export interface Teacher extends BaseUser {
   teaching_summary: TeachingSummary[];
   department_details: ExpertiseProgram; // Teachers always have department
+}
+
+// Basic Teacher for assignment matrix (optimized payload)
+export interface BasicTeacher {
+  _id: string;
+  full_name: string;
+  profile_picture_key: string | null;
 }
 
 export interface TeachingSummary {

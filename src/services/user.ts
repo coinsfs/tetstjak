@@ -1,6 +1,7 @@
 import { 
   Teacher, 
   Student, 
+  BasicTeacher,
   TeacherResponse, 
   StudentResponse, 
   TeacherFilters, 
@@ -27,6 +28,23 @@ class UserService extends BaseService {
 
     const queryString = this.buildQueryParams(params);
     return this.get<TeacherResponse>(`/users/?${queryString}`, token);
+  }
+
+  // Optimized method for getting basic teacher info (for assignments)
+  async getBasicTeachers(
+    token: string, 
+    searchTerm?: string
+  ): Promise<BasicTeacher[]> {
+    const params: Record<string, any> = {};
+    
+    if (searchTerm && searchTerm.trim()) {
+      params.search = searchTerm.trim();
+    }
+
+    const queryString = this.buildQueryParams(params);
+    const endpoint = queryString ? `/users/teachers/basic?${queryString}` : '/users/teachers/basic';
+    
+    return this.get<BasicTeacher[]>(endpoint, token);
   }
 
   async getTeacherById(token: string, id: string): Promise<Teacher> {

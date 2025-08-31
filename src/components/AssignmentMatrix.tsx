@@ -1,15 +1,15 @@
-import React, { memo } from 'react';
-import { User, BookOpen, School, ChevronDown } from 'lucide-react';
+import React, { memo, useMemo } from 'react';
+import { User, BookOpen, School } from 'lucide-react';
 import { AssignmentMatrix as AssignmentMatrixType } from '@/types/assignment';
 import { Class } from '@/types/class';
 import { Subject } from '@/types/subject';
-import { Teacher } from '@/types/user';
+import { useTeacherCache } from '@/contexts/TeacherCacheContext';
+import VirtualSelect from './VirtualSelect';
 
 interface AssignmentMatrixProps {
   matrix: AssignmentMatrixType;
   classes: Class[];
   subjects: Subject[];
-  teachers: Teacher[];
   onCellChange: (classId: string, subjectId: string, teacherId: string | null) => void;
 }
 
@@ -17,9 +17,9 @@ const AssignmentMatrix: React.FC<AssignmentMatrixProps> = memo(({
   matrix,
   classes,
   subjects,
-  teachers,
   onCellChange
 }) => {
+  const { getTeacherById } = useTeacherCache();
   const getGradeLabel = (gradeLevel: number) => {
     switch (gradeLevel) {
       case 10: return 'X';
@@ -34,14 +34,18 @@ const AssignmentMatrix: React.FC<AssignmentMatrixProps> = memo(({
   };
 
   const getTeacherName = (teacherId: string) => {
-    const teacher = teachers.find(t => t._id === teacherId);
-    return teacher?.profile_details?.full_name || 'Unknown Teacher';
+    const teacher = getTeacherById(teacherId);
+    return teacher?.full_name || 'Unknown Teacher';
   };
 
   const handleCellChange = (classId: string, subjectId: string, value: string) => {
     const teacherId = value === '' ? null : value;
     onCellChange(classId, subjectId, teacherId);
   };
+
+  // Memoize for performance
+  const memoizedClasses = useMemo(() => classes, [classes]);
+  const memoizedSubjects = useMemo(() => subjects, [subjects]);
 
   if (classes.length === 0 || subjects.length === 0) {
     return (
@@ -68,7 +72,7 @@ const AssignmentMatrix: React.FC<AssignmentMatrixProps> = memo(({
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="sticky left-0 bg-gray-50 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 min-w-[200px] z-30">
+              <th className="sticky left-0 bg-gray-50 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 min-w-[200px] z-40">
                 <div className="flex items-center space-x-2">
                   <School className="w-4 h-4" />
                   <span>Kelas</span>
@@ -77,7 +81,7 @@ const AssignmentMatrix: React.FC<AssignmentMatrixProps> = memo(({
               {subjects.map((subject) => (
                 <th
                   key={subject._id}
-                  className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px] max-w-[250px] relative z-20"
+                  className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[280px] max-w-[300px] relative z-35"
                 >
                   <div className="flex flex-col items-center space-y-1">
                     <BookOpen className="w-4 h-4" />
@@ -92,7 +96,7 @@ const AssignmentMatrix: React.FC<AssignmentMatrixProps> = memo(({
             {classes.map((cls) => (
               <tr key={cls._id} className="hover:bg-gray-50">
                 {/* Class Name - Sticky Column */}
-                <td className="sticky left-0 bg-white px-4 py-3 border-r border-gray-200 min-w-[200px] z-20">
+                <td className="sticky left-0 bg-white px-4 py-3 border-r border-gray-200 min-w-[200px] z-40">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                       <School className="w-4 h-4 text-blue-600" />
@@ -117,36 +121,25 @@ const AssignmentMatrix: React.FC<AssignmentMatrixProps> = memo(({
                   return (
                     <td
                       key={`${cls._id}-${subject._id}`}
-                      className="px-4 py-3 text-center min-w-[200px] max-w-[250px] relative z-10"
+                      className="px-4 py-3 text-center min-w-[280px] max-w-[300px] relative"
                     >
                       <div className="relative">
-                        <select
+                        <VirtualSelect
                           value={currentTeacherId}
-                          onChange={(e) => handleCellChange(cls._id, subject._id, e.target.value)}
-                          className={`w-full px-3 py-2 text-sm border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none cursor-pointer transition-colors relative z-10 ${
+                          onChange={(value) => handleCellChange(cls._id, subject._id, value)}
+                          placeholder="-- Pilih Guru --"
+                          className={`transition-colors ${
                             isDirty
-                              ? 'border-orange-300 bg-orange-50 text-orange-900'
+                              ? 'border-orange-300 bg-orange-50'
                               : currentTeacherId
-                              ? 'border-green-300 bg-green-50 text-green-900'
-                              : 'border-gray-300 bg-gray-50 text-gray-500'
+                              ? 'border-green-300 bg-green-50'
+                              : 'border-gray-300 bg-gray-50'
                           }`}
-                        >
-                          <option value="">-- Pilih Guru --</option>
-                          {teachers.map((teacher) => (
-                            <option key={teacher._id} value={teacher._id}>
-                              {teacher.profile_details?.full_name || teacher.login_id}
-                            </option>
-                          ))}
-                        </select>
-                        
-                        {/* Custom dropdown arrow */}
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                          <ChevronDown className="w-4 h-4 text-gray-400" />
-                        </div>
+                        />
 
                         {/* Status indicator */}
                         {isDirty && (
-                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white"></div>
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white z-50"></div>
                         )}
                       </div>
 

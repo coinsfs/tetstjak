@@ -30,7 +30,7 @@ const StudentHeader: React.FC<StudentHeaderProps> = ({
 
   const getClassName = () => {
     if (user?.class_details) {
-      return `${user.class_details.name} - ${user.class_details.expertise_details?.abbreviation || ''}`;
+      return `${user.class_details.grade_level} ${user.class_details.expertise_details?.abbreviation || ''} ${user.class_details.name}`;
     }
     return 'Student';
   };

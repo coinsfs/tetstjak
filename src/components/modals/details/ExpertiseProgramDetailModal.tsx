@@ -124,15 +124,14 @@ const ExpertiseProgramDetailModal: React.FC<ExpertiseProgramDetailModalProps> = 
               <div className="space-y-4">
                 {/* Profile Section */}
                 <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
+                  <div className="w-16 h-16 bg-gray-100 profile-image-container">
                     {getHeadOfDepartmentImage() ? (
                       <img
                         src={getHeadOfDepartmentImage()!}
                         alt={getHeadOfDepartmentName()}
-                        className="w-full h-full object-cover"
                       />
                     ) : (
-                      <User className="w-8 h-8 text-gray-400" />
+                      <User className="w-8 h-8 text-gray-400 fallback-icon" />
                     )}
                   </div>
                   <div>

@@ -62,7 +62,7 @@ class WebSocketService {
     console.log('🔍 WebSocketService - cleanEndpointSuffix:', cleanEndpointSuffix);
     
     // Build proper WebSocket URL: wss://domain/api/v1/ws/...
-    const newWsUrl = `wss://${domain}/api/v1${cleanEndpointSuffix}?token=${token}`;
+    const newWsUrl = `ws://${domain}/api/v1${cleanEndpointSuffix}?token=${token}`;
     console.log('🔍 WebSocketService - newWsUrl constructed:', newWsUrl);
 
     // If already connected or connecting to the same URL, skip

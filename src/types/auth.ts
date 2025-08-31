@@ -45,6 +45,12 @@ export interface UserProfile {
     name: string;
     academic_year: string;
     homeroom_teacher_id: string;
+    expertise_details: {
+      name: string;
+      abbreviation: string;
+      description: string;
+      _id: string;
+    } | null;
     _id: string;
   } | null;
   department_details?: {

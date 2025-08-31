@@ -121,15 +121,14 @@ const ExpertiseProgramTable: React.FC<ExpertiseProgramTableProps> = memo(({
                 {/* Kepala Jurusan */}
                 <td className="col-medium" title={getHeadOfDepartmentName(expertiseProgram)}>
                   <div className="flex items-center">
-                    <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center mr-2 overflow-hidden">
+                    <div className="w-6 h-6 bg-gray-100 mr-2 profile-image-container">
                       {getHeadOfDepartmentImage(expertiseProgram) ? (
                         <img
                           src={getHeadOfDepartmentImage(expertiseProgram)!}
                           alt={getHeadOfDepartmentName(expertiseProgram)}
-                          className="w-full h-full object-cover"
                         />
                       ) : (
-                        <User className="w-3 h-3 text-gray-400" />
+                        <User className="w-3 h-3 text-gray-400 fallback-icon" />
                       )}
                     </div>
                     <div className="text-sm text-gray-900">

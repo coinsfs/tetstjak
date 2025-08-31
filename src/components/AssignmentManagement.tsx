@@ -11,11 +11,12 @@ import {
 } from '@/types/assignment';
 import { Class } from '@/types/class';
 import { Subject } from '@/types/subject';
-import { Teacher } from '@/types/user';
+import { Teacher, BasicTeacher } from '@/types/user';
 import { assignmentService } from '@/services/assignment';
 import { classService } from '@/services/class';
 import { subjectService } from '@/services/subject';
 import { userService } from '@/services/user';
+import { TeacherCacheProvider, useTeacherCache } from '@/contexts/TeacherCacheContext';
 import AssignmentMatrix from './AssignmentMatrix';
 import AssignmentConfirmationModal from './modals/AssignmentConfirmationModal';
 import toast from 'react-hot-toast';
@@ -34,14 +35,15 @@ import {
 const DRAFT_STORAGE_KEY = 'assignment_draft';
 const TASK_ID_STORAGE_KEY = 'assignment_task_id';
 
-const AssignmentManagement: React.FC = () => {
+const AssignmentManagementContent: React.FC = () => {
   const { token } = useAuth();
+  const { teachers: cachedTeachers } = useTeacherCache();
   
   // Data states
   const [assignments, setAssignments] = useState<TeachingAssignment[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [fullTeachers, setFullTeachers] = useState<Teacher[]>([]); // For confirmation modal
   
   // Matrix state
   const [matrix, setMatrix] = useState<AssignmentMatrixType>({});
@@ -166,17 +168,19 @@ const AssignmentManagement: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const [assignmentsData, classesData, subjectsData, teachersData] = await Promise.all([
+      const [assignmentsData, classesData, subjectsData] = await Promise.all([
         assignmentService.getTeachingAssignments(token),
         classService.getClasses(token, { limit: 1000 }),
-        subjectService.getSubjects(token, { limit: 1000 }),
-        userService.getTeachers(token, { limit: 1000 })
+        subjectService.getSubjects(token, { limit: 1000 })
       ]);
+
+      // Load full teachers data for confirmation modal
+      const fullTeachersData = await userService.getTeachers(token, { limit: 1000 });
 
       setAssignments(assignmentsData);
       setClasses(classesData.data || []);
       setSubjects(subjectsData.data || []);
-      setTeachers(teachersData.data || []);
+      setFullTeachers((fullTeachersData.data || []).filter(user => 'teaching_summary' in user) as Teacher[]);
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';
@@ -221,58 +225,82 @@ const AssignmentManagement: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  // Check for existing task on component mount
-  useEffect(() => {
-    const checkExistingTask = async () => {
-      const storedTaskId = getStoredTaskId();
-      if (storedTaskId && token) {
-        try {
-          const taskStatus = await assignmentService.getTaskStatus(token, storedTaskId);
-          
-          if (taskStatus.status === 'SUCCESS' || taskStatus.status === 'PARTIAL_SUCCESS' || taskStatus.status === 'FAILED') {
-            // Task completed, clear storage and refresh data
-            clearTaskId();
-            await fetchData();
-            
-            if (taskStatus.status === 'SUCCESS') {
-              toast.success('Penugasan berhasil disimpan');
-            } else if (taskStatus.status === 'PARTIAL_SUCCESS') {
-              toast.success('Penugasan sebagian berhasil disimpan');
-            } else {
-              toast.error('Gagal menyimpan penugasan');
-            }
-          } else {
-            // Task still in progress, set up progress tracking
-            setBulkUpdateProgress(prev => ({
-              ...prev,
-              isActive: true,
-              taskId: storedTaskId,
-              status: taskStatus.status
-            }));
-          }
-        } catch (error) {
-          console.error('Error checking task status:', error);
-          clearTaskId();
-        }
-      }
-    };
-
-    checkExistingTask();
-  }, [token, getStoredTaskId, clearTaskId, fetchData]);
-
   // Extract task completion logic untuk reusability
   const handleTaskCompletion = useCallback(async (taskId: string, taskStatus: any) => {
     // Clear task ID and refresh data
     clearTaskId();
     clearDraft();
     
-    // Show completion message
+    // Extract details from task status
+    const details = taskStatus.details || {};
+    const created = details.created || 0;
+    const updated = details.updated || 0;
+    const deleted = details.deleted || 0;
+    const failed = details.failed || 0;
+    const errors = details.errors || [];
+    
+    const totalSuccess = created + updated + deleted;
+    const totalProcessed = totalSuccess + failed;
+    
+    // Create comprehensive single toast message
     if (taskStatus.status === 'SUCCESS') {
-      toast.success(`Penugasan berhasil disimpan`);
+      if (totalProcessed > 0) {
+        const operations = [];
+        if (created > 0) operations.push(`${created} penugasan baru`);
+        if (updated > 0) operations.push(`${updated} penugasan diperbarui`);
+        if (deleted > 0) operations.push(`${deleted} penugasan dihapus`);
+        
+        const operationText = operations.length > 0 ? ` (${operations.join(', ')})` : '';
+        toast.success(`✅ Penugasan berhasil disimpan! ${totalSuccess} dari ${totalProcessed} berhasil diproses${operationText}`);
+      } else {
+        toast.success('✅ Penugasan berhasil disimpan!');
+      }
     } else if (taskStatus.status === 'PARTIAL_SUCCESS') {
-      toast.success(`Penugasan sebagian berhasil disimpan`);
+      const operations = [];
+      if (created > 0) operations.push(`${created} dibuat`);
+      if (updated > 0) operations.push(`${updated} diperbarui`);
+      if (deleted > 0) operations.push(`${deleted} dihapus`);
+      
+      const operationText = operations.length > 0 ? ` (${operations.join(', ')})` : '';
+      
+      let message = `⚠️ Sebagian berhasil: ${totalSuccess} berhasil, ${failed} gagal${operationText}`;
+      
+      // Add error details to the main message if any
+      if (errors.length > 0) {
+        const errorSample = errors.slice(0, 2).join('; ');
+        const moreErrors = errors.length > 2 ? ` dan ${errors.length - 2} error lainnya` : '';
+        message += `\n\n❌ Error: ${errorSample}${moreErrors}`;
+      }
+      
+      toast(message, {
+        icon: '⚠️',
+        duration: 8000,
+        style: {
+          maxWidth: '500px',
+          whiteSpace: 'pre-line'
+        }
+      });
     } else {
-      toast.error(`Gagal menyimpan penugasan`);
+      let message = `❌ Gagal menyimpan penugasan`;
+      
+      if (failed > 0) {
+        message += `: ${failed} dari ${totalProcessed} gagal diproses`;
+      }
+      
+      // Add error details to the main message
+      if (errors.length > 0) {
+        const errorSample = errors.slice(0, 2).join('; ');
+        const moreErrors = errors.length > 2 ? ` dan ${errors.length - 2} error lainnya` : '';
+        message += `\n\nDetail error: ${errorSample}${moreErrors}`;
+      }
+      
+      toast.error(message, {
+        duration: 10000,
+        style: {
+          maxWidth: '500px',
+          whiteSpace: 'pre-line'
+        }
+      });
     }
 
     // Update progress state
@@ -290,6 +318,36 @@ const AssignmentManagement: React.FC = () => {
     // Refresh data after completion
     await fetchData();
   }, [clearTaskId, clearDraft, fetchData]);
+
+  // Check for existing task on component mount
+  useEffect(() => {
+    const checkExistingTask = async () => {
+      const storedTaskId = getStoredTaskId();
+      if (storedTaskId && token) {
+        try {
+          const taskStatus = await assignmentService.getTaskStatus(token, storedTaskId);
+          
+          if (taskStatus.status === 'SUCCESS' || taskStatus.status === 'PARTIAL_SUCCESS' || taskStatus.status === 'FAILED') {
+            // Task completed, use centralized completion handler
+            await handleTaskCompletion(storedTaskId, taskStatus);
+          } else {
+            // Task still in progress, set up progress tracking
+            setBulkUpdateProgress(prev => ({
+              ...prev,
+              isActive: true,
+              taskId: storedTaskId,
+              status: taskStatus.status
+            }));
+          }
+        } catch (error) {
+          console.error('Error checking task status:', error);
+          clearTaskId();
+        }
+      }
+    };
+
+    checkExistingTask();
+  }, [token, getStoredTaskId, clearTaskId, fetchData, handleTaskCompletion]);
 
   // WebSocket message handlers
   useEffect(() => {
@@ -433,7 +491,8 @@ const AssignmentManagement: React.FC = () => {
       setShowConfirmationModal(false);
       setPendingActions([]);
       
-      toast('Proses penyimpanan penugasan dimulai...');
+      // Remove the initial toast - let completion handler show final result only
+      // toast('Proses penyimpanan penugasan dimulai...');
       
       // Immediate status check untuk mengatasi race condition
       setTimeout(async () => {
@@ -477,7 +536,7 @@ const AssignmentManagement: React.FC = () => {
     
     setMatrix(JSON.parse(JSON.stringify(originalMatrix)));
     clearDraft();
-    toast.info('Perubahan berhasil direset');
+    toast('Perubahan berhasil direset');
   }, [originalMatrix, clearDraft, bulkUpdateProgress.isActive]);
 
   if (loading) {
@@ -511,15 +570,15 @@ const AssignmentManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="space-y-4">
-        <div className="flex items-center space-x-3">
-          <Users className="w-8 h-8 text-purple-600" />
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Kelola Penugasan</h1>
-            <p className="text-gray-600">Manajemen penugasan guru mengajar mata pelajaran</p>
-          </div>
+    {/* Header */}
+    <div className="space-y-4">
+      <div className="flex items-center space-x-3">
+        <Users className="w-8 h-8 text-purple-600" />
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Kelola Penugasan</h1>
+          <p className="text-gray-600">Manajemen penugasan guru mengajar mata pelajaran</p>
         </div>
+      </div>
         
         {/* Action Buttons */}
         <div className="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-3">
@@ -597,7 +656,7 @@ const AssignmentManagement: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs sm:text-sm text-gray-600">Total Guru</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">{teachers.length}</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{cachedTeachers.length}</p>
             </div>
             <Users className="w-6 h-6 sm:w-8 sm:h-8 text-purple-500" />
           </div>
@@ -685,7 +744,6 @@ const AssignmentManagement: React.FC = () => {
         matrix={matrix}
         classes={classes}
         subjects={subjects}
-        teachers={teachers}
         onCellChange={handleCellChange}
       />
 
@@ -700,10 +758,30 @@ const AssignmentManagement: React.FC = () => {
         actions={pendingActions}
         classes={classes}
         subjects={subjects}
-        teachers={teachers}
+        teachers={fullTeachers}
         loading={saving}
       />
     </div>
+  );
+};
+
+const AssignmentManagement: React.FC = () => {
+  const { token } = useAuth();
+
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Please login to access this page</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <TeacherCacheProvider token={token}>
+      <AssignmentManagementContent />
+    </TeacherCacheProvider>
   );
 };
 

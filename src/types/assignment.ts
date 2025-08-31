@@ -91,4 +91,14 @@ export interface TaskStatus {
   task_id: string;
   status: string;
   result: string;
+  details?: {
+    created?: number;
+    updated?: number;
+    deleted?: number;
+    failed?: number;
+    total?: number;
+    success?: number;
+    errors?: string[];
+  };
+  academic_period_id?: string;
 }

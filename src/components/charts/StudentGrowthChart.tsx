@@ -1,5 +1,5 @@
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { StudentGrowth } from '@/types/dashboard';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
@@ -117,7 +117,7 @@ const StudentGrowthChart: React.FC<StudentGrowthChartProps> = ({ data }) => {
       {/* Chart */}
       <div className="relative h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart 
+          <AreaChart 
             data={filteredData} 
             margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
           >
@@ -143,11 +143,13 @@ const StudentGrowthChart: React.FC<StudentGrowthChartProps> = ({ data }) => {
               allowDecimals={false}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Line 
+            <Area 
               type="monotone" 
               dataKey="student_count" 
               stroke="#3B82F6" 
               strokeWidth={2}
+              fill="#3B82F6"
+              fillOpacity={0.1}
               dot={{ 
                 fill: '#3B82F6', 
                 strokeWidth: 2, 
@@ -163,7 +165,7 @@ const StudentGrowthChart: React.FC<StudentGrowthChartProps> = ({ data }) => {
               connectNulls={false}
               animationDuration={800}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
 
