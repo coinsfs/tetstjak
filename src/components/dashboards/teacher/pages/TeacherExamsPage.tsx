@@ -174,21 +174,21 @@ const TeacherExamsPage: React.FC = () => {
 
   // Convert TeacherExam to Exam format for ExamDetailModal
   const convertToExamFormat = (teacherExam: TeacherExam): any => {
+    // Pastikan teaching_assignment_details adalah objek, bahkan jika aslinya null/undefined
+    const taDetails = teacherExam.teaching_assignment_details || {};
+
     return {
       ...teacherExam,
       questions: teacherExam.question_ids, // For backward compatibility
       question_ids: teacherExam.question_ids, // Ensure this field exists
       teaching_assignment_details: {
-        ...teacherExam.teaching_assignment_details,
-        class_details: {
-          ...teacherExam.teaching_assignment_details.class_details,
-        },
-        subject_details: {
-          ...teacherExam.teaching_assignment_details.subject_details,
-        },
-        teacher_details: {
-          ...teacherExam.teaching_assignment_details.teacher_details,
-        }
+        // Salin semua properti yang ada dari taDetails
+        ...taDetails,
+        // Pastikan properti bersarang (class_details, subject_details, teacher_details)
+        // juga berupa objek, berikan objek kosong sebagai default jika tidak ada
+        class_details: taDetails.class_details || {},
+        subject_details: taDetails.subject_details || {},
+        teacher_details: taDetails.teacher_details || {},
       }
     };
   };
