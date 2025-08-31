@@ -34,7 +34,7 @@ import TeacherExamQuestionsModal from "./modals/TeacherExamQuestionsModal";
 import TeacherExamStartConfirmationModal from "./modals/TeacherExamStartConfirmationModal";
 import ExamDetailModal from "@/components/modals/details/ExamDetailModal";
 import TeacherExamsTable from "@/components/tables/TeacherExamsTable";
-import Pagination from "@/components/Pagination";
+import TeacherExamsPagination from "./components/TeacherExamsPagination";
 import { formatDateTimeWithTimezone, convertUTCToWIB } from "@/utils/timezone";
 import toast from "react-hot-toast";
 
@@ -338,13 +338,12 @@ const TeacherExamsPage: React.FC = () => {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="bg-white rounded-xl shadow-sm p-4">
-          <Pagination
+          <TeacherExamsPagination
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={handlePageChange}
             totalItems={totalItems}
-            itemsPerPage={Number(filters.limit || 5)} // Pastikan ini selalu angka
-            itemName="ujian"
+            itemsPerPage={Number(filters.limit || 5)}
             onItemsPerPageChange={handleItemsPerPageChange}
           />
         </div>
