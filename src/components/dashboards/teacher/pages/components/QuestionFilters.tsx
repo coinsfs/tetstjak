@@ -1,121 +1,214 @@
-src/components/TeacherManagement.tsx
-src/components/TeacherFilter.tsx
-src/components/SubjectManagement.tsx
-src/components/StudentPerformanceTable.tsx
-src/components/StudentManagement.tsx
-src/components/StudentFilter.tsx
-src/components/Sidebar.tsx
-src/components/QuestionDisplay.tsx
-src/components/ProtectedRoute.tsx
-src/components/ProfileManagement.tsx
-src/components/Pagination.tsx
-src/components/LoginForm.tsx
-src/components/ExpertiseProgramManagement.tsx
-src/components/ExpertiseProgramFilter.tsx
-src/components/ExamManagement.tsx
-src/components/ClassManagement.tsx
-src/components/ClassFilter.tsx
-src/components/AssignmentMatrix.tsx
-src/components/AssignmentManagement.tsx
-src/components/ActivityFeed.tsx
-src/components/tables/TeacherTable.tsx
-src/components/tables/SubjectTable.tsx
-src/components/tables/StudentTable.tsx
-src/components/tables/ExpertiseProgramTable.tsx
-src/components/tables/ExamTable.tsx
-src/components/tables/ClassTable.tsx
-src/components/profile/UserActivity.tsx
-src/components/profile/SecuritySettings.tsx
-src/components/profile/ProfileSettings.tsx
-src/components/profile/ProfileInformation.tsx
-src/components/profile/GeneralSettings.tsx
-src/components/modals/TeacherDeleteModal.tsx
-src/components/modals/SubjectDeleteModal.tsx
-src/components/modals/StudentDeleteModal.tsx
-src/components/modals/ExpertiseProgramDeleteModal.tsx
-src/components/modals/ExamDeleteModal.tsx
-src/components/modals/ClassDeleteModal.tsx
-src/components/modals/forms/TeacherFormModal.tsx
-src/components/modals/forms/SubjectFormModal.tsx
-src/components/modals/forms/StudentFormModal.tsx
-src/components/modals/forms/ExpertiseProgramFormModal.tsx
-src/components/modals/forms/ExamFormModal.tsx
-src/components/modals/forms/ClassFormModal.tsx
-src/components/modals/details/TeacherDetailModal.tsx
-src/components/modals/details/SubjectDetailModal.tsx
-src/components/modals/details/StudentDetailModal.tsx
-src/components/modals/details/ExpertiseProgramDetailModal.tsx
-src/components/modals/details/ClassDetailModal.tsx
-src/components/dashboards/AdminDashboard.tsx
-src/components/dashboards/teacher/pages/TeacherClassesPage.tsx
-src/components/dashboards/teacher/pages/TeacherProfilePage.tsx
-src/components/dashboards/teacher/pages/TeacherAnalyticsPage.tsx
+import React, { memo, useState, useEffect } from 'react';
+import { Filter, Search, RotateCcw } from 'lucide-react';
+import { QuestionSubmissionFilters, AcademicPeriod } from '@/services/questionSubmission';
+import useDebounce from '@/hooks/useDebounce';
 
-src/components/dashboards/teacher/pages/modals/TeacherExamDeleteModal.tsx
-src/components/dashboards/teacher/pages/modals/TeacherExamEditModal.tsx
+type QuestionSource = 'my_questions' | 'my_submissions';
 
-src/components/dashboards/teacher/pages/modals/TeacherExamStartConfirmationModal.tsx
-src/components/dashboards/teacher/pages/modals/TeacherQuestionFormModal.tsx
-src/components/dashboards/teacher/pages/modals/TeacherQuestionDetailModal.tsx
-src/components/dashboards/teacher/TeacherDepartmentInfo.tsx
-src/components/dashboards/teacher/TeacherHeader.tsx
-src/components/dashboards/teacher/TeacherInfoCard.tsx
-src/components/dashboards/teacher/TeacherMainContent.tsx
-src/components/dashboards/teacher/TeacherSidebar.tsx
-src/components/dashboards/teacher/TeacherStatsGrid.tsx
-src/components/dashboards/teacher/TeacherSubjectsList.tsx
-src/components/dashboards/teacher/TeacherWelcomeCard.tsx
-src/components/CoordinatorMatrix.tsx
-src/components/SubjectCoordinatorManagement.tsx
-src/components/charts/BrowserUsageChart.tsx
-src/components/charts/StudentGrowthChart.tsx
-src/components/charts/StudentsByMajorChart.tsx
-src/components/dashboards/StudentDashboard.tsx
-src/components/dashboards/TeacherDashboard.tsx
-src/components/dashboards/teacher/pages/TeacherQuestionSetsPage.tsx
-src/components/dashboards/teacher/pages/TeacherQuestionsPage.tsx
-src/components/dashboards/teacher/pages/components/MyQuestionsTable.tsx
-src/components/dashboards/teacher/pages/components/MySubmissionsExamView.tsx
-src/components/dashboards/teacher/pages/components/MySubmissionsTable.tsx
-src/components/dashboards/teacher/pages/components/QuestionFilters.tsx
-src/components/dashboards/teacher/pages/components/QuestionSourceToggle.tsx
-src/components/dashboards/teacher/pages/components/QuestionViewToggle.tsx
-src/components/dashboards/teacher/pages/components/SubmittedQuestionsExamView.tsx
-src/components/dashboards/teacher/pages/components/SubmittedQuestionsTable.tsx
-src/components/dashboards/teacher/pages/modals/QuestionSetDeleteModal.tsx
-src/components/dashboards/teacher/pages/modals/QuestionSetDetailModal.tsx
-src/components/dashboards/teacher/pages/modals/QuestionSetFormModal.tsx
-src/components/dashboards/teacher/pages/modals/QuestionSetManageQuestionsModal.tsx
-src/components/dashboards/teacher/pages/modals/TeacherExamQuestionsModal.tsx
-src/components/dashboards/teacher/pages/modals/TeacherQuestionDeleteModal.tsx
-src/components/dashboards/teacher/pages/modals/TeacherSubmissionApproveModal.tsx
-src/components/dashboards/teacher/pages/modals/TeacherSubmissionDetailModal.tsx
-src/components/dashboards/teacher/pages/modals/TeacherSubmissionRejectModal.tsx
-src/components/dashboards/teacher/pages/modals/TeacherSubmitQuestionsModal.tsx
-src/components/modals/AssignmentConfirmationModal.tsx
-src/components/modals/AssignmentDeleteModal.tsx
-src/components/modals/CoordinatorConfirmationModal.tsx
-src/components/modals/ImportDataModal.tsx
-src/components/modals/details/ExamDetailModal.tsx
-src/components/profile/ProfilePictureUpload.tsx
-src/components/profile/SubjectFilter.tsx
-src/components/SubjectFilter.tsx
-src/components/dashboards/student/StudentHeader.tsx
-src/components/dashboards/student/StudentMainContent.tsx
-src/components/dashboards/student/StudentSidebar.tsx
-src/components/dashboards/student/pages/StudentDashboardPage.tsx
-src/components/dashboards/student/pages/StudentEvaluationPage.tsx
-src/components/dashboards/student/pages/StudentExamsPage.tsx
-src/components/dashboards/student/pages/StudentProfilePage.tsx
-src/components/dashboards/student/pages/StudentResultsPage.tsx
-src/components/profile/index.ts
-src/components/dashboards/student/pages/StudentExamTakingPage.tsx
+interface QuestionFilters {
+  search?: string;
+  difficulty?: string;
+  question_type?: string;
+  purpose?: string;
+  include_submitted?: boolean;
+  include_approved?: boolean;
+  page: number;
+  limit: number;
+}
 
+interface QuestionFiltersProps {
+  filters: QuestionFilters & QuestionSubmissionFilters;
+  questionSource: QuestionSource;
+  academicPeriods: AcademicPeriod[];
+  onFilterChange: (key: keyof QuestionFilters, value: any) => void;
+  onResetFilters: () => void;
+}
 
-src/services/questionSubmission.ts
-src/services/questionBank.ts
-src/services/questionSet.ts
-src/services/expertise.ts
-src/services/dashboard.ts
-src/types/questionSet.ts
-src/services/assignment.ts
+const QuestionFiltersComponent: React.FC<QuestionFiltersProps> = ({
+  filters,
+  questionSource,
+  academicPeriods,
+  onFilterChange,
+  onResetFilters
+}) => {
+  // State lokal untuk input pencarian
+  const [internalSearchTerm, setInternalSearchTerm] = useState(filters.search || '');
+
+  // Gunakan useDebounce hook dengan delay 500ms
+  const debouncedSearchTerm = useDebounce(internalSearchTerm, 500);
+
+  // Efek untuk memanggil onFilterChange ketika debouncedSearchTerm berubah
+  useEffect(() => {
+    // Hanya panggil onFilterChange jika nilai debounced berbeda dari filter yang sudah ada
+    if (debouncedSearchTerm !== filters.search) {
+      onFilterChange('search', debouncedSearchTerm);
+    }
+  }, [debouncedSearchTerm, filters.search, onFilterChange]);
+
+  // Sinkronkan internalSearchTerm jika filters.search berubah dari luar (misal: reset filter)
+  useEffect(() => {
+    if (filters.search !== internalSearchTerm) {
+      setInternalSearchTerm(filters.search || '');
+    }
+  }, [filters.search]);
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'multiple_choice': return 'Pilihan Ganda';
+      case 'essay': return 'Essay';
+      default: return type;
+    }
+  };
+
+  const getDifficultyLabel = (difficulty: string) => {
+    switch (difficulty) {
+      case 'easy': return 'Mudah';
+      case 'medium': return 'Sedang';
+      case 'hard': return 'Sulit';
+      default: return difficulty;
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+      <div className="flex items-center space-x-2 mb-4">
+        <Filter className="w-5 h-5 text-gray-500" />
+        <h3 className="text-lg font-semibold text-gray-900">Filter Soal</h3>
+      </div>
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Cari soal atau tag..."
+            value={internalSearchTerm}
+            onChange={(e) => setInternalSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-sm"
+          />
+        </div>
+
+        {/* Question Type Filter */}
+        <select
+          value={filters.question_type}
+          onChange={(e) => onFilterChange('question_type', e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-sm"
+        >
+          <option value="">Semua Tipe Soal</option>
+          <option value="multiple_choice">Pilihan Ganda</option>
+          <option value="essay">Essay</option>
+        </select>
+
+        {/* Difficulty Filter */}
+        <select
+          value={filters.difficulty}
+          onChange={(e) => onFilterChange('difficulty', e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-sm"
+        >
+          <option value="">Semua Tingkat</option>
+          <option value="easy">Mudah</option>
+          <option value="medium">Sedang</option>
+          <option value="hard">Sulit</option>
+        </select>
+
+        {/* Additional filters for my submissions */}
+        {questionSource === 'my_submissions' && (
+          <>
+            {/* Academic Period Filter */}
+            <select
+              value={filters.academic_period_id}
+              onChange={(e) => onFilterChange('academic_period_id', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-sm"
+            >
+              <option value="">Semua Periode</option>
+              {academicPeriods.map((period) => (
+                <option key={period._id} value={period._id}>
+                  {period.year} - {period.semester} {period.status === 'active' ? '(Aktif)' : ''}
+                </option>
+              ))}
+            </select>
+
+            {/* Purpose Filter */}
+            <input
+              type="text"
+              placeholder="Tujuan..."
+              value={filters.purpose}
+              onChange={(e) => onFilterChange('purpose', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-sm"
+            />
+
+            {/* Status Filter */}
+            <select
+              value={filters.status}
+              onChange={(e) => onFilterChange('status', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-sm"
+            >
+              <option value="">Semua Status</option>
+              <option value="submitted">Disubmit</option>
+              <option value="approved">Disetujui</option>
+              <option value="rejected">Ditolak</option>
+            </select>
+          </>
+        )}
+
+        {/* Reset Button */}
+        {questionSource === 'my_questions' && (
+          <button
+            onClick={onResetFilters}
+            className="flex items-center justify-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
+          >
+            <RotateCcw className="w-4 h-4" />
+            <span>Reset</span>
+          </button>
+        )}
+      </div>
+      
+      {/* Active Filters Display */}
+      {(filters.search || filters.difficulty || filters.question_type || 
+        (questionSource === 'my_submissions' && (filters.purpose || filters.academic_period_id || filters.status))) && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <span className="font-medium">Filter aktif:</span>
+            <div className="flex flex-wrap gap-2">
+              {debouncedSearchTerm && (
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md">
+                  Pencarian: "{debouncedSearchTerm}"
+                </span>
+              )}
+              {filters.difficulty && (
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md">
+                  Tingkat: {getDifficultyLabel(filters.difficulty)}
+                </span>
+              )}
+              {filters.question_type && (
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md">
+                  Tipe: {getTypeLabel(filters.question_type)}
+                </span>
+              )}
+              {questionSource === 'my_submissions' && filters.purpose && (
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md">
+                  Tujuan: "{filters.purpose}"
+                </span>
+              )}
+              {questionSource === 'my_submissions' && filters.academic_period_id && (
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md">
+                  Periode: {academicPeriods.find(p => p._id === filters.academic_period_id)?.year} - {academicPeriods.find(p => p._id === filters.academic_period_id)?.semester}
+                </span>
+              )}
+              {questionSource === 'my_submissions' && filters.status && (
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md">
+                  Status: {filters.status === 'submitted' ? 'Disubmit' : filters.status === 'approved' ? 'Disetujui' : 'Ditolak'}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+QuestionFiltersComponent.displayName = 'QuestionFiltersComponent';
+
+export default QuestionFiltersComponent;
