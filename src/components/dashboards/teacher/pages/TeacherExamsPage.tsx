@@ -168,7 +168,7 @@ const TeacherExamsPage: React.FC = () => {
       const totalQuestions = exam.question_ids.length;
       // If you need to navigate to a different route, you'll need to re-introduce useRouter for this specific function
       // For now, this will just log to console as per the requirement of not changing frontend URL
-      console.log(\`Navigating to monitor exam: /monitor-exam/${exam._id}?totalQuestions=${totalQuestions}`);
+      console.log(`Navigating to monitor exam: /monitor-exam/${exam._id}?totalQuestions=${totalQuestions}`);
       toast.info("Navigasi ke halaman monitoring ujian (URL tidak berubah)");
     } else {
       toast.error("Ujian belum dimulai atau sudah selesai.");
