@@ -185,7 +185,7 @@ const QuestionFiltersComponent: React.FC<QuestionFiltersProps> = ({
       )}
     </div>
   );
-});
+};
 
 QuestionFiltersComponent.displayName = 'QuestionFiltersComponent';
 
