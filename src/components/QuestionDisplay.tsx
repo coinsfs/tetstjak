@@ -231,8 +231,8 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <p className={`text-sm ${option.is_correct ? 'text-green-900 font-medium' : 'text-gray-700'}`}>
-                        {option.text}
-                      </p>
+                          {option.text}
+                        </p>
                         {option.is_correct && (
                           <div className="flex items-center space-x-1 ml-2">
                             <Check className="w-4 h-4 text-green-600" />
@@ -285,7 +285,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
       ))}
     </div>
   );
-});
+};
 
 QuestionDisplay.displayName = 'QuestionDisplay';
 
