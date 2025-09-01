@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Eye, Edit, Trash2, Tag, CheckCircle, XCircle, AlertCircle, Clock, Check } from 'lucide-react';
 import { Question } from '@/services/questionBank';
 
@@ -285,6 +285,8 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
       ))}
     </div>
   );
-};
+});
+
+QuestionDisplay.displayName = 'QuestionDisplay';
 
 export default QuestionDisplay;

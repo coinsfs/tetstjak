@@ -38,7 +38,6 @@ const TeacherQuestionsPage: React.FC = () => {
   const [mySubmissions, setMySubmissions] = useState<QuestionSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
   const [teachingClasses, setTeachingClasses] = useState<TeachingClass[]>([]);
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [activeAcademicPeriod, setActiveAcademicPeriod] = useState<AcademicPeriod | null>(null);
@@ -174,9 +173,6 @@ const TeacherQuestionsPage: React.FC = () => {
           setTotalItems(0);
         }
       }
-
-      setCurrentPage(filters.page);
-
     } catch (error) {
       console.error('Error fetching data:', error);
       if (!error.message?.includes('403')) {
@@ -395,7 +391,7 @@ const TeacherQuestionsPage: React.FC = () => {
       />
 
       {/* View Toggle & Content */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden p-6">
         {/* View Toggle */}
         <QuestionViewToggle
           currentView={currentView}
@@ -404,7 +400,7 @@ const TeacherQuestionsPage: React.FC = () => {
           questionSource={questionSource}
         />
 
-        {/* Content Area */}
+        {/* Content Area (Table/Exam View, Loading, Empty State) */}
         <div>
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -500,11 +496,11 @@ const TeacherQuestionsPage: React.FC = () => {
           )}
         </div>
 
-        {/* Pagination */}
+        {/* Pagination - Always visible within this container */}
         {(totalItems > 0 || totalPages > 1) && (
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6">
             <Pagination
-              currentPage={filters.page}
+              currentPage={filters.page} // Use filters.page directly
               totalPages={totalPages}
               onPageChange={handlePageChange}
               totalRecords={totalItems}

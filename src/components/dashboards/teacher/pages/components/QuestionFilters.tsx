@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Filter, Search, RotateCcw } from 'lucide-react';
 import { QuestionSubmissionFilters, AcademicPeriod } from '@/services/questionSubmission';
 
@@ -185,6 +185,8 @@ const QuestionFiltersComponent: React.FC<QuestionFiltersProps> = ({
       )}
     </div>
   );
-};
+});
+
+QuestionFiltersComponent.displayName = 'QuestionFiltersComponent';
 
 export default QuestionFiltersComponent;

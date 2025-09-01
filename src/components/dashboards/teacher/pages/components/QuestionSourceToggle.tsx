@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { User, Send } from 'lucide-react';
 
 type QuestionSource = 'my_questions' | 'my_submissions';
@@ -8,7 +8,7 @@ interface QuestionSourceToggleProps {
   onSourceChange: (source: QuestionSource) => void;
 }
 
-const QuestionSourceToggle: React.FC<QuestionSourceToggleProps> = ({
+const QuestionSourceToggle: React.FC<QuestionSourceToggleProps> = memo(({
   questionSource,
   onSourceChange
 }) => {
@@ -53,6 +53,9 @@ const QuestionSourceToggle: React.FC<QuestionSourceToggleProps> = ({
       </p>
     </div>
   );
-};
+});
+
+QuestionSourceToggle.displayName = 'QuestionSourceToggle';
+
 
 export default QuestionSourceToggle;

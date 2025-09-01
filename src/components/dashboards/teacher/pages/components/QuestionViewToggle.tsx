@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Table, BookOpen } from 'lucide-react';
 
 interface QuestionViewToggleProps {
@@ -57,6 +57,8 @@ const QuestionViewToggle: React.FC<QuestionViewToggleProps> = ({
       </div>
     </div>
   );
-};
+});
+
+QuestionViewToggle.displayName = 'QuestionViewToggle';
 
 export default QuestionViewToggle;

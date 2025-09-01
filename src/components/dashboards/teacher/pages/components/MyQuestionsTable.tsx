@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Eye, Edit, Trash2, Check } from 'lucide-react';
 import { Question } from '@/services/questionBank';
 
@@ -195,6 +195,8 @@ const MyQuestionsTable: React.FC<MyQuestionsTableProps> = ({
       </table>
     </div>
   );
-};
+});
+
+MyQuestionsTable.displayName = 'MyQuestionsTable';
 
 export default MyQuestionsTable;

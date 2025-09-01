@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Eye, RefreshCw, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { QuestionSubmission } from '@/services/questionSubmission';
 
@@ -181,6 +181,8 @@ const MySubmissionsTable: React.FC<MySubmissionsTableProps> = ({
       </table>
     </div>
   );
-};
+});
+
+MySubmissionsTable.displayName = 'MySubmissionsTable';
 
 export default MySubmissionsTable;
