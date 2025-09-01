@@ -138,6 +138,7 @@ const SecuritySettings: React.FC = () => {
       setLoading(false);
     }
   };
+  
 
   const getPasswordStrength = (password: string) => {
     const passedRequirements = passwordRequirements.filter(req => req.check(password)).length;
