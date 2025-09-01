@@ -23,7 +23,7 @@ const QuestionViewToggle: React.FC<QuestionViewToggleProps> = memo(({
   };
 
   return (
-    <div className="py-4 border-b border-gray-200 bg-gray-50">
+    <div className="py-4 px-4 border-b border-gray-200 bg-gray-50">
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-600">
           {totalItems} {getSourceLabel(questionSource)} ditemukan

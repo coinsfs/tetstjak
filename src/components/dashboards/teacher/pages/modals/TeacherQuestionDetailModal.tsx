@@ -194,7 +194,7 @@ const TeacherQuestionDetailModal: React.FC<TeacherQuestionDetailModalProps> = ({
 
             {/* Options (for multiple choice) */}
             {question.question_type === 'multiple_choice' && question.options.length > 0 && (
-              <div>
+              <div className="p-6 space-y-6">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Pilihan Jawaban:</h4>
                 <div className="space-y-2">
                   {question.options.map((option, index) => (

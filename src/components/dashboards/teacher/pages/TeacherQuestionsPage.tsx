@@ -391,7 +391,7 @@ const TeacherQuestionsPage: React.FC = () => {
       />
 
       {/* View Toggle & Content */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden p-6">
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {/* View Toggle */}
         <QuestionViewToggle
           currentView={currentView}
@@ -498,7 +498,7 @@ const TeacherQuestionsPage: React.FC = () => {
 
         {/* Pagination - Always visible within this container */}
         {(totalItems > 0 || totalPages > 1) && (
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6">
+          <div className="py-4 px-2 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6">
             <Pagination
               currentPage={filters.page} // Use filters.page directly
               totalPages={totalPages}

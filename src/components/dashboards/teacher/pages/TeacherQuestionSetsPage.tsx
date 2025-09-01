@@ -388,7 +388,7 @@ const TeacherQuestionSetsPage: React.FC = () => {
 
       {/* Question Sets Table */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div className="p-4">
+        <div>
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="flex items-center space-x-2">
