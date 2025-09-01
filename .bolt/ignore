@@ -50,10 +50,10 @@ src/components/dashboards/AdminDashboard.tsx
 src/components/dashboards/teacher/pages/TeacherClassesPage.tsx
 src/components/dashboards/teacher/pages/TeacherProfilePage.tsx
 src/components/dashboards/teacher/pages/TeacherAnalyticsPage.tsx
-
+src/components/dashboards/teacher/pages/TeacherExamsPage.tsx
 src/components/dashboards/teacher/pages/modals/TeacherExamDeleteModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherExamEditModal.tsx
-
+src/components/dashboards/teacher/pages/modals/TeacherExamFormModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherExamStartConfirmationModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherQuestionFormModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherQuestionDetailModal.tsx
@@ -73,8 +73,8 @@ src/components/charts/StudentsByMajorChart.tsx
 src/components/dashboards/StudentDashboard.tsx
 src/components/dashboards/TeacherDashboard.tsx
 src/components/dashboards/teacher/pages/TeacherQuestionSetsPage.tsx
-src/components/dashboards/teacher/pages/TeacherQuestionsPage.tsx
-src/components/dashboards/teacher/pages/components/MyQuestionsTable.tsx
+
+
 src/components/dashboards/teacher/pages/components/MySubmissionsExamView.tsx
 src/components/dashboards/teacher/pages/components/MySubmissionsTable.tsx
 src/components/dashboards/teacher/pages/components/QuestionFilters.tsx
@@ -85,8 +85,8 @@ src/components/dashboards/teacher/pages/components/SubmittedQuestionsTable.tsx
 src/components/dashboards/teacher/pages/modals/QuestionSetDeleteModal.tsx
 src/components/dashboards/teacher/pages/modals/QuestionSetDetailModal.tsx
 src/components/dashboards/teacher/pages/modals/QuestionSetFormModal.tsx
-src/components/dashboards/teacher/pages/modals/QuestionSetManageQuestionsModal.tsx
-src/components/dashboards/teacher/pages/modals/TeacherExamQuestionsModal.tsx
+
+
 src/components/dashboards/teacher/pages/modals/TeacherQuestionDeleteModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherSubmissionApproveModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherSubmissionDetailModal.tsx
@@ -113,7 +113,7 @@ src/components/dashboards/student/pages/StudentExamTakingPage.tsx
 
 
 src/services/questionSubmission.ts
-src/services/questionBank.ts
+
 src/services/questionSet.ts
 src/services/expertise.ts
 src/services/dashboard.ts
