@@ -50,7 +50,7 @@ const QuestionFiltersComponent: React.FC<QuestionFiltersProps> = ({
     if (filters.search !== internalSearchTerm) {
       setInternalSearchTerm(filters.search || '');
     }
-  }, [filters.search, internalSearchTerm]);
+  }, [filters.search]);
 
   const getTypeLabel = (type: string) => {
     switch (type) {
