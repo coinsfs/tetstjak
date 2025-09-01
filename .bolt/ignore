@@ -5,7 +5,7 @@ src/components/StudentPerformanceTable.tsx
 src/components/StudentManagement.tsx
 src/components/StudentFilter.tsx
 src/components/Sidebar.tsx
-src/components/QuestionDisplay.tsx
+
 src/components/ProtectedRoute.tsx
 src/components/ProfileManagement.tsx
 
@@ -74,12 +74,12 @@ src/components/dashboards/StudentDashboard.tsx
 src/components/dashboards/TeacherDashboard.tsx
 src/components/dashboards/teacher/pages/TeacherQuestionSetsPage.tsx
 
-src/components/dashboards/teacher/pages/components/MyQuestionsTable.tsx
+
 src/components/dashboards/teacher/pages/components/MySubmissionsExamView.tsx
-src/components/dashboards/teacher/pages/components/MySubmissionsTable.tsx
-src/components/dashboards/teacher/pages/components/QuestionFilters.tsx
-src/components/dashboards/teacher/pages/components/QuestionSourceToggle.tsx
-src/components/dashboards/teacher/pages/components/QuestionViewToggle.tsx
+
+
+
+
 src/components/dashboards/teacher/pages/components/SubmittedQuestionsExamView.tsx
 src/components/dashboards/teacher/pages/components/SubmittedQuestionsTable.tsx
 src/components/dashboards/teacher/pages/modals/QuestionSetDeleteModal.tsx
