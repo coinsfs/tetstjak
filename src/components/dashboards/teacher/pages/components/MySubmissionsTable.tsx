@@ -181,7 +181,7 @@ const MySubmissionsTable: React.FC<MySubmissionsTableProps> = ({
       </table>
     </div>
   );
-});
+};
 
 MySubmissionsTable.displayName = 'MySubmissionsTable';
 
