@@ -195,7 +195,7 @@ const MyQuestionsTable: React.FC<MyQuestionsTableProps> = ({
       </table>
     </div>
   );
-});
+};
 
 MyQuestionsTable.displayName = 'MyQuestionsTable';
 
