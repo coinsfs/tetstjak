@@ -60,12 +60,12 @@ const TeacherExamsPage: React.FC = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedExam, setSelectedExam] = useState<TeacherExam | null>(null);
 
-  // Helper to parse URL query parameters
+  // Helper to parse URL query parameters (only for filters, not pagination)
   const getFiltersFromUrl = useCallback(() => {
     const params = new URLSearchParams(window.location.search);
     return {
-      page: parseInt(params.get('page') || '1', 10),
-      limit: parseInt(params.get('limit') || '10', 10), // Default to 10 items per page
+      page: 1, // Always start from page 1
+      limit: 10, // Default limit
       academic_period_id: params.get('academic_period_id') || undefined,
       class_id: params.get('class_id') || undefined,
     };
@@ -75,18 +75,22 @@ const TeacherExamsPage: React.FC = () => {
   const [filters, setFilters] = useState<TeacherExamFilters>(getFiltersFromUrl());
 
   // Update filters state when URL changes (e.g., back/forward button)
+  // Only update non-pagination filters
   useEffect(() => {
     const urlFilters = getFiltersFromUrl();
-    // Only update if there's a meaningful difference to avoid infinite loops
+    // Only update if there's a meaningful difference in filter fields (not pagination)
     if (
-      urlFilters.page !== filters.page ||
-      urlFilters.limit !== filters.limit ||
       urlFilters.academic_period_id !== filters.academic_period_id ||
       urlFilters.class_id !== filters.class_id
     ) {
-      setFilters(urlFilters);
+      setFilters(prevFilters => ({
+        ...prevFilters,
+        academic_period_id: urlFilters.academic_period_id,
+        class_id: urlFilters.class_id,
+        page: 1 // Reset to first page when filters change
+      }));
     }
-  }, [currentPath, getFiltersFromUrl, filters]);
+  }, [currentPath, getFiltersFromUrl, filters.academic_period_id, filters.class_id]);
 
   useEffect(() => {
     fetchInitialData();
@@ -133,11 +137,10 @@ const TeacherExamsPage: React.FC = () => {
     }
   };
 
-  // Helper to build URL search params
+  // Helper to build URL search params (only for filters, not pagination)
   const buildUrlSearchParams = useCallback((newFilters: TeacherExamFilters) => {
     const params = new URLSearchParams();
-    if (newFilters.page && newFilters.page > 1) params.set('page', newFilters.page.toString());
-    if (newFilters.limit && newFilters.limit !== 10) params.set('limit', newFilters.limit.toString());
+    // Only add filter parameters to URL, not pagination
     if (newFilters.academic_period_id) params.set('academic_period_id', newFilters.academic_period_id);
     if (newFilters.class_id) params.set('class_id', newFilters.class_id);
     return params.toString();
@@ -156,22 +159,25 @@ const TeacherExamsPage: React.FC = () => {
       [key]: value === '' ? undefined : value,
       page: 1, // Reset to first page when filtering
     };
+    // Update URL only for filter parameters
     updateUrlWithFilters(newFilters);
+    // Update state directly
+    setFilters(newFilters);
   }, [filters, updateUrlWithFilters]);
 
   const handlePageChange = useCallback((page: number) => {
-    const newFilters = { ...filters, page };
-    updateUrlWithFilters(newFilters);
-  }, [filters, updateUrlWithFilters]);
+    // Only update state, don't update URL for pagination
+    setFilters(prevFilters => ({ ...prevFilters, page }));
+  }, []);
 
   const handleItemsPerPageChange = useCallback((newLimit: number) => {
-    const newFilters = {
-      ...filters,
+    // Only update state, don't update URL for pagination
+    setFilters(prevFilters => ({
+      ...prevFilters,
       limit: newLimit,
       page: 1, // Reset to first page when limit changes
-    };
-    updateUrlWithFilters(newFilters);
-  }, [filters, updateUrlWithFilters]);
+    }));
+  }, []);
 
   const handleCreateExam = useCallback(() => {
     if (!activeAcademicPeriod) {
