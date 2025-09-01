@@ -24,7 +24,7 @@ const TeacherQuestionSetsPage: React.FC = () => {
   // Filter state
   const [filters, setFilters] = useState<QuestionSetFilters>({
     page: 1,
-    limit: 20,
+    limit: 10,
     search: '',
     grade_level: '',
     subject_id: '',
@@ -147,6 +147,14 @@ const TeacherQuestionSetsPage: React.FC = () => {
 
   const handlePageChange = (page: number) => {
     setFilters(prev => ({ ...prev, page }));
+  };
+
+  const handleItemsPerPageChange = (newLimit: number) => {
+    setFilters(prev => ({
+      ...prev,
+      limit: newLimit,
+      page: 1, // Reset to first page when limit changes
+    }));
   };
 
   const handleCreateQuestionSet = () => {
@@ -665,14 +673,14 @@ const TeacherQuestionSetsPage: React.FC = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
+          <div className="border-t border-gray-200 bg-gray-50">
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={handlePageChange}
-              totalItems={totalItems}
-              itemsPerPage={filters.limit}
-              itemName="paket soal"
+              totalRecords={totalItems}
+              recordsPerPage={filters.limit}
+              onLimitChange={handleItemsPerPageChange}
             />
           </div>
         )}
