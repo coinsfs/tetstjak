@@ -64,7 +64,7 @@ const TeacherExamsPage: React.FC = () => {
   const getFiltersFromUrl = useCallback(() => {
     const params = new URLSearchParams(window.location.search);
     return {
-      page: 1, // Always start from page 1
+      skip: 0, // Always start from skip 0
       limit: 10, // Default limit
       academic_period_id: params.get('academic_period_id') || undefined,
       class_id: params.get('class_id') || undefined,
@@ -87,7 +87,7 @@ const TeacherExamsPage: React.FC = () => {
         ...prevFilters,
         academic_period_id: urlFilters.academic_period_id,
         class_id: urlFilters.class_id,
-        page: 1 // Reset to first page when filters change
+        skip: 0 // Reset to first skip when filters change
       }));
     }
   }, [currentPath, getFiltersFromUrl, filters.academic_period_id, filters.class_id]);
@@ -157,7 +157,7 @@ const TeacherExamsPage: React.FC = () => {
     const newFilters = {
       ...filters,
       [key]: value === '' ? undefined : value,
-      page: 1, // Reset to first page when filtering
+      skip: 0, // Reset to first skip when filtering
     };
     // Update URL only for filter parameters
     updateUrlWithFilters(newFilters);
@@ -166,8 +166,10 @@ const TeacherExamsPage: React.FC = () => {
   }, [filters, updateUrlWithFilters]);
 
   const handlePageChange = useCallback((page: number) => {
+    // Calculate skip based on page number and current limit
+    const newSkip = (page - 1) * (filters.limit || 10);
     // Only update state, don't update URL for pagination
-    setFilters(prevFilters => ({ ...prevFilters, page }));
+    setFilters(prevFilters => ({ ...prevFilters, skip: newSkip }));
   }, []);
 
   const handleItemsPerPageChange = useCallback((newLimit: number) => {
@@ -175,7 +177,7 @@ const TeacherExamsPage: React.FC = () => {
     setFilters(prevFilters => ({
       ...prevFilters,
       limit: newLimit,
-      page: 1, // Reset to first page when limit changes
+      skip: 0, // Reset to first skip when limit changes
     }));
   }, []);
 
@@ -245,6 +247,7 @@ const TeacherExamsPage: React.FC = () => {
   }, []);
 
   const totalPages = Math.ceil(totalItems / (filters.limit || 10));
+  const currentPageForPagination = Math.floor((filters.skip || 0) / (filters.limit || 10)) + 1;
 
   return (
     <div className="space-y-6">
@@ -367,7 +370,7 @@ const TeacherExamsPage: React.FC = () => {
       {(totalItems > 0 || totalPages > 1) && (
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <Pagination
-            currentPage={currentPage}
+            currentPage={currentPageForPagination}
             totalPages={totalPages}
             onPageChange={handlePageChange}
             totalRecords={totalItems}
