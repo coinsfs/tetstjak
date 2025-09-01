@@ -1,6 +1,7 @@
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { Filter, Search, RotateCcw } from 'lucide-react';
 import { QuestionSubmissionFilters, AcademicPeriod } from '@/services/questionSubmission';
+import useDebounce from '@/hooks/useDebounce';
 
 type QuestionSource = 'my_questions' | 'my_submissions';
 
@@ -30,6 +31,27 @@ const QuestionFiltersComponent: React.FC<QuestionFiltersProps> = ({
   onFilterChange,
   onResetFilters
 }) => {
+  // State lokal untuk input pencarian
+  const [internalSearchTerm, setInternalSearchTerm] = useState(filters.search || '');
+
+  // Gunakan useDebounce hook dengan delay 500ms
+  const debouncedSearchTerm = useDebounce(internalSearchTerm, 500);
+
+  // Efek untuk memanggil onFilterChange ketika debouncedSearchTerm berubah
+  useEffect(() => {
+    // Hanya panggil onFilterChange jika nilai debounced berbeda dari filter yang sudah ada
+    if (debouncedSearchTerm !== filters.search) {
+      onFilterChange('search', debouncedSearchTerm);
+    }
+  }, [debouncedSearchTerm, filters.search, onFilterChange]);
+
+  // Sinkronkan internalSearchTerm jika filters.search berubah dari luar (misal: reset filter)
+  useEffect(() => {
+    if (filters.search !== internalSearchTerm) {
+      setInternalSearchTerm(filters.search || '');
+    }
+  }, [filters.search, internalSearchTerm]);
+
   const getTypeLabel = (type: string) => {
     switch (type) {
       case 'multiple_choice': return 'Pilihan Ganda';
@@ -61,8 +83,8 @@ const QuestionFiltersComponent: React.FC<QuestionFiltersProps> = ({
           <input
             type="text"
             placeholder="Cari soal atau tag..."
-            value={filters.search}
-            onChange={(e) => onFilterChange('search', e.target.value)}
+            value={internalSearchTerm}
+            onChange={(e) => setInternalSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors text-sm"
           />
         </div>
@@ -149,9 +171,9 @@ const QuestionFiltersComponent: React.FC<QuestionFiltersProps> = ({
           <div className="flex items-center space-x-2 text-sm text-gray-600">
             <span className="font-medium">Filter aktif:</span>
             <div className="flex flex-wrap gap-2">
-              {filters.search && (
+              {debouncedSearchTerm && (
                 <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md">
-                  Pencarian: "{filters.search}"
+                  Pencarian: "{debouncedSearchTerm}"
                 </span>
               )}
               {filters.difficulty && (
