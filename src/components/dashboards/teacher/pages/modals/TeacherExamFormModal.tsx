@@ -374,259 +374,262 @@ const TeacherExamFormModal: React.FC<TeacherExamFormModalProps> = ({
 
         {/* Content */}
         <div className="p-6">
-          {initialLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
-              <span className="ml-2 text-gray-600">Memuat data...</span>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Basic Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
-                  Informasi Dasar
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Judul Ujian *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.title}
-                      onChange={(e) => handleInputChange('title', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-                      placeholder="Masukkan judul ujian"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Jenis Ujian *
-                    </label>
-                    <select
-                      value={formData.exam_type}
-                      onChange={(e) => handleInputChange('exam_type', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-                      required
-                    >
-                      <option value="quiz">Kuis</option>
-                      <option value="daily_test">Ulangan Harian</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Durasi (menit) *
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.duration_minutes}
-                      onChange={(e) => handleInputChange('duration_minutes', parseInt(e.target.value) || 0)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-                      min="1"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Periode Akademik *
-                    </label>
-                    <select
-                      value={formData.academic_period_id}
-                      onChange={(e) => handleAcademicPeriodChange(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-                      disabled={isEditMode}
-                      required
-                    >
-                      <option value="">Pilih periode akademik</option>
-                      {academicPeriods.map((period) => (
-                        <option key={period._id} value={period._id}>
-                          {period.year} - Semester {period.semester}
-                          {period.is_active && ' (Aktif)'}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Mata Pelajaran *
-                    </label>
-                    <select
-                      value={formData.teaching_assignment_id}
-                      onChange={(e) => handleInputChange('teaching_assignment_id', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-                      disabled={isEditMode || !formData.academic_period_id}
-                      required
-                    >
-                      <option value="">Pilih mata pelajaran</option>
-                      {getAvailableTeachingAssignments().map((assignment) => (
-                        <option key={assignment._id || assignment.teaching_assignment_id} value={assignment._id || assignment.teaching_assignment_id}>
-                          {assignment.subject_details?.name || 'Unknown Subject'} - {getClassDisplayText(assignment)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+                Informasi Dasar
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Judul Ujian *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => handleInputChange('title', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                    placeholder="Masukkan judul ujian"
+                    required
+                  />
                 </div>
-              </div>
 
-              {/* Schedule */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2 flex items-center">
-                  <Clock className="w-5 h-5 mr-2" />
-                  Jadwal Ujian
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Waktu Mulai *
-                    </label>
-                    <div className="text-xs text-gray-500 mb-1">Waktu dalam zona WIB (UTC+7)</div>
-                    <input
-                      type="datetime-local"
-                      value={formData.availability_start_time}
-                      onChange={(e) => handleInputChange('availability_start_time', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Waktu Selesai *
-                    </label>
-                    <div className="text-xs text-gray-500 mb-1">Waktu dalam zona WIB (UTC+7)</div>
-                    <input
-                      type="datetime-local"
-                      value={formData.availability_end_time}
-                      onChange={(e) => handleInputChange('availability_end_time', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Proctors */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2 flex items-center">
-                  <Users className="w-5 h-5 mr-2" />
-                  Pengawas Ujian
-                </h3>
-                
                 <div>
-                  {availableProctors.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                      {availableProctors.map((proctor) => (
-                        <label key={proctor._id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-md cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={formData.proctor_ids?.includes(proctor._id) || false}
-                            onChange={() => handleProctorToggle(proctor._id)}
-                            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                          />
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-900">{proctor.full_name}</div>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-500 p-4 bg-gray-50 rounded-lg">
-                      {formData.academic_period_id ? 'Tidak ada pengawas tersedia untuk periode akademik ini' : 'Pilih periode akademik terlebih dahulu'}
-                    </div>
-                  )}
-                  
-                  <p className="text-xs text-gray-500 mt-2">
-                    Pilih guru yang akan menjadi pengawas ujian. Anda dapat memilih lebih dari satu pengawas.
-                  </p>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Jenis Ujian *
+                  </label>
+                  <select
+                    value={formData.exam_type}
+                    onChange={(e) => handleInputChange('exam_type', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                    required
+                  >
+                    <option value="quiz">Kuis</option>
+                    <option value="daily_test">Ulangan Harian</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Durasi (menit) *
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.duration_minutes}
+                    onChange={(e) => handleInputChange('duration_minutes', parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                    min="1"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Periode Akademik *
+                  </label>
+                  <select
+                    value={formData.academic_period_id}
+                    onChange={(e) => handleAcademicPeriodChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                    disabled={isEditMode || initialLoading}
+                    required
+                  >
+                    <option value="">
+                      {initialLoading ? 'Memuat periode akademik...' : 'Pilih periode akademik'}
+                    </option>
+                    {academicPeriods.map((period) => (
+                      <option key={period._id} value={period._id}>
+                        {period.year} - Semester {period.semester}
+                        {period.is_active && ' (Aktif)'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Mata Pelajaran *
+                  </label>
+                  <select
+                    value={formData.teaching_assignment_id}
+                    onChange={(e) => handleInputChange('teaching_assignment_id', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                    disabled={isEditMode || !formData.academic_period_id || initialLoading}
+                    required
+                  >
+                    <option value="">
+                      {initialLoading ? 'Memuat mata pelajaran...' : 'Pilih mata pelajaran'}
+                    </option>
+                    {getAvailableTeachingAssignments().map((assignment) => (
+                      <option key={assignment._id || assignment.teaching_assignment_id} value={assignment._id || assignment.teaching_assignment_id}>
+                        {assignment.subject_details?.name || 'Unknown Subject'} - {getClassDisplayText(assignment)}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
+            </div>
 
-              {/* Settings */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2 flex items-center">
-                  <Settings className="w-5 h-5 mr-2" />
-                  Pengaturan Ujian
-                </h3>
+            {/* Schedule */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2 flex items-center">
+                <Clock className="w-5 h-5 mr-2" />
+                Jadwal Ujian
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Waktu Mulai *
+                  </label>
+                  <div className="text-xs text-gray-500 mb-1">Waktu dalam zona WIB (UTC+7)</div>
+                  <input
+                    type="datetime-local"
+                    value={formData.availability_start_time}
+                    onChange={(e) => handleInputChange('availability_start_time', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Waktu Selesai *
+                  </label>
+                  <div className="text-xs text-gray-500 mb-1">Waktu dalam zona WIB (UTC+7)</div>
+                  <input
+                    type="datetime-local"
+                    value={formData.availability_end_time}
+                    onChange={(e) => handleInputChange('availability_end_time', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Proctors */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2 flex items-center">
+                <Users className="w-5 h-5 mr-2" />
+                Pengawas Ujian
+              </h3>
+              
+              <div>
+                {initialLoading ? (
+                  <div className="flex items-center justify-center p-8 bg-gray-50 rounded-lg">
+                    <Loader2 className="w-5 h-5 animate-spin text-purple-600 mr-2" />
+                    <span className="text-sm text-gray-600">Memuat pengawas...</span>
+                  </div>
+                ) : availableProctors.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                    {availableProctors.map((proctor) => (
+                      <label key={proctor._id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-md cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.proctor_ids?.includes(proctor._id) || false}
+                          onChange={() => handleProctorToggle(proctor._id)}
+                          disabled={initialLoading}
+                          className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 disabled:opacity-50"
+                        />
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-gray-900">{proctor.full_name}</div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500 p-4 bg-gray-50 rounded-lg">
+                    {formData.academic_period_id ? 'Tidak ada pengawas tersedia untuk periode akademik ini' : 'Pilih periode akademik terlebih dahulu'}
+                  </div>
+                )}
                 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <label className="text-sm font-medium text-gray-900">Acak Urutan Soal</label>
-                      <p className="text-xs text-gray-500">Soal akan ditampilkan dalam urutan acak untuk setiap siswa</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={formData.settings.shuffle_questions}
-                      onChange={(e) => handleInputChange('settings.shuffle_questions', e.target.checked)}
-                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                    />
-                  </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Pilih guru yang akan menjadi pengawas ujian. Anda dapat memilih lebih dari satu pengawas.
+                </p>
+              </div>
+            </div>
 
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <label className="text-sm font-medium text-gray-900">Acak Pilihan Jawaban</label>
-                      <p className="text-xs text-gray-500">Pilihan jawaban akan ditampilkan dalam urutan acak</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={formData.settings.shuffle_options}
-                      onChange={(e) => handleInputChange('settings.shuffle_options', e.target.checked)}
-                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                    />
+            {/* Settings */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2 flex items-center">
+                <Settings className="w-5 h-5 mr-2" />
+                Pengaturan Ujian
+              </h3>
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <label className="text-sm font-medium text-gray-900">Acak Urutan Soal</label>
+                    <p className="text-xs text-gray-500">Soal akan ditampilkan dalam urutan acak untuk setiap siswa</p>
                   </div>
+                  <input
+                    type="checkbox"
+                    checked={formData.settings.shuffle_questions}
+                    onChange={(e) => handleInputChange('settings.shuffle_questions', e.target.checked)}
+                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  />
+                </div>
 
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <label className="text-sm font-medium text-gray-900">Tampilkan Hasil Langsung</label>
-                      <p className="text-xs text-gray-500">Siswa dapat melihat hasil ujian setelah selesai mengerjakan</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={formData.settings.show_results_after_submission}
-                      onChange={(e) => handleInputChange('settings.show_results_after_submission', e.target.checked)}
-                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                    />
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <label className="text-sm font-medium text-gray-900">Acak Pilihan Jawaban</label>
+                    <p className="text-xs text-gray-500">Pilihan jawaban akan ditampilkan dalam urutan acak</p>
                   </div>
+                  <input
+                    type="checkbox"
+                    checked={formData.settings.shuffle_options}
+                    onChange={(e) => handleInputChange('settings.shuffle_options', e.target.checked)}
+                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <label className="text-sm font-medium text-gray-900">Tampilkan Hasil Langsung</label>
+                    <p className="text-xs text-gray-500">Siswa dapat melihat hasil ujian setelah selesai mengerjakan</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={formData.settings.show_results_after_submission}
+                    onChange={(e) => handleInputChange('settings.show_results_after_submission', e.target.checked)}
+                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  />
                 </div>
               </div>
+            </div>
 
-              {/* Footer */}
-              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-6 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={loading}
-                  className="w-full sm:w-auto px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full sm:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>{isEditMode ? 'Memperbarui...' : 'Membuat...'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      <span>{isEditMode ? 'Perbarui Ujian' : 'Buat Ujian'}</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          )}
+            {/* Footer */}
+            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-6 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={loading}
+                className="w-full sm:w-auto px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full sm:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>{isEditMode ? 'Memperbarui...' : 'Membuat...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>{isEditMode ? 'Perbarui Ujian' : 'Buat Ujian'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
