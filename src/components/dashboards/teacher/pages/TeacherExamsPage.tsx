@@ -18,7 +18,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "@/hooks/useRouter"; // Import useRouter
+import { useRouter } from "@/hooks/useRouter";
 import {
   teacherExamService,
   TeacherExam,
@@ -40,15 +40,25 @@ import toast from "react-hot-toast";
 
 const TeacherExamsPage: React.FC = () => {
   const { token, user } = useAuth();
-  const { navigate, currentPath } = useRouter(); // Get navigate and currentPath
+  const { navigate, currentPath } = useRouter();
+  
+  // Data state
   const [exams, setExams] = useState<TeacherExam[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1); // This state will be derived from URL
+  const [currentPage, setCurrentPage] = useState(1);
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [teachingClasses, setTeachingClasses] = useState<TeachingClass[]>([]);
-  const [activeAcademicPeriod, setActiveAcademicPeriod] =
-    useState<ActiveAcademicPeriod | null>(null);
+  const [activeAcademicPeriod, setActiveAcademicPeriod] = useState<ActiveAcademicPeriod | null>(null);
+
+  // Modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showQuestionsModal, setShowQuestionsModal] = useState(false);
+  const [showStartConfirmationModal, setShowStartConfirmationModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedExam, setSelectedExam] = useState<TeacherExam | null>(null);
 
   // Helper to parse URL query parameters
   const getFiltersFromUrl = useCallback(() => {
@@ -76,7 +86,7 @@ const TeacherExamsPage: React.FC = () => {
     ) {
       setFilters(urlFilters);
     }
-  }, [currentPath, getFiltersFromUrl]); // Depend on currentPath to react to URL changes
+  }, [currentPath, getFiltersFromUrl, filters]);
 
   useEffect(() => {
     fetchInitialData();
@@ -84,7 +94,7 @@ const TeacherExamsPage: React.FC = () => {
 
   useEffect(() => {
     fetchExams();
-  }, [filters]); // fetchExams will now react to changes in filters (which are synced with URL)
+  }, [filters]);
 
   const fetchInitialData = async () => {
     if (!token) return;
@@ -114,7 +124,7 @@ const TeacherExamsPage: React.FC = () => {
       const response = await teacherExamService.getTeacherExams(token, filters);
       setExams(response.data);
       setTotalItems(response.total_items);
-      setCurrentPage(response.current_page); // Keep this to update Pagination component
+      setCurrentPage(response.current_page);
     } catch (error) {
       console.error("Error fetching exams:", error);
       toast.error("Gagal memuat daftar ujian");
@@ -126,28 +136,33 @@ const TeacherExamsPage: React.FC = () => {
   // Helper to build URL search params
   const buildUrlSearchParams = useCallback((newFilters: TeacherExamFilters) => {
     const params = new URLSearchParams();
-    if (newFilters.page) params.set('page', newFilters.page.toString());
-    if (newFilters.limit) params.set('limit', newFilters.limit.toString());
+    if (newFilters.page && newFilters.page > 1) params.set('page', newFilters.page.toString());
+    if (newFilters.limit && newFilters.limit !== 10) params.set('limit', newFilters.limit.toString());
     if (newFilters.academic_period_id) params.set('academic_period_id', newFilters.academic_period_id);
     if (newFilters.class_id) params.set('class_id', newFilters.class_id);
     return params.toString();
   }, []);
 
+  const updateUrlWithFilters = useCallback((newFilters: TeacherExamFilters) => {
+    const queryString = buildUrlSearchParams(newFilters);
+    const basePath = currentPath.split('?')[0];
+    const newUrl = queryString ? `${basePath}?${queryString}` : basePath;
+    navigate(newUrl);
+  }, [buildUrlSearchParams, navigate, currentPath]);
+
   const handleFilterChange = useCallback((key: keyof TeacherExamFilters, value: any) => {
     const newFilters = {
       ...filters,
-      [key]: value === '' ? undefined : value, // Handle empty string for select inputs
+      [key]: value === '' ? undefined : value,
       page: 1, // Reset to first page when filtering
     };
-    const queryString = buildUrlSearchParams(newFilters);
-    navigate(`${currentPath.split('?')[0]}?${queryString}`);
-  }, [filters, buildUrlSearchParams, navigate, currentPath]);
+    updateUrlWithFilters(newFilters);
+  }, [filters, updateUrlWithFilters]);
 
   const handlePageChange = useCallback((page: number) => {
     const newFilters = { ...filters, page };
-    const queryString = buildUrlSearchParams(newFilters);
-    navigate(`${currentPath.split('?')[0]}?${queryString}`);
-  }, [filters, buildUrlSearchParams, navigate, currentPath]);
+    updateUrlWithFilters(newFilters);
+  }, [filters, updateUrlWithFilters]);
 
   const handleItemsPerPageChange = useCallback((newLimit: number) => {
     const newFilters = {
@@ -155,9 +170,8 @@ const TeacherExamsPage: React.FC = () => {
       limit: newLimit,
       page: 1, // Reset to first page when limit changes
     };
-    const queryString = buildUrlSearchParams(newFilters);
-    navigate(`${currentPath.split('?')[0]}?${queryString}`);
-  }, [filters, buildUrlSearchParams, navigate, currentPath]);
+    updateUrlWithFilters(newFilters);
+  }, [filters, updateUrlWithFilters]);
 
   const handleCreateExam = useCallback(() => {
     if (!activeAcademicPeriod) {
@@ -191,7 +205,6 @@ const TeacherExamsPage: React.FC = () => {
 
   const handleMonitorExam = useCallback((exam: TeacherExam) => {
     if (exam.status === "ongoing") {
-      // Pass total questions as URL parameter for monitoring
       const totalQuestions = exam.question_ids.length;
       navigate(`/monitor-exam/${exam._id}?totalQuestions=${totalQuestions}`);
     } else {
@@ -200,7 +213,6 @@ const TeacherExamsPage: React.FC = () => {
   }, [navigate]);
 
   const handleAnalyticsExam = useCallback((exam: TeacherExam) => {
-    // TODO: Implement analytics functionality
     toast.success("Fitur analitik akan segera tersedia");
   }, []);
 
@@ -211,18 +223,14 @@ const TeacherExamsPage: React.FC = () => {
 
   // Convert TeacherExam to Exam format for ExamDetailModal
   const convertToExamFormat = useCallback((teacherExam: TeacherExam): any => {
-    // Pastikan teaching_assignment_details adalah objek, bahkan jika aslinya null/undefined
     const taDetails = teacherExam.teaching_assignment_details || {};
 
     return {
       ...teacherExam,
-      questions: teacherExam.question_ids, // For backward compatibility
-      question_ids: teacherExam.question_ids, // Ensure this field exists
+      questions: teacherExam.question_ids,
+      question_ids: teacherExam.question_ids,
       teaching_assignment_details: {
-        // Salin semua properti yang ada dari taDetails
         ...taDetails,
-        // Pastikan properti bersarang (class_details, subject_details, teacher_details)
-        // juga berupa objek, berikan objek kosong sebagai default jika tidak ada
         class_details: taDetails.class_details || {},
         subject_details: taDetails.subject_details || {},
         teacher_details: taDetails.teacher_details || {},
@@ -230,7 +238,7 @@ const TeacherExamsPage: React.FC = () => {
     };
   }, []);
 
-  const totalPages = Math.ceil(totalItems / (filters.limit || 10)); // Use 10 as default limit
+  const totalPages = Math.ceil(totalItems / (filters.limit || 10));
 
   return (
     <div className="space-y-6">
@@ -349,9 +357,9 @@ const TeacherExamsPage: React.FC = () => {
         />
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="bg-white rounded-xl shadow-sm p-4">
+      {/* Pagination - Show when there are items or multiple pages */}
+      {(totalItems > 0 || totalPages > 1) && (
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -426,6 +434,7 @@ const TeacherExamsPage: React.FC = () => {
           teachingClasses={teachingClasses}
         />
       )}
+
       {showStartConfirmationModal && selectedExam && (
         <TeacherExamStartConfirmationModal
           exam={selectedExam}
