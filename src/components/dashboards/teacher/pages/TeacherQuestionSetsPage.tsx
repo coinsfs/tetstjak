@@ -24,7 +24,7 @@ const TeacherQuestionSetsPage: React.FC = () => {
   // Filter state
   const [filters, setFilters] = useState<QuestionSetFilters>({
     page: 1,
-    limit: 10,
+    limit: 20,
     search: '',
     grade_level: '',
     subject_id: '',

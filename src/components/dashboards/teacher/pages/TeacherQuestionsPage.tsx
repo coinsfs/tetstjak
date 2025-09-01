@@ -59,7 +59,7 @@ const TeacherQuestionsPage: React.FC = () => {
     difficulty: '',
     question_type: '',
     purpose: '',
-    academic_period_id: undefined, // Initialize as undefined to prevent premature fetching
+    academic_period_id: '',
     status: ''
   });
   
@@ -73,55 +73,47 @@ const TeacherQuestionsPage: React.FC = () => {
   const [selectedSubmission, setSelectedSubmission] = useState<QuestionSubmission | null>(null);
   const [showSubmitQuestionsModal, setShowSubmitQuestionsModal] = useState(false);
 
-  // Combined data fetching logic to prevent double requests
   useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  useEffect(() => {
+    fetchQuestions();
+  }, [filters, questionSource]);
+
+  const fetchInitialData = async () => {
     if (!token) return;
 
     try {
-      setLoading(true);
+      const teachingData = await teacherService.getTeachingSummary(token);
+      setTeachingClasses(teachingData.classes);
       
-      // Track current state values to avoid unnecessary re-fetching
-      let currentActivePeriod = activeAcademicPeriod;
-      let currentAcademicPeriods = academicPeriods;
-      let currentTeachingClasses = teachingClasses;
-      let initialFiltersApplied = false;
-
-      // Fetch initial data if not already fetched
-      if (currentTeachingClasses.length === 0) {
-        const teachingData = await teacherService.getTeachingSummary(token);
-        currentTeachingClasses = teachingData.classes;
-        setTeachingClasses(currentTeachingClasses);
-      }
-
-      if (currentAcademicPeriods.length === 0) {
-        const periods = await questionSubmissionService.getAcademicPeriods(token);
-        currentAcademicPeriods = periods;
-        setAcademicPeriods(currentAcademicPeriods);
-      }
-
-      if (!currentActivePeriod) {
-        currentActivePeriod = await questionSubmissionService.getActiveAcademicPeriod(token);
-        setActiveAcademicPeriod(currentActivePeriod);
-      }
-
-      // Initialize academic_period_id filter if it's undefined
-      if (filters.academic_period_id === undefined) {
-        const defaultAcademicPeriodId = currentActivePeriod?._id || '';
+      // Fetch academic periods
+      const periods = await questionSubmissionService.getAcademicPeriods(token);
+      setAcademicPeriods(periods);
+      
+      // Get active academic period
+      const activePeriod = await questionSubmissionService.getActiveAcademicPeriod(token);
+      setActiveAcademicPeriod(activePeriod);
+      
+      // Set default academic period filter to active period
+      if (activePeriod) {
         setFilters(prev => ({
           ...prev,
-          academic_period_id: defaultAcademicPeriodId
+          academic_period_id: activePeriod._id
         }));
-        initialFiltersApplied = true;
       }
+    } catch (error) {
+      console.error('Error fetching initial data:', error);
+      toast.error('Gagal memuat data awal');
+    }
+  };
 
-      // If initial filters were just applied, this useEffect will re-run
-      // We should only proceed with fetching if filters are properly initialized
-      if (filters.academic_period_id === undefined && !initialFiltersApplied) {
-        setLoading(false);
-        return;
-      }
+  const fetchQuestions = async () => {
+    if (!token) return;
 
-      // Proceed with fetching questions/submissions
+    setLoading(true);
+    try {
       if (questionSource === 'my_questions') {
         const allQuestions = await questionBankService.getMyQuestions(token);
         
@@ -189,20 +181,7 @@ const TeacherQuestionsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [
-    token,
-    filters.page,
-    filters.limit,
-    filters.search,
-    filters.difficulty,
-    filters.question_type,
-    filters.purpose,
-    filters.academic_period_id, // This will trigger re-fetch once properly set
-    filters.status,
-    questionSource,
-    // Note: We don't include teachingClasses, academicPeriods, activeAcademicPeriod
-    // as dependencies to avoid unnecessary re-fetching
-  ]);
+  };
 
   const handleFilterChange = (key: keyof QuestionFilters, value: any) => {
     setFilters(prev => ({
@@ -308,7 +287,7 @@ const TeacherQuestionsPage: React.FC = () => {
   };
 
   const handleModalSuccess = () => {
-    // No need to manually call fetchQuestions - the useEffect will handle re-fetching
+    fetchQuestions(); // This will fetch the appropriate data based on questionSource
     setShowCreateModal(false);
     setShowEditModal(false);
     setShowDeleteModal(false);
