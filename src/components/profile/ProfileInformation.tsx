@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import ProfilePictureUpload from './ProfilePictureUpload';
 import { 
@@ -12,11 +12,15 @@ import {
   Shield,
   Clock,
   CheckCircle,
-  XCircle
+  XCircle,
+  BookOpen,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 const ProfileInformation: React.FC = () => {
   const { user } = useAuth();
+  const [showAllTeaching, setShowAllTeaching] = useState(false);
 
   if (!user) {
     return (
@@ -302,22 +306,59 @@ const ProfileInformation: React.FC = () => {
         {/* Teaching Summary (for teachers) */}
         {user.roles.includes('teacher') && user.teaching_summary && user.teaching_summary.length > 0 && (
           <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-            <div className="flex items-center space-x-2 mb-6">
-              <GraduationCap className="w-5 h-5 text-orange-600" />
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Ringkasan Mengajar</h3>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-2">
+                <GraduationCap className="w-5 h-5 text-orange-600" />
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Ringkasan Mengajar</h3>
+              </div>
+              <div className="text-sm text-gray-500">
+                {user.teaching_summary.length} kelas
+              </div>
             </div>
 
-            <div className="space-y-3">
-              {user.teaching_summary.map((teaching, index) => (
-                <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <BookOpen className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900 break-words">{teaching.subject_name}</p>
-                    <p className="text-sm text-gray-500 break-words">{teaching.class_name}</p>
+            {/* Teaching items container with max height and scroll */}
+            <div className={`relative transition-all duration-300 ${
+              showAllTeaching ? 'max-h-none' : 'max-h-60 overflow-hidden'
+            }`}>
+              <div className="space-y-3">
+                {user.teaching_summary.map((teaching: any, index: number) => (
+                  <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <BookOpen className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-gray-900 break-words">{teaching.subject_name}</p>
+                      <p className="text-sm text-gray-500 break-words">{teaching.class_name}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+              
+              {/* Scroll indicator for collapsed state */}
+              {!showAllTeaching && user.teaching_summary.length > 4 && (
+                <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none rounded-b-lg"></div>
+              )}
             </div>
+
+            {/* Show/Hide toggle button if more than 4 items */}
+            {user.teaching_summary.length > 4 && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <button
+                  onClick={() => setShowAllTeaching(!showAllTeaching)}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  <span>
+                    {showAllTeaching 
+                      ? `Sembunyikan ${user.teaching_summary.length - 4} kelas lainnya` 
+                      : `Lihat ${user.teaching_summary.length - 4} kelas lainnya`
+                    }
+                  </span>
+                  {showAllTeaching ? (
+                    <ChevronUp className="w-4 h-4" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
