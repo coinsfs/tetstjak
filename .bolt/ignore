@@ -50,7 +50,7 @@ src/components/dashboards/AdminDashboard.tsx
 src/components/dashboards/teacher/pages/TeacherClassesPage.tsx
 src/components/dashboards/teacher/pages/TeacherProfilePage.tsx
 src/components/dashboards/teacher/pages/TeacherAnalyticsPage.tsx
-src/components/dashboards/teacher/pages/TeacherExamsPage.tsx
+
 src/components/dashboards/teacher/pages/modals/TeacherExamDeleteModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherExamEditModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherExamFormModal.tsx
