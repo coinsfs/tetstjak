@@ -8,7 +8,7 @@ interface QuestionViewToggleProps {
   questionSource: 'my_questions' | 'my_submissions';
 }
 
-const QuestionViewToggle: React.FC<QuestionViewToggleProps> = ({
+const QuestionViewToggle: React.FC<QuestionViewToggleProps> = memo(({
   currentView,
   onViewChange,
   totalItems,
