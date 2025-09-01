@@ -73,7 +73,7 @@ src/components/charts/StudentsByMajorChart.tsx
 src/components/dashboards/StudentDashboard.tsx
 src/components/dashboards/TeacherDashboard.tsx
 src/components/dashboards/teacher/pages/TeacherQuestionSetsPage.tsx
-src/components/dashboards/teacher/pages/TeacherQuestionsPage.tsx
+
 src/components/dashboards/teacher/pages/components/MyQuestionsTable.tsx
 src/components/dashboards/teacher/pages/components/MySubmissionsExamView.tsx
 src/components/dashboards/teacher/pages/components/MySubmissionsTable.tsx
