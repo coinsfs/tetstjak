@@ -1,14 +1,24 @@
-```typescript
 import React, { useState, useEffect, useCallback } from "react";
 import {
   FileText,
+  Play,
   Plus,
   Filter,
+  Calendar,
+  Clock,
+  Users,
+  BookOpen,
+  Edit,
+  Trash2,
+  Eye,
+  BarChart3,
+  HelpCircle,
+  CheckCircle,
+  XCircle,
   AlertCircle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-// Removed useRouter import as URL will not be manipulated for pagination
-// import { useRouter } from "@/hooks/useRouter"; 
+import { useRouter } from "@/hooks/useRouter";
 import {
   teacherExamService,
   TeacherExam,
@@ -25,43 +35,58 @@ import TeacherExamStartConfirmationModal from "./modals/TeacherExamStartConfirma
 import ExamDetailModal from "@/components/modals/details/ExamDetailModal";
 import TeacherExamsTable from "@/components/tables/TeacherExamsTable";
 import Pagination from "@/components/Pagination";
-// Removed formatDateTimeWithTimezone, convertUTCToWIB as they are not directly used here
-// import { formatDateTimeWithTimezone, convertUTCToWIB } from "@/utils/timezone";
+import { formatDateTimeWithTimezone, convertUTCToWIB } from "@/utils/timezone";
 import toast from "react-hot-toast";
 
 const TeacherExamsPage: React.FC = () => {
   const { token, user } = useAuth();
-  // Removed useRouter usage
-  // const { navigate, currentPath } = useRouter(); 
+  const { navigate, currentPath } = useRouter();
+  
+  // Data state
   const [exams, setExams] = useState<TeacherExam[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1); 
+  const [currentPage, setCurrentPage] = useState(1);
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [teachingClasses, setTeachingClasses] = useState<TeachingClass[]>([]);
-  const [activeAcademicPeriod, setActiveAcademicPeriod] =
-    useState<ActiveAcademicPeriod | null>(null);
+  const [activeAcademicPeriod, setActiveAcademicPeriod] = useState<ActiveAcademicPeriod | null>(null);
 
-  // Filters state, now managed purely internally without URL synchronization
-  const [filters, setFilters] = useState<TeacherExamFilters>({
-    page: 1,
-    limit: 10, // Default to 10 items per page
-    academic_period_id: undefined,
-    class_id: undefined,
-  });
+  // Modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showQuestionsModal, setShowQuestionsModal] = useState(false);
+  const [showStartConfirmationModal, setShowStartConfirmationModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedExam, setSelectedExam] = useState<TeacherExam | null>(null);
 
-  // Removed useEffect that synced filters with currentPath
-  // useEffect(() => {
-  //   const urlFilters = getFiltersFromUrl();
-  //   if (
-  //     urlFilters.page !== filters.page ||
-  //     urlFilters.limit !== filters.limit ||
-  //     urlFilters.academic_period_id !== filters.academic_period_id ||
-  //     urlFilters.class_id !== filters.class_id
-  //   ) {
-  //     setFilters(urlFilters);
-  //   }
-  // }, [currentPath, getFiltersFromUrl, filters]);
+  // Helper to parse URL query parameters
+  const getFiltersFromUrl = useCallback(() => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      page: parseInt(params.get('page') || '1', 10),
+      limit: parseInt(params.get('limit') || '10', 10), // Default to 10 items per page
+      academic_period_id: params.get('academic_period_id') || undefined,
+      class_id: params.get('class_id') || undefined,
+    };
+  }, []);
+
+  // Filters state, initialized from URL
+  const [filters, setFilters] = useState<TeacherExamFilters>(getFiltersFromUrl());
+
+  // Update filters state when URL changes (e.g., back/forward button)
+  useEffect(() => {
+    const urlFilters = getFiltersFromUrl();
+    // Only update if there's a meaningful difference to avoid infinite loops
+    if (
+      urlFilters.page !== filters.page ||
+      urlFilters.limit !== filters.limit ||
+      urlFilters.academic_period_id !== filters.academic_period_id ||
+      urlFilters.class_id !== filters.class_id
+    ) {
+      setFilters(urlFilters);
+    }
+  }, [currentPath, getFiltersFromUrl, filters]);
 
   useEffect(() => {
     fetchInitialData();
@@ -69,7 +94,7 @@ const TeacherExamsPage: React.FC = () => {
 
   useEffect(() => {
     fetchExams();
-  }, [filters, token]); // fetchExams will now react to changes in filters and token
+  }, [filters]);
 
   const fetchInitialData = async () => {
     if (!token) return;
@@ -99,7 +124,7 @@ const TeacherExamsPage: React.FC = () => {
       const response = await teacherExamService.getTeacherExams(token, filters);
       setExams(response.data);
       setTotalItems(response.total_items);
-      setCurrentPage(response.current_page); 
+      setCurrentPage(response.current_page);
     } catch (error) {
       console.error("Error fetching exams:", error);
       toast.error("Gagal memuat daftar ujian");
@@ -108,28 +133,45 @@ const TeacherExamsPage: React.FC = () => {
     }
   };
 
-  // Modified handleFilterChange to update internal state directly
+  // Helper to build URL search params
+  const buildUrlSearchParams = useCallback((newFilters: TeacherExamFilters) => {
+    const params = new URLSearchParams();
+    if (newFilters.page && newFilters.page > 1) params.set('page', newFilters.page.toString());
+    if (newFilters.limit && newFilters.limit !== 10) params.set('limit', newFilters.limit.toString());
+    if (newFilters.academic_period_id) params.set('academic_period_id', newFilters.academic_period_id);
+    if (newFilters.class_id) params.set('class_id', newFilters.class_id);
+    return params.toString();
+  }, []);
+
+  const updateUrlWithFilters = useCallback((newFilters: TeacherExamFilters) => {
+    const queryString = buildUrlSearchParams(newFilters);
+    const basePath = currentPath.split('?')[0];
+    const newUrl = queryString ? `${basePath}?${queryString}` : basePath;
+    navigate(newUrl);
+  }, [buildUrlSearchParams, navigate, currentPath]);
+
   const handleFilterChange = useCallback((key: keyof TeacherExamFilters, value: any) => {
-    setFilters(prevFilters => ({
-      ...prevFilters,
-      [key]: value === '' ? undefined : value, // Handle empty string for select inputs
+    const newFilters = {
+      ...filters,
+      [key]: value === '' ? undefined : value,
       page: 1, // Reset to first page when filtering
-    }));
-  }, []);
+    };
+    updateUrlWithFilters(newFilters);
+  }, [filters, updateUrlWithFilters]);
 
-  // Modified handlePageChange to update internal state directly
   const handlePageChange = useCallback((page: number) => {
-    setFilters(prevFilters => ({ ...prevFilters, page }));
-  }, []);
+    const newFilters = { ...filters, page };
+    updateUrlWithFilters(newFilters);
+  }, [filters, updateUrlWithFilters]);
 
-  // Modified handleItemsPerPageChange to update internal state directly
   const handleItemsPerPageChange = useCallback((newLimit: number) => {
-    setFilters(prevFilters => ({
-      ...prevFilters,
+    const newFilters = {
+      ...filters,
       limit: newLimit,
       page: 1, // Reset to first page when limit changes
-    }));
-  }, []);
+    };
+    updateUrlWithFilters(newFilters);
+  }, [filters, updateUrlWithFilters]);
 
   const handleCreateExam = useCallback(() => {
     if (!activeAcademicPeriod) {
@@ -161,22 +203,16 @@ const TeacherExamsPage: React.FC = () => {
     setShowStartConfirmationModal(true);
   }, []);
 
-  // Removed navigate call for monitor exam, as it's a different route
-  // If you still want to navigate to a different route, you'll need useRouter back for this specific case
   const handleMonitorExam = useCallback((exam: TeacherExam) => {
     if (exam.status === "ongoing") {
       const totalQuestions = exam.question_ids.length;
-      // If you need to navigate to a different route, you'll need to re-introduce useRouter for this specific function
-      // For now, this will just log to console as per the requirement of not changing frontend URL
-      console.log(\`Navigating to monitor exam: /monitor-exam/${exam._id}?totalQuestions=${totalQuestions}`);
-      toast.info("Navigasi ke halaman monitoring ujian (URL tidak berubah)");
+      navigate(`/monitor-exam/${exam._id}?totalQuestions=${totalQuestions}`);
     } else {
       toast.error("Ujian belum dimulai atau sudah selesai.");
     }
-  }, []);
+  }, [navigate]);
 
   const handleAnalyticsExam = useCallback((exam: TeacherExam) => {
-    // TODO: Implement analytics functionality
     toast.success("Fitur analitik akan segera tersedia");
   }, []);
 
@@ -191,8 +227,8 @@ const TeacherExamsPage: React.FC = () => {
 
     return {
       ...teacherExam,
-      questions: teacherExam.question_ids, 
-      question_ids: teacherExam.question_ids, 
+      questions: teacherExam.question_ids,
+      question_ids: teacherExam.question_ids,
       teaching_assignment_details: {
         ...taDetails,
         class_details: taDetails.class_details || {},
@@ -203,16 +239,6 @@ const TeacherExamsPage: React.FC = () => {
   }, []);
 
   const totalPages = Math.ceil(totalItems / (filters.limit || 10));
-
-  // Modal state variables
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showQuestionsModal, setShowQuestionsModal] = useState(false);
-  const [showStartConfirmationModal, setShowStartConfirmationModal] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedExam, setSelectedExam] = useState<TeacherExam | null>(null);
-
 
   return (
     <div className="space-y-6">
@@ -331,9 +357,9 @@ const TeacherExamsPage: React.FC = () => {
         />
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="bg-white rounded-xl shadow-sm p-4">
+      {/* Pagination - Show when there are items or multiple pages */}
+      {(totalItems > 0 || totalPages > 1) && (
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -408,6 +434,7 @@ const TeacherExamsPage: React.FC = () => {
           teachingClasses={teachingClasses}
         />
       )}
+
       {showStartConfirmationModal && selectedExam && (
         <TeacherExamStartConfirmationModal
           exam={selectedExam}
@@ -439,4 +466,3 @@ const TeacherExamsPage: React.FC = () => {
 };
 
 export default TeacherExamsPage;
-```
