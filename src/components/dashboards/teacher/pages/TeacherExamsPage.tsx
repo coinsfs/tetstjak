@@ -46,7 +46,7 @@ const TeacherExamsPage: React.FC = () => {
   const [exams, setExams] = useState<TeacherExam[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
+  // Remove separate currentPage state - use filters.page instead
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [teachingClasses, setTeachingClasses] = useState<TeachingClass[]>([]);
   const [activeAcademicPeriod, setActiveAcademicPeriod] = useState<ActiveAcademicPeriod | null>(null);
@@ -120,7 +120,7 @@ const TeacherExamsPage: React.FC = () => {
     }
   };
 
-  const fetchExams = async () => {
+  const fetchExams = useCallback(async () => {
     if (!token) return;
 
     try {
@@ -128,14 +128,14 @@ const TeacherExamsPage: React.FC = () => {
       const response = await teacherExamService.getTeacherExams(token, filters);
       setExams(response.data);
       setTotalItems(response.total_items);
-      setCurrentPage(response.current_page);
+      // Remove setCurrentPage since we use filters.page directly
     } catch (error) {
       console.error("Error fetching exams:", error);
       toast.error("Gagal memuat daftar ujian");
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, filters]);
 
   // Helper to build URL search params (only for filters, not pagination)
   const buildUrlSearchParams = useCallback((newFilters: TeacherExamFilters) => {
@@ -367,7 +367,7 @@ const TeacherExamsPage: React.FC = () => {
       {(totalItems > 0 || totalPages > 1) && (
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <Pagination
-            currentPage={currentPage}
+            currentPage={filters.page || 1}
             totalPages={totalPages}
             onPageChange={handlePageChange}
             totalRecords={totalItems}
