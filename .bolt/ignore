@@ -8,7 +8,7 @@ src/components/Sidebar.tsx
 src/components/QuestionDisplay.tsx
 src/components/ProtectedRoute.tsx
 src/components/ProfileManagement.tsx
-src/components/Pagination.tsx
+
 src/components/LoginForm.tsx
 src/components/ExpertiseProgramManagement.tsx
 src/components/ExpertiseProgramFilter.tsx
@@ -73,8 +73,8 @@ src/components/charts/StudentsByMajorChart.tsx
 src/components/dashboards/StudentDashboard.tsx
 src/components/dashboards/TeacherDashboard.tsx
 
-src/components/dashboards/teacher/pages/TeacherQuestionsPage.tsx
-src/components/dashboards/teacher/pages/components/MyQuestionsTable.tsx
+
+
 src/components/dashboards/teacher/pages/components/MySubmissionsExamView.tsx
 src/components/dashboards/teacher/pages/components/MySubmissionsTable.tsx
 src/components/dashboards/teacher/pages/components/QuestionFilters.tsx
