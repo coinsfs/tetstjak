@@ -96,9 +96,26 @@ const TeacherExamsPage: React.FC = () => {
     fetchInitialData();
   }, []);
 
+  const fetchExams = useCallback(async () => {
+    if (!token) return;
+
+    try {
+      setLoading(true);
+      const response = await teacherExamService.getTeacherExams(token, filters);
+      setExams(response.data);
+      setTotalItems(response.total_items);
+      setCurrentPage(response.current_page);
+    } catch (error) {
+      console.error("Error fetching exams:", error);
+      toast.error("Gagal memuat daftar ujian");
+    } finally {
+      setLoading(false);
+    }
+  }, [token, filters]);
+
   useEffect(() => {
     fetchExams();
-  }, [filters]);
+  }, [fetchExams]);
 
   const fetchInitialData = async () => {
     if (!token) return;
@@ -117,23 +134,6 @@ const TeacherExamsPage: React.FC = () => {
     } catch (error) {
       console.error("Error fetching initial data:", error);
       toast.error("Gagal memuat data awal");
-    }
-  };
-
-  const fetchExams = async () => {
-    if (!token) return;
-
-    try {
-      setLoading(true);
-      const response = await teacherExamService.getTeacherExams(token, filters);
-      setExams(response.data);
-      setTotalItems(response.total_items);
-      setCurrentPage(response.current_page);
-    } catch (error) {
-      console.error("Error fetching exams:", error);
-      toast.error("Gagal memuat daftar ujian");
-    } finally {
-      setLoading(false);
     }
   };
 
