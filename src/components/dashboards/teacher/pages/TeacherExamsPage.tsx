@@ -18,7 +18,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "@/hooks/useRouter";
+import { useRouter } from "@/hooks/useRouter"; // Import useRouter
 import {
   teacherExamService,
   TeacherExam,
@@ -40,31 +40,43 @@ import toast from "react-hot-toast";
 
 const TeacherExamsPage: React.FC = () => {
   const { token, user } = useAuth();
-  const { navigate } = useRouter();
+  const { navigate, currentPath } = useRouter(); // Get navigate and currentPath
   const [exams, setExams] = useState<TeacherExam[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1); // This state will be derived from URL
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [teachingClasses, setTeachingClasses] = useState<TeachingClass[]>([]);
   const [activeAcademicPeriod, setActiveAcademicPeriod] =
     useState<ActiveAcademicPeriod | null>(null);
 
-  // Filters
-  const [filters, setFilters] = useState<TeacherExamFilters>({
-    page: 1,
-    limit: 5,
-  });
+  // Helper to parse URL query parameters
+  const getFiltersFromUrl = useCallback(() => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      page: parseInt(params.get('page') || '1', 10),
+      limit: parseInt(params.get('limit') || '10', 10), // Default to 10 items per page
+      academic_period_id: params.get('academic_period_id') || undefined,
+      class_id: params.get('class_id') || undefined,
+    };
+  }, []);
 
-  // Modals
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showQuestionsModal, setShowQuestionsModal] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [showStartConfirmationModal, setShowStartConfirmationModal] =
-    useState(false);
-  const [selectedExam, setSelectedExam] = useState<TeacherExam | null>(null);
+  // Filters state, initialized from URL
+  const [filters, setFilters] = useState<TeacherExamFilters>(getFiltersFromUrl());
+
+  // Update filters state when URL changes (e.g., back/forward button)
+  useEffect(() => {
+    const urlFilters = getFiltersFromUrl();
+    // Only update if there's a meaningful difference to avoid infinite loops
+    if (
+      urlFilters.page !== filters.page ||
+      urlFilters.limit !== filters.limit ||
+      urlFilters.academic_period_id !== filters.academic_period_id ||
+      urlFilters.class_id !== filters.class_id
+    ) {
+      setFilters(urlFilters);
+    }
+  }, [currentPath, getFiltersFromUrl]); // Depend on currentPath to react to URL changes
 
   useEffect(() => {
     fetchInitialData();
@@ -72,7 +84,7 @@ const TeacherExamsPage: React.FC = () => {
 
   useEffect(() => {
     fetchExams();
-  }, [filters]);
+  }, [filters]); // fetchExams will now react to changes in filters (which are synced with URL)
 
   const fetchInitialData = async () => {
     if (!token) return;
@@ -102,7 +114,7 @@ const TeacherExamsPage: React.FC = () => {
       const response = await teacherExamService.getTeacherExams(token, filters);
       setExams(response.data);
       setTotalItems(response.total_items);
-      setCurrentPage(response.current_page);
+      setCurrentPage(response.current_page); // Keep this to update Pagination component
     } catch (error) {
       console.error("Error fetching exams:", error);
       toast.error("Gagal memuat daftar ujian");
@@ -111,25 +123,41 @@ const TeacherExamsPage: React.FC = () => {
     }
   };
 
-  const handleFilterChange = useCallback((key: keyof TeacherExamFilters, value: any) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value,
-      page: 1, // Reset to first page when filtering
-    }));
+  // Helper to build URL search params
+  const buildUrlSearchParams = useCallback((newFilters: TeacherExamFilters) => {
+    const params = new URLSearchParams();
+    if (newFilters.page) params.set('page', newFilters.page.toString());
+    if (newFilters.limit) params.set('limit', newFilters.limit.toString());
+    if (newFilters.academic_period_id) params.set('academic_period_id', newFilters.academic_period_id);
+    if (newFilters.class_id) params.set('class_id', newFilters.class_id);
+    return params.toString();
   }, []);
+
+  const handleFilterChange = useCallback((key: keyof TeacherExamFilters, value: any) => {
+    const newFilters = {
+      ...filters,
+      [key]: value === '' ? undefined : value, // Handle empty string for select inputs
+      page: 1, // Reset to first page when filtering
+    };
+    const queryString = buildUrlSearchParams(newFilters);
+    navigate(`${currentPath.split('?')[0]}?${queryString}`);
+  }, [filters, buildUrlSearchParams, navigate, currentPath]);
 
   const handlePageChange = useCallback((page: number) => {
-    setFilters((prev) => ({ ...prev, page }));
-  }, []);
+    const newFilters = { ...filters, page };
+    const queryString = buildUrlSearchParams(newFilters);
+    navigate(`${currentPath.split('?')[0]}?${queryString}`);
+  }, [filters, buildUrlSearchParams, navigate, currentPath]);
 
   const handleItemsPerPageChange = useCallback((newLimit: number) => {
-    setFilters((prev) => ({
-      ...prev,
+    const newFilters = {
+      ...filters,
       limit: newLimit,
       page: 1, // Reset to first page when limit changes
-    }));
-  }, []);
+    };
+    const queryString = buildUrlSearchParams(newFilters);
+    navigate(`${currentPath.split('?')[0]}?${queryString}`);
+  }, [filters, buildUrlSearchParams, navigate, currentPath]);
 
   const handleCreateExam = useCallback(() => {
     if (!activeAcademicPeriod) {
@@ -202,7 +230,7 @@ const TeacherExamsPage: React.FC = () => {
     };
   }, []);
 
-  const totalPages = Math.ceil(totalItems / (filters.limit || 5));
+  const totalPages = Math.ceil(totalItems / (filters.limit || 10)); // Use 10 as default limit
 
   return (
     <div className="space-y-6">
@@ -328,10 +356,9 @@ const TeacherExamsPage: React.FC = () => {
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={handlePageChange}
-            totalItems={totalItems}
-            itemsPerPage={filters.limit || 5}
-            itemName="ujian"
-            onItemsPerPageChange={handleItemsPerPageChange}
+            totalRecords={totalItems}
+            recordsPerPage={filters.limit || 10}
+            onLimitChange={handleItemsPerPageChange}
           />
         </div>
       )}
