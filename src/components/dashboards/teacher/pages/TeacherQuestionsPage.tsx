@@ -213,6 +213,14 @@ const TeacherQuestionsPage: React.FC = () => {
     setFilters(prev => ({ ...prev, page }));
   };
 
+  const handleItemsPerPageChange = (newLimit: number) => {
+    setFilters(prev => ({
+      ...prev,
+      limit: newLimit,
+      page: 1, // Reset to first page when limit changes
+    }));
+  };
+
   const handleViewChange = (view: 'table' | 'exam') => {
     setCurrentView(view);
   };
@@ -493,15 +501,15 @@ const TeacherQuestionsPage: React.FC = () => {
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+        {(totalItems > 0 || totalPages > 1) && (
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <Pagination
-              currentPage={currentPage}
+              currentPage={filters.page}
               totalPages={totalPages}
               onPageChange={handlePageChange}
-              totalItems={totalItems}
-              itemsPerPage={filters.limit}
-              itemName="soal"
+              totalRecords={totalItems}
+              recordsPerPage={filters.limit}
+              onLimitChange={handleItemsPerPageChange}
             />
           </div>
         )}
