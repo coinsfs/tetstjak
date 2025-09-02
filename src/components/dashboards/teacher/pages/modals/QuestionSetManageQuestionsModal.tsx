@@ -191,7 +191,7 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
     const defaultAcademicPeriodId = activeAcademicPeriod?._id || '';
     setFilters({
       page: 1,
-      limit: 12,
+      limit: 10,
       search: '',
       difficulty: '',
       question_type: '',
@@ -208,7 +208,7 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
     const defaultAcademicPeriodId = activeAcademicPeriod?._id || '';
     setFilters({
       page: 1,
-      limit: 12,
+      limit: 10,
       search: '',
       difficulty: '',
       question_type: '',
