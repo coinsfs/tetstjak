@@ -72,26 +72,26 @@ src/components/charts/StudentGrowthChart.tsx
 src/components/charts/StudentsByMajorChart.tsx
 src/components/dashboards/StudentDashboard.tsx
 src/components/dashboards/TeacherDashboard.tsx
+src/components/dashboards/teacher/pages/TeacherQuestionSetsPage.tsx
 
-src/components/dashboards/teacher/pages/TeacherQuestionsPage.tsx
-src/components/dashboards/teacher/pages/components/MyQuestionsTable.tsx
+s
 src/components/dashboards/teacher/pages/components/MySubmissionsExamView.tsx
 src/components/dashboards/teacher/pages/components/MySubmissionsTable.tsx
-src/components/dashboards/teacher/pages/components/QuestionFilters.tsx
+
 src/components/dashboards/teacher/pages/components/QuestionSourceToggle.tsx
 src/components/dashboards/teacher/pages/components/QuestionViewToggle.tsx
 src/components/dashboards/teacher/pages/components/SubmittedQuestionsExamView.tsx
-src/components/dashboards/teacher/pages/components/SubmittedQuestionsTable.tsx
+
 src/components/dashboards/teacher/pages/modals/QuestionSetDeleteModal.tsx
 src/components/dashboards/teacher/pages/modals/QuestionSetDetailModal.tsx
 src/components/dashboards/teacher/pages/modals/QuestionSetFormModal.tsx
+src/components/dashboards/teacher/pages/modals/QuestionSetManageQuestionsModal.tsx
 
-src/components/dashboards/teacher/pages/modals/TeacherExamQuestionsModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherQuestionDeleteModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherSubmissionApproveModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherSubmissionDetailModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherSubmissionRejectModal.tsx
-src/components/dashboards/teacher/pages/modals/TeacherSubmitQuestionsModal.tsx
+
 src/components/modals/AssignmentConfirmationModal.tsx
 src/components/modals/AssignmentDeleteModal.tsx
 src/components/modals/CoordinatorConfirmationModal.tsx
@@ -112,10 +112,9 @@ src/components/profile/index.ts
 src/components/dashboards/student/pages/StudentExamTakingPage.tsx
 
 
-src/services/questionSubmission.ts
-src/services/questionBank.ts
 
+src/services/questionSet.ts
 src/services/expertise.ts
 src/services/dashboard.ts
-
+src/types/questionSet.ts
 src/services/assignment.ts
