@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
 import { dashboardService } from '@/services/dashboard';
-import { TeacherDashboardStats } from '@/types/dashboard';
+import TeacherActivityOverview from './teacher/TeacherActivityOverview';
 import TeacherSidebar from './teacher/TeacherSidebar';
 import TeacherHeader from './teacher/TeacherHeader';
 import TeacherMainContent from './teacher/TeacherMainContent';
@@ -79,9 +79,8 @@ const TeacherDashboard: React.FC = () => {
         />
 
         {/* Main Content Component */}
-        <TeacherMainContent
-          user={user}
-          currentPath={currentPath}
+      {/* Activity Overview */}
+      <div className="mt-6">
           dashboardStats={dashboardStats}
           statsLoading={statsLoading}
         >
