@@ -85,6 +85,7 @@ const TeacherDashboard: React.FC = () => {
           statsLoading={statsLoading}
         >
           <TeacherActivityOverview />
+        </div>
         </TeacherMainContent>
       </div>
     </div>
