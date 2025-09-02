@@ -6,7 +6,6 @@ import TeacherActivityOverview from './teacher/TeacherActivityOverview';
 import TeacherSidebar from './teacher/TeacherSidebar';
 import TeacherHeader from './teacher/TeacherHeader';
 import TeacherMainContent from './teacher/TeacherMainContent';
-import TeacherActivityOverview from './teacher/TeacherActivityOverview';
 import toast from 'react-hot-toast';
 
 const TeacherDashboard: React.FC = () => {
