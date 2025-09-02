@@ -83,9 +83,10 @@ const TeacherDashboard: React.FC = () => {
           user={user}
           currentPath={currentPath}
           dashboardStats={dashboardStats}
-            <TeacherActivityOverview />
           statsLoading={statsLoading}
-        />
+        >
+          <TeacherActivityOverview />
+        </TeacherMainContent>
       </div>
     </div>
   );
