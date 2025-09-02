@@ -5,6 +5,7 @@ import { TeacherExam } from '@/services/teacherExam';
 import { TeachingClass } from '@/services/teacher';
 import { questionBankService, Question } from '@/services/questionBank';
 import { questionSetService, QuestionSet, QuestionSetFilters, QuestionSetResponse } from '@/services/questionSet';
+import Pagination from '@/components/Pagination';
 import toast from 'react-hot-toast';
 
 interface TeacherExamQuestionsModalProps {
@@ -30,6 +31,9 @@ const TeacherExamQuestionsModal: React.FC<TeacherExamQuestionsModalProps> = ({
   const [myQuestions, setMyQuestions] = useState<Question[]>([]);
   const [loadingMyQuestions, setLoadingMyQuestions] = useState(false);
   const [searchMyQuestions, setSearchMyQuestions] = useState('');
+  const [myQuestionsCurrentPage, setMyQuestionsCurrentPage] = useState(1);
+  const [myQuestionsLimit, setMyQuestionsLimit] = useState(10);
+  const [myQuestionsTotalItems, setMyQuestionsTotalItems] = useState(0);
   
   // Question Sets Tab
   const [questionSets, setQuestionSets] = useState<QuestionSet[]>([]);
@@ -53,6 +57,10 @@ const TeacherExamQuestionsModal: React.FC<TeacherExamQuestionsModalProps> = ({
       setCurrentExamQuestions(exam.question_ids || []);
       setSelectedQuestionIds([]);
       
+      // Reset pagination states
+      setMyQuestionsCurrentPage(1);
+      setMyQuestionsTotalItems(0);
+      
       // Set default filters based on exam details
       if (exam.teaching_assignment_details) {
         setQuestionSetFilters(prev => ({
@@ -70,6 +78,13 @@ const TeacherExamQuestionsModal: React.FC<TeacherExamQuestionsModalProps> = ({
     }
   }, [isOpen, activeTab]);
 
+  // Effect for My Questions pagination
+  useEffect(() => {
+    if (activeTab === 'my_questions') {
+      fetchMyQuestions();
+    }
+  }, [myQuestionsCurrentPage, myQuestionsLimit, searchMyQuestions]);
+
   useEffect(() => {
     if (activeTab === 'question_sets') {
       fetchQuestionSets();
@@ -81,11 +96,43 @@ const TeacherExamQuestionsModal: React.FC<TeacherExamQuestionsModalProps> = ({
 
     setLoadingMyQuestions(true);
     try {
-      const questions = await questionBankService.getMyQuestions(token);
-      setMyQuestions(questions);
+      const filters = {
+        page: myQuestionsCurrentPage,
+        limit: myQuestionsLimit,
+        search: searchMyQuestions.trim() || undefined
+      };
+      
+      const response = await questionBankService.getMyQuestions(token, filters);
+      
+      // Handle both paginated response and legacy array response
+      if (response && typeof response === 'object' && 'data' in response) {
+        // New paginated response
+        setMyQuestions(response.data || []);
+        setMyQuestionsTotalItems(response.total_items || 0);
+      } else if (Array.isArray(response)) {
+        // Legacy array response - apply client-side filtering and pagination
+        const filteredQuestions = response.filter(question =>
+          searchMyQuestions.trim() === '' ||
+          question.question_text.toLowerCase().includes(searchMyQuestions.toLowerCase()) ||
+          question.tags.some(tag => tag.toLowerCase().includes(searchMyQuestions.toLowerCase()))
+        );
+        
+        const startIndex = (myQuestionsCurrentPage - 1) * myQuestionsLimit;
+        const endIndex = startIndex + myQuestionsLimit;
+        const paginatedQuestions = filteredQuestions.slice(startIndex, endIndex);
+        
+        setMyQuestions(paginatedQuestions);
+        setMyQuestionsTotalItems(filteredQuestions.length);
+      } else {
+        // Fallback
+        setMyQuestions([]);
+        setMyQuestionsTotalItems(0);
+      }
     } catch (error) {
       console.error('Error fetching my questions:', error);
       toast.error('Gagal memuat soal Anda');
+      setMyQuestions([]);
+      setMyQuestionsTotalItems(0);
     } finally {
       setLoadingMyQuestions(false);
     }
@@ -106,6 +153,15 @@ const TeacherExamQuestionsModal: React.FC<TeacherExamQuestionsModalProps> = ({
       setLoadingQuestionSets(false);
     }
   };
+
+  const handleMyQuestionsPageChange = useCallback((page: number) => {
+    setMyQuestionsCurrentPage(page);
+  }, []);
+
+  const handleMyQuestionsLimitChange = useCallback((newLimit: number) => {
+    setMyQuestionsLimit(newLimit);
+    setMyQuestionsCurrentPage(1); // Reset to first page when limit changes
+  }, []);
 
   const handleQuestionToggle = (questionId: string) => {
     setSelectedQuestionIds(prev => 
@@ -185,10 +241,19 @@ const TeacherExamQuestionsModal: React.FC<TeacherExamQuestionsModalProps> = ({
     setQuestionSetFilters(prev => ({ ...prev, page }));
   };
 
-  const filteredMyQuestions = myQuestions.filter(question =>
-    question.question_text.toLowerCase().includes(searchMyQuestions.toLowerCase()) ||
-    question.tags.some(tag => tag.toLowerCase().includes(searchMyQuestions.toLowerCase()))
-  );
+  // Handle search with debouncing for My Questions
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (activeTab === 'my_questions') {
+        setMyQuestionsCurrentPage(1); // Reset to first page when searching
+        fetchMyQuestions();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchMyQuestions, activeTab]);
+
+  const myQuestionsTotalPages = Math.ceil(myQuestionsTotalItems / myQuestionsLimit);
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -328,29 +393,29 @@ const TeacherExamQuestionsModal: React.FC<TeacherExamQuestionsModalProps> = ({
               </div>
 
               {/* Questions List */}
-              {loadingMyQuestions ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-yellow-600 border-t-transparent"></div>
-                    <span className="text-gray-600">Memuat soal...</span>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {loadingMyQuestions ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-yellow-600 border-t-transparent"></div>
+                      <span className="text-gray-600">Memuat soal...</span>
+                    </div>
                   </div>
-                </div>
-              ) : filteredMyQuestions.length === 0 ? (
-                <div className="text-center py-8">
-                  <HelpCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    {searchMyQuestions ? 'Tidak ada soal yang cocok' : 'Belum ada soal'}
-                  </h3>
-                  <p className="text-gray-600">
-                    {searchMyQuestions 
-                      ? 'Coba ubah kata kunci pencarian'
-                      : 'Anda belum membuat soal apapun'
-                    }
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {filteredMyQuestions.map((question) => (
+                ) : myQuestions.length === 0 ? (
+                  <div className="text-center py-8">
+                    <HelpCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      {searchMyQuestions ? 'Tidak ada soal yang cocok' : 'Belum ada soal'}
+                    </h3>
+                    <p className="text-gray-600">
+                      {searchMyQuestions 
+                        ? 'Coba ubah kata kunci pencarian'
+                        : 'Anda belum membuat soal apapun'
+                      }
+                    </p>
+                  </div>
+                ) : (
+                  myQuestions.map((question) => (
                     <div
                       key={question._id}
                       className={`border rounded-lg p-4 transition-colors cursor-pointer ${
@@ -422,7 +487,21 @@ const TeacherExamQuestionsModal: React.FC<TeacherExamQuestionsModalProps> = ({
                         </div>
                       </div>
                     </div>
-                  ))}
+                  ))
+                )}
+              </div>
+
+              {/* Pagination for My Questions */}
+              {myQuestionsTotalPages > 1 && (
+                <div className="flex items-center justify-center py-8">
+                  <Pagination
+                    currentPage={myQuestionsCurrentPage}
+                    totalPages={myQuestionsTotalPages}
+                    onPageChange={handleMyQuestionsPageChange}
+                    totalRecords={myQuestionsTotalItems}
+                    recordsPerPage={myQuestionsLimit}
+                    onLimitChange={handleMyQuestionsLimitChange}
+                  />
                 </div>
               )}
             </div>
@@ -698,8 +777,25 @@ const TeacherExamQuestionsModal: React.FC<TeacherExamQuestionsModalProps> = ({
         {/* Footer */}
         <div className="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0 sm:space-x-3 p-6 border-t border-gray-200 sticky bottom-0 bg-white">
           <div className="text-sm text-gray-600">
-            {selectedQuestionIds.length > 0 && (
-              <span>{selectedQuestionIds.length} soal dipilih untuk ditambahkan</span>
+            {activeTab === 'my_questions' ? (
+              <>
+                {myQuestionsTotalItems > 0 && (
+                  <span>
+                    Menampilkan {((myQuestionsCurrentPage - 1) * myQuestionsLimit) + 1} - {Math.min(myQuestionsCurrentPage * myQuestionsLimit, myQuestionsTotalItems)} dari {myQuestionsTotalItems} soal
+                  </span>
+                )}
+                {selectedQuestionIds.length > 0 && (
+                  <span className="ml-4 font-medium text-yellow-600">
+                    {selectedQuestionIds.length} soal dipilih untuk ditambahkan
+                  </span>
+                )}
+              </>
+            ) : (
+              selectedQuestionIds.length > 0 && (
+                <span className="font-medium text-yellow-600">
+                  {selectedQuestionIds.length} soal dipilih untuk ditambahkan
+                </span>
+              )
             )}
           </div>
           
