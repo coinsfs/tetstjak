@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, HelpCircle, BookOpen, Plus, Trash2, Search, Package, User, CheckCircle, AlertCircle, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { TeacherExam } from '@/services/teacherExam';
