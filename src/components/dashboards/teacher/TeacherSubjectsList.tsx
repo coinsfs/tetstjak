@@ -34,6 +34,7 @@ const TeacherSubjectsList: React.FC<TeacherSubjectsListProps> = ({ user }) => {
               </div>
             </div>
           </div>
+          ))}
         </div>
         
         {hasMoreSubjects && (
@@ -49,7 +50,6 @@ const TeacherSubjectsList: React.FC<TeacherSubjectsListProps> = ({ user }) => {
             </button>
           </div>
         )}
-        ))}
       </div>
     </TeacherInfoCard>
   );
