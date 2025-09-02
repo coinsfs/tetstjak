@@ -10,69 +10,82 @@ import TeacherActivityOverview from './teacher/TeacherActivityOverview';
 import toast from 'react-hot-toast';
 
 const TeacherDashboard: React.FC = () => {
-  const { user, token, logout } = useAuth();
-  const { currentPath } = useRouter();
+  const { user, logout, token } = useAuth();
+  const { currentPath, navigate } = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [stats, setStats] = useState<TeacherDashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [dashboardStats, setDashboardStats] = useState<TeacherDashboardStats | undefined>();
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
+    const fetchDashboardStats = async () => {
+      if (!token) return;
+
+      try {
+        setStatsLoading(true);
+        const stats = await dashboardService.getTeacherDashboardStats(token);
+        setDashboardStats(stats);
+      } catch (error) {
+        console.error('Error fetching teacher dashboard stats:', error);
+        toast.error('Gagal memuat statistik dashboard');
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
     fetchDashboardStats();
-  }, []);
+  }, [token]);
 
-  const fetchDashboardStats = async () => {
-    if (!token) return;
-
-    try {
-      setLoading(true);
-      const response = await dashboardService.getTeacherDashboardStats(token);
-      setStats(response);
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-      toast.error('Gagal memuat statistik dashboard');
-    } finally {
-      setLoading(false);
+  const getPageTitle = () => {
+    switch (currentPath) {
+      case '/teacher':
+        return 'Dashboard';
+      case '/teacher/classes':
+        return 'Manajemen Kelas';
+      case '/teacher/exams':
+        return 'Manajemen Ujian';
+      case '/teacher/questions':
+        return 'Bank Soal';
+      case '/teacher/analytics':
+        return 'Analitik';
+      case '/teacher/profile':
+        return 'Profile';
+      default:
+        // Handle sub-routes or unknown routes
+        if (currentPath.startsWith('/teacher/')) {
+          return 'Teacher Dashboard';
+        }
+        return 'Dashboard';
     }
   };
 
-  const handleLogout = () => {
-    logout();
-  };
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <TeacherSidebar 
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar Component */}
+      <TeacherSidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
         currentPath={currentPath}
-        user={user}
+        navigate={navigate}
+        logout={logout}
       />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden lg:ml-64">
-        {/* Header */}
-        <TeacherHeader 
+      <div className="flex-1 flex flex-col lg:ml-64 overflow-hidden">
+        {/* Header Component */}
+        <TeacherHeader
           user={user}
-          onMenuClick={toggleSidebar}
-          onLogout={handleLogout}
+          setSidebarOpen={setSidebarOpen}
+          title={getPageTitle()}
         />
 
-        {/* Main Content Area */}
-        <TeacherMainContent 
-          user={user} 
-          stats={stats} 
-          loading={loading}
+        {/* Main Content Component */}
+        <TeacherMainContent
+          user={user}
           currentPath={currentPath}
-        >
-          <div className="mt-6">
+          dashboardStats={dashboardStats}
             <TeacherActivityOverview />
-          </div>
-        </TeacherMainContent>
+          statsLoading={statsLoading}
+        />
       </div>
     </div>
   );
