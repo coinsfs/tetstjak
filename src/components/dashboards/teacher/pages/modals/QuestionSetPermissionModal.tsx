@@ -107,11 +107,25 @@ const QuestionSetPermissionModal: React.FC<QuestionSetPermissionModalProps> = ({
     setSearchQuery(user.full_name);
     setShowSearchResults(false);
     setSearchResults([]);
+    
+    // Pre-select permissions that the user already has
+    const userPermissions: string[] = [];
+    
+    PERMISSION_TYPES.forEach((permType) => {
+      const holders = getPermissionHolders(permType.key);
+      const hasPermission = holders.some(holder => holder._id === user._id);
+      if (hasPermission) {
+        userPermissions.push(permType.key);
+      }
+    });
+    
+    setSelectedPermissions(userPermissions);
   };
 
   const handleClearSelectedUser = () => {
     setSelectedUser(null);
     setSearchQuery('');
+    setSelectedPermissions([]); // Reset permissions when clearing user
     setShowSearchResults(false);
     setSearchResults([]);
   };
@@ -288,15 +302,11 @@ const QuestionSetPermissionModal: React.FC<QuestionSetPermissionModalProps> = ({
                     {holders.length > 0 ? (
                       <div className="space-y-2">
                         {holders.map((holder) => {
-                          const profileImageUrl = holder.profile_picture_key 
-                            ? holder.profile_picture_url
-                            : null;
-                            
                           return (
                             <div key={holder._id} className="flex items-center space-x-2">
-                              {profileImageUrl ? (
+                              {holder.profile_picture_url ? (
                                 <img
-                                  src={profileImageUrl}
+                                  src={holder.profile_picture_url}
                                   alt={holder.full_name}
                                   className="w-6 h-6 rounded-full object-cover"
                                 />
