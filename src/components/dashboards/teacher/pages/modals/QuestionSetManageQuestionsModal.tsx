@@ -61,7 +61,7 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
   // Filter state
   const [filters, setFilters] = useState<QuestionFilters & QuestionSubmissionFilters>({
     page: 1,
-    limit: 12, // Optimal number for modal display
+    limit: 10, // Optimal number for modal display
     search: '',
     difficulty: '',
     question_type: '',
