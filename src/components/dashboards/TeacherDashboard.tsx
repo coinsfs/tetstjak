@@ -6,7 +6,6 @@ import { TeacherDashboardStats } from '@/types/dashboard';
 import TeacherSidebar from './teacher/TeacherSidebar';
 import TeacherHeader from './teacher/TeacherHeader';
 import TeacherMainContent from './teacher/TeacherMainContent';
-import TeacherActivityOverview from './teacher/TeacherActivityOverview';
 import toast from 'react-hot-toast';
 
 const TeacherDashboard: React.FC = () => {
@@ -83,7 +82,6 @@ const TeacherDashboard: React.FC = () => {
           user={user}
           currentPath={currentPath}
           dashboardStats={dashboardStats}
-            <TeacherActivityOverview />
           statsLoading={statsLoading}
         />
       </div>
