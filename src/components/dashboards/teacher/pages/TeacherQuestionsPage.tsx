@@ -132,36 +132,45 @@ const TeacherQuestionsPage: React.FC = () => {
     setQuestionsLoading(true);
     try {
       if (questionSource === 'my_questions') {
-        const allQuestions = await questionBankService.getMyQuestions(token);
+        // Use paginated API call with filters
+        const response = await questionBankService.getMyQuestions(token, filters);
         
-        // Apply filters efficiently
-        let filteredQuestions = allQuestions;
-        
-        // Use memoized filter functions
-        if (filters.search?.trim()) {
-          const searchTerm = filters.search.toLowerCase();
-          filteredQuestions = filteredQuestions.filter(q => 
-            q.question_text.toLowerCase().includes(searchTerm) ||
-            q.tags.some(tag => tag.toLowerCase().includes(searchTerm))
-          );
-        }
-        
-        if (filters.difficulty) {
-          filteredQuestions = filteredQuestions.filter(q => q.difficulty === filters.difficulty);
-        }
-        
-        if (filters.question_type) {
-          filteredQuestions = filteredQuestions.filter(q => q.question_type === filters.question_type);
-        }
+        // Handle both paginated response and array response for backward compatibility
+        if (Array.isArray(response)) {
+          // Fallback for non-paginated response
+          let filteredQuestions = response;
+          
+          // Apply client-side filtering if API doesn't support it
+          if (filters.search?.trim()) {
+            const searchTerm = filters.search.toLowerCase();
+            filteredQuestions = filteredQuestions.filter(q => 
+              q.question_text.toLowerCase().includes(searchTerm) ||
+              q.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+            );
+          }
+          
+          if (filters.difficulty) {
+            filteredQuestions = filteredQuestions.filter(q => q.difficulty === filters.difficulty);
+          }
+          
+          if (filters.question_type) {
+            filteredQuestions = filteredQuestions.filter(q => q.question_type === filters.question_type);
+          }
 
-        // Apply pagination
-        const startIndex = (filters.page - 1) * filters.limit;
-        const endIndex = startIndex + filters.limit;
-        const paginatedQuestions = filteredQuestions.slice(startIndex, endIndex);
-      
-        setQuestions(paginatedQuestions);
+          // Apply client-side pagination
+          const startIndex = (filters.page - 1) * filters.limit;
+          const endIndex = startIndex + filters.limit;
+          const paginatedQuestions = filteredQuestions.slice(startIndex, endIndex);
+        
+          setQuestions(paginatedQuestions);
+          setTotalItems(filteredQuestions.length);
+        } else {
+          // Use paginated response
+          setQuestions(response.data);
+          setTotalItems(response.total_items);
+        }
+        
         setMySubmissions([]);
-        setTotalItems(filteredQuestions.length);
       } else if (questionSource === 'my_submissions') {
         const submissionFilters: QuestionSubmissionFilters = {
           academic_period_id: filters.academic_period_id || undefined,
@@ -172,16 +181,31 @@ const TeacherQuestionsPage: React.FC = () => {
           status: filters.status || undefined
         };
         
-        const allMySubmissions = await questionSubmissionService.getMySubmissions(token, submissionFilters);
+        // Add pagination parameters to submission filters
+        const paginatedSubmissionFilters = {
+          ...submissionFilters,
+          page: filters.page,
+          limit: filters.limit
+        };
         
-        // Apply pagination
-        const startIndex = (filters.page - 1) * filters.limit;
-        const endIndex = startIndex + filters.limit;
-        const paginatedMySubmissions = allMySubmissions.slice(startIndex, endIndex);
+        const response = await questionSubmissionService.getMySubmissions(token, paginatedSubmissionFilters);
+        
+        // Handle both paginated response and array response for backward compatibility
+        if (Array.isArray(response)) {
+          // Fallback for non-paginated response - apply client-side pagination
+          const startIndex = (filters.page - 1) * filters.limit;
+          const endIndex = startIndex + filters.limit;
+          const paginatedMySubmissions = response.slice(startIndex, endIndex);
 
-        setMySubmissions(paginatedMySubmissions);
+          setMySubmissions(paginatedMySubmissions);
+          setTotalItems(response.length);
+        } else {
+          // Use paginated response
+          setMySubmissions(response.data);
+          setTotalItems(response.total_items);
+        }
+        
         setQuestions([]);
-        setTotalItems(allMySubmissions.length);
       }
     } catch (error: any) {
       console.error('Error fetching data:', error);
