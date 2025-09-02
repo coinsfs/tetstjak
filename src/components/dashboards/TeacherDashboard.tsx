@@ -2,90 +2,76 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
 import { dashboardService } from '@/services/dashboard';
-import TeacherActivityOverview from './teacher/TeacherActivityOverview';
+import { TeacherDashboardStats } from '@/types/dashboard';
 import TeacherSidebar from './teacher/TeacherSidebar';
 import TeacherHeader from './teacher/TeacherHeader';
 import TeacherMainContent from './teacher/TeacherMainContent';
+import TeacherActivityOverview from './teacher/TeacherActivityOverview';
 import toast from 'react-hot-toast';
 
 const TeacherDashboard: React.FC = () => {
-  const { user, logout, token } = useAuth();
-  const { currentPath, navigate } = useRouter();
+  const { user, token, logout } = useAuth();
+  const { currentPath } = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [dashboardStats, setDashboardStats] = useState<TeacherDashboardStats | undefined>();
-  const [statsLoading, setStatsLoading] = useState(true);
+  const [stats, setStats] = useState<TeacherDashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchDashboardStats = async () => {
-      if (!token) return;
-
-      try {
-        setStatsLoading(true);
-        const stats = await dashboardService.getTeacherDashboardStats(token);
-        setDashboardStats(stats);
-      } catch (error) {
-        console.error('Error fetching teacher dashboard stats:', error);
-        toast.error('Gagal memuat statistik dashboard');
-      } finally {
-        setStatsLoading(false);
-      }
-    };
-
     fetchDashboardStats();
-  }, [token]);
+  }, []);
 
-  const getPageTitle = () => {
-    switch (currentPath) {
-      case '/teacher':
-        return 'Dashboard';
-      case '/teacher/classes':
-        return 'Manajemen Kelas';
-      case '/teacher/exams':
-        return 'Manajemen Ujian';
-      case '/teacher/questions':
-        return 'Bank Soal';
-      case '/teacher/analytics':
-        return 'Analitik';
-      case '/teacher/profile':
-        return 'Profile';
-      default:
-        // Handle sub-routes or unknown routes
-        if (currentPath.startsWith('/teacher/')) {
-          return 'Teacher Dashboard';
-        }
-        return 'Dashboard';
+  const fetchDashboardStats = async () => {
+    if (!token) return;
+
+    try {
+      setLoading(true);
+      const response = await dashboardService.getTeacherDashboardStats(token);
+      setStats(response);
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      toast.error('Gagal memuat statistik dashboard');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleLogout = () => {
+    logout();
+  };
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar Component */}
-      <TeacherSidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar */}
+      <TeacherSidebar 
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
         currentPath={currentPath}
-        navigate={navigate}
-        logout={logout}
+        user={user}
       />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:ml-64 overflow-hidden">
-        {/* Header Component */}
-        <TeacherHeader
+      <div className="flex-1 flex flex-col overflow-hidden lg:ml-64">
+        {/* Header */}
+        <TeacherHeader 
           user={user}
-          setSidebarOpen={setSidebarOpen}
-          title={getPageTitle()}
+          onMenuClick={toggleSidebar}
+          onLogout={handleLogout}
         />
 
-        {/* Main Content Component */}
-      {/* Activity Overview */}
-      <div className="mt-6">
-          dashboardStats={dashboardStats}
-      </div>
-          statsLoading={statsLoading}
+        {/* Main Content Area */}
+        <TeacherMainContent 
+          user={user} 
+          stats={stats} 
+          loading={loading}
+          currentPath={currentPath}
         >
-          <TeacherActivityOverview />
-        </div>
+          <div className="mt-6">
+            <TeacherActivityOverview />
+          </div>
         </TeacherMainContent>
       </div>
     </div>
