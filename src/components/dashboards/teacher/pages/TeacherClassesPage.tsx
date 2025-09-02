@@ -120,7 +120,7 @@ const TeacherClassesPage: React.FC = () => {
   };
 
   const getProfileImage = (student: ClassStudent) => {
-    const profileUrl = student.profile_details?.profile_picture_key;
+    const profileUrl = student.profile_details?.profile_picture_url;
     if (profileUrl) {
       return getProfileImageUrl(profileUrl);
     }
@@ -311,7 +311,10 @@ const TeacherClassesPage: React.FC = () => {
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement;
                                     target.style.display = 'none';
-                                    target.nextElementSibling?.classList.remove('hidden');
+                                    const fallbackDiv = target.nextElementSibling as HTMLElement;
+                                    if (fallbackDiv) {
+                                      fallbackDiv.classList.remove('hidden');
+                                    }
                                   }}
                                 />
                               ) : null}
