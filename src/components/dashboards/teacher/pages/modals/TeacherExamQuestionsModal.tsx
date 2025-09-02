@@ -41,7 +41,7 @@ const TeacherExamQuestionsModal: React.FC<TeacherExamQuestionsModalProps> = ({
   const [questionSetsResponse, setQuestionSetsResponse] = useState<QuestionSetResponse | null>(null);
   const [questionSetFilters, setQuestionSetFilters] = useState<QuestionSetFilters>({
     page: 1,
-    limit: 10,
+    limit: 6,
     subject_id: '',
     grade_level: '',
     status: '',
