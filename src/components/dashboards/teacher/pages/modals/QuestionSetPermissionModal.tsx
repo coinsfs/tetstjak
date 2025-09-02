@@ -403,9 +403,10 @@ const QuestionSetPermissionModal: React.FC<QuestionSetPermissionModalProps> = ({
                                         <Users className="w-4 h-4 text-gray-500" />
                                       </div>
                                     )}
-                          ? coord.coordinator_details.profile_picture_url
+                                    <div className="flex-1">
                                       <p className="text-sm font-medium text-gray-900 truncate">
                                         {user.full_name}
+                                      </p>
                                       <p className="text-xs text-gray-500">
                                         ID: {user._id.slice(-8)}
                                       </p>
