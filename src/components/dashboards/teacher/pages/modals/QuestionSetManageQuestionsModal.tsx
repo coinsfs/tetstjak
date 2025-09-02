@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Package, User, Send, Search, Plus, Trash2, Check } from 'lucide-react';
+import { X, Package, User, Send, Search, Plus, Trash2, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { questionSetService, QuestionSet } from '@/services/questionSet';
 import { questionBankService, Question } from '@/services/questionBank';
 import { questionSubmissionService, QuestionSubmission, QuestionSubmissionFilters, AcademicPeriod } from '@/services/questionSubmission';
 import QuestionDisplay from '@/components/QuestionDisplay';
+import Pagination from '@/components/Pagination';
 import MyQuestionsTable from '../components/MyQuestionsTable';
 import SubmittedQuestionsTable from '../components/SubmittedQuestionsTable';
 import SubmittedQuestionsExamView from '../components/SubmittedQuestionsExamView';
@@ -44,6 +45,8 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
   // Questions data
   const [myQuestions, setMyQuestions] = useState<Question[]>([]);
   const [submittedQuestions, setSubmittedQuestions] = useState<QuestionSubmission[]>([]);
+  const [myQuestionsTotalItems, setMyQuestionsTotalItems] = useState(0);
+  const [submittedQuestionsTotalItems, setSubmittedQuestionsTotalItems] = useState(0);
   const [loadingMyQuestions, setLoadingMyQuestions] = useState(false);
   const [loadingSubmittedQuestions, setLoadingSubmittedQuestions] = useState(false);
   
@@ -58,7 +61,7 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
   // Filter state
   const [filters, setFilters] = useState<QuestionFilters & QuestionSubmissionFilters>({
     page: 1,
-    limit: 50, // Show more items in modal
+    limit: 12, // Optimal number for modal display
     search: '',
     difficulty: '',
     question_type: '',
@@ -117,27 +120,18 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
 
     setLoadingMyQuestions(true);
     try {
-      const allQuestions = await questionBankService.getMyQuestions(token);
-      
-      // Apply filters
-      let filteredQuestions = allQuestions;
-      
-      if (filters.search) {
-        filteredQuestions = filteredQuestions.filter(q => 
-          q.question_text.toLowerCase().includes(filters.search!.toLowerCase()) ||
-          q.tags.some(tag => tag.toLowerCase().includes(filters.search!.toLowerCase()))
-        );
-      }
-      
-      if (filters.difficulty) {
-        filteredQuestions = filteredQuestions.filter(q => q.difficulty === filters.difficulty);
-      }
-      
-      if (filters.question_type) {
-        filteredQuestions = filteredQuestions.filter(q => q.question_type === filters.question_type);
-      }
+      // Create pagination filters for my questions
+      const myQuestionFilters = {
+        page: filters.page,
+        limit: filters.limit,
+        search: filters.search,
+        difficulty: filters.difficulty,
+        question_type: filters.question_type
+      };
 
-      setMyQuestions(filteredQuestions);
+      const response = await questionBankService.getMyQuestions(token, myQuestionFilters);
+      setMyQuestions(response.data || response); // Handle both paginated and non-paginated responses
+      setMyQuestionsTotalItems(response.total_items || (Array.isArray(response) ? response.length : 0));
     } catch (error) {
       console.error('Error fetching my questions:', error);
       toast.error('Gagal memuat soal Anda');
@@ -152,6 +146,8 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
     setLoadingSubmittedQuestions(true);
     try {
       const submissionFilters: QuestionSubmissionFilters = {
+        page: filters.page,
+        limit: filters.limit,
         academic_period_id: filters.academic_period_id,
         search: filters.search,
         purpose: filters.purpose,
@@ -160,8 +156,9 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
         status: filters.status
       };
       
-      const submissions = await questionSubmissionService.getSubmissionsForReview(token, submissionFilters);
-      setSubmittedQuestions(submissions);
+      const response = await questionSubmissionService.getSubmissionsForReview(token, submissionFilters);
+      setSubmittedQuestions(response.data || response); // Handle both paginated and non-paginated responses
+      setSubmittedQuestionsTotalItems(response.total_items || (Array.isArray(response) ? response.length : 0));
     } catch (error) {
       console.error('Error fetching submitted questions:', error);
       toast.error('Gagal memuat soal yang disubmit');
@@ -173,7 +170,20 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
   const handleFilterChange = (key: keyof QuestionFilters, value: any) => {
     setFilters(prev => ({
       ...prev,
-      [key]: value
+      [key]: value,
+      page: key !== 'page' && key !== 'limit' ? 1 : prev.page // Reset to page 1 when filtering, except for page/limit changes
+    }));
+  };
+
+  const handlePageChange = (page: number) => {
+    setFilters(prev => ({ ...prev, page }));
+  };
+
+  const handleItemsPerPageChange = (newLimit: number) => {
+    setFilters(prev => ({
+      ...prev,
+      limit: newLimit,
+      page: 1 // Reset to first page when limit changes
     }));
   };
 
@@ -181,7 +191,7 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
     const defaultAcademicPeriodId = activeAcademicPeriod?._id || '';
     setFilters({
       page: 1,
-      limit: 50,
+      limit: 12,
       search: '',
       difficulty: '',
       question_type: '',
@@ -194,7 +204,18 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
   const handleTabChange = (tab: QuestionSource) => {
     setActiveTab(tab);
     setSelectedQuestionIds([]);
-    handleResetFilters();
+    // Reset filters but keep the same page structure
+    const defaultAcademicPeriodId = activeAcademicPeriod?._id || '';
+    setFilters({
+      page: 1,
+      limit: 12,
+      search: '',
+      difficulty: '',
+      question_type: '',
+      purpose: '',
+      academic_period_id: defaultAcademicPeriodId,
+      status: ''
+    });
   };
 
   const handleQuestionSelect = (questionId: string) => {
@@ -208,15 +229,23 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
   const handleSelectAllQuestions = (selectAll: boolean) => {
     if (activeTab === 'my_questions') {
       if (selectAll) {
-        setSelectedQuestionIds(myQuestions.map(q => q._id));
+        // Only select questions on current page
+        const currentPageQuestionIds = myQuestions.map(q => q._id);
+        setSelectedQuestionIds(prev => [...new Set([...prev, ...currentPageQuestionIds])]);
       } else {
-        setSelectedQuestionIds([]);
+        // Only deselect questions on current page
+        const currentPageQuestionIds = myQuestions.map(q => q._id);
+        setSelectedQuestionIds(prev => prev.filter(id => !currentPageQuestionIds.includes(id)));
       }
     } else {
       if (selectAll) {
-        setSelectedQuestionIds(submittedQuestions.map(s => s.question_id));
+        // Only select submissions on current page
+        const currentPageQuestionIds = submittedQuestions.map(s => s.question_id);
+        setSelectedQuestionIds(prev => [...new Set([...prev, ...currentPageQuestionIds])]);
       } else {
-        setSelectedQuestionIds([]);
+        // Only deselect submissions on current page
+        const currentPageQuestionIds = submittedQuestions.map(s => s.question_id);
+        setSelectedQuestionIds(prev => prev.filter(id => !currentPageQuestionIds.includes(id)));
       }
     }
   };
@@ -381,7 +410,7 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
           <QuestionViewToggle
             currentView={currentView}
             onViewChange={setCurrentView}
-            totalItems={activeTab === 'my_questions' ? myQuestions.length : submittedQuestions.length}
+            totalItems={activeTab === 'my_questions' ? myQuestionsTotalItems : submittedQuestionsTotalItems}
             questionSource={activeTab}
           />
 
@@ -395,7 +424,7 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
                     <span className="text-gray-600">Memuat soal...</span>
                   </div>
                 </div>
-              ) : myQuestions.length === 0 ? (
+              ) : myQuestionsTotalItems === 0 ? (
                 <div className="text-center py-12">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <User className="h-8 w-8 text-gray-400" />
@@ -432,6 +461,20 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
                       showSelectAll={true}
                       className="space-y-6"
                     />
+                  )}
+                  
+                  {/* Pagination for My Questions */}
+                  {myQuestionsTotalItems > filters.limit && (
+                    <div className="border-t border-gray-200 pt-4">
+                      <Pagination
+                        currentPage={filters.page}
+                        totalPages={Math.ceil(myQuestionsTotalItems / filters.limit)}
+                        onPageChange={handlePageChange}
+                        totalRecords={myQuestionsTotalItems}
+                        recordsPerPage={filters.limit}
+                        onLimitChange={handleItemsPerPageChange}
+                      />
+                    </div>
                   )}
                   
                   {/* Show which questions are already in the set */}
@@ -471,7 +514,7 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
                     <span className="text-gray-600">Memuat soal...</span>
                   </div>
                 </div>
-              ) : submittedQuestions.length === 0 ? (
+              ) : submittedQuestionsTotalItems === 0 ? (
                 <div className="text-center py-12">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Send className="h-8 w-8 text-gray-400" />
@@ -520,6 +563,20 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
                       onReject={() => {}}
                     />
                   )}
+                  
+                  {/* Pagination for Submitted Questions */}
+                  {submittedQuestionsTotalItems > filters.limit && (
+                    <div className="border-t border-gray-200 pt-4">
+                      <Pagination
+                        currentPage={filters.page}
+                        totalPages={Math.ceil(submittedQuestionsTotalItems / filters.limit)}
+                        onPageChange={handlePageChange}
+                        totalRecords={submittedQuestionsTotalItems}
+                        recordsPerPage={filters.limit}
+                        onLimitChange={handleItemsPerPageChange}
+                      />
+                    </div>
+                  )}
                 </div>
               )
             )}
@@ -529,8 +586,13 @@ const QuestionSetManageQuestionsModal: React.FC<QuestionSetManageQuestionsModalP
         {/* Footer */}
         <div className="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0 sm:space-x-3 p-6 border-t border-gray-200 sticky bottom-0 bg-white">
           <div className="text-sm text-gray-600">
-            {selectedQuestionIds.length > 0 && (
+            {selectedQuestionIds.length > 0 ? (
               <span>{selectedQuestionIds.length} soal dipilih untuk ditambahkan</span>
+            ) : (
+              <span>
+                Menampilkan {Math.min(filters.limit, activeTab === 'my_questions' ? myQuestionsTotalItems : submittedQuestionsTotalItems)} 
+                dari {activeTab === 'my_questions' ? myQuestionsTotalItems : submittedQuestionsTotalItems} soal
+              </span>
             )}
           </div>
           
