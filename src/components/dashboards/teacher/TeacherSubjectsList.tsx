@@ -10,7 +10,7 @@ interface TeacherSubjectsListProps {
 
 const TeacherSubjectsList: React.FC<TeacherSubjectsListProps> = ({ user }) => {
   const { navigate } = useRouter();
-  const DISPLAY_LIMIT = 4; // Limit tampilan awal mata pelajaran
+  const DISPLAY_LIMIT = 3; // Limit tampilan awal mata pelajaran
 
   if (!user?.teaching_summary || user.teaching_summary.length === 0) return null;
 
