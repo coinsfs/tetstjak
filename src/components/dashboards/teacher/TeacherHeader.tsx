@@ -15,7 +15,7 @@ const TeacherHeader: React.FC<TeacherHeaderProps> = ({
   title = "Dashboard"
 }) => {
   const getProfileImage = () => {
-    const profileUrl = user?.profile_details?.profile_picture_k;
+    const profileUrl = user?.profile_details?.profile_picture_key;
     if (profileUrl) {
       const fullUrl = getProfileImageUrl(profileUrl);
       return fullUrl;
