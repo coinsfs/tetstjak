@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { HelpCircle, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { questionBankService, Question } from '@/services/questionBank';
 import { questionSubmissionService, QuestionSubmission, QuestionSubmissionFilters, AcademicPeriod } from '@/services/questionSubmission';
 import { teacherService, TeachingClass } from '@/services/teacher';
+import useDebounce from '@/hooks/useDebounce';
 import QuestionDisplay from '@/components/QuestionDisplay';
 import Pagination from '@/components/Pagination';
 import QuestionSourceToggle from './components/QuestionSourceToggle';
@@ -32,27 +33,38 @@ interface QuestionFilters {
 
 type QuestionSource = 'my_questions' | 'my_submissions';
 
+// Memoized child components to prevent unnecessary re-renders
+const MemoizedQuestionSourceToggle = memo(QuestionSourceToggle);
+const MemoizedQuestionFiltersComponent = memo(QuestionFiltersComponent);
+const MemoizedQuestionViewToggle = memo(QuestionViewToggle);
+const MemoizedMyQuestionsTable = memo(MyQuestionsTable);
+const MemoizedMySubmissionsTable = memo(MySubmissionsTable);
+const MemoizedQuestionDisplay = memo(QuestionDisplay);
+const MemoizedMySubmissionsExamView = memo(MySubmissionsExamView);
+const MemoizedPagination = memo(Pagination);
+
 const TeacherQuestionsPage: React.FC = () => {
   const { token, user } = useAuth();
+  
+  // Separate loading states for better UX
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [questionsLoading, setQuestionsLoading] = useState(false);
+  
+  // Data states
   const [questions, setQuestions] = useState<Question[]>([]);
   const [mySubmissions, setMySubmissions] = useState<QuestionSubmission[]>([]);
-  const [loading, setLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
   const [teachingClasses, setTeachingClasses] = useState<TeachingClass[]>([]);
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [activeAcademicPeriod, setActiveAcademicPeriod] = useState<AcademicPeriod | null>(null);
   
-  // Selection state for creating question sets
+  // UI states
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
-  
-  // View state - 'table' or 'exam'
   const [currentView, setCurrentView] = useState<'table' | 'exam'>('table');
-  
-  // Question source state - 'my_questions' or 'submitted_questions'
   const [questionSource, setQuestionSource] = useState<QuestionSource>('my_questions');
   
-  // Filter state
-  const [filters, setFilters] = useState<QuestionFilters & QuestionSubmissionFilters>({
+  // Optimized filter state with debouncing
+  const [internalFilters, setInternalFilters] = useState<QuestionFilters & QuestionSubmissionFilters>({
     page: 1,
     limit: 10,
     search: '',
@@ -62,6 +74,15 @@ const TeacherQuestionsPage: React.FC = () => {
     academic_period_id: '',
     status: ''
   });
+  
+  // Debounce search to prevent excessive API calls
+  const debouncedSearch = useDebounce(internalFilters.search, 500);
+  
+  // Memoized filters to prevent unnecessary re-renders
+  const filters = useMemo(() => ({
+    ...internalFilters,
+    search: debouncedSearch
+  }), [internalFilters, debouncedSearch]);
   
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -73,32 +94,25 @@ const TeacherQuestionsPage: React.FC = () => {
   const [selectedSubmission, setSelectedSubmission] = useState<QuestionSubmission | null>(null);
   const [showSubmitQuestionsModal, setShowSubmitQuestionsModal] = useState(false);
 
-  useEffect(() => {
-    fetchInitialData();
-  }, []);
-
-  useEffect(() => {
-    fetchQuestions();
-  }, [filters, questionSource]);
-
-  const fetchInitialData = async () => {
+  // Memoized initial data fetcher to prevent unnecessary API calls
+  const fetchInitialData = useCallback(async () => {
     if (!token) return;
 
     try {
-      const teachingData = await teacherService.getTeachingSummary(token);
+      setInitialLoading(true);
+      const [teachingData, periods, activePeriod] = await Promise.all([
+        teacherService.getTeachingSummary(token),
+        questionSubmissionService.getAcademicPeriods(token),
+        questionSubmissionService.getActiveAcademicPeriod(token)
+      ]);
+      
       setTeachingClasses(teachingData.classes);
-      
-      // Fetch academic periods
-      const periods = await questionSubmissionService.getAcademicPeriods(token);
       setAcademicPeriods(periods);
-      
-      // Get active academic period
-      const activePeriod = await questionSubmissionService.getActiveAcademicPeriod(token);
       setActiveAcademicPeriod(activePeriod);
       
-      // Set default academic period filter to active period
-      if (activePeriod) {
-        setFilters(prev => ({
+      // Set default academic period filter only once
+      if (activePeriod && !internalFilters.academic_period_id) {
+        setInternalFilters(prev => ({
           ...prev,
           academic_period_id: activePeriod._id
         }));
@@ -106,24 +120,29 @@ const TeacherQuestionsPage: React.FC = () => {
     } catch (error) {
       console.error('Error fetching initial data:', error);
       toast.error('Gagal memuat data awal');
+    } finally {
+      setInitialLoading(false);
     }
-  };
+  }, [token, internalFilters.academic_period_id]);
 
-  const fetchQuestions = async () => {
-    if (!token) return;
+  // Optimized questions fetcher with proper error handling
+  const fetchQuestions = useCallback(async () => {
+    if (!token || initialLoading) return;
 
-    setLoading(true);
+    setQuestionsLoading(true);
     try {
       if (questionSource === 'my_questions') {
         const allQuestions = await questionBankService.getMyQuestions(token);
         
-        // Apply filters
+        // Apply filters efficiently
         let filteredQuestions = allQuestions;
         
-        if (filters.search) {
+        // Use memoized filter functions
+        if (filters.search?.trim()) {
+          const searchTerm = filters.search.toLowerCase();
           filteredQuestions = filteredQuestions.filter(q => 
-            q.question_text.toLowerCase().includes(filters.search!.toLowerCase()) ||
-            q.tags.some(tag => tag.toLowerCase().includes(filters.search!.toLowerCase()))
+            q.question_text.toLowerCase().includes(searchTerm) ||
+            q.tags.some(tag => tag.toLowerCase().includes(searchTerm))
           );
         }
         
@@ -144,56 +163,64 @@ const TeacherQuestionsPage: React.FC = () => {
         setMySubmissions([]);
         setTotalItems(filteredQuestions.length);
       } else if (questionSource === 'my_submissions') {
-        // Fetch my submissions
-        try {
-          const submissionFilters: QuestionSubmissionFilters = {
-            academic_period_id: filters.academic_period_id,
-            search: filters.search,
-            purpose: filters.purpose,
-            question_type: filters.question_type,
-            difficulty: filters.difficulty,
-            status: filters.status
-          };
-          
-          const allMySubmissions = await questionSubmissionService.getMySubmissions(token, submissionFilters);
-          
-          // Apply pagination
-          const startIndex = (filters.page - 1) * filters.limit;
-          const endIndex = startIndex + filters.limit;
-          const paginatedMySubmissions = allMySubmissions.slice(startIndex, endIndex);
+        const submissionFilters: QuestionSubmissionFilters = {
+          academic_period_id: filters.academic_period_id || undefined,
+          search: filters.search || undefined,
+          purpose: filters.purpose || undefined,
+          question_type: filters.question_type || undefined,
+          difficulty: filters.difficulty || undefined,
+          status: filters.status || undefined
+        };
+        
+        const allMySubmissions = await questionSubmissionService.getMySubmissions(token, submissionFilters);
+        
+        // Apply pagination
+        const startIndex = (filters.page - 1) * filters.limit;
+        const endIndex = startIndex + filters.limit;
+        const paginatedMySubmissions = allMySubmissions.slice(startIndex, endIndex);
 
-          setMySubmissions(paginatedMySubmissions);
-          setQuestions([]);
-          setTotalItems(allMySubmissions.length);
-        } catch (error: any) {
-          console.error('Error fetching my submissions:', error);
-          toast.error('Gagal memuat submission Anda');
-          setMySubmissions([]);
-          setQuestions([]);
-          setTotalItems(0);
-        }
+        setMySubmissions(paginatedMySubmissions);
+        setQuestions([]);
+        setTotalItems(allMySubmissions.length);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching data:', error);
       if (!error.message?.includes('403')) {
-        toast.error('Gagal memuat daftar soal');
+        toast.error(`Gagal memuat ${questionSource === 'my_questions' ? 'soal' : 'submission'}`);
       }
+      // Set empty states on error
+      setQuestions([]);
+      setMySubmissions([]);
+      setTotalItems(0);
     } finally {
-      setLoading(false);
+      setQuestionsLoading(false);
     }
-  };
+  }, [token, filters, questionSource, initialLoading]);
 
-  const handleFilterChange = (key: keyof QuestionFilters, value: any) => {
-    setFilters(prev => ({
+  // Initial data fetch - only once
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  // Questions fetch - only when necessary dependencies change
+  useEffect(() => {
+    if (!initialLoading) {
+      fetchQuestions();
+    }
+  }, [fetchQuestions, initialLoading]);
+
+  // Memoized filter handlers to prevent child re-renders
+  const handleFilterChange = useCallback((key: keyof QuestionFilters, value: any) => {
+    setInternalFilters(prev => ({
       ...prev,
       [key]: value,
-      page: 1 // Reset to first page when filtering
+      page: key !== 'page' ? 1 : value // Reset to first page unless changing page
     }));
-  };
+  }, []);
 
-  const handleResetFilters = () => {
+  const handleResetFilters = useCallback(() => {
     const defaultAcademicPeriodId = activeAcademicPeriod?._id || '';
-    setFilters({
+    setInternalFilters({
       page: 1,
       limit: 10,
       search: '',
@@ -203,91 +230,89 @@ const TeacherQuestionsPage: React.FC = () => {
       academic_period_id: defaultAcademicPeriodId,
       status: ''
     });
-  };
+    setSelectedQuestions([]);
+  }, [activeAcademicPeriod]);
 
-  const handlePageChange = (page: number) => {
-    setFilters(prev => ({ ...prev, page }));
-  };
+  const handlePageChange = useCallback((page: number) => {
+    setInternalFilters(prev => ({ ...prev, page }));
+  }, []);
 
-  const handleItemsPerPageChange = (newLimit: number) => {
-    setFilters(prev => ({
+  const handleItemsPerPageChange = useCallback((newLimit: number) => {
+    setInternalFilters(prev => ({
       ...prev,
       limit: newLimit,
-      page: 1, // Reset to first page when limit changes
+      page: 1
     }));
-  };
+  }, []);
 
-  const handleViewChange = (view: 'table' | 'exam') => {
+  // Memoized view handlers
+  const handleViewChange = useCallback((view: 'table' | 'exam') => {
     setCurrentView(view);
-  };
+  }, []);
 
-  const handleQuestionSourceChange = (source: QuestionSource) => {
+  const handleQuestionSourceChange = useCallback((source: QuestionSource) => {
     setQuestionSource(source);
-    // Reset filters when changing source
     const defaultAcademicPeriodId = activeAcademicPeriod?._id || '';
-    // Reset selections when changing source
     setSelectedQuestions([]);
     setShowSubmitQuestionsModal(false);
-    setFilters(prev => ({
+    setInternalFilters(prev => ({
       ...prev,
       page: 1,
+      search: '',
+      difficulty: '',
+      question_type: '',
       purpose: '',
       academic_period_id: defaultAcademicPeriodId,
       status: ''
     }));
-  };
+  }, [activeAcademicPeriod]);
 
-  const handleQuestionSelect = (questionId: string) => {
+  // Memoized question selection handlers
+  const handleQuestionSelect = useCallback((questionId: string) => {
     setSelectedQuestions(prev => 
       prev.includes(questionId)
         ? prev.filter(id => id !== questionId)
         : [...prev, questionId]
     );
-  };
+  }, []);
 
-  const handleSelectAllQuestions = (selectAll: boolean) => {
-    if (selectAll) {
-      setSelectedQuestions(questions.map(q => q._id));
-    } else {
-      setSelectedQuestions([]);
-    }
-  };
+  const handleSelectAllQuestions = useCallback((selectAll: boolean) => {
+    setSelectedQuestions(selectAll ? questions.map(q => q._id) : []);
+  }, [questions]);
 
-  const handleSubmitQuestions = () => {
-    // Only allow submit for my_questions
-    if (questionSource !== 'my_questions') {
-      return;
-    }
+  // Memoized modal handlers
+  const handleSubmitQuestions = useCallback(() => {
+    if (questionSource !== 'my_questions') return;
     setShowSubmitQuestionsModal(true);
-  };
+  }, [questionSource]);
 
-  const handleCreateQuestion = () => {
+  const handleCreateQuestion = useCallback(() => {
     setSelectedQuestion(null);
     setShowCreateModal(true);
-  };
+  }, []);
 
-  const handleEditQuestion = (question: Question) => {
+  const handleEditQuestion = useCallback((question: Question) => {
     setSelectedQuestion(question);
     setShowEditModal(true);
-  };
+  }, []);
 
-  const handleDeleteQuestion = (question: Question) => {
+  const handleDeleteQuestion = useCallback((question: Question) => {
     setSelectedQuestion(question);
     setShowDeleteModal(true);
-  };
+  }, []);
 
-  const handleViewQuestion = (question: Question) => {
+  const handleViewQuestion = useCallback((question: Question) => {
     setSelectedQuestion(question);
     setShowDetailModal(true);
-  };
+  }, []);
 
-  const handleViewSubmission = (submission: QuestionSubmission) => {
+  const handleViewSubmission = useCallback((submission: QuestionSubmission) => {
     setSelectedSubmission(submission);
     setShowSubmissionDetailModal(true);
-  };
+  }, []);
 
-  const handleModalSuccess = () => {
-    fetchQuestions(); // This will fetch the appropriate data based on questionSource
+  const handleModalSuccess = useCallback(() => {
+    fetchQuestions();
     setShowCreateModal(false);
     setShowEditModal(false);
     setShowDeleteModal(false);
@@ -296,12 +321,37 @@ const TeacherQuestionsPage: React.FC = () => {
     setShowSubmitQuestionsModal(false);
     setSelectedQuestion(null);
     setSelectedSubmission(null);
-  };
+  }, [fetchQuestions]);
 
-  const totalPages = Math.ceil(totalItems / filters.limit);
+  // Memoized computed values
+  const totalPages = useMemo(() => Math.ceil(totalItems / filters.limit), [totalItems, filters.limit]);
+  const shouldShowSubmitButton = useMemo(() => 
+    questionSource === 'my_questions' && selectedQuestions.length > 0, 
+    [questionSource, selectedQuestions.length]
+  );
+  
+  const hasActiveFilters = useMemo(() => 
+    filters.search || filters.difficulty || filters.question_type || 
+    (questionSource === 'my_submissions' && (filters.purpose || filters.academic_period_id || filters.status)),
+    [filters, questionSource]
+  );
+  
+  const isEmpty = useMemo(() => 
+    questionSource === 'my_questions' ? questions.length === 0 : mySubmissions.length === 0,
+    [questionSource, questions.length, mySubmissions.length]
+  );
 
-  // Determine if submit button should be shown
-  const shouldShowSubmitButton = questionSource === 'my_questions' && selectedQuestions.length > 0;
+  // Show initial loading state
+  if (initialLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center space-x-2">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-yellow-600 border-t-transparent"></div>
+          <span className="text-gray-600">Memuat halaman bank soal...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -352,37 +402,14 @@ const TeacherQuestionsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Original Header - now simplified */}
-      <div className="bg-white rounded-xl shadow-sm p-6" style={{ display: 'none' }}>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center">
-              <HelpCircle className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Bank Soal</h1>
-              <p className="text-gray-600">Kelola dan tinjau soal pembelajaran</p>
-            </div>
-          </div>
-          
-          <button
-            onClick={handleCreateQuestion}
-            className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Buat Soal Baru</span>
-          </button>
-        </div>
-      </div>
-
       {/* Question Source Toggle */}
-      <QuestionSourceToggle
+      <MemoizedQuestionSourceToggle
         questionSource={questionSource}
         onSourceChange={handleQuestionSourceChange}
       />
 
       {/* Filters */}
-      <QuestionFiltersComponent
+      <MemoizedQuestionFiltersComponent
         filters={filters}
         questionSource={questionSource}
         academicPeriods={academicPeriods}
@@ -393,47 +420,42 @@ const TeacherQuestionsPage: React.FC = () => {
       {/* View Toggle & Content */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {/* View Toggle */}
-        <QuestionViewToggle
+        <MemoizedQuestionViewToggle
           currentView={currentView}
           onViewChange={handleViewChange}
           totalItems={totalItems}
           questionSource={questionSource}
         />
 
-        {/* Content Area (Table/Exam View, Loading, Empty State) */}
+        {/* Content Area */}
         <div>
-          {loading ? (
+          {questionsLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="flex items-center space-x-2">
                 <div className="animate-spin rounded-full h-6 w-6 border-2 border-yellow-600 border-t-transparent"></div>
                 <span className="text-gray-600">Memuat data...</span>
               </div>
             </div>
-          ) : (questionSource === 'my_questions' ? questions.length === 0 : 
-                 mySubmissions.length === 0) ? (
+          ) : isEmpty ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <HelpCircle className="h-8 w-8 text-gray-400" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {filters.search || filters.difficulty || filters.question_type || 
-                 (questionSource === 'my_submissions' && (filters.purpose || filters.academic_period_id || filters.status))
+                {hasActiveFilters
                   ? `Tidak ada ${questionSource === 'my_questions' ? 'soal' : 'submission'} yang sesuai filter` 
                   : questionSource === 'my_questions' ? 'Belum ada soal' : 'Belum ada submission Anda'
                 }
               </h3>
               <p className="text-gray-600 mb-4">
-                {filters.search || filters.difficulty || filters.question_type ||
-                 (questionSource === 'my_submissions' && (filters.purpose || filters.academic_period_id || filters.status))
+                {hasActiveFilters
                   ? `Coba ubah atau reset filter untuk melihat ${questionSource === 'my_questions' ? 'soal' : 'submission'} lainnya`
                   : questionSource === 'my_questions' 
                     ? 'Mulai dengan membuat soal pertama Anda'
                     : 'Anda belum pernah submit soal ke koordinator'
                 }
               </p>
-              {!(filters.search || filters.difficulty || filters.question_type ||
-                 (questionSource === 'my_submissions' && (filters.purpose || filters.academic_period_id || filters.status))) && 
-               questionSource === 'my_questions' && (
+              {!hasActiveFilters && questionSource === 'my_questions' && (
                 <button
                   onClick={handleCreateQuestion}
                   className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors mx-auto"
@@ -447,8 +469,7 @@ const TeacherQuestionsPage: React.FC = () => {
             <div className={`transition-all duration-300 ${currentView === 'exam' ? 'animate-fade-in' : ''}`}>
               {currentView === 'table' ? (
                 questionSource === 'my_questions' ? (
-                  /* My Questions Table View */
-                  <MyQuestionsTable
+                  <MemoizedMyQuestionsTable
                     questions={questions}
                     showCheckbox={true}
                     selectedQuestions={selectedQuestions}
@@ -460,17 +481,15 @@ const TeacherQuestionsPage: React.FC = () => {
                     onDelete={handleDeleteQuestion}
                   />
                 ) : (
-                    /* My Submissions Table View */
-                    <MySubmissionsTable
-                      submissions={mySubmissions}
-                      onView={handleViewSubmission}
-                    />
+                  <MemoizedMySubmissionsTable
+                    submissions={mySubmissions}
+                    onView={handleViewSubmission}
+                  />
                 )
               ) : (
-                /* Exam View */
                 <div className="space-y-4 sm:space-y-6">
                   {questionSource === 'my_questions' ? (
-                    <QuestionDisplay
+                    <MemoizedQuestionDisplay
                       questions={questions}
                       showCheckbox={true}
                       selectedQuestions={selectedQuestions}
@@ -485,7 +504,7 @@ const TeacherQuestionsPage: React.FC = () => {
                       className="space-y-6"
                     />
                   ) : (
-                    <MySubmissionsExamView
+                    <MemoizedMySubmissionsExamView
                       submissions={mySubmissions}
                       onView={handleViewSubmission}
                     />
@@ -496,11 +515,11 @@ const TeacherQuestionsPage: React.FC = () => {
           )}
         </div>
 
-        {/* Pagination - Always visible within this container */}
+        {/* Pagination */}
         {(totalItems > 0 || totalPages > 1) && (
           <div className="py-4 px-2 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6">
-            <Pagination
-              currentPage={filters.page} // Use filters.page directly
+            <MemoizedPagination
+              currentPage={filters.page}
               totalPages={totalPages}
               onPageChange={handlePageChange}
               totalRecords={totalItems}
@@ -511,7 +530,7 @@ const TeacherQuestionsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Modals */}
+      {/* Modals - Only render when needed */}
       {showCreateModal && (
         <TeacherQuestionFormModal
           isOpen={showCreateModal}
@@ -550,6 +569,7 @@ const TeacherQuestionsPage: React.FC = () => {
           teachingClasses={teachingClasses}
         />
       )}
+
       {showSubmissionDetailModal && selectedSubmission && (
         <TeacherSubmissionDetailModal
           submission={selectedSubmission}
@@ -558,15 +578,15 @@ const TeacherQuestionsPage: React.FC = () => {
         />
       )}
 
-    {showSubmitQuestionsModal && (
-      <TeacherSubmitQuestionsModal
-        isOpen={showSubmitQuestionsModal}
-        onClose={() => setShowSubmitQuestionsModal(false)}
-        onSuccess={handleModalSuccess}
-        selectedQuestionIds={selectedQuestions}
-        questionSource={questionSource}
-      />
-    )}
+      {showSubmitQuestionsModal && (
+        <TeacherSubmitQuestionsModal
+          isOpen={showSubmitQuestionsModal}
+          onClose={() => setShowSubmitQuestionsModal(false)}
+          onSuccess={handleModalSuccess}
+          selectedQuestionIds={selectedQuestions}
+          questionSource={questionSource}
+        />
+      )}
     </div>
   );
 };
