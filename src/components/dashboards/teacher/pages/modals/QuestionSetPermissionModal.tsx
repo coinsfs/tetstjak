@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 interface SearchedUser {
   _id: string;
   full_name: string;
-  profile_picture_key: string | null;
+  profile_picture_url: string | null;
 }
 
 interface QuestionSetPermissionModalProps {
@@ -289,7 +289,7 @@ const QuestionSetPermissionModal: React.FC<QuestionSetPermissionModalProps> = ({
                       <div className="space-y-2">
                         {holders.map((holder) => {
                           const profileImageUrl = holder.profile_picture_key 
-                            ? getProfileImageUrl(holder.profile_picture_key)
+                            ? holder.profile_picture_url
                             : null;
                             
                           return (
@@ -337,9 +337,9 @@ const QuestionSetPermissionModal: React.FC<QuestionSetPermissionModalProps> = ({
                       /* Selected User Display */
                       <div className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
                         <div className="flex items-center space-x-3">
-                          {selectedUser.profile_picture_key ? (
+                          {selectedUser.profile_picture_url ? (
                             <img
-                              src={getProfileImageUrl(selectedUser.profile_picture_key)}
+                              src={selectedUser.profile_picture_url}
                               alt={selectedUser.full_name}
                               className="w-8 h-8 rounded-full object-cover"
                             />
@@ -392,9 +392,9 @@ const QuestionSetPermissionModal: React.FC<QuestionSetPermissionModalProps> = ({
                                     onClick={() => handleUserSelect(user)}
                                     className="w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
                                   >
-                                    {user.profile_picture_key ? (
+                                    {user.profile_picture_url ? (
                                       <img
-                                        src={getProfileImageUrl(user.profile_picture_key)}
+                                        src={user.profile_picture_url}
                                         alt={user.full_name}
                                         className="w-8 h-8 rounded-full object-cover"
                                       />
@@ -403,7 +403,7 @@ const QuestionSetPermissionModal: React.FC<QuestionSetPermissionModalProps> = ({
                                         <Users className="w-4 h-4 text-gray-500" />
                                       </div>
                                     )}
-                                    <div className="flex-1 min-w-0">
+                          ? coord.coordinator_details.profile_picture_url
                                       <p className="text-sm font-medium text-gray-900 truncate">
                                         {user.full_name}
                                       </p>
