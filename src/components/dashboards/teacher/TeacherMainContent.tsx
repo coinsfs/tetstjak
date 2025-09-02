@@ -31,7 +31,6 @@ const TeacherMainContent: React.FC<TeacherMainContentProps> = ({
         return (
           <div className="space-y-6">
             <TeacherStatsGrid stats={dashboardStats} loading={statsLoading} />
-            <TeacherDepartmentInfo user={user} />
             <TeacherSubjectsList user={user} />
             <TeacherWelcomeCard user={user} />
           </div>
