@@ -85,10 +85,6 @@ class ExamService extends BaseService {
   async getExamById(token: string, examId: string): Promise<Exam> {
     return this.get<Exam>(`/exams/${examId}`, token);
   }
-
-  async updateExamQuestions(token: string, examId: string, questionIds: string[]): Promise<Exam> {
-    return this.put<Exam>(`/exams/${examId}/questions`, { question_ids: questionIds }, token);
-  }
 }
 
 export const examService = new ExamService();
