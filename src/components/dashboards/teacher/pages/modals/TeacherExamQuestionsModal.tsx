@@ -3,7 +3,8 @@ import { X, HelpCircle, BookOpen, Plus, Trash2, Search, Package, User, CheckCirc
 import { useAuth } from '@/contexts/AuthContext';
 import { TeacherExam } from '@/services/teacherExam';
 import { TeachingClass } from '@/services/teacher';
-import { questionBankService, Question } from '@/services/questionBank';
+import { examService } from '@/services/exam';
+import { Question } from '@/services/questionBank';
 import { questionSetService, QuestionSet, QuestionSetFilters, QuestionSetResponse } from '@/services/questionSet';
 import Pagination from '@/components/Pagination';
 import toast from 'react-hot-toast';
@@ -177,7 +178,7 @@ const TeacherExamQuestionsModal: React.FC<TeacherExamQuestionsModalProps> = ({
     try {
       setLoading(true);
       const questionSetQuestions = await questionSetService.getQuestionSetQuestions(token, questionSet._id);
-      setSelectedQuestionIds(questionSetQuestions.question_ids);
+      await examService.updateExamQuestions(token, exam._id, selectedQuestionIds);
       toast.success(`Dipilih ${questionSetQuestions.question_ids.length} soal dari paket "${questionSet.name}"`);
     } catch (error) {
       console.error('Error fetching question set questions:', error);
