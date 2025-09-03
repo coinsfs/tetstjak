@@ -74,6 +74,49 @@ export interface ExamQuestionOption {
   text: string;
 }
 
+export interface ScoreDistribution {
+  range: string;
+  count: number;
+  percentage: number;
+}
+
+export interface ExamAnalytics {
+  exam_id: string;
+  exam_title: string;
+  subject_name: string;
+  exam_type: string;
+  exam_date: string;
+  class_average: number;
+  class_highest: number;
+  class_lowest: number;
+  student_score: number;
+  student_percentile: number;
+  total_participants: number;
+  score_distribution: ScoreDistribution[];
+}
+
+export interface TrendData {
+  exam_title: string;
+  class_average: number;
+  student_score: number;
+  exam_date: string;
+}
+
+export interface OverallStats {
+  total_exams: number;
+  class_overall_average: number;
+  student_overall_average: number;
+  exams_above_class_average: number;
+  participation_rate: number;
+}
+
+export interface StudentAnalyticsResponse {
+  exam_analytics: ExamAnalytics[];
+  trend_data: TrendData[];
+  overall_stats: OverallStats;
+  generated_at: string;
+}
+
 class StudentExamService extends BaseService {
   async getStudentExams(token: string, filters: StudentExamFilters): Promise<StudentExamResponse> {
     const queryString = this.buildQueryParams(filters);
@@ -100,6 +143,10 @@ class StudentExamService extends BaseService {
       console.error('No active academic period found:', error);
       return null;
     }
+  }
+
+  async getStudentAnalytics(token: string): Promise<StudentAnalyticsResponse> {
+    return this.get<StudentAnalyticsResponse>('/score-analytics/student/class-exam-analytics', token);
   }
 }
 
