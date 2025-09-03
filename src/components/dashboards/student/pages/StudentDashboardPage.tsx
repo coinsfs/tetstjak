@@ -17,38 +17,57 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
   const [upcomingExams, setUpcomingExams] = useState<StudentExam[]>([]);
   const [loadingUpcoming, setLoadingUpcoming] = useState(true);
   const [startingExamId, setStartingExamId] = useState<string | null>(null);
+  const [recentResults, setRecentResults] = useState<StudentExam[]>([]);
+  const [loadingResults, setLoadingResults] = useState(true);
 
   useEffect(() => {
-    const fetchUpcomingExams = async () => {
+    const fetchDashboardData = async () => {
       if (!token) return;
 
       try {
         setLoadingUpcoming(true);
+        setLoadingResults(true);
+        
         const activeAcademicPeriod = await studentExamService.getActiveAcademicPeriod(token);
         
         if (activeAcademicPeriod) {
-          const response = await studentExamService.getStudentExams(token, {
+          // Fetch upcoming exams (ongoing status)
+          const upcomingResponse = await studentExamService.getStudentExams(token, {
             academic_period_id: activeAcademicPeriod._id,
             status: 'ongoing',
             limit: 5
           });
-          setUpcomingExams(response.data);
+          setUpcomingExams(upcomingResponse.data);
+          
+          // Fetch recent completed exams
+          const completedResponse = await studentExamService.getStudentExams(token, {
+            academic_period_id: activeAcademicPeriod._id,
+            status: 'completed',
+            limit: 5
+          });
+          setRecentResults(completedResponse.data);
         }
       } catch (error) {
-        console.error('Error fetching upcoming exams:', error);
-        toast.error('Gagal memuat ujian mendatang');
+        console.error('Error fetching dashboard data:', error);
+        toast.error('Gagal memuat data dashboard');
       } finally {
         setLoadingUpcoming(false);
+        setLoadingResults(false);
       }
     };
 
-    fetchUpcomingExams();
+    fetchDashboardData();
   }, [token]);
 
   const handleStartExam = async (exam: StudentExam) => {
     // Redirect to dashboard home when exam is started
     navigate('/student');
     toast.success('Ujian dimulai! Anda akan diarahkan ke dashboard.');
+  };
+
+  const handleViewResult = (exam: StudentExam) => {
+    // Navigate to results page with exam filter
+    navigate(`/student/results?exam_id=${exam._id}&exam_title=${encodeURIComponent(exam.title)}`);
   };
 
   const getWelcomeMessage = () => {
@@ -70,7 +89,7 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
     },
     {
       title: 'Ujian Selesai',
-      value: '0',
+      value: recentResults.length.toString(),
       icon: Award,
       color: 'bg-green-500',
       bgColor: 'bg-green-50',
@@ -266,11 +285,87 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
         {/* Recent Results */}
         <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Hasil Terbaru</h3>
-          <div className="text-center py-8">
-            <Award className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">Belum ada hasil ujian</p>
-            <p className="text-sm text-gray-400 mt-1">Coming Soon</p>
-          </div>
+          {loadingResults ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+              <p className="text-gray-500">Memuat hasil ujian...</p>
+            </div>
+          ) : recentResults.length > 0 ? (
+            <div className="space-y-4">
+              {recentResults.map((exam) => (
+                <div key={exam._id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <h4 className="font-semibold text-gray-900">{exam.title}</h4>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          {getExamTypeLabel(exam.exam_type)}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center space-x-4 mb-2">
+                        <span className="text-sm text-gray-600 flex items-center">
+                          <Clock className="w-4 h-4 mr-1" />
+                          {exam.duration_minutes} menit
+                        </span>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <Award className="w-3 h-3 mr-1" />
+                          Selesai
+                        </span>
+                      </div>
+                      
+                      <div className="text-sm text-gray-500">
+                        <p className="mb-1">
+                          <span className="font-medium">Periode:</span> {formatDateTime(exam.availability_start_time)} - {formatDateTime(exam.availability_end_time)}
+                        </p>
+                        {exam.teaching_assignment_details?.subject_details && (
+                          <p>
+                            <span className="font-medium">Mata Pelajaran:</span> {exam.teaching_assignment_details.subject_details.name}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="ml-4 flex flex-col space-y-2">
+                      {exam.settings?.show_results_after_submission ? (
+                        <button 
+                          onClick={() => handleViewResult(exam)}
+                          className="px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+                        >
+                          Lihat Hasil
+                        </button>
+                      ) : (
+                        <div className="px-3 py-2 bg-gray-100 text-gray-600 text-sm rounded-md text-center">
+                          Hasil Belum Tersedia
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              {/* View All Button */}
+              <div className="pt-4 border-t border-gray-200">
+                <button 
+                  onClick={() => navigate('/student/results')}
+                  className="w-full px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors text-sm font-medium"
+                >
+                  Lihat Semua Hasil →
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Award className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500">Belum ada hasil ujian</p>
+              <button 
+                onClick={() => navigate('/student/exams')}
+                className="mt-3 px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors text-sm"
+              >
+                Cek Ujian Tersedia
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
