@@ -1,4 +1,5 @@
 import { BaseService } from './base';
+import { ExamSessionAnalytics } from '@/types/exam';
 
 
 export interface StudentExam {
@@ -20,6 +21,9 @@ export interface StudentExam {
   teaching_assignment_details: any;
   academic_period_details: any;
   question_ids: string[];
+  has_session?: boolean;
+  session_score?: number;
+  exam_session_id?: string;
 }
 
 export interface StudentExamResponse {
@@ -117,6 +121,38 @@ export interface StudentAnalyticsResponse {
   generated_at: string;
 }
 
+export interface TrendScoreStudent {
+  exam_date: string;
+  score: number;
+}
+
+export interface TrendScoreClass {
+  exam_date: string;
+  average_score: number;
+}
+
+export interface StudentStatistics {
+  overall_average_student: number;
+  best_score_student: number;
+  latest_score_student: number;
+  participant_rate: number;
+  trend_scores_student: TrendScoreStudent[];
+  score_distribution_student: ScoreDistribution[];
+}
+
+export interface ClassStatistics {
+  overall_average_class: number;
+  class_highest: number;
+  class_lowest: number;
+  trend_scores_class: TrendScoreClass[];
+  score_distribution_class: ScoreDistribution[];
+}
+
+export interface MyStatisticsResponse {
+  student_statistics: StudentStatistics;
+  class_statistics: ClassStatistics;
+}
+
 class StudentExamService extends BaseService {
   async getStudentExams(token: string, filters: StudentExamFilters): Promise<StudentExamResponse> {
     const queryString = this.buildQueryParams(filters);
@@ -147,6 +183,15 @@ class StudentExamService extends BaseService {
 
   async getStudentAnalytics(token: string): Promise<StudentAnalyticsResponse> {
     return this.get<StudentAnalyticsResponse>('/score-analytics/student/class-exam-analytics', token);
+  }
+
+  async getMyStatistics(token: string): Promise<MyStatisticsResponse> {
+    return this.get<MyStatisticsResponse>('/score-analytics/student/my-statistics', token);
+  }
+
+  async getExamSessionAnalytics(token: string, sessionId: string, forceRegenerate: boolean = false): Promise<ExamSessionAnalytics> {
+    const endpoint = `/exam-analytics/session/${sessionId}?force_regenerate=${forceRegenerate}`;
+    return this.get<ExamSessionAnalytics>(endpoint, token);
   }
 }
 

@@ -138,6 +138,10 @@ class QuestionBankService extends BaseService {
   async getQuestionsByIds(token: string, questionIds: string[]): Promise<Question[]> {
     return this.post<Question[]>('/question-banks/by-ids', { ids: questionIds }, token);
   }
+
+  async updateExamQuestions(token: string, examId: string, questionIds: string[]): Promise<void> {
+    return this.put(`/exams/${examId}/questions`, { question_ids: questionIds }, token);
+  }
 }
 
 export const questionBankService = new QuestionBankService();

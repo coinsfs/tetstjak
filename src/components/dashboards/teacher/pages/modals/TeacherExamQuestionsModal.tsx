@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, HelpCircle, BookOpen, Plus, Trash2, Search, Package, User, CheckCircle, AlertCircle, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { TeacherExam } from '@/services/teacherExam';
+import { TeacherExam, teacherExamService } from '@/services/teacherExam';
 import { TeachingClass } from '@/services/teacher';
 import { questionBankService, Question } from '@/services/questionBank';
 import { questionSetService, QuestionSet, QuestionSetFilters, QuestionSetResponse } from '@/services/questionSet';
@@ -198,6 +198,7 @@ const TeacherExamQuestionsModal: React.FC<TeacherExamQuestionsModalProps> = ({
       // Send all selected questions (current + new selections)
       const allQuestionIds = [...new Set([...currentExamQuestions, ...selectedQuestionIds])];
       
+      // Use specific endpoint for updating exam questions
       await questionBankService.updateExamQuestions(token, exam._id, allQuestionIds);
       toast.success(`Berhasil menambahkan ${selectedQuestionIds.length} soal ke ujian`);
       onSuccess();
@@ -217,6 +218,8 @@ const TeacherExamQuestionsModal: React.FC<TeacherExamQuestionsModalProps> = ({
     try {
       // Remove question from current list and update exam
       const updatedQuestions = currentExamQuestions.filter(id => id !== questionId);
+      
+      // Use specific endpoint for updating exam questions
       await questionBankService.updateExamQuestions(token, exam._id, updatedQuestions);
       setCurrentExamQuestions(updatedQuestions);
       toast.success('Soal berhasil dihapus dari ujian');
