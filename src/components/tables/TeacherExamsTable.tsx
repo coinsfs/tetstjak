@@ -14,6 +14,7 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  RotateCcw,
 } from 'lucide-react';
 import { TeacherExam } from '@/services/teacherExam';
 import { formatDateTimeWithTimezone } from '@/utils/timezone';
@@ -23,11 +24,13 @@ interface TeacherExamsTableProps {
   loading: boolean;
   onCreateExam: () => void;
   onStartExam: (exam: TeacherExam) => void;
+  onFinishExam: (exam: TeacherExam) => void;
   onEditExam: (exam: TeacherExam) => void;
   onDeleteExam: (exam: TeacherExam) => void;
   onInputQuestions: (exam: TeacherExam) => void;
   onMonitorExam: (exam: TeacherExam) => void;
   onAnalyticsExam: (exam: TeacherExam) => void;
+  onGenerateAnalytics: (exam: TeacherExam) => void;
   onViewExamDetail: (exam: TeacherExam) => void;
 }
 
@@ -36,11 +39,13 @@ const TeacherExamsTable: React.FC<TeacherExamsTableProps> = ({
   loading,
   onCreateExam,
   onStartExam,
+  onFinishExam,
   onEditExam,
   onDeleteExam,
   onInputQuestions,
   onMonitorExam,
   onAnalyticsExam,
+  onGenerateAnalytics,
   onViewExamDetail,
 }) => {
   const getExamTypeLabel = (examType: string) => {
@@ -91,8 +96,11 @@ const TeacherExamsTable: React.FC<TeacherExamsTableProps> = ({
   };
 
   const getActionButtons = (exam: TeacherExam) => {
-    const { status } = exam;
+    const { status, analytics_status } = exam;
     const buttons = [];
+
+    // Debug log for exam status
+    console.log(`Exam: ${exam.title}, Status: ${status}, Analytics Status: ${analytics_status}`);
 
     // Detail Button - Always available as first button
     buttons.push(
@@ -106,7 +114,7 @@ const TeacherExamsTable: React.FC<TeacherExamsTableProps> = ({
       </button>
     );
 
-    // Monitor/Analytics Button - Based on status
+    // Monitor/Analytics Button - Based on status and analytics_status
     if (status === 'ongoing') {
       buttons.push(
         <button
@@ -119,12 +127,19 @@ const TeacherExamsTable: React.FC<TeacherExamsTableProps> = ({
         </button>
       );
     } else if (status === 'completed') {
+      // Analytics button - enabled/disabled based on analytics_status
+      const isAnalyticsEnabled = analytics_status === 'completed';
       buttons.push(
         <button
           key="analytics"
-          onClick={() => onAnalyticsExam(exam)}
-          className="p-2 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-lg transition-colors"
-          title="Lihat Analitik"
+          onClick={() => isAnalyticsEnabled ? onAnalyticsExam(exam) : undefined}
+          disabled={!isAnalyticsEnabled}
+          className={`p-2 rounded-lg transition-colors ${
+            isAnalyticsEnabled
+              ? 'text-purple-600 hover:text-purple-800 hover:bg-purple-50'
+              : 'text-gray-300 cursor-not-allowed'
+          }`}
+          title={isAnalyticsEnabled ? 'Lihat Analitik' : 'Analitik belum tersedia'}
         >
           <BarChart3 className="w-4 h-4" />
         </button>
@@ -247,7 +262,24 @@ const TeacherExamsTable: React.FC<TeacherExamsTableProps> = ({
 
               {/* Status */}
               <td className="px-6 py-4 whitespace-nowrap">
-                {getStatusBadge(exam.status)}
+                <div className="space-y-1">
+                  {getStatusBadge(exam.status)}
+                  {exam.status === 'completed' && exam.analytics_status && (
+                    <div className="text-xs">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        exam.analytics_status === 'completed' 
+                          ? 'bg-green-100 text-green-800'
+                          : exam.analytics_status === 'generating'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        Analitik: {exam.analytics_status === 'completed' ? 'Siap' : 
+                                  exam.analytics_status === 'generating' ? 'Sedang Dibuat' : 
+                                  'Belum Dibuat'}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </td>
 
               {/* Jadwal */}
@@ -287,23 +319,62 @@ const TeacherExamsTable: React.FC<TeacherExamsTableProps> = ({
               {/* Aksi */}
               <td className="px-6 py-4 whitespace-nowrap text-center text-right">
                 <div className="flex items-center justify-end space-x-2">
-                  {/* Start Button - Special styling for primary action */}
+                  {/* Start/Finish/Generate Analytics Button - Special styling for primary action */}
                   <button
-                    onClick={() => onStartExam(exam)}
-                    disabled={exam.status !== 'ready'}
+                    onClick={() => {
+                      if (exam.status === 'ready') {
+                        onStartExam(exam);
+                      } else if (exam.status === 'ongoing') {
+                        onFinishExam(exam);
+                      } else if (exam.status === 'completed' && exam.analytics_status === 'not_generated') {
+                        onGenerateAnalytics(exam);
+                      }
+                    }}
+                    disabled={
+                      exam.status !== 'ready' && 
+                      exam.status !== 'ongoing' && 
+                      !(exam.status === 'completed' && exam.analytics_status === 'not_generated')
+                    }
                     className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap shadow-sm ${
                       exam.status === 'ready'
                         ? 'bg-green-600 text-white hover:bg-green-700'
+                        : exam.status === 'ongoing'
+                        ? 'bg-red-600 text-white hover:bg-red-700'
+                        : exam.status === 'completed' && exam.analytics_status === 'not_generated'
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                     title={
                       exam.status === 'ready'
                         ? 'Mulai ujian'
+                        : exam.status === 'ongoing'
+                        ? 'Selesaikan ujian'
+                        : exam.status === 'completed' && exam.analytics_status === 'not_generated'
+                        ? 'Buat analitik ujian'
                         : 'Ujian belum siap dimulai'
                     }
                   >
-                    <Play className="w-3 h-3" />
-                    <span>Mulai</span>
+                    {exam.status === 'ready' ? (
+                      <>
+                        <Play className="w-3 h-3" />
+                        <span>Mulai</span>
+                      </>
+                    ) : exam.status === 'ongoing' ? (
+                      <>
+                        <CheckCircle className="w-3 h-3" />
+                        <span>Selesai</span>
+                      </>
+                    ) : exam.status === 'completed' && exam.analytics_status === 'not_generated' ? (
+                      <>
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Analitik</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3 h-3" />
+                        <span>Mulai</span>
+                      </>
+                    )}
                   </button>
 
                   {/* Action Icon Buttons */}

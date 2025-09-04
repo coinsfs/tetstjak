@@ -27,7 +27,7 @@ interface StudentResultsPageProps {
 }
 
 const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
-  const { navigate } = useRouter();
+  const { navigate, currentPath, currentFullUrl } = useRouter();
   const { token } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [examTitle, setExamTitle] = useState<string | null>(null);
@@ -115,13 +115,20 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
     const session_id = urlParams.get('session_id');
     const exam_title = urlParams.get('exam_title');
     
+    console.log('URL changed - Full URL:', currentFullUrl, { session_id, exam_title });
+    
     if (session_id) {
       setSessionId(session_id);
       setExamTitle(exam_title ? decodeURIComponent(exam_title) : null);
       setActiveTab('overview');
       fetchSessionAnalytics(session_id);
+    } else {
+      // Reset when no session_id
+      setSessionId(null);
+      setExamTitle(null);
+      setSessionAnalytics(null);
     }
-  }, []);
+  }, [currentFullUrl, token]); // Listen to full URL changes including query parameters
 
   const fetchSessionAnalytics = async (sessionId: string) => {
     if (!token) return;
@@ -148,6 +155,10 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
 
   const handleBackToExams = () => {
     navigate('/student/exams');
+  };
+
+  const handleBackToResults = () => {
+    navigate('/student/results');
   };
 
   const handleViewExamDetails = (exam: StudentExam) => {
@@ -349,7 +360,7 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Peringkat Kelas</p>
+                <p className="text-sm font-medium text-gray-600 mb-1">Peringkat Ujian</p>
                 <p className="text-2xl font-bold text-gray-900">
                   #{sessionAnalytics.class_comparison.student_rank}
                 </p>

@@ -9,6 +9,7 @@ import TeacherClassesPage from './pages/TeacherClassesPage';
 import TeacherExamsPage from './pages/TeacherExamsPage';
 import TeacherQuestionsPage from './pages/TeacherQuestionsPage';
 import TeacherAnalyticsPage from './pages/TeacherAnalyticsPage';
+import TeacherExamAnalyticsPage from './pages/TeacherExamAnalyticsPage';
 import TeacherProfilePage from './pages/TeacherProfilePage';
 import TeacherQuestionSetsPage from './pages/TeacherQuestionSetsPage';
 
@@ -49,6 +50,9 @@ const TeacherMainContent: React.FC<TeacherMainContentProps> = ({
         return <TeacherProfilePage />;
       default:
         // Handle sub-routes or fallback to dashboard
+        if (currentPath.startsWith('/teacher/exam-analytics/')) {
+          return <TeacherExamAnalyticsPage />;
+        }
         if (currentPath.startsWith('/teacher/')) {
           // For any teacher sub-route that's not explicitly handled, show appropriate content
           // You can add more specific handling here if needed

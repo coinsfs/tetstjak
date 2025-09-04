@@ -32,6 +32,7 @@ import TeacherExamDeleteModal from "./modals/TeacherExamDeleteModal";
 import TeacherExamEditModal from "./modals/TeacherExamEditModal";
 import TeacherExamQuestionsModal from "./modals/TeacherExamQuestionsModal";
 import TeacherExamStartConfirmationModal from "./modals/TeacherExamStartConfirmationModal";
+import TeacherExamFinishConfirmationModal from "./modals/TeacherExamFinishConfirmationModal";
 import ExamDetailModal from "@/components/modals/details/ExamDetailModal";
 import TeacherExamsTable from "@/components/tables/TeacherExamsTable";
 import Pagination from "@/components/Pagination";
@@ -57,6 +58,7 @@ const TeacherExamsPage: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showQuestionsModal, setShowQuestionsModal] = useState(false);
   const [showStartConfirmationModal, setShowStartConfirmationModal] = useState(false);
+  const [showFinishConfirmationModal, setShowFinishConfirmationModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedExam, setSelectedExam] = useState<TeacherExam | null>(null);
 
@@ -209,6 +211,11 @@ const TeacherExamsPage: React.FC = () => {
     setShowStartConfirmationModal(true);
   }, []);
 
+  const handleFinishExam = useCallback((exam: TeacherExam) => {
+    setSelectedExam(exam);
+    setShowFinishConfirmationModal(true);
+  }, []);
+
   const handleMonitorExam = useCallback((exam: TeacherExam) => {
     if (exam.status === "ongoing") {
       const totalQuestions = exam.question_ids.length;
@@ -219,8 +226,26 @@ const TeacherExamsPage: React.FC = () => {
   }, [navigate]);
 
   const handleAnalyticsExam = useCallback((exam: TeacherExam) => {
-    toast.success("Fitur analitik akan segera tersedia");
-  }, []);
+    navigate(`/teacher/exam-analytics/${exam._id}`);
+  }, [navigate]);
+
+  const handleGenerateAnalytics = useCallback(async (exam: TeacherExam) => {
+    if (!token) return;
+
+    try {
+      await teacherExamService.generateAnalytics(token, exam._id);
+      toast.success("Proses pembuatan analitik telah dimulai. Silakan kembali lagi nanti untuk melihat hasilnya.");
+      
+      // Refresh exam data to get updated analytics status
+      setTimeout(() => {
+        fetchExams();
+      }, 1000);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Gagal memulai proses analitik';
+      toast.error(errorMessage);
+      console.error('Error generating analytics:', error);
+    }
+  }, [token, fetchExams]);
 
   const handleViewExamDetail = useCallback((exam: TeacherExam) => {
     setSelectedExam(exam);
@@ -353,11 +378,13 @@ const TeacherExamsPage: React.FC = () => {
           exams={exams}
           loading={loading}
           onStartExam={handleStartExam}
+          onFinishExam={handleFinishExam}
           onEditExam={handleEditExam}
           onDeleteExam={handleDeleteExam}
           onInputQuestions={handleInputQuestions}
           onMonitorExam={handleMonitorExam}
           onAnalyticsExam={handleAnalyticsExam}
+          onGenerateAnalytics={handleGenerateAnalytics}
           onViewExamDetail={handleViewExamDetail}
           onCreateExam={handleCreateExam}
         />
@@ -451,6 +478,22 @@ const TeacherExamsPage: React.FC = () => {
           }}
           onSuccess={() => {
             setShowStartConfirmationModal(false);
+            setSelectedExam(null);
+            fetchExams();
+          }}
+        />
+      )}
+
+      {showFinishConfirmationModal && selectedExam && (
+        <TeacherExamFinishConfirmationModal
+          exam={selectedExam}
+          isOpen={showFinishConfirmationModal}
+          onClose={() => {
+            setShowFinishConfirmationModal(false);
+            setSelectedExam(null);
+          }}
+          onSuccess={() => {
+            setShowFinishConfirmationModal(false);
             setSelectedExam(null);
             fetchExams();
           }}

@@ -1,4 +1,5 @@
 import { BaseService } from './base';
+import { TeacherExamAnalytics } from '@/types/teacherAnalytics';
 
 export interface BasicTeacher {
   _id: string;
@@ -33,6 +34,13 @@ export interface TeacherExam {
   teaching_assignment_details: any;
   academic_period_details: any;
   question_ids: string[];
+  has_session: boolean | null;
+  session_score: number | null;
+  exam_session_id: string | null;
+  analytics_status: 'completed' | 'not_generated' | 'generating' | null;
+  analytics_generated_at: string | null;
+  analytics_task_id: string | null;
+  analytics_progress: number | null;
 }
 
 export interface TeacherExamResponse {
@@ -119,6 +127,22 @@ class TeacherExamService extends BaseService {
 
   async startExamManually(token: string, examId: string): Promise<TeacherExam> {
     return this.post<TeacherExam>(`/exams/${examId}/start-manually`, {}, token);
+  }
+
+  async finishExamManually(token: string, examId: string, reason: string = ''): Promise<TeacherExam> {
+    const requestBody = {
+      confirmation: true,
+      reason: reason
+    };
+    return this.post<TeacherExam>(`/exams/${examId}/complete`, requestBody, token);
+  }
+
+  async generateAnalytics(token: string, examId: string): Promise<TeacherExam> {
+    return this.post<TeacherExam>(`/teacher-analytics/exams/${examId}/analytics/generate`, {}, token);
+  }
+
+  async getExamAnalytics(token: string, examId: string): Promise<TeacherExamAnalytics> {
+    return this.get<TeacherExamAnalytics>(`/teacher-analytics/exams/${examId}/analytics`, token);
   }
 
   async getBasicTeachers(token: string): Promise<BasicTeacher[]> {
