@@ -41,14 +41,20 @@ const ScoreDistributionChart: React.FC<ScoreDistributionChartProps> = ({
     });
   }, [studentDistribution, classDistribution]);
 
-  // Calculate total counts for context
-  const totalStudentExams = studentDistribution.reduce((sum, item) => sum + item.count, 0);
-  const totalClassExams = classDistribution.reduce((sum, item) => sum + item.count, 0);
+  // Calculate total counts for context - safe with empty array handling
+  const totalStudentExams = studentDistribution.length > 0 
+    ? studentDistribution.reduce((sum, item) => sum + item.count, 0)
+    : 0;
+  const totalClassExams = classDistribution.length > 0 
+    ? classDistribution.reduce((sum, item) => sum + item.count, 0)
+    : 0;
 
-  // Find student's dominant range
-  const studentDominantRange = studentDistribution.reduce((prev, current) => 
-    current.count > prev.count ? current : prev
-  );
+  // Find student's dominant range - safe with empty array handling
+  const studentDominantRange = studentDistribution.length > 0 
+    ? studentDistribution.reduce((prev, current) => 
+        current.count > prev.count ? current : prev
+      )
+    : null;
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {

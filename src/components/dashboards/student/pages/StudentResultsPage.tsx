@@ -904,7 +904,7 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
                             <div className="text-sm font-medium text-gray-900">{exam.title}</div>
-                            {exam.status === 'completed' && exam.session_score !== undefined && (
+                            {exam.status === 'completed' && exam.session_score !== undefined && exam.session_score !== null && (
                               <div className="text-sm text-gray-500">
                                 Nilai: {exam.session_score.toFixed(1)}
                                 {exam.exam_session_id && (

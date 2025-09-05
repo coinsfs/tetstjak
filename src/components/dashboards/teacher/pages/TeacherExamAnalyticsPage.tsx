@@ -23,6 +23,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { teacherExamService } from '@/services/teacherExam';
 import { TeacherExamAnalytics } from '@/types/teacherAnalytics';
 import { formatDateTimeWithTimezone } from '@/utils/timezone';
+import { API_BASE_URL } from '@/constants/config';
 import toast from 'react-hot-toast';
 import {
   BarChart,
@@ -48,11 +49,21 @@ const TeacherExamAnalyticsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showExportMenu, setShowExportMenu] = useState(false);
 
-  // Extract examId from path
+  // Extract examId from path - simple method
   const examId = currentPath.split('/').pop();
 
   useEffect(() => {
-    if (!examId || !token) return;
+    if (!token || !examId) {
+      setLoading(false);
+      return;
+    }
+    
+    // Skip fetch if examId looks invalid
+    if (examId === 'exams' || examId.length < 10) {
+      setLoading(false);
+      setAnalytics(null);
+      return;
+    }
 
     const fetchAnalytics = async () => {
       try {
@@ -61,8 +72,9 @@ const TeacherExamAnalyticsPage: React.FC = () => {
         setAnalytics(data);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Gagal memuat data analitik';
-        toast.error(errorMessage);
+        toast.error(`Gagal memuat analitik: ${errorMessage}`, { duration: 6000 });
         console.error('Error fetching analytics:', error);
+        setAnalytics(null);
       } finally {
         setLoading(false);
       }
@@ -71,73 +83,66 @@ const TeacherExamAnalyticsPage: React.FC = () => {
     fetchAnalytics();
   }, [examId, token]);
 
-  const handleExport = (format: 'excel' | 'csv' | 'json') => {
-    if (!analytics) return;
+  const handleExport = async (format: 'excel' | 'csv' | 'json') => {
+    if (!analytics || !examId || !token) return;
     
-    // Create download data based on format
-    let data: string;
-    let filename: string;
-    let mimeType: string;
-
-    switch (format) {
-      case 'json':
-        data = JSON.stringify(analytics, null, 2);
-        filename = `exam-analytics-${analytics.exam_metadata.exam_id}.json`;
-        mimeType = 'application/json';
-        break;
-      case 'csv':
-        // Convert student performances to CSV
-        const headers = ['Nama Siswa', 'Skor', 'Persentase', 'Peringkat', 'Grade', 'Durasi (menit)', 'Jawaban Benar', 'Jawaban Salah', 'Tidak Dijawab', 'Akurasi (%)', 'Pelanggaran'];
-        const csvData = analytics.student_performances.map(student => [
-          student.student_name,
-          student.score,
-          student.percentage,
-          student.rank,
-          student.grade,
-          (student.duration_taken * 60).toFixed(1),
-          student.correct_answers,
-          student.wrong_answers,
-          student.unanswered_questions,
-          (student.accuracy_rate * 100).toFixed(1),
-          student.violations_count
-        ]);
-        data = [headers, ...csvData].map(row => row.join(',')).join('\n');
-        filename = `exam-analytics-${analytics.exam_metadata.exam_id}.csv`;
-        mimeType = 'text/csv';
-        break;
-      case 'excel':
-        // For Excel, we'll use CSV format as a simple alternative
-        const excelHeaders = ['Nama Siswa', 'Skor', 'Persentase', 'Peringkat', 'Grade', 'Durasi (menit)', 'Jawaban Benar', 'Jawaban Salah', 'Tidak Dijawab', 'Akurasi (%)', 'Pelanggaran'];
-        const excelData = analytics.student_performances.map(student => [
-          student.student_name,
-          student.score,
-          student.percentage,
-          student.rank,
-          student.grade,
-          (student.duration_taken * 60).toFixed(1),
-          student.correct_answers,
-          student.wrong_answers,
-          student.unanswered_questions,
-          (student.accuracy_rate * 100).toFixed(1),
-          student.violations_count
-        ]);
-        data = [excelHeaders, ...excelData].map(row => row.join('\t')).join('\n');
-        filename = `exam-analytics-${analytics.exam_metadata.exam_id}.xls`;
-        mimeType = 'application/vnd.ms-excel';
-        break;
+    try {
+      setShowExportMenu(false);
+      toast.loading('Menyiapkan file export...');
+      
+      // Create download using the new API endpoint
+      const response = await fetch(`${API_BASE_URL}/teacher-analytics/export/${examId}?format=${format}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Export failed with status ${response.status}`);
+      }
+      
+      // Get the blob data
+      const blob = await response.blob();
+      
+      // Determine file extension and MIME type
+      let fileExtension: string;
+      let mimeType: string;
+      
+      switch (format) {
+        case 'excel':
+          fileExtension = 'xlsx';
+          mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+          break;
+        case 'csv':
+          fileExtension = 'csv';
+          mimeType = 'text/csv';
+          break;
+        case 'json':
+          fileExtension = 'json';
+          mimeType = 'application/json';
+          break;
+      }
+      
+      // Create filename
+      const filename = `exam-analytics-${analytics.exam_metadata.exam_id}.${fileExtension}`;
+      
+      // Create and trigger download
+      const url = window.URL.createObjectURL(new Blob([blob], { type: mimeType }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      
+      toast.dismiss();
+      toast.success(`Data berhasil diekspor ke ${format.toUpperCase()}`, { duration: 4000 });
+    } catch (error) {
+      toast.dismiss();
+      const errorMessage = error instanceof Error ? error.message : 'Gagal mengekspor data';
+      toast.error(`Gagal mengekspor data: ${errorMessage}`, { duration: 6000 });
+      console.error('Export error:', error);
     }
-
-    // Create and trigger download
-    const blob = new Blob([data], { type: mimeType });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.click();
-    window.URL.revokeObjectURL(url);
-    
-    setShowExportMenu(false);
-    toast.success(`Data berhasil diekspor ke ${format.toUpperCase()}`);
   };
 
   const formatDuration = (minutes: number) => {
@@ -160,7 +165,7 @@ const TeacherExamAnalyticsPage: React.FC = () => {
     );
   }
 
-  if (!analytics) {
+  if (!analytics && !loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -168,7 +173,11 @@ const TeacherExamAnalyticsPage: React.FC = () => {
             <AlertTriangle className="h-8 w-8 text-red-600" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">Data Tidak Ditemukan</h3>
-          <p className="text-gray-600 mb-4">Analitik untuk ujian ini tidak tersedia.</p>
+          <p className="text-gray-600 mb-4">
+            {!examId || examId === 'exams' || examId.length < 10 
+              ? 'URL tidak valid atau ID ujian tidak ditemukan.'
+              : 'Analitik untuk ujian ini tidak tersedia atau belum dibuat.'}
+          </p>
           <button
             onClick={() => navigate('/teacher/exams')}
             className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
@@ -179,6 +188,11 @@ const TeacherExamAnalyticsPage: React.FC = () => {
         </div>
       </div>
     );
+  }
+
+  // Only continue if we have analytics data
+  if (!analytics) {
+    return null;
   }
 
   // Prepare chart data
@@ -208,7 +222,7 @@ const TeacherExamAnalyticsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex items-center justify-between">
@@ -251,7 +265,7 @@ const TeacherExamAnalyticsPage: React.FC = () => {
                       onClick={() => handleExport('excel')}
                       className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Export ke Excel (.xls)
+                      Export ke Excel (.xlsx)
                     </button>
                     <button
                       onClick={() => handleExport('csv')}

@@ -36,8 +36,8 @@ const BrowserUsageChart: React.FC<BrowserUsageChartProps> = ({ data }) => {
 
     const topFive = data.slice(0, 5);
     const others = data.slice(5);
-    const othersTotal = others.reduce((sum, item) => sum + item.count, 0);
-    const othersPercentage = others.reduce((sum, item) => sum + item.percentage, 0);
+    const othersTotal = others.length > 0 ? others.reduce((sum, item) => sum + item.count, 0) : 0;
+    const othersPercentage = others.length > 0 ? others.reduce((sum, item) => sum + item.percentage, 0) : 0;
 
     const processedItems = topFive.map(item => ({
       ...item,
