@@ -12,8 +12,7 @@ import {
   StudentExam, 
   StudentExamFilters, 
   StudentAnalyticsResponse,
-  ExamAnalytics,
-  MyStatisticsResponse
+  ExamAnalytics
 } from '@/services/studentExam';
 import { ExamSessionAnalytics } from '@/types/exam';
 import { formatDateTimeWithTimezone } from '@/utils/timezone';
@@ -32,11 +31,9 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [examTitle, setExamTitle] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<StudentAnalyticsResponse | null>(null);
-  const [myStatistics, setMyStatistics] = useState<MyStatisticsResponse | null>(null);
   const [sessionAnalytics, setSessionAnalytics] = useState<ExamSessionAnalytics | null>(null);
   const [completedExams, setCompletedExams] = useState<StudentExam[]>([]);
   const [loadingAnalytics, setLoadingAnalytics] = useState(true);
-  const [loadingStatistics, setLoadingStatistics] = useState(true);
   const [loadingSession, setLoadingSession] = useState(false);
   const [loadingExams, setLoadingExams] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('overview');
@@ -55,17 +52,11 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
       if (!token) return;
 
       try {
-        // Fetch both analytics data in parallel
+        // Fetch analytics data
         setLoadingAnalytics(true);
-        setLoadingStatistics(true);
         
-        const [analyticsData, statisticsData] = await Promise.all([
-          studentExamService.getStudentAnalytics(token),
-          studentExamService.getMyStatistics(token)
-        ]);
-        
+        const analyticsData = await studentExamService.getStudentAnalytics(token);
         setAnalytics(analyticsData);
-        setMyStatistics(statisticsData);
 
         // Get active academic period for completed exams
         const activePeriod = await studentExamService.getActiveAcademicPeriod(token);
@@ -80,7 +71,6 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
         toast.error('Gagal memuat data analitik');
       } finally {
         setLoadingAnalytics(false);
-        setLoadingStatistics(false);
       }
     };
 
@@ -663,9 +653,9 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
       </div>
 
       {/* Statistics Cards - Simplified */}
-      {loadingStatistics ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[...Array(3)].map((_, index) => (
+      {loadingAnalytics ? (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, index) => (
             <div key={index} className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 animate-pulse">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
@@ -677,78 +667,8 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
             </div>
           ))}
         </div>
-      ) : myStatistics ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-gray-600 mb-1">Rata-rata Anda</p>
-                <p className="text-xl font-bold text-gray-900">
-                  {specificExamAnalytics 
-                    ? Number(specificExamAnalytics.student_score).toFixed(1) 
-                    : Number(myStatistics.student_statistics.overall_average_student).toFixed(1)
-                  }
-                </p>
-              </div>
-              <div className="p-2 rounded-lg bg-blue-50">
-                <Award className="w-5 h-5 text-blue-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-gray-600 mb-1">Nilai Terbaik</p>
-                <p className="text-xl font-bold text-gray-900">
-                  {Number(myStatistics.student_statistics.best_score_student).toFixed(1)}
-                </p>
-              </div>
-              <div className="p-2 rounded-lg bg-green-50">
-                <TrendingUp className="w-5 h-5 text-green-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-gray-600 mb-1">Total Ujian</p>
-                <p className="text-xl font-bold text-gray-900">
-                  {myStatistics.student_statistics.trend_scores_student.length}
-                </p>
-              </div>
-              <div className="p-2 rounded-lg bg-purple-50">
-                <FileText className="w-5 h-5 text-purple-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-gray-600 mb-1">
-                  {specificExamAnalytics ? 'Rata-rata Kelas' : 'Partisipasi'}
-                </p>
-                <p className="text-xl font-bold text-gray-900">
-                  {specificExamAnalytics 
-                    ? Number(specificExamAnalytics.class_average).toFixed(1) 
-                    : `${Number(myStatistics.student_statistics.participant_rate).toFixed(1)}%`
-                  }
-                </p>
-              </div>
-              <div className="p-2 rounded-lg bg-orange-50">
-                {specificExamAnalytics ? (
-                  <Users className="w-5 h-5 text-orange-600" />
-                ) : (
-                  <Users className="w-5 h-5 text-orange-600" />
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
       ) : analytics ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
@@ -766,11 +686,14 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
               <div>
                 <p className="text-xs font-medium text-gray-600 mb-1">Rata-rata Anda</p>
                 <p className="text-xl font-bold text-gray-900">
-                  {specificExamAnalytics ? Number(specificExamAnalytics.student_score).toFixed(1) : Number(analytics.overall_stats.student_overall_average).toFixed(1)}
+                  {specificExamAnalytics 
+                    ? (specificExamAnalytics.student_score !== null ? Number(specificExamAnalytics.student_score).toFixed(1) : '0.0')
+                    : Number(analytics.overall_stats.student_overall_average).toFixed(1)
+                  }
                 </p>
               </div>
               <div className="p-2 rounded-lg bg-green-50">
-                <TrendingUp className="w-5 h-5 text-green-600" />
+                <Award className="w-5 h-5 text-green-600" />
               </div>
             </div>
           </div>
@@ -780,11 +703,33 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
               <div>
                 <p className="text-xs font-medium text-gray-600 mb-1">Rata-rata Kelas</p>
                 <p className="text-xl font-bold text-gray-900">
-                  {specificExamAnalytics ? Number(specificExamAnalytics.class_average).toFixed(1) : Number(analytics.overall_stats.class_overall_average).toFixed(1)}
+                  {specificExamAnalytics 
+                    ? Number(specificExamAnalytics.class_average).toFixed(1) 
+                    : Number(analytics.overall_stats.class_overall_average).toFixed(1)
+                  }
                 </p>
               </div>
               <div className="p-2 rounded-lg bg-purple-50">
-                <Award className="w-5 h-5 text-purple-600" />
+                <Users className="w-5 h-5 text-purple-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-gray-600 mb-1">
+                  {specificExamAnalytics ? 'Persentil Anda' : 'Tingkat Partisipasi'}
+                </p>
+                <p className="text-xl font-bold text-gray-900">
+                  {specificExamAnalytics 
+                    ? (specificExamAnalytics.student_percentile !== null ? `${Number(specificExamAnalytics.student_percentile).toFixed(1)}%` : '0.0%')
+                    : `${Number(analytics.overall_stats.participation_rate).toFixed(1)}%`
+                  }
+                </p>
+              </div>
+              <div className="p-2 rounded-lg bg-orange-50">
+                <TrendingUp className="w-5 h-5 text-orange-600" />
               </div>
             </div>
           </div>
@@ -816,12 +761,12 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
           </div>
         </div>
         
-        {loadingStatistics ? (
+        {loadingAnalytics ? (
           <div className="text-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
             <p className="text-gray-500">Memuat data analisis...</p>
           </div>
-        ) : myStatistics ? (
+        ) : analytics ? (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
             {/* Trend Chart */}
             <div>
@@ -830,8 +775,16 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
                 <h4 className="text-sm font-semibold text-gray-900">Tren Performa</h4>
               </div>
               <PerformanceTrendChart 
-                studentTrend={myStatistics.student_statistics.trend_scores_student}
-                classTrend={myStatistics.class_statistics.trend_scores_class}
+                studentTrend={analytics.trend_data
+                  .filter(item => item.student_score !== null)
+                  .map(item => ({
+                    exam_date: item.exam_date,
+                    score: item.student_score || 0
+                  }))}
+                classTrend={analytics.trend_data.map(item => ({
+                  exam_date: item.exam_date,
+                  average_score: item.class_average
+                }))}
               />
             </div>
 
@@ -842,10 +795,42 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
                 <h4 className="text-sm font-semibold text-gray-900">Distribusi Nilai</h4>
               </div>
               <ScoreDistributionChart 
-                studentDistribution={myStatistics.student_statistics.score_distribution_student}
-                classDistribution={myStatistics.class_statistics.score_distribution_class}
-                studentHighestScore={myStatistics.student_statistics.best_score_student}
-                classHighestScore={myStatistics.class_statistics.class_highest}
+                studentDistribution={specificExamAnalytics 
+                  ? specificExamAnalytics.score_distribution.map(item => ({
+                      range: item.range,
+                      count: item.count,
+                      percentage: item.percentage
+                    }))
+                  : analytics.exam_analytics.length > 0 
+                    ? analytics.exam_analytics[0].score_distribution.map(item => ({
+                        range: item.range,
+                        count: item.count,
+                        percentage: item.percentage
+                      }))
+                    : []
+                }
+                classDistribution={specificExamAnalytics 
+                  ? specificExamAnalytics.score_distribution.map(item => ({
+                      range: item.range,
+                      count: item.count,
+                      percentage: item.percentage
+                    }))
+                  : analytics.exam_analytics.length > 0 
+                    ? analytics.exam_analytics[0].score_distribution.map(item => ({
+                        range: item.range,
+                        count: item.count,
+                        percentage: item.percentage
+                      }))
+                    : []
+                }
+                studentHighestScore={specificExamAnalytics 
+                  ? (specificExamAnalytics.student_score || 0)
+                  : analytics.overall_stats.student_overall_average
+                }
+                classHighestScore={specificExamAnalytics 
+                  ? specificExamAnalytics.class_highest
+                  : analytics.overall_stats.class_overall_average
+                }
               />
             </div>
           </div>
@@ -882,7 +867,7 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
                       Ujian
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Mata Pelajaran
+                      Nilai
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Jenis
@@ -904,19 +889,27 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
                             <div className="text-sm font-medium text-gray-900">{exam.title}</div>
-                            {exam.status === 'completed' && exam.session_score !== undefined && exam.session_score !== null && (
-                              <div className="text-sm text-gray-500">
-                                Nilai: {exam.session_score.toFixed(1)}
-                                {exam.exam_session_id && (
-                                  <span className="ml-2 text-blue-600">• Analitik tersedia</span>
-                                )}
+                            {exam.exam_session_id && (
+                              <div className="text-sm text-blue-600">
+                                • Analitik tersedia
                               </div>
                             )}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
-                            {exam.teaching_assignment_details?.subject_details?.name || '-'}
+                            {exam.status === 'completed' && exam.session_score !== undefined && exam.session_score !== null 
+                              ? (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    {exam.session_score.toFixed(1)}
+                                  </span>
+                                )
+                              : (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+                                    Belum Ada
+                                  </span>
+                                )
+                            }
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
