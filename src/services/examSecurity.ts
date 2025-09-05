@@ -295,24 +295,44 @@ class ExamSecurityService extends BaseService {
     securityReport: SecurityReport,
     submissionType: 'manual' | 'auto_time' | 'auto_violation'
   ): SubmitExamAllRequest {
-    // Convert violations to match backend ViolationLogItem schema
-    const violations: ViolationLog[] = securityReport.violations.map((v, index) => ({
-      violation_id: `${sessionId}_${index}_${Date.now()}`,
-      type: v.type,
-      severity: v.severity,
-      timestamp: new Date(v.timestamp || Date.now()).toISOString(),
-      context: {
-        exam_id: v.examId,
-        student_id: v.studentId,
-        user_agent: v.userAgent,
-        url: v.url,
-        tab_active: v.tabActive,
-        mouse_position: v.mousePosition,
-        keyboard_stats: v.keyboardStats
-      },
-      auto_detected: true,
-      details: typeof v.details === 'string' ? v.details : JSON.stringify(v.details)
-    }));
+    // Convert violations to match backend ViolationLogItem schema with clean format
+    const violations: ViolationLog[] = securityReport.violations.map((v, index) => {
+      // Handle both old messy format and new clean format
+      const isCleanFormat = v.violation_id && v.context;
+      
+      if (isCleanFormat) {
+        // New clean format - use as is
+        return {
+          violation_id: v.violation_id,
+          type: v.type,
+          severity: v.severity,
+          timestamp: v.timestamp,
+          context: v.context,
+          auto_detected: v.auto_detected || true,
+          details: v.details || ''
+        };
+      } else {
+        // Old messy format - convert to clean format
+        return {
+          violation_id: `${sessionId}_${index}_${Date.now()}`,
+          type: v.type || v.violation_type || 'unknown',
+          severity: v.severity,
+          timestamp: new Date(v.timestamp || Date.now()).toISOString(),
+          context: {
+            exam_id: v.examId || securityReport.examId,
+            student_id: v.studentId || securityReport.studentId,
+            user_agent: v.userAgent || navigator.userAgent,
+            page_url: v.url || window.location.href,
+            tab_active: v.tabActive || false,
+            device_type: v.details?.deviceType || 'desktop',
+            mouse_position: v.mousePosition || {},
+            keyboard_stats: v.keyboardStats || {}
+          },
+          auto_detected: true,
+          details: typeof v.details === 'string' ? v.details : JSON.stringify(v.details || {})
+        };
+      }
+    });
 
     // Generate interaction logs from stored answer history
     const interactionLogs: InteractionLog[] = this.generateInteractionLogs(
@@ -320,18 +340,30 @@ class ExamSecurityService extends BaseService {
       answers
     );
 
-    // Prepare client metadata
+    // Prepare clean, organized client metadata
     const clientMetadata = {
       device_fingerprint: securityReport.deviceFingerprint,
       submission_type: submissionType,
-      start_time: securityReport.startTime,
-      end_time: securityReport.endTime,
-      user_agent: navigator.userAgent,
-      screen_resolution: {
-        width: window.screen.width,
-        height: window.screen.height
+      timing: {
+        start_time: securityReport.startTime,
+        end_time: securityReport.endTime,
+        duration_ms: securityReport.endTime - securityReport.startTime
       },
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      environment: {
+        user_agent: navigator.userAgent,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        screen_resolution: {
+          width: window.screen.width,
+          height: window.screen.height
+        }
+      },
+      security_summary: {
+        total_violations: securityReport.summary.totalViolations,
+        violations_by_severity: securityReport.summary.violationsBySeverity,
+        tab_switches: securityReport.summary.tabSwitches,
+        time_spent_inactive: securityReport.summary.timeSpentInactive,
+        suspicious_activity: securityReport.summary.suspiciousActivity
+      }
     };
 
     return {

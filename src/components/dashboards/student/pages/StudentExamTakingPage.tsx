@@ -51,7 +51,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const [violationCount, setViolationCount] = useState(0);
   const [examStartTime, setExamStartTime] = useState<number>(0);
 
-  // Track if initial data has been sent to proctor
+  const [submitting, setSubmitting] = useState(false); // Add submission state
   const [initialDataSent, setInitialDataSent] = useState(false);
 
   // WebSocket and activity tracking state
@@ -481,8 +481,21 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   };
 
   const handleTimeUp = () => {
+    if (submitting) return; // Prevent multiple submissions
+    
     toast.error("Waktu ujian telah habis! Jawaban akan otomatis dikumpulkan.");
 
+    setSubmitting(true);
+    
+    // Prevent tab switching during auto-submission
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = 'Waktu habis, sedang mengumpulkan jawaban otomatis...';
+      return e.returnValue;
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
     // Clear auto-save interval
     if (autoSaveIntervalRef.current) {
       clearInterval(autoSaveIntervalRef.current);
@@ -490,11 +503,26 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
     // Generate security report for time up
     const securityReport = examSecurityService.generateSecurityReport(
-      sessionId,
-      user?._id || "",
-      sessionId,
-      examStartTime
+      actualExamId || sessionId,  // ✅ FIXED: Use actualExamId as examId parameter
+      user?._id || "",            // ✅ CORRECT: studentId
+      sessionId,                   // ✅ CORRECT: sessionId
+      examStartTime                // ✅ CORRECT: startTime
     );
+    
+    // Send time up monitoring message
+    websocketService.send({
+      type: 'activity_event',
+      details: {
+        eventType: 'exam_time_up',
+        timestamp: new Date().toISOString(),
+        studentId: user?._id,
+        full_name: user?.profile_details?.full_name || 'Unknown Student',
+        examId: sessionId,
+        sessionId: sessionId,
+        total_answered: Object.keys(answers).length,
+        submission_type: 'auto_time'
+      }
+    });
 
     // Submit exam with time up
     examSecurityService
@@ -505,7 +533,25 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         securityReport,
         "auto_time"
       )
-      .then(() => {
+      .then(async (result) => {
+        // Send completion message
+        websocketService.send({
+          type: 'activity_event',
+          details: {
+            eventType: 'exam_auto_submission_completed',
+            timestamp: new Date().toISOString(),
+            studentId: user?._id,
+            full_name: user?.profile_details?.full_name || 'Unknown Student',
+            examId: sessionId,
+            sessionId: sessionId,
+            submission_result: result.success ? 'success' : 'failed'
+          }
+        });
+        
+        // Wait for message to be sent
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        websocketService.disconnect();
+        
         // Clean up and redirect
         examSecurityService.cleanupSecurityData(sessionId, user?._id || "");
 
@@ -519,18 +565,55 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
         // Clear all local data
         setAnswers({});
         setQuestions([]);
-
+        
+        window.removeEventListener('beforeunload', handleBeforeUnload);
         window.location.href = "/student/exams";
       })
-      .catch((error) => {
+      .catch(async (error) => {
+        // Send failure message
+        try {
+          websocketService.send({
+            type: 'activity_event',
+            details: {
+              eventType: 'exam_auto_submission_failed',
+              timestamp: new Date().toISOString(),
+              studentId: user?._id,
+              full_name: user?.profile_details?.full_name || 'Unknown Student',
+              examId: sessionId,
+              sessionId: sessionId,
+              error: error instanceof Error ? error.message : 'Unknown error'
+            }
+          });
+          
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          websocketService.disconnect();
+        } catch (wsError) {
+          console.error('WebSocket cleanup error:', wsError);
+        }
+        
         // Force redirect even if submission fails
         examSecurityService.cleanupSecurityData(sessionId, user?._id || "");
+        window.removeEventListener('beforeunload', handleBeforeUnload);
         window.location.href = "/student/exams";
       });
   };
 
   const handleFinishExam = async () => {
+    if (submitting) return; // Prevent multiple submissions
+    
     try {
+      setSubmitting(true);
+      toast.loading('Mengumpulkan jawaban ujian...', { duration: 0, id: 'submit-exam' });
+      
+      // Prevent tab switching during submission
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        e.preventDefault();
+        e.returnValue = 'Sedang mengumpulkan jawaban, jangan keluar dari halaman ini.';
+        return e.returnValue;
+      };
+      
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      
       // Clear auto-save interval
       if (autoSaveIntervalRef.current) {
         clearInterval(autoSaveIntervalRef.current);
@@ -538,21 +621,57 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
 
       // Generate security report
       const securityReport = examSecurityService.generateSecurityReport(
-        sessionId,
-        user?._id || "",
-        sessionId,
-        examStartTime
+        actualExamId || sessionId,  // ✅ FIXED: Use actualExamId as examId parameter
+        user?._id || "",            // ✅ CORRECT: studentId  
+        sessionId,                   // ✅ CORRECT: sessionId
+        examStartTime                // ✅ CORRECT: startTime
       );
+      
+      // Send final monitoring message
+      websocketService.send({
+        type: 'activity_event',
+        details: {
+          eventType: 'exam_submission_started',
+          timestamp: new Date().toISOString(),
+          studentId: user?._id,
+          full_name: user?.profile_details?.full_name || 'Unknown Student',
+          examId: sessionId,
+          sessionId: sessionId,
+          total_answered: Object.keys(answers).length,
+          submission_type: 'manual'
+        }
+      });
 
       // Submit exam with security data
-      await examSecurityService.submitExam(
+      const submitResult = await examSecurityService.submitExam(
         token!,
         sessionId,
         answers,
         securityReport,
         "manual"
       );
-
+      
+      // Send completion message to monitoring
+      websocketService.send({
+        type: 'activity_event',
+        details: {
+          eventType: 'exam_submission_completed',
+          timestamp: new Date().toISOString(),
+          studentId: user?._id,
+          full_name: user?.profile_details?.full_name || 'Unknown Student',
+          examId: sessionId,
+          sessionId: sessionId,
+          submission_result: submitResult.success ? 'success' : 'failed',
+          message: submitResult.message
+        }
+      });
+      
+      // Wait a moment for WebSocket message to be sent
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Disconnect WebSocket
+      websocketService.disconnect();
+      
       // Clean up security data
       examSecurityService.cleanupSecurityData(sessionId, user?._id || "");
 
@@ -566,11 +685,46 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
       // Clear all local data
       setAnswers({});
       setQuestions([]);
+      
+      // Remove beforeunload listener
+      window.removeEventListener('beforeunload', handleBeforeUnload);
 
-      toast.success("Ujian telah selesai dikerjakan.");
-      window.location.href = "/student/exams";
+      toast.dismiss('submit-exam');
+      toast.success("Ujian telah berhasil dikumpulkan!");
+      
+      // Redirect after cleanup
+      setTimeout(() => {
+        window.location.href = "/student/exams";
+      }, 1500);
+      
     } catch (error) {
-      toast.error("Gagal menyelesaikan ujian");
+      console.error('Submission error:', error);
+      toast.dismiss('submit-exam');
+      toast.error("Terjadi kesalahan saat mengumpulkan ujian. Mencoba lagi...");
+      
+      // Still try to send completion message even if submission failed
+      try {
+        websocketService.send({
+          type: 'activity_event',
+          details: {
+            eventType: 'exam_submission_failed',
+            timestamp: new Date().toISOString(),
+            studentId: user?._id,
+            full_name: user?.profile_details?.full_name || 'Unknown Student',
+            examId: sessionId,
+            sessionId: sessionId,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          }
+        });
+        
+        // Wait for message to be sent
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        websocketService.disconnect();
+      } catch (wsError) {
+        console.error('WebSocket cleanup error:', wsError);
+      }
+      
+      setSubmitting(false);
     }
   };
 
@@ -598,52 +752,123 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     }, 3000);
   };
 
-  const handleCriticalViolation = (reason: string) => {
+  const handleCriticalViolation = async (reason: string) => {
+    if (submitting) return; // Prevent multiple submissions
+    
     toast.error(reason);
+    setSubmitting(true);
+    
+    // Prevent tab switching during violation submission
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = 'Pelanggaran terdeteksi, sedang mengumpulkan jawaban...';
+      return e.returnValue;
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     // Generate security report for critical violation
     const securityReport = examSecurityService.generateSecurityReport(
-      sessionId,
-      user?._id || "",
-      sessionId,
-      examStartTime
+      actualExamId || sessionId,  // ✅ FIXED: Use actualExamId as examId parameter
+      user?._id || "",            // ✅ CORRECT: studentId
+      sessionId,                   // ✅ CORRECT: sessionId  
+      examStartTime                // ✅ CORRECT: startTime
     );
+    
+    // Send violation detection message
+    websocketService.send({
+      type: 'activity_event',
+      details: {
+        eventType: 'critical_violation_detected',
+        timestamp: new Date().toISOString(),
+        studentId: user?._id,
+        full_name: user?.profile_details?.full_name || 'Unknown Student',
+        examId: sessionId,
+        sessionId: sessionId,
+        violation_reason: reason,
+        total_answered: Object.keys(answers).length,
+        submission_type: 'auto_violation'
+      }
+    });
 
     // Submit exam with critical violation
-    examSecurityService
-      .submitExam(
+    try {
+      const result = await examSecurityService.submitExam(
         token!,
         sessionId,
         answers,
         securityReport,
         "auto_violation"
-      )
-      .then(() => {
-        // Clean up and redirect
-        examSecurityService.cleanupSecurityData(sessionId, user?._id || "");
-
-        // Clear localStorage answers
-        try {
-          localStorage.removeItem(getExamAnswersKey());
-        } catch (error) {
-          // Ignore localStorage errors
+      );
+      
+      // Send completion message
+      websocketService.send({
+        type: 'activity_event',
+        details: {
+          eventType: 'exam_violation_submission_completed',
+          timestamp: new Date().toISOString(),
+          studentId: user?._id,
+          full_name: user?.profile_details?.full_name || 'Unknown Student',
+          examId: sessionId,
+          sessionId: sessionId,
+          submission_result: result.success ? 'success' : 'failed'
         }
-
-        // Clear all local data
-        setAnswers({});
-        setQuestions([]);
-
-        setTimeout(() => {
-          window.location.href = "/student";
-        }, 2000);
-      })
-      .catch((error) => {
-        // Force redirect even if submission fails
-        examSecurityService.cleanupSecurityData(sessionId, user?._id || "");
-        setTimeout(() => {
-          window.location.href = "/student";
-        }, 2000);
       });
+      
+      // Wait for message to be sent
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      websocketService.disconnect();
+      
+      // Clean up and redirect
+      examSecurityService.cleanupSecurityData(sessionId, user?._id || "");
+
+      // Clear localStorage answers
+      try {
+        localStorage.removeItem(getExamAnswersKey());
+      } catch (error) {
+        // Ignore localStorage errors
+      }
+
+      // Clear all local data
+      setAnswers({});
+      setQuestions([]);
+      
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      setTimeout(() => {
+        window.location.href = "/student";
+      }, 2000);
+      
+    } catch (error) {
+      // Send failure message
+      try {
+        websocketService.send({
+          type: 'activity_event',
+          details: {
+            eventType: 'exam_violation_submission_failed',
+            timestamp: new Date().toISOString(),
+            studentId: user?._id,
+            full_name: user?.profile_details?.full_name || 'Unknown Student',
+            examId: sessionId,
+            sessionId: sessionId,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          }
+        });
+        
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        websocketService.disconnect();
+      } catch (wsError) {
+        console.error('WebSocket cleanup error:', wsError);
+      }
+      
+      // Force redirect even if submission fails
+      examSecurityService.cleanupSecurityData(sessionId, user?._id || "");
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      setTimeout(() => {
+        window.location.href = "/student";
+      }, 2000);
+    }
   };
 
   const handleViolationUpdate = (count: number) => {
@@ -829,10 +1054,24 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
           </p>
           <button
             onClick={handleFinishExam}
-            className="w-full inline-flex items-center justify-center px-6 py-4 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-200 transition-all shadow-lg"
+            disabled={submitting}
+            className={`w-full inline-flex items-center justify-center px-6 py-4 font-semibold rounded-xl focus:outline-none focus:ring-4 transition-all shadow-lg ${
+              submitting
+                ? 'bg-gray-400 text-white cursor-not-allowed'
+                : 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-200'
+            }`}
           >
-            <CheckCircle className="w-5 h-5 mr-2" />
-            Kumpulkan Jawaban
+            {submitting ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
+                Mengumpulkan...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="w-5 h-5 mr-2" />
+                Kumpulkan Jawaban
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -1027,10 +1266,24 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
               <div className="space-y-3">
                 <button
                   onClick={handleFinishExam}
-                  className="w-full inline-flex items-center justify-center px-4 py-3 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-200 transition-all shadow-lg"
+                  disabled={submitting}
+                  className={`w-full inline-flex items-center justify-center px-4 py-3 font-medium rounded-xl focus:outline-none focus:ring-4 transition-all shadow-lg ${
+                    submitting
+                      ? 'bg-gray-400 text-white cursor-not-allowed'
+                      : 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-200'
+                  }`}
                 >
-                  <Send className="w-4 h-4 mr-2" />
-                  Selesai Ujian
+                  {submitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                      Mengumpulkan...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Selesai Ujian
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -1181,10 +1434,24 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <button
                       onClick={handleFinishExam}
-                      className="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-200 transition-all shadow-lg"
+                      disabled={submitting}
+                      className={`inline-flex items-center justify-center px-6 py-3 font-medium rounded-xl focus:outline-none focus:ring-4 transition-all shadow-lg ${
+                        submitting
+                          ? 'bg-gray-400 text-white cursor-not-allowed'
+                          : 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-200'
+                      }`}
                     >
-                      <Send className="w-4 h-4 mr-2" />
-                      Kumpulkan Ujian
+                      {submitting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                          Mengumpulkan Ujian...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4 mr-2" />
+                          Kumpulkan Ujian
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

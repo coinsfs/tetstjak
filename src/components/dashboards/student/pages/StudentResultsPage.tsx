@@ -217,6 +217,63 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
     return formatDateTimeWithTimezone(dateString);
   };
 
+  const formatDateTimeWithSeconds = (dateString: string) => {
+    if (!dateString) return '-';
+    
+    try {
+      // Ensure the UTC datetime string is properly formatted as UTC
+      let utcString = dateString;
+      if (!utcString.endsWith('Z') && !utcString.includes('+') && !utcString.includes('-', 10)) {
+        utcString = dateString + 'Z';
+      }
+      
+      const utcDate = new Date(utcString);
+      
+      // Validasi apakah date valid
+      if (isNaN(utcDate.getTime())) {
+        return '-';
+      }
+      
+      // Format dengan detik
+      const result = utcDate.toLocaleString('id-ID', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZone: 'Asia/Jakarta'
+      }) + ' WIB';
+      
+      return result;
+    } catch (error) {
+      console.error('Error formatting datetime with seconds:', error, dateString);
+      return '-';
+    }
+  };
+
+  const formatViolationDescription = (description: string) => {
+    if (!description) return '';
+    
+    try {
+      // If description is a JSON string, parse it and extract relevant info without name
+      const parsed = JSON.parse(description);
+      if (parsed && typeof parsed === 'object') {
+        // Remove full_name from the description
+        const { full_name, ...rest } = parsed;
+        // Format the rest of the data
+        return Object.entries(rest)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join(', ');
+      }
+    } catch (e) {
+      // If not JSON, return as is
+      return description;
+    }
+    
+    return description;
+  };
+
   // If viewing detailed session analytics
   if (sessionId && sessionAnalytics) {
     return (
@@ -556,9 +613,9 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
             {sessionAnalytics.violation_analytics.violation_timeline.length > 0 && (
               <div className="bg-gray-50 rounded-lg p-4">
                 <h5 className="text-base font-semibold text-gray-900 mb-3">Riwayat Pelanggaran</h5>
-                <div className="space-y-3">
-                  {sessionAnalytics.violation_analytics.violation_timeline.slice(0, 5).map((violation, index) => (
-                    <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
+                <div className="max-h-96 overflow-y-auto pr-2">
+                  {sessionAnalytics.violation_analytics.violation_timeline.map((violation, index) => (
+                    <div key={index} className="bg-white rounded-lg p-3 border border-gray-200 mb-3 last:mb-0">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-1">
@@ -573,11 +630,11 @@ const StudentResultsPage: React.FC<StudentResultsPageProps> = ({ user }) => {
                               {violation.type.replace('_', ' ')}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-600">{violation.description}</p>
+                          <p className="text-xs text-gray-600">{formatViolationDescription(violation.description)}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-gray-500">
-                            {formatDateTime(violation.timestamp)}
+                            {formatDateTimeWithSeconds(violation.timestamp)}
                           </p>
                         </div>
                       </div>

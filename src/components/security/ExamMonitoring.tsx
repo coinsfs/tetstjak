@@ -6,7 +6,10 @@ import { UserProfile } from '@/types/auth';
 
 // Debouncing mechanism to prevent duplicate violation logging
 const lastLoggedViolation: Record<string, number> = {};
-const VIOLATION_DEBOUNCE_TIME = 1000; // 1 second debounce
+const VIOLATION_DEBOUNCE_TIME = 2000; // 2 seconds debounce for most violations
+const TEXT_SELECTION_DEBOUNCE_TIME = 5000; // 5 seconds for text selection
+const TYPING_DEBOUNCE_TIME = 10000; // 10 seconds for typing violations
+const ESSAY_FIELD_DEBOUNCE_TIME = 2000; // 2 seconds specifically for essay questions as requested
 
 
 interface ExamMonitoringProps {
@@ -46,7 +49,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 
   const tabSwitchCount = useRef(0);
   const lastActiveTime = useRef(Date.now());
-  const monitoringInterval = useRef<NodeJS.Timeout | null>(null);
+  const monitoringInterval = useRef<number | null>(null);
   const mouseTracker = useRef({ x: 0, y: 0, clicks: 0 });
   const keyboardTracker = useRef({ keystrokes: 0, suspiciousKeys: 0 });
   const screenHeightTracker = useRef({ 
@@ -55,7 +58,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     currentHeight: window.innerHeight,
     violations: 0
   });
-  const criticalViolationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const criticalViolationTimeoutRef = useRef<number | null>(null);
 
   // Initialize sound after user interaction
   const initializeSound = () => {
@@ -212,17 +215,20 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
         });
       }
 
-      // Detect rapid clicking (potential automation)
-      const rapidClickThreshold = 10;
+      // Detect rapid clicking (more lenient for mobile devices)
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const rapidClickThreshold = isMobile ? 25 : 15; // Higher threshold for mobile
+      const timeWindow = isMobile ? 10000 : 5000; // Longer time window for mobile
+      
       if (mouseTracker.current.clicks > rapidClickThreshold) {
-        const timeWindow = 5000; // 5 seconds
         setTimeout(() => {
-          mouseTracker.current.clicks = Math.max(0, mouseTracker.current.clicks - rapidClickThreshold);
+          mouseTracker.current.clicks = Math.max(0, mouseTracker.current.clicks - Math.floor(rapidClickThreshold / 2));
         }, timeWindow);
 
-        logViolation('rapid_clicking', 'high', {
+        logViolation('rapid_clicking', 'medium', { // Reduced severity
           clickCount: mouseTracker.current.clicks,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          isMobile: isMobile
         });
       }
     };
@@ -286,13 +292,43 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
         }
       }
 
-      // Detect very fast typing (potential automation)
+      // Detect very fast typing (potential automation) - more lenient for legitimate typing
       const typingSpeed = keyboardTracker.current.keystrokes;
-      if (typingSpeed > 200) { // 200 keystrokes in monitoring window
-        logViolation('rapid_typing', 'medium', {
-          keystrokeCount: typingSpeed,
-          timestamp: Date.now()
-        });
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const threshold = isMobile ? 400 : 300; // Higher threshold, especially for mobile
+      
+      if (typingSpeed > threshold) {
+        // Check if user is typing in essay fields (legitimate fast typing)
+        const activeElement = document.activeElement as HTMLElement;
+        const isEssayField = activeElement && (
+          activeElement.tagName === 'TEXTAREA' ||
+          (activeElement.tagName === 'INPUT' && activeElement.getAttribute('type') === 'text') ||
+          activeElement.hasAttribute('contenteditable')
+        );
+        
+        // Apply different debouncing for essay fields vs other inputs
+        const violationKey = isEssayField ? 'essay_rapid_typing' : 'rapid_typing';
+        const debounceTime = isEssayField ? ESSAY_FIELD_DEBOUNCE_TIME : TYPING_DEBOUNCE_TIME;
+        const now = Date.now();
+        
+        // Check if this specific typing violation was recently logged
+        if (lastLoggedViolation[violationKey] && (now - lastLoggedViolation[violationKey]) < debounceTime) {
+          return; // Skip logging if recently logged
+        }
+        
+        // Only log if not typing in legitimate input fields OR if it's suspicious even in essay fields
+        if (!isEssayField || (isEssayField && typingSpeed > (threshold * 1.5))) { // Higher threshold for essay fields
+          lastLoggedViolation[violationKey] = now; // Mark as logged
+          
+          logViolation('rapid_typing', 'low', { // Reduced severity
+            keystrokeCount: typingSpeed,
+            timestamp: Date.now(),
+            isMobile: isMobile,
+            inInputField: isEssayField,
+            isEssayField: isEssayField,
+            debounceTime: debounceTime
+          });
+        }
       }
     };
 
@@ -361,10 +397,10 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       // Check for rapid console clearing (potential DevTools usage)
       try {
         const now = Date.now();
-        if (window.lastConsoleCheck && (now - window.lastConsoleCheck) < 1000) {
+        if ((window as any).lastConsoleCheck && (now - (window as any).lastConsoleCheck) < 1000) {
           devtoolsScore += 10;
         }
-        window.lastConsoleCheck = now;
+        (window as any).lastConsoleCheck = now;
       } catch (error) {
       }
 
@@ -471,20 +507,75 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
     await examSecurityService.reportCriticalViolation(token, examId, user._id, violation);
   };
 
-  // Violation Logging - Modified to send via WebSocket
+  // Violation Logging - Modified to send via WebSocket with enhanced debouncing
   const logViolation = (type: string, severity: 'low' | 'medium' | 'high' | 'critical', details?: any) => {
-    // Implement debouncing to prevent duplicate violations
+    // Enhanced debouncing based on violation type
     const now = Date.now();
     const violationKey = `${type}_${severity}`;
     
-    if (lastLoggedViolation[violationKey] && (now - lastLoggedViolation[violationKey]) < VIOLATION_DEBOUNCE_TIME) {
+    let debounceTime = VIOLATION_DEBOUNCE_TIME;
+    if (type.includes('text_selection')) {
+      debounceTime = TEXT_SELECTION_DEBOUNCE_TIME;
+    } else if (type.includes('typing') || type.includes('rapid_')) {
+      // Check if this is essay-related typing
+      const activeElement = document.activeElement as HTMLElement;
+      const isEssayField = activeElement && (
+        activeElement.tagName === 'TEXTAREA' ||
+        (activeElement.tagName === 'INPUT' && activeElement.getAttribute('type') === 'text') ||
+        activeElement.hasAttribute('contenteditable')
+      );
+      
+      debounceTime = isEssayField ? ESSAY_FIELD_DEBOUNCE_TIME : TYPING_DEBOUNCE_TIME;
+    }
+    
+    if (lastLoggedViolation[violationKey] && (now - lastLoggedViolation[violationKey]) < debounceTime) {
       // Skip logging if same violation type was logged recently
       return;
     }
     
     lastLoggedViolation[violationKey] = now;
+    
+    // Additional mobile device context
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    const violation = {
+    // Create clean, organized violation object for localStorage
+    const cleanViolation = {
+      violation_id: `${examId}_${studentId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: type,
+      severity: severity,
+      timestamp: new Date().toISOString(),
+      exam_id: examId,
+      student_id: studentId,
+      session_id: sessionId,
+      auto_detected: true,
+      context: {
+        user_agent: navigator.userAgent,
+        page_url: window.location.href,
+        tab_active: isTabActive,
+        device_type: isMobile ? 'mobile' : 'desktop',
+        screen_info: {
+          original_height: screenHeightTracker.current.originalHeight,
+          current_height: screenHeightTracker.current.currentHeight,
+          reduction_percentage: details?.reductionPercentage || 0
+        },
+        mouse_position: {
+          x: mouseTracker.current.x,
+          y: mouseTracker.current.y,
+          clicks: mouseTracker.current.clicks
+        },
+        keyboard_stats: {
+          keystrokes: keyboardTracker.current.keystrokes,
+          suspicious_keys: keyboardTracker.current.suspiciousKeys
+        }
+      },
+      details: JSON.stringify({
+        full_name: user?.profile_details?.full_name || 'Unknown Student',
+        ...details
+      })
+    };
+
+    // Create WebSocket message with simplified structure
+    const wsMessage = {
       type: 'violation_event',
       violation_type: type,
       severity,
@@ -495,15 +586,8 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       details: {
         ...details,
         full_name: user?.profile_details?.full_name || 'Unknown Student',
-        userAgent: navigator.userAgent,
-        url: window.location.href,
-        tabActive: isTabActive,
-        mousePosition: mouseTracker.current,
-        keyboardStats: keyboardTracker.current,
-        // Enhanced details for better monitoring
-        originalScreenHeight: screenHeightTracker.current.originalHeight,
-        currentScreenHeight: screenHeightTracker.current.currentHeight,
-        screenReductionPercentage: details?.reductionPercentage || 0
+        isMobile: isMobile,
+        deviceType: isMobile ? 'mobile' : 'desktop'
       }
     };
 
@@ -511,14 +595,23 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       type,
       severity,
       timestamp: new Date().toISOString(),
-      details: violation.details
+      details: cleanViolation.details
     });
+    
     // Send violation via WebSocket
-    websocketService.send(violation);
+    websocketService.send(wsMessage);
 
-    // Store in localStorage for backup
+    // Store in localStorage for backup - CLEANED UP FORMAT!
     const violationsKey = `exam_violations_${examId}_${studentId}`;
-    console.log('Sending WebSocket message:', violation);
+    try {
+      const existingViolations = localStorage.getItem(violationsKey);
+      const violations = existingViolations ? JSON.parse(existingViolations) : [];
+      violations.push(cleanViolation);
+      localStorage.setItem(violationsKey, JSON.stringify(violations));
+      console.log(`ExamMonitoring: Stored violation to localStorage. Total violations: ${violations.length}`);
+    } catch (error) {
+      console.error('ExamMonitoring: Failed to store violation to localStorage:', error);
+    }
     
     setViolationCounts(prev => {
       const newCounts = { ...prev };
@@ -588,7 +681,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
 
   return (
     <>
-      {process.env.NODE_ENV === 'development' && (
+      {import.meta.env.DEV && (
         <div className="fixed bottom-4 left-4 bg-gray-800 text-white px-4 py-2 rounded-lg text-xs z-40">
           <div>Violations: L:{violationCounts.low} M:{violationCounts.medium} H:{violationCounts.high} C:{violationCounts.critical}</div>
           <div>Tab Switches: {tabSwitchCount.current}</div>
