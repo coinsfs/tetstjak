@@ -1161,3 +1161,15 @@ button:focus {
   padding-right: 1rem;
   overflow-x: hidden;
 }
+
+.recharts-wrapper:focus,
+.recharts-surface:focus,
+.recharts-cartesian-grid:focus,
+.recharts-layer:focus {
+  outline: none !important;
+}
+
+.recharts-wrapper:focus,
+.recharts-wrapper *:focus {
+  outline: none !important;
+}
