@@ -35,7 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick, isOpen, onCl
     { id: 'subjects', label: 'Mata Pelajaran', icon: BookOpen, path: '/manage/subjects', prefetch: prefetchSubjects },
     { id: 'classes', label: 'Kelas', icon: School, path: '/manage/classes', prefetch: prefetchClasses },
     { id: 'assignments', label: 'Penugasan', icon: ClipboardList, path: '/manage/assignments' },
-    { id: 'analytics', label: 'Analitik', icon: BarChart3 },
+    { id: 'analytics', label: 'Analitik', icon: BarChart3, path: '/manage/analytics' },
   ];
 
   const bottomMenuItems = [

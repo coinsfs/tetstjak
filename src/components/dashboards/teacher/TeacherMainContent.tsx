@@ -12,6 +12,7 @@ import TeacherAnalyticsPage from './pages/TeacherAnalyticsPage';
 import TeacherExamAnalyticsPage from './pages/TeacherExamAnalyticsPage';
 import TeacherProfilePage from './pages/TeacherProfilePage';
 import TeacherQuestionSetsPage from './pages/TeacherQuestionSetsPage';
+import TeacherScoreTrendAnalyticsPage from './pages/TeacherScoreTrendAnalyticsPage';
 
 interface TeacherMainContentProps {
   user: UserProfile | null;
@@ -46,6 +47,8 @@ const TeacherMainContent: React.FC<TeacherMainContentProps> = ({
         return <TeacherQuestionSetsPage />;
       case '/teacher/analytics':
         return <TeacherAnalyticsPage />;
+      case '/teacher/score-trend-analytics':
+        return <TeacherScoreTrendAnalyticsPage />;
       case '/teacher/profile':
         return <TeacherProfilePage />;
       default:

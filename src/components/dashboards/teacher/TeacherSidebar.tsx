@@ -11,7 +11,8 @@ import {
   LogOut,
   BookOpen,
   Package,
-  Monitor
+  Monitor,
+  TrendingUp
 } from 'lucide-react';
 
 interface MenuItem {
@@ -44,6 +45,7 @@ const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
     { id: 'questions', label: 'Bank Soal', icon: HelpCircle, path: '/teacher/questions' },
     { id: 'question-sets', label: 'Paket Soal', icon: Package, path: '/teacher/question-sets' },
     { id: 'analytics', label: 'Analitik', icon: BarChart3, path: '/teacher/analytics' },
+    { id: 'score-trend', label: 'Tren Nilai', icon: TrendingUp, path: '/teacher/score-trend-analytics' },
   ];
 
   const bottomMenuItems: MenuItem[] = [

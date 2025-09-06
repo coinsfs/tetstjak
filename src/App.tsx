@@ -8,6 +8,9 @@ import StudentDashboard from './components/dashboards/StudentDashboard';
 import StudentExamTakingPage from './components/dashboards/student/pages/StudentExamTakingPage';
 import ProctorMonitoringPage from './components/dashboards/teacher/pages/ProctorMonitoringPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import TeacherScoreTrendAnalyticsPage from './components/dashboards/teacher/pages/TeacherScoreTrendAnalyticsPage';
+import StudentScoreTrendAnalyticsPage from './components/dashboards/student/pages/StudentScoreTrendAnalyticsPage';
+import AnalyticsDashboard from './components/dashboards/admin/AnalyticsDashboard';
 
 const AppContent: React.FC = () => {
   const { currentPath, navigate } = useRouter();
@@ -102,6 +105,33 @@ const AppContent: React.FC = () => {
         </ProtectedRoute>
       );
     }
+  }
+
+  // Handle teacher score trend analytics route
+  if (cleanPath === '/teacher/score-trend-analytics') {
+    return (
+      <ProtectedRoute requiredRole="teacher">
+        <TeacherScoreTrendAnalyticsPage />
+      </ProtectedRoute>
+    );
+  }
+
+  // Handle student score trend analytics route
+  if (cleanPath === '/student/score-trend-analytics') {
+    return (
+      <ProtectedRoute requiredRole="student">
+        <StudentScoreTrendAnalyticsPage />
+      </ProtectedRoute>
+    );
+  }
+
+  // Handle admin analytics dashboard route
+  if (cleanPath === '/admin/analytics') {
+    return (
+      <ProtectedRoute requiredRole="admin">
+        <AnalyticsDashboard />
+      </ProtectedRoute>
+    );
   }
 
   // Route based on current path
