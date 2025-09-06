@@ -98,6 +98,7 @@ const ExamMonitoring: React.FC<ExamMonitoringProps> = ({
       document.removeEventListener('click', handleFirstClick);
     };
   }, []);
+  
   useEffect(() => {
     setupMonitoring();
 

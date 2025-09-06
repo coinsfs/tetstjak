@@ -4,7 +4,7 @@ class WebSocketService {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
-  private reconnectInterval = 1000;
+  private reconnectInterval = 5000; // 5 seconds for first attempt
   private messageHandlers: Map<string, (data: any) => void> = new Map();
   private messageQueue: any[] = [];
   private statusChangeCallback: ((status: 'connected' | 'disconnected' | 'error' | 'reconnecting') => void) | null = null;
@@ -15,6 +15,13 @@ class WebSocketService {
   private currentWsUrl: string | null = null;
   private isReconnecting: boolean = false;
   private reconnectTimeoutId: NodeJS.Timeout | null = null;
+  
+  // Heartbeat related properties
+  private heartbeatIntervalId: NodeJS.Timeout | null = null;
+  private heartbeatInterval = 50000; // 50 seconds as per requirements
+  private lastHeartbeatAck: number = 0;
+  private userId: string | null = null;
+  private userRole: string | null = null;
 
   getCurrentEndpoint(): string | null {
     return this.currentEndpoint;
@@ -39,6 +46,70 @@ class WebSocketService {
     };
   }
   
+  // Set user information for heartbeat messages
+  setUserInfo(userId: string, userRole: string) {
+    this.userId = userId;
+    this.userRole = userRole;
+  }
+  
+  // Start heartbeat mechanism
+  private startHeartbeat() {
+    // Clear any existing heartbeat interval
+    if (this.heartbeatIntervalId) {
+      clearInterval(this.heartbeatIntervalId);
+    }
+    
+    // Start sending heartbeat every 50 seconds
+    this.heartbeatIntervalId = setInterval(() => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        const heartbeatMessage = {
+          type: "heartbeat",
+          timestamp: Date.now(),
+          message_id: `hb_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          user_id: this.userId,
+          user_role: this.userRole
+        };
+        
+        console.log('💓 Heartbeat sent:', this.currentEndpoint);
+        this.send(heartbeatMessage);
+      }
+    }, this.heartbeatInterval);
+  }
+  
+  // Stop heartbeat mechanism
+  private stopHeartbeat() {
+    if (this.heartbeatIntervalId) {
+      clearInterval(this.heartbeatIntervalId);
+      this.heartbeatIntervalId = null;
+    }
+  }
+  
+  // Handle server ping messages
+  private handleServerPing(data: any) {
+    if (data.type === "heartbeat_ping" && data.timestamp) {
+      console.log('🏓 Server ping received, sending pong');
+      
+      const pongMessage = {
+        type: "heartbeat_pong",
+        timestamp: data.timestamp,
+        server_time: Date.now(),
+        message_id: `pong_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        user_id: this.userId,
+        user_role: this.userRole
+      };
+      
+      this.send(pongMessage);
+    }
+  }
+  
+  // Handle heartbeat acknowledgment
+  private handleHeartbeatAck(data: any) {
+    if (data.type === "heartbeat_ack") {
+      this.lastHeartbeatAck = Date.now();
+      console.log('💓 Heartbeat acknowledged');
+    }
+  }
+
   connect(
     token: string, 
     endpointSuffix: string = '/ws/lobby', 
@@ -113,10 +184,13 @@ class WebSocketService {
       console.log('🔍 WebSocketService - WebSocket instance created for URL:', newWsUrl);
       
       this.ws.onopen = () => {
-        console.log('🔍 WebSocketService - WebSocket connection opened successfully for:', newWsUrl);
+        console.log('✅ WebSocket connected:', this.currentEndpoint);
         this.reconnectAttempts = 0;
         this.isReconnecting = false;
         this.statusChangeCallback?.('connected');
+        
+        // Start heartbeat mechanism
+        this.startHeartbeat();
         
         // Expose debug methods in development
         this.exposeDebugMethods();
@@ -135,6 +209,10 @@ class WebSocketService {
           const data = JSON.parse(event.data);
           
           console.log('Received WebSocket message:', data);
+          
+          // Handle heartbeat messages
+          this.handleHeartbeatAck(data);
+          this.handleServerPing(data);
           
           // Call generic handler first if exists
           if (this.genericHandler) {
@@ -165,6 +243,9 @@ class WebSocketService {
 
       this.ws.onclose = (event) => {
         console.log('🔍 WebSocketService - WebSocket connection closed. Code:', event.code, 'Reason:', event.reason, 'URL:', this.currentWsUrl);
+        // Stop heartbeat when connection closes
+        this.stopHeartbeat();
+        
         // Handle authentication errors
         if (event.code === 1008) {
           console.log('🔍 WebSocketService - Authentication error detected (code 1008)');
@@ -200,6 +281,7 @@ class WebSocketService {
       default: return 'UNKNOWN';
     }
   }
+  
   private attemptReconnect() {
     // Don't reconnect if we don't have the necessary information
     if (!this.currentToken || !this.currentEndpoint) {
@@ -221,6 +303,9 @@ class WebSocketService {
       
       this.statusChangeCallback?.('reconnecting');
       
+      // Exponential backoff with max delay of 30 seconds
+      const delay = Math.min(this.reconnectInterval * Math.pow(2, this.reconnectAttempts - 1), 30000);
+      
       this.reconnectTimeoutId = setTimeout(() => {
         // Double-check that we still need to reconnect and not already connected
         if (this.currentToken && this.currentEndpoint && this.isReconnecting && 
@@ -229,7 +314,7 @@ class WebSocketService {
         } else {
           this.isReconnecting = false;
         }
-      }, Math.min(this.reconnectInterval * this.reconnectAttempts, 10000)); // Cap at 10 seconds
+      }, delay);
     } else {
       this.statusChangeCallback?.('error');
       this.isReconnecting = false;
@@ -264,7 +349,8 @@ class WebSocketService {
       readyState: this.ws?.readyState,
       registeredHandlers: Array.from(this.messageHandlers.keys()),
       hasGenericHandler: !!this.genericHandler,
-      queuedMessages: this.messageQueue.length
+      queuedMessages: this.messageQueue.length,
+      lastHeartbeatAck: this.lastHeartbeatAck
     };
   }
 
@@ -321,6 +407,8 @@ class WebSocketService {
   }
 
   disconnect() {
+    // Stop heartbeat
+    this.stopHeartbeat();
 
     // Clear any pending reconnect timeout
     if (this.reconnectTimeoutId) {
@@ -348,6 +436,7 @@ class WebSocketService {
     this.currentWsUrl = null;
     this.isReconnecting = false;
     this.reconnectAttempts = 0;
+    this.lastHeartbeatAck = 0;
   }
 }
 

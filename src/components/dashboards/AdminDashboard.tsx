@@ -151,6 +151,19 @@ const AdminDashboard: React.FC = () => {
       }
     };
     
+    // Handlers for heartbeat messages
+    const handleHeartbeatAck = (data: any) => {
+      if (data.type === 'heartbeat_ack') {
+        console.log('💓 Heartbeat acknowledged');
+      }
+    };
+    
+    const handleServerPing = (data: any) => {
+      if (data.type === 'heartbeat_ping') {
+        console.log('🏓 Server ping received');
+      }
+    };
+    
     // Set generic handler for logging all messages
     websocketService.setGenericHandler(handleGenericMessage);
     
@@ -158,12 +171,16 @@ const AdminDashboard: React.FC = () => {
     websocketService.onMessage('user_connected', handleUserConnected);
     websocketService.onMessage('user_disconnected', handleUserDisconnected);
     websocketService.onMessage('new_activity_log', handleNewActivityLog);
+    websocketService.onMessage('heartbeat_ack', handleHeartbeatAck);
+    websocketService.onMessage('heartbeat_ping', handleServerPing);
 
     return () => {
       websocketService.setGenericHandler(null);
       websocketService.offMessage('user_connected');
       websocketService.offMessage('user_disconnected');
       websocketService.offMessage('new_activity_log');
+      websocketService.offMessage('heartbeat_ack');
+      websocketService.offMessage('heartbeat_ping');
     };
   }, []);
 

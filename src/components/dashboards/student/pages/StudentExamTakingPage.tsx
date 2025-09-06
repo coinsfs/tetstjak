@@ -61,7 +61,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [actualExamId, setActualExamId] = useState<string>("");
   const questionStartTimeRef = useRef<Record<string, number>>({});
-  const heartbeatIntervalRef = useRef<number | null>(null);
+  // Removed heartbeatIntervalRef as it's now handled centrally
 
   // Debounce refs for essay answers
   const essayDebounceTimeoutRef = useRef<Record<string, number>>({});
@@ -167,41 +167,7 @@ const StudentExamTakingPage: React.FC<StudentExamTakingPageProps> = ({
     };
   }, [securityPassed]);
 
-  // Heartbeat for activity monitoring
-  useEffect(() => {
-    if (!examStarted || !user?._id || !securityPassed) return;
-
-    heartbeatIntervalRef.current = setInterval(() => {
-      websocketService.send({
-        type: "activity_event",
-        details: {
-          eventType: "heartbeat",
-          timestamp: new Date().toISOString(),
-          studentId: user._id,
-          full_name: user?.profile_details?.full_name || "Unknown Student",
-          examId: sessionId,
-          sessionId: sessionId,
-          current_question: currentQuestionIndex + 1,
-          total_answered: Object.keys(answers).length,
-          time_remaining: timeRemaining,
-        },
-      });
-    }, 30000); // Every 30 seconds
-
-    return () => {
-      if (heartbeatIntervalRef.current) {
-        clearInterval(heartbeatIntervalRef.current);
-      }
-    };
-  }, [
-    examStarted,
-    user,
-    sessionId,
-    currentQuestionIndex,
-    answers,
-    timeRemaining,
-    securityPassed,
-  ]);
+  // Removed the old heartbeat mechanism as it's now handled centrally in websocketService
 
   // Send initial student data when exam starts and security passes
   useEffect(() => {

@@ -56,6 +56,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const userProfile = await authService.getUserProfile(savedToken);
           setUser(userProfile);
           setToken(savedToken);
+          
+          // Set user info for WebSocket heartbeat with proper checks
+          const userRole = userProfile.user_roles && userProfile.user_roles.length > 0 ? userProfile.user_roles[0] : 'user';
+          websocketService.setUserInfo(userProfile._id, userRole);
         } catch (error) {
           localStorage.removeItem('access_token');
           console.error('Failed to initialize auth:', error);
@@ -115,7 +119,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Centralized WebSocket connection management
   useEffect(() => {
     if (!isLoading) {
-      if (isAuthenticated && token) {
+      if (isAuthenticated && token && user) {
+        // Set user info for WebSocket heartbeat with proper checks
+        const userRole = user.user_roles && user.user_roles.length > 0 ? user.user_roles[0] : 'user';
+        websocketService.setUserInfo(user._id, userRole);
+        
         // Determine the correct WebSocket endpoint based on current path
         const desiredEndpoint = getCurrentDesiredEndpoint();
         
@@ -197,7 +205,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         websocketService.disconnect();
       }
     }
-  }, [isAuthenticated, token, isLoading, currentPath]);
+  }, [isAuthenticated, token, isLoading, currentPath, user]);
 
   const login = async (username: string, password: string): Promise<void> => {
     try {
@@ -207,6 +215,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(response.access_token);
       setUser(userProfile);
       localStorage.setItem('access_token', response.access_token);
+      
+      // Set user info for WebSocket heartbeat with proper checks
+      const userRole = userProfile.user_roles && userProfile.user_roles.length > 0 ? userProfile.user_roles[0] : 'user';
+      websocketService.setUserInfo(userProfile._id, userRole);
       
       // Initialize WebSocket connection
       websocketService.connect(response.access_token);
@@ -228,6 +240,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const userProfile = await authService.getUserProfile(token);
       setUser(userProfile);
+      
+      // Update user info for WebSocket heartbeat with proper checks
+      const userRole = userProfile.user_roles && userProfile.user_roles.length > 0 ? userProfile.user_roles[0] : 'user';
+      websocketService.setUserInfo(userProfile._id, userRole);
     } catch (error) {
       console.error('Failed to refresh user profile:', error);
     }
