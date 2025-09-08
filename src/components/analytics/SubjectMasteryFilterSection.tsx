@@ -247,10 +247,18 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
       filterConfig.forEach((filter, index) => {
         const filterElement = filterItemRefs.current[index];
         if (filterElement) {
-          const filterWidth = filterElement.offsetWidth + 12; // Add gap
+          const filterWidth = filterElement.getBoundingClientRect().width + 12; // Add gap
           console.log(`📏 Subject Mastery Filter ${filter.id} width:`, filterWidth);
 
-          if (accumulatedWidth + filterWidth <= availableWidth) {
+          // Check if this filter plus the More button would fit
+          const wouldFitWithMoreButton = accumulatedWidth + filterWidth + (moreButtonWidth + 12) <= containerWidth;
+          const wouldFitWithoutMoreButton = accumulatedWidth + filterWidth <= availableWidth;
+          
+          // If this is the last filter or if it fits without needing More button
+          const isLastFilter = index === filterConfig.length - 1;
+          const shouldShow = isLastFilter ? wouldFitWithoutMoreButton : wouldFitWithMoreButton;
+          
+          if (shouldShow) {
             visible.push(filter.id);
             accumulatedWidth += filterWidth;
           } else {
@@ -307,7 +315,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
       <div
         key={filter.id}
         ref={(el) => (filterItemRefs.current[index] = el)}
-        className="flex-grow basis-0 min-w-[140px]"
+        className="flex-grow basis-0 min-w-[160px]"
       >
         <label className="block text-xs text-gray-600 mb-1">
           {filter.label}
@@ -388,7 +396,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
         {/* Dynamic Filter Container */}
         <div 
           ref={filterContainerRef}
-          className="flex items-end space-x-3 overflow-hidden"
+          className="flex items-end space-x-3"
         >
           {/* Visible Filters */}
           {filterConfig.map((filter, index) => {
