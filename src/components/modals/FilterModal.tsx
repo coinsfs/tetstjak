@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Filter, RotateCcw } from 'lucide-react';
 import { Class } from '@/types/class';
 import { Subject } from '@/types/subject';
+import { ExpertiseProgram } from '@/types/expertise';
 import { BasicTeacher } from '@/types/user';
 
 interface FilterModalProps {
@@ -12,16 +13,19 @@ interface FilterModalProps {
   selectedSubject: string;
   selectedGrade: string;
   selectedTeacher: string;
+  selectedExpertise: string;
   activeTab: string;
   classes: Class[];
   subjects: Subject[];
   teachers: BasicTeacher[];
+  expertisePrograms: ExpertiseProgram[];
   filterOptionsLoading: boolean;
   onDateChange: (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => void;
   onClassChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onSubjectChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onGradeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onTeacherChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onExpertiseChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onClearFilters: () => void;
   getActiveFilterCount: () => number;
 }
@@ -34,16 +38,19 @@ const FilterModal: React.FC<FilterModalProps> = ({
   selectedSubject,
   selectedGrade,
   selectedTeacher,
+  selectedExpertise,
   activeTab,
   classes,
   subjects,
   teachers,
+  expertisePrograms,
   filterOptionsLoading,
   onDateChange,
   onClassChange,
   onSubjectChange,
   onGradeChange,
   onTeacherChange,
+  onExpertiseChange,
   onClearFilters,
   getActiveFilterCount
 }) => {
@@ -194,6 +201,28 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   </select>
                 </div>
               )}
+              
+              {/* Expertise Filter */}
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Program Keahlian</label>
+                <select
+                  value={selectedExpertise}
+                  onChange={onExpertiseChange}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  disabled={filterOptionsLoading}
+                >
+                  <option value="">Semua Program Keahlian</option>
+                  {filterOptionsLoading ? (
+                    <option disabled>Memuat...</option>
+                  ) : (
+                    expertisePrograms.map((expertise) => (
+                      <option key={expertise._id} value={expertise._id}>
+                        {expertise.name} ({expertise.abbreviation})
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import {
   CreateExpertiseProgramRequest, 
   UpdateExpertiseProgramRequest 
 } from '@/types/expertise';
+import { Teacher } from '@/types/user';
 import { BaseService } from './base';
 
 class ExpertiseProgramService extends BaseService {
@@ -14,20 +15,21 @@ class ExpertiseProgramService extends BaseService {
     return this.get<ExpertiseProgramResponse>(endpoint, token);
   }
 
-  async getExpertiseProgramById(token: string, id: string): Promise<ExpertiseProgram> {
-    return this.get<ExpertiseProgram>(`/expertise-programs/${id}`, token);
-  }
-
   async createExpertiseProgram(token: string, data: CreateExpertiseProgramRequest): Promise<ExpertiseProgram> {
     return this.post<ExpertiseProgram>('/expertise-programs/', data, token);
   }
 
-  async updateExpertiseProgram(token: string, id: string, data: UpdateExpertiseProgramRequest): Promise<ExpertiseProgram> {
-    return this.put<ExpertiseProgram>(`/expertise-programs/${id}`, data, token);
+  async updateExpertiseProgram(token: string, expertiseId: string, data: UpdateExpertiseProgramRequest): Promise<ExpertiseProgram> {
+    return this.put<ExpertiseProgram>(`/expertise-programs/${expertiseId}`, data, token);
   }
 
-  async deleteExpertiseProgram(token: string, id: string): Promise<void> {
-    await this.delete(`/expertise-programs/${id}`, token);
+  async deleteExpertiseProgram(token: string, expertiseId: string): Promise<void> {
+    await this.delete(`/expertise-programs/${expertiseId}`, token);
+  }
+
+  async getTeachers(token: string): Promise<Teacher[]> {
+    const response = await this.get<{ data: Teacher[] }>('/users/?role=teacher&limit=1000', token);
+    return response.data || [];
   }
 }
 

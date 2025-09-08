@@ -3,14 +3,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
 import { ArrowLeft, BarChart3, Users, BookOpen, GraduationCap, Filter, RotateCcw } from 'lucide-react';
 import ScoreTrendAnalytics, { ScoreTrendAnalyticsRef } from '@/components/analytics/ScoreTrendAnalytics';
+import SubjectMasteryAnalytics, { SubjectMasteryAnalyticsRef } from '@/components/analytics/SubjectMasteryAnalytics';
 import FilterModal from '@/components/modals/FilterModal';
 import { classService } from '@/services/class';
 import { subjectService } from '@/services/subject';
+import { expertiseProgramService } from '@/services/expertise';
 import { userService } from '@/services/user';
 import { studentExamService } from '@/services/studentExam';
 import { convertWIBToUTC } from '@/utils/timezone';
 import { Class } from '@/types/class';
 import { Subject } from '@/types/subject';
+import { ExpertiseProgram } from '@/types/expertise';
 import { BasicTeacher } from '@/types/user';
 import { AcademicPeriod } from '@/types/common';
 import toast from 'react-hot-toast';
@@ -19,7 +22,8 @@ const AnalyticsDashboard: React.FC = () => {
   const { navigate } = useRouter();
   const { user, token } = useAuth();
   const analyticsRef = useRef<ScoreTrendAnalyticsRef>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'class' | 'subject' | 'grade' | 'teacher'>('overview');
+  const subjectMasteryRef = useRef<SubjectMasteryAnalyticsRef>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'class' | 'subject' | 'grade' | 'teacher' | 'subject-mastery'>('overview');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
     start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days ago
@@ -29,11 +33,13 @@ const AnalyticsDashboard: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedGrade, setSelectedGrade] = useState<string>('');
   const [selectedTeacher, setSelectedTeacher] = useState<string>('');
+  const [selectedExpertise, setSelectedExpertise] = useState<string>('');
   
   // Filter options state
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [teachers, setTeachers] = useState<BasicTeacher[]>([]);
+  const [expertisePrograms, setExpertisePrograms] = useState<ExpertiseProgram[]>([]);
   const [activeAcademicPeriod, setActiveAcademicPeriod] = useState<AcademicPeriod | null>(null);
   const [filterOptionsLoading, setFilterOptionsLoading] = useState(true);
 
@@ -46,16 +52,18 @@ const AnalyticsDashboard: React.FC = () => {
         setFilterOptionsLoading(true);
         
         // Fetch all filter options in parallel
-        const [classesResponse, subjectsResponse, teachersResponse, academicPeriodResponse] = await Promise.all([
+        const [classesResponse, subjectsResponse, teachersResponse, expertiseResponse, academicPeriodResponse] = await Promise.all([
           classService.getClasses(token, { limit: 100 }),
           subjectService.getSubjects(token, { limit: 100 }),
           userService.getBasicTeachers(token),
+          expertiseProgramService.getExpertisePrograms(token, { limit: 100 }),
           studentExamService.getActiveAcademicPeriod(token).catch(() => null)
         ]);
         
         setClasses(classesResponse.data || []);
         setSubjects(subjectsResponse.data || []);
         setTeachers(teachersResponse || []);
+        setExpertisePrograms(expertiseResponse.data || []);
         setActiveAcademicPeriod(academicPeriodResponse);
         
       } catch (error) {
@@ -70,7 +78,11 @@ const AnalyticsDashboard: React.FC = () => {
   }, [token]);
   
   const handleRefresh = () => {
-    analyticsRef.current?.refreshData();
+    if (activeTab === 'subject-mastery') {
+      subjectMasteryRef.current?.refreshData();
+    } else {
+      analyticsRef.current?.refreshData();
+    }
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => {
@@ -96,6 +108,10 @@ const AnalyticsDashboard: React.FC = () => {
     setSelectedTeacher(e.target.value);
   };
 
+  const handleExpertiseChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedExpertise(e.target.value);
+  };
+
   const clearAllFilters = () => {
     setDateRange({
       start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -105,13 +121,16 @@ const AnalyticsDashboard: React.FC = () => {
     setSelectedSubject('');
     setSelectedGrade('');
     setSelectedTeacher('');
+    setSelectedExpertise('');
   };
 
   const getDefaultFilters = () => {
     const filters: any = {};
 
-    // Always include group_by based on active tab
-    filters.group_by = activeTab === 'overview' ? 'class' : activeTab;
+    // Include group_by based on active tab (only for score trend analytics)
+    if (activeTab !== 'subject-mastery') {
+      filters.group_by = activeTab === 'overview' ? 'class' : activeTab;
+    }
 
     // Add academic period if available
     if (activeAcademicPeriod) {
@@ -139,6 +158,9 @@ const AnalyticsDashboard: React.FC = () => {
     if (selectedTeacher) {
       filters.teacher_id = selectedTeacher;
     }
+    if (selectedExpertise) {
+      filters.expertise_id = selectedExpertise;
+    }
 
     return filters;
   };
@@ -149,6 +171,7 @@ const AnalyticsDashboard: React.FC = () => {
       case 'subject': return 'Tren Nilai Berdasarkan Mata Pelajaran';
       case 'grade': return 'Tren Nilai Berdasarkan Jenjang';
       case 'teacher': return 'Tren Nilai Berdasarkan Guru';
+      case 'subject-mastery': return 'Penguasaan Mata Pelajaran';
       default: return 'Tren Nilai Keseluruhan';
     }
   };
@@ -163,6 +186,7 @@ const AnalyticsDashboard: React.FC = () => {
            selectedSubject || 
            selectedGrade || 
            selectedTeacher;
+           selectedExpertise;
   };
 
   const getActiveFilterCount = () => {
@@ -177,6 +201,7 @@ const AnalyticsDashboard: React.FC = () => {
     if (selectedSubject) count++;
     if (selectedGrade) count++;
     if (selectedTeacher) count++;
+    if (selectedExpertise) count++;
     return count;
   };
 
@@ -194,7 +219,8 @@ const AnalyticsDashboard: React.FC = () => {
     { id: 'class', label: 'Kelas', icon: Users },
     { id: 'subject', label: 'Mata Pelajaran', icon: BookOpen },
     { id: 'grade', label: 'Jenjang', icon: GraduationCap },
-    { id: 'teacher', label: 'Guru', icon: Users }
+    { id: 'teacher', label: 'Guru', icon: Users },
+    { id: 'subject-mastery', label: 'Penguasaan Mapel', icon: Target }
   ];
 
   return (
@@ -367,6 +393,30 @@ const AnalyticsDashboard: React.FC = () => {
                 </select>
               </div>
             )}
+            
+            {/* Expertise Filter */}
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">
+                Program Keahlian
+              </label>
+              <select
+                value={selectedExpertise}
+                onChange={handleExpertiseChange}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                disabled={filterOptionsLoading}
+              >
+                <option value="">Semua Program Keahlian</option>
+                {filterOptionsLoading ? (
+                  <option disabled>Memuat...</option>
+                ) : (
+                  expertisePrograms.map((expertise) => (
+                    <option key={expertise._id} value={expertise._id}>
+                      {expertise.name} ({expertise.abbreviation})
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -401,10 +451,17 @@ const AnalyticsDashboard: React.FC = () => {
             </div>
           </div>
           
-          <ScoreTrendAnalytics 
-            ref={analyticsRef}
-            defaultFilters={getDefaultFilters()}
-          />
+          {activeTab === 'subject-mastery' ? (
+            <SubjectMasteryAnalytics 
+              ref={subjectMasteryRef}
+              defaultFilters={getDefaultFilters()}
+            />
+          ) : (
+            <ScoreTrendAnalytics 
+              ref={analyticsRef}
+              defaultFilters={getDefaultFilters()}
+            />
+          )}
         </div>
 
         {/* Filter Modal */}
@@ -416,16 +473,19 @@ const AnalyticsDashboard: React.FC = () => {
           selectedSubject={selectedSubject}
           selectedGrade={selectedGrade}
           selectedTeacher={selectedTeacher}
+          selectedExpertise={selectedExpertise}
           activeTab={activeTab}
           classes={classes}
           subjects={subjects}
           teachers={teachers}
+          expertisePrograms={expertisePrograms}
           filterOptionsLoading={filterOptionsLoading}
           onDateChange={handleDateChange}
           onClassChange={handleClassChange}
           onSubjectChange={handleSubjectChange}
           onGradeChange={handleGradeChange}
           onTeacherChange={handleTeacherChange}
+          onExpertiseChange={handleExpertiseChange}
           onClearFilters={clearAllFilters}
           getActiveFilterCount={getActiveFilterCount}
         />
