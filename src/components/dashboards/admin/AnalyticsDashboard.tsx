@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
-import { ArrowLeft, BarChart3, Users, BookOpen, GraduationCap, Filter } from 'lucide-react';
-import ScoreTrendAnalytics from '@/components/analytics/ScoreTrendAnalytics';
+import { ArrowLeft, BarChart3, Users, BookOpen, GraduationCap, Filter, RefreshCw } from 'lucide-react';
+import ScoreTrendAnalytics, { ScoreTrendAnalyticsRef } from '@/components/analytics/ScoreTrendAnalytics';
 import FilterModal from '@/components/modals/FilterModal';
 
 const AnalyticsDashboard: React.FC = () => {
   const { navigate } = useRouter();
   const { user } = useAuth();
+  const analyticsRef = useRef<ScoreTrendAnalyticsRef>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'class' | 'subject' | 'grade' | 'teacher'>('overview');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
@@ -18,6 +19,10 @@ const AnalyticsDashboard: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedGrade, setSelectedGrade] = useState<string>('');
   const [selectedTeacher, setSelectedTeacher] = useState<string>('');
+
+  const handleRefresh = () => {
+    analyticsRef.current?.refreshData();
+  };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => {
     setDateRange(prev => ({
@@ -113,10 +118,10 @@ const AnalyticsDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+    <div className="min-h-screen bg-gray-50 px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="bg-white shadow-sm rounded-lg p-3 sm:p-4">
+        <div className="bg-white shadow-sm rounded-lg p-3">
           <div className="flex items-center space-x-3 sm:space-x-4">
             <button
               onClick={() => navigate('/admin')}
@@ -296,18 +301,25 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
 
         {/* Analytics Chart */}
-        <div className="bg-white shadow-sm rounded-lg">
-          <div className="p-3 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">{getChartTitle()}</h2>
+        <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+          <div className="p-3 border-b border-gray-100">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-medium text-gray-900">{getChartTitle()}</h2>
+              <button
+                onClick={handleRefresh}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Refresh Data"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+            </div>
           </div>
           
-          <div className="p-3">
-            <ScoreTrendAnalytics 
-              title=""
-              defaultFilters={getDefaultFilters()}
-              showFilters={false}
-            />
-          </div>
+          <ScoreTrendAnalytics 
+            ref={analyticsRef}
+            defaultFilters={getDefaultFilters()}
+            height={400}
+          />
         </div>
 
         {/* Filter Modal */}
