@@ -4,7 +4,8 @@ import { useRouter } from '@/hooks/useRouter';
 import { ArrowLeft, BarChart3, RotateCcw } from 'lucide-react';
 import ScoreTrendAnalytics, { ScoreTrendAnalyticsRef } from '@/components/analytics/ScoreTrendAnalytics';
 import SubjectMasteryAnalytics, { SubjectMasteryAnalyticsRef } from '@/components/analytics/SubjectMasteryAnalytics';
-import AnalyticsFilterSection from '@/components/analytics/AnalyticsFilterSection';
+import ScoreTrendFilterSection from '@/components/analytics/ScoreTrendFilterSection';
+import SubjectMasteryFilterSection from '@/components/analytics/SubjectMasteryFilterSection';
 import { classService } from '@/services/class';
 import { subjectService } from '@/services/subject';
 import { expertiseProgramService } from '@/services/expertise';
@@ -23,16 +24,34 @@ const AnalyticsDashboard: React.FC = () => {
   const { user, token } = useAuth();
   const analyticsRef = useRef<ScoreTrendAnalyticsRef>(null);
   const subjectMasteryRef = useRef<SubjectMasteryAnalyticsRef>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'class' | 'subject' | 'grade' | 'teacher'>('overview');
-  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
-    start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days ago
-    end: new Date().toISOString().split('T')[0]
+  
+  // Score Trend Filters
+  const [scoreTrendFilters, setScoreTrendFilters] = useState({
+    dateRange: {
+      start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      end: new Date().toISOString().split('T')[0]
+    },
+    selectedClass: '',
+    selectedSubject: '',
+    selectedGrade: '',
+    selectedTeacher: '',
+    selectedExpertise: '',
+    activeTab: 'overview'
   });
-  const [selectedClass, setSelectedClass] = useState<string>('');
-  const [selectedSubject, setSelectedSubject] = useState<string>('');
-  const [selectedGrade, setSelectedGrade] = useState<string>('');
-  const [selectedTeacher, setSelectedTeacher] = useState<string>('');
-  const [selectedExpertise, setSelectedExpertise] = useState<string>('');
+  
+  // Subject Mastery Filters
+  const [subjectMasteryFilters, setSubjectMasteryFilters] = useState({
+    dateRange: {
+      start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      end: new Date().toISOString().split('T')[0]
+    },
+    selectedClass: '',
+    selectedSubject: '',
+    selectedGrade: '',
+    selectedExpertise: '',
+    minExamsPerSubject: 1,
+    includeZeroScores: false
+  });
   
   // Filter options state
   const [classes, setClasses] = useState<Class[]>([]);
@@ -82,87 +101,105 @@ const AnalyticsDashboard: React.FC = () => {
     subjectMasteryRef.current?.refreshData();
   };
 
-  const handleFiltersChange = (newFilters: {
-    dateRange: { start: string; end: string };
-    selectedClass: string;
-    selectedSubject: string;
-    selectedGrade: string;
-    selectedTeacher: string;
-    selectedExpertise: string;
-  }) => {
-    setDateRange(newFilters.dateRange);
-    setSelectedClass(newFilters.selectedClass);
-    setSelectedSubject(newFilters.selectedSubject);
-    setSelectedGrade(newFilters.selectedGrade);
-    setSelectedTeacher(newFilters.selectedTeacher);
-    setSelectedExpertise(newFilters.selectedExpertise);
+  // Score Trend Filter Handlers
+  const handleScoreTrendFiltersChange = (newFilters: typeof scoreTrendFilters) => {
+    setScoreTrendFilters(newFilters);
   };
 
-  const clearAllFilters = () => {
-    setDateRange({
-      start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      end: new Date().toISOString().split('T')[0]
+  const clearScoreTrendFilters = () => {
+    setScoreTrendFilters({
+      dateRange: {
+        start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        end: new Date().toISOString().split('T')[0]
+      },
+      selectedClass: '',
+      selectedSubject: '',
+      selectedGrade: '',
+      selectedTeacher: '',
+      selectedExpertise: '',
+      activeTab: 'overview'
     });
-    setSelectedClass('');
-    setSelectedSubject('');
-    setSelectedGrade('');
-    setSelectedTeacher('');
-    setSelectedExpertise('');
   };
 
-  // Common filters for both charts
-  const getCommonFilters = () => {
-    const filters: any = {};
+  // Subject Mastery Filter Handlers
+  const handleSubjectMasteryFiltersChange = (newFilters: typeof subjectMasteryFilters) => {
+    setSubjectMasteryFilters(newFilters);
+  };
+
+  const clearSubjectMasteryFilters = () => {
+    setSubjectMasteryFilters({
+      dateRange: {
+        start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        end: new Date().toISOString().split('T')[0]
+      },
+      selectedClass: '',
+      selectedSubject: '',
+      selectedGrade: '',
+      selectedExpertise: '',
+      minExamsPerSubject: 1,
+      includeZeroScores: false
+    });
+  };
+
+  // Common filters helper
+  const getCommonFilters = (filters: any) => {
+    const commonFilters: any = {};
 
     // Add academic period if available
     if (activeAcademicPeriod) {
-      filters.academic_period_id = activeAcademicPeriod._id;
+      commonFilters.academic_period_id = activeAcademicPeriod._id;
     }
 
     // Convert date range to UTC ISO format
-    if (dateRange.start) {
-      filters.start_date = convertWIBToUTC(dateRange.start + 'T00:00');
+    if (filters.dateRange.start) {
+      commonFilters.start_date = convertWIBToUTC(filters.dateRange.start + 'T00:00');
     }
-    if (dateRange.end) {
-      filters.end_date = convertWIBToUTC(dateRange.end + 'T23:59');
+    if (filters.dateRange.end) {
+      commonFilters.end_date = convertWIBToUTC(filters.dateRange.end + 'T23:59');
     }
     
     // Only add other parameters if they have values
-    if (selectedClass) {
-      filters.class_id = selectedClass;
+    if (filters.selectedClass) {
+      commonFilters.class_id = filters.selectedClass;
     }
-    if (selectedSubject) {
-      filters.subject_id = selectedSubject;
+    if (filters.selectedSubject) {
+      commonFilters.subject_id = filters.selectedSubject;
     }
-    if (selectedGrade) {
-      filters.grade_level = parseInt(selectedGrade);
+    if (filters.selectedGrade) {
+      commonFilters.grade_level = parseInt(filters.selectedGrade);
     }
-    if (selectedTeacher) {
-      filters.teacher_id = selectedTeacher;
+    if (filters.selectedTeacher) {
+      commonFilters.teacher_id = filters.selectedTeacher;
     }
-    if (selectedExpertise) {
-      filters.expertise_id = selectedExpertise;
+    if (filters.selectedExpertise) {
+      commonFilters.expertise_id = filters.selectedExpertise;
     }
 
-    return filters;
+    return commonFilters;
   };
 
-  // Specific filters for Score Trend Analytics (includes group_by)
+  // Specific filters for Score Trend Analytics
   const getScoreTrendFilters = () => {
-    const commonFilters = getCommonFilters();
+    const commonFilters = getCommonFilters(scoreTrendFilters);
     return {
       ...commonFilters,
-      group_by: activeTab === 'overview' ? 'class' : activeTab
+      group_by: scoreTrendFilters.activeTab === 'overview' ? 'class' : scoreTrendFilters.activeTab
     };
   };
 
-  // Specific filters for Subject Mastery Analytics (no group_by)
+  // Specific filters for Subject Mastery Analytics
   const getSubjectMasteryFilters = () => {
-    return getCommonFilters();
+    const commonFilters = getCommonFilters(subjectMasteryFilters);
+    return {
+      ...commonFilters,
+      min_exams_per_subject: subjectMasteryFilters.minExamsPerSubject,
+      include_zero_scores: subjectMasteryFilters.includeZeroScores,
+      use_cache: true
+    };
   };
 
   const getScoreTrendChartTitle = () => {
-    switch (activeTab) {
+    switch (scoreTrendFilters.activeTab) {
       case 'class': return 'Tren Nilai Berdasarkan Kelas';
       case 'subject': return 'Tren Nilai Berdasarkan Mata Pelajaran';
       case 'grade': return 'Tren Nilai Berdasarkan Jenjang';
@@ -199,38 +236,30 @@ const AnalyticsDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Filter Section */}
-        <AnalyticsFilterSection
-          filters={{
-            dateRange,
-            selectedClass,
-            selectedSubject,
-            selectedGrade,
-            selectedTeacher,
-            selectedExpertise
-          }}
-          onFiltersChange={handleFiltersChange}
-          activeTab={activeTab}
-          onActiveTabChange={setActiveTab}
-          filterOptions={{
-            classes,
-            subjects,
-            teachers,
-            expertisePrograms
-          }}
-          filterOptionsLoading={filterOptionsLoading}
-          onClearFilters={clearAllFilters}
-        />
-
-        {/* Analytics Charts */}
+        {/* Score Trend Analytics Section */}
         <div className="space-y-3">
-          {/* Score Trend Analytics */}
+          {/* Score Trend Filter Section */}
+          <ScoreTrendFilterSection
+            filters={scoreTrendFilters}
+            onFiltersChange={handleScoreTrendFiltersChange}
+            filterOptions={{
+              classes,
+              subjects,
+              teachers,
+              expertisePrograms
+            }}
+            filterOptionsLoading={filterOptionsLoading}
+            onClearFilters={clearScoreTrendFilters}
+          />
+          
+          {/* Score Trend Chart */}
           <div className="bg-white shadow-sm rounded-lg p-3">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-medium text-gray-900">{getScoreTrendChartTitle()}</h2>
               <button
-                onClick={handleRefresh}
+                onClick={() => analyticsRef.current?.refreshData()}
                 className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                title="Refresh Tren Nilai"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -241,14 +270,32 @@ const AnalyticsDashboard: React.FC = () => {
             ref={analyticsRef}
             defaultFilters={getScoreTrendFilters()}
           />
+        </div>
+
+        {/* Subject Mastery Analytics Section */}
+        <div className="space-y-3">
+          {/* Subject Mastery Filter Section */}
+          <SubjectMasteryFilterSection
+            filters={subjectMasteryFilters}
+            onFiltersChange={handleSubjectMasteryFiltersChange}
+            filterOptions={{
+              classes,
+              subjects,
+              teachers,
+              expertisePrograms
+            }}
+            filterOptionsLoading={filterOptionsLoading}
+            onClearFilters={clearSubjectMasteryFilters}
+          />
           
-          {/* Subject Mastery Analytics */}
+          {/* Subject Mastery Chart */}
           <div className="bg-white shadow-sm rounded-lg p-3">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-medium text-gray-900">Penguasaan Mata Pelajaran</h2>
               <button
-                onClick={handleRefresh}
+                onClick={() => subjectMasteryRef.current?.refreshData()}
                 className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                title="Refresh Penguasaan Mata Pelajaran"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
@@ -257,6 +304,7 @@ const AnalyticsDashboard: React.FC = () => {
           
           <SubjectMasteryAnalytics 
             ref={subjectMasteryRef}
+            title=""
             defaultFilters={getSubjectMasteryFilters()}
           />
         </div>
