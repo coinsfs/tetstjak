@@ -231,12 +231,16 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
 
       const containerWidth = filterContainerRef.current.offsetWidth;
       const moreButtonWidth = moreButtonRef.current?.offsetWidth || 80; // Estimate if not rendered
-      const availableWidth = containerWidth - moreButtonWidth - 32; // Account for padding and gaps
+      const horizontalPadding = 24; // p-3 on container is 12px left + 12px right
+      const gapBetweenItems = 12; // space-x-3
+      const availableWidth = containerWidth - horizontalPadding - gapBetweenItems;
 
       console.log('📏 Subject Mastery Filter Container Measurements:', {
         containerWidth,
         moreButtonWidth,
-        availableWidth
+        availableWidth,
+        horizontalPadding,
+        gapBetweenItems
       });
 
       let accumulatedWidth = 0;
@@ -247,29 +251,49 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
       filterConfig.forEach((filter, index) => {
         const filterElement = filterItemRefs.current[index];
         if (filterElement) {
-          const filterWidth = filterElement.getBoundingClientRect().width + 12; // Add gap
+          const filterWidth = filterElement.getBoundingClientRect().width;
+          const widthIncludingGap = filterWidth + gapBetweenItems;
           console.log(`📏 Subject Mastery Filter ${filter.id} width:`, filterWidth);
 
-          // Check if this filter plus the More button would fit
-          const wouldFitWithMoreButton = accumulatedWidth + filterWidth + (moreButtonWidth + 12) <= containerWidth;
-          const wouldFitWithoutMoreButton = accumulatedWidth + filterWidth <= availableWidth;
-          
-          // If this is the last filter or if it fits without needing More button
-          const isLastFilter = index === filterConfig.length - 1;
-          const shouldShow = isLastFilter ? wouldFitWithoutMoreButton : wouldFitWithMoreButton;
-          
-          if (shouldShow) {
+          // Simple logic: if adding this filter would exceed available width, hide it
+          if (accumulatedWidth + widthIncludingGap <= availableWidth) {
             visible.push(filter.id);
-            accumulatedWidth += filterWidth;
+            accumulatedWidth += widthIncludingGap;
           } else {
             hidden.push(filter.id);
           }
         }
       });
 
-      console.log('📏 Subject Mastery Filter Visibility:', { visible, hidden });
-      setVisibleFilters(visible);
-      setHiddenFilters(hidden);
+      // If we have hidden filters, we need to account for More button space
+      // Recalculate visible filters if More button is needed
+      if (hidden.length > 0) {
+        const availableWidthWithMoreButton = containerWidth - moreButtonWidth - horizontalPadding - (gapBetweenItems * 2);
+        let recalculatedAccumulatedWidth = 0;
+        const recalculatedVisible: string[] = [];
+        const recalculatedHidden: string[] = [];
+        
+        filterConfig.forEach((filter, index) => {
+          const filterElement = filterItemRefs.current[index];
+          if (filterElement) {
+            const filterWidth = filterElement.getBoundingClientRect().width;
+            const widthIncludingGap = filterWidth + gapBetweenItems;
+            
+            if (recalculatedAccumulatedWidth + widthIncludingGap <= availableWidthWithMoreButton) {
+              recalculatedVisible.push(filter.id);
+              recalculatedAccumulatedWidth += widthIncludingGap;
+            } else {
+              recalculatedHidden.push(filter.id);
+            }
+          }
+        });
+        
+        setVisibleFilters(recalculatedVisible);
+        setHiddenFilters(recalculatedHidden);
+      } else {
+        setVisibleFilters(visible);
+        setHiddenFilters(hidden);
+      }
     };
 
     // Measure after initial render
@@ -315,7 +339,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
       <div
         key={filter.id}
         ref={(el) => (filterItemRefs.current[index] = el)}
-        className="flex-grow basis-0 min-w-[160px]"
+        className="flex-shrink-0 min-w-[160px]"
       >
         <label className="block text-xs text-gray-600 mb-1">
           {filter.label}
@@ -328,15 +352,12 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
           />
         ) : filter.type === 'checkbox' ? (
-          <label className="flex items-center space-x-2 cursor-pointer pt-2">
-            <input
-              type="checkbox"
-              checked={filter.value as boolean}
-              onChange={filter.onChange}
-              className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-            />
-            <span className="text-sm text-gray-700">{filter.label}</span>
-          </label>
+          <input
+            type="checkbox"
+            checked={filter.value as boolean}
+            onChange={filter.onChange}
+            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 mt-1"
+          />
         ) : (
           <select
             value={filter.value as string}
@@ -396,7 +417,228 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
         {/* Dynamic Filter Container */}
         <div 
           ref={filterContainerRef}
-          className="flex items-end space-x-3"
+          className="flex items-end space-x-3 min-w-0"
+        >
+          {/* Visible Filters */}
+          {filterConfig.map((filter, index) => {
+            const isVisible = visibleFilters.length === 0 || visibleFilters.includes(filter.id);
+            
+            return (
+              <div
+                key={filter.id}
+                className={`transition-all duration-300 ${
+                  isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95 w-0 overflow-hidden'
+                }`}
+                style={{ display: isVisible ? 'block' : 'none' }}
+              >
+                {renderFilterItem(filter, index)}
+              </div>
+            );
+          })}
+
+          {/* More Button - Show when there are hidden filters */}
+          {hiddenFilters.length > 0 && (
+            <button
+              ref={moreButtonRef}
+              onClick={() => setIsFilterModalOpen(true)}
+              className="flex-shrink-0 flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+              title={`${hiddenFilters.length} filter tersembunyi`}
+            >
+              <MoreHorizontal className="w-4 h-4" />
+              <span>More</span>
+              {hiddenFilters.length > 0 && (
+                <span className="bg-purple-100 text-purple-800 text-xs font-medium px-1.5 py-0.5 rounded-full">
+                  {hiddenFilters.length}
+                </span>
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Debug Info - Development Only */}
+        {import.meta.env.DEV && (
+          <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-500">
+            <div>Container Width: {filterContainerRef.current?.offsetWidth || 'measuring...'}px</div>
+            <div>Visible Filters: {visibleFilters.join(', ') || 'all'}</div>
+            <div>Hidden Filters: {hiddenFilters.join(', ') || 'none'}</div>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile Filter Button */}
+      <div className="md:hidden">
+        <button
+          onClick={() => setIsFilterModalOpen(true)}
+          className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-white shadow-sm rounded-lg hover:bg-gray-50 transition-colors"
+          disabled={filterOptionsLoading}
+        >
+          <Filter className="w-4 h-4 text-gray-600" />
+          <span className="text-sm font-medium text-gray-700">Filter Penguasaan Mata Pelajaran</span>
+          {getActiveFilterCount() > 0 && (
+            <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-1 rounded-full">
+              {getActiveFilterCount()}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Filter Modal */}
+      <FilterModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        dateRange={filters.dateRange}
+        selectedClass={filters.selectedClass}
+        selectedSubject={filters.selectedSubject}
+        selectedGrade={filters.selectedGrade}
+        selectedTeacher=""
+        selectedExpertise={filters.selectedExpertise}
+        activeTab="subject-mastery"
+        classes={filterOptions.classes}
+        subjects={filterOptions.subjects}
+        teachers={filterOptions.teachers}
+        expertisePrograms={filterOptions.expertisePrograms}
+        filterOptionsLoading={filterOptionsLoading}
+        onDateChange={handleDateChange}
+        onClassChange={handleClassChange}
+        onSubjectChange={handleSubjectChange}
+        onGradeChange={handleGradeChange}
+        onTeacherChange={() => {}} // Not used for subject mastery
+        onExpertiseChange={handleExpertiseChange}
+        onClearFilters={onClearFilters}
+        getActiveFilterCount={getActiveFilterCount}
+      />
+    </>
+  );
+};
+
+export default SubjectMasteryFilterSection;
+      console.log('📏 Subject Mastery Filter Visibility:', { visible, hidden });
+      setVisibleFilters(visible);
+      setHiddenFilters(hidden);
+    };
+
+    // Measure after initial render
+    const timer = setTimeout(measureFilters, 100);
+
+    // Re-measure on window resize
+    const handleResize = () => {
+      measureFilters();
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [filters, filterOptions, filterOptionsLoading]);
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    
+    const defaultStart = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const defaultEnd = new Date().toISOString().split('T')[0];
+    
+    if (filters.dateRange.start !== defaultStart) count++;
+    if (filters.dateRange.end !== defaultEnd) count++;
+    if (filters.selectedClass) count++;
+    if (filters.selectedSubject) count++;
+    if (filters.selectedGrade) count++;
+    if (filters.selectedExpertise) count++;
+    if (filters.minExamsPerSubject !== 1) count++;
+    if (filters.includeZeroScores !== false) count++;
+    return count;
+  };
+
+  const hasActiveFilters = () => {
+    return getActiveFilterCount() > 0;
+  };
+
+  // Render individual filter item
+  const renderFilterItem = (filter: FilterConfig, index: number) => {
+    return (
+      <div
+        key={filter.id}
+        ref={(el) => (filterItemRefs.current[index] = el)}
+        className="flex-shrink-0 min-w-[160px]"
+      >
+        <label className="block text-xs text-gray-600 mb-1">
+          {filter.label}
+        </label>
+        {filter.type === 'date' ? (
+          <input
+            type="date"
+            value={filter.value as string}
+            onChange={filter.onChange}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+          />
+        ) : filter.type === 'checkbox' ? (
+          <input
+            type="checkbox"
+            checked={filter.value as boolean}
+            onChange={filter.onChange}
+            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 mt-1"
+          />
+        ) : (
+          <select
+            value={filter.value as string}
+            onChange={filter.onChange}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+            disabled={filterOptionsLoading}
+          >
+            {filterOptionsLoading ? (
+              <option disabled>Memuat...</option>
+            ) : (
+              filter.options?.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))
+            )}
+          </select>
+        )}
+      </div>
+    );
+  };
+
+  const filterConfig = getFilterConfig();
+
+  return (
+    <>
+      {/* Header */}
+      <div className="bg-white shadow-sm rounded-lg p-3">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+            <Target className="w-4 h-4 text-purple-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-medium text-gray-900">Penguasaan Mata Pelajaran</h2>
+            <p className="text-sm text-gray-600">Analisis penguasaan siswa per mata pelajaran</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Filters - Responsive */}
+      <div className="hidden md:block bg-white shadow-sm rounded-lg p-3">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-medium text-gray-900">Filter Penguasaan Mata Pelajaran</h3>
+          {hasActiveFilters() && (
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-gray-500">{getActiveFilterCount()} filter aktif</span>
+              <button
+                onClick={onClearFilters}
+                className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+              >
+                Reset
+              </button>
+            </div>
+          )}
+        </div>
+        
+        {/* Dynamic Filter Container */}
+        <div 
+          ref={filterContainerRef}
+          className="flex items-end space-x-3 min-w-0"
         >
           {/* Visible Filters */}
           {filterConfig.map((filter, index) => {
