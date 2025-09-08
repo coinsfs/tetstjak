@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Filter, RotateCcw, Target, BookOpen, GraduationCap, Users, MoreHorizontal } from 'lucide-react';
 import { OverflowList } from 'react-overflow-list';
 import FilterModal from '@/components/modals/FilterModal';
@@ -50,13 +50,6 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
   filterOptionsLoading
 }) => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [visibleFilters, setVisibleFilters] = useState<string[]>([]);
-  const [hiddenFilters, setHiddenFilters] = useState<string[]>([]);
-  
-  // Refs for measurement
-  const filterContainerRef = useRef<HTMLDivElement>(null);
-  const filterItemRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const moreButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => {
     onFiltersChange({
