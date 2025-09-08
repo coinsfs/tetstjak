@@ -131,7 +131,7 @@ const ScoreTrendAnalytics: React.FC<ScoreTrendAnalyticsProps> = ({
       </div>
       
       {/* Chart */}
-      <div className="p-6">
+      <div className="p-2">
         {data ? (
           <ScoreTrendChart 
             data={data.series} 
