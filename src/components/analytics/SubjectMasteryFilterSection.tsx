@@ -312,10 +312,10 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
       <div
         key={filter.id}
         ref={(el) => (filterItemRefs.current[index] = el)}
-        className="flex-shrink-0 min-w-[160px]"
+        className="flex-shrink-0 min-w-[120px]"
       >
         {filter.type !== 'checkbox' && (
-          <label className="block text-xs text-gray-600 mb-1">
+          <label className="block text-xs text-gray-600 mb-0.5">
             {filter.label}
           </label>
         )}
@@ -324,7 +324,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
             type="date"
             value={filter.value as string}
             onChange={filter.onChange}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+            className="w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded-md focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
           />
         ) : filter.type === 'checkbox' ? (
           <div className="flex items-center h-full">
@@ -343,7 +343,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
           <select
             value={filter.value as string}
             onChange={filter.onChange}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+            className="w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded-md focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
             disabled={filterOptionsLoading}
           >
             {filterOptionsLoading ? (
