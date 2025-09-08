@@ -332,18 +332,6 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
 
   return (
     <>
-      {/* Header */}
-      <div className="bg-white shadow-sm rounded-lg p-3">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-            <Target className="w-4 h-4 text-purple-600" />
-          </div>
-          <div>
-            <h2 className="text-lg font-medium text-gray-900">Penguasaan Mata Pelajaran</h2>
-            <p className="text-sm text-gray-600">Analisis penguasaan siswa per mata pelajaran</p>
-          </div>
-        </div>
-      </div>
 
       {/* Desktop Filters - Responsive */}
       <div className="hidden md:block bg-white shadow-sm rounded-lg p-3">
