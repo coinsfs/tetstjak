@@ -25,6 +25,21 @@ interface FilterOptions {
 
 interface SubjectMasteryFilterSectionProps {
   filters: SubjectMasteryFilters;
+  onFiltersChange: (filters: SubjectMasteryFilters) => void;
+  onClearFilters: () => void;
+  filterOptions: FilterOptions;
+  filterOptionsLoading: boolean;
+}
+
+const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = ({
+  filters,
+  onFiltersChange,
+  onClearFilters,
+  filterOptions,
+  filterOptionsLoading
+}) => {
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => {
     onFiltersChange({
       ...filters,
