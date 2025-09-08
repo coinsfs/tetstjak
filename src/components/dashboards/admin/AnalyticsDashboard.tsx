@@ -111,26 +111,26 @@ const AnalyticsDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6">
+    <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-          <div className="flex items-center space-x-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex items-center space-x-3 sm:space-x-4">
             <button
               onClick={() => navigate('/admin')}
-              className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+              className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-md transition-colors"
             >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
             </button>
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <BarChart3 className="w-5 h-5 text-blue-600" />
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900">
                   Dashboard Analitik
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-sm sm:text-base text-gray-600 hidden sm:block">
                   Analisis tren nilai ujian
                 </p>
               </div>
@@ -139,8 +139,8 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="bg-white border border-gray-200 rounded-lg mb-6">
-          <nav className="flex border-b border-gray-200" aria-label="Tabs">
+        <div className="bg-white border border-gray-200 rounded-lg mb-4 sm:mb-6">
+          <nav className="flex overflow-x-auto border-b border-gray-200" aria-label="Tabs">
             {tabs.map((tab) => {
               const IconComponent = tab.icon;
               const isActive = activeTab === tab.id;
@@ -149,15 +149,15 @@ const AnalyticsDashboard: React.FC = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex-1 py-4 px-4 text-sm font-medium text-center border-b-2 transition-colors ${
+                  className={`flex-shrink-0 py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-center border-b-2 transition-colors min-w-0 ${
                     isActive
                       ? 'text-blue-600 border-blue-600'
                       : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  <div className="flex items-center justify-center space-x-2">
-                    <IconComponent className="w-4 h-4" />
-                    <span>{tab.label}</span>
+                  <div className="flex items-center justify-center space-x-1 sm:space-x-2">
+                    <IconComponent className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="whitespace-nowrap">{tab.label}</span>
                   </div>
                 </button>
               );
@@ -166,55 +166,55 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
 
         {/* Filters */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-gray-900">Filter</h3>
+        <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs sm:text-sm font-medium text-gray-900">Filter</h3>
             {hasActiveFilters() && (
-              <div className="flex items-center space-x-2">
-                <span className="text-xs text-gray-500">{getActiveFilterCount()} filter aktif</span>
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <span className="text-xs text-gray-500 hidden sm:inline">{getActiveFilterCount()} filter aktif</span>
                 <button
                   onClick={clearAllFilters}
-                  className="text-xs text-blue-600 hover:text-blue-700"
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
                 >
-                  Hapus Semua
+                  Reset
                 </button>
               </div>
             )}
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs text-gray-600 mb-1">
                 Tanggal Mulai
               </label>
               <input
                 type="date"
                 value={dateRange.start}
                 onChange={(e) => handleDateChange(e, 'start')}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full px-2 py-1.5 text-xs sm:text-sm border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
             
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs text-gray-600 mb-1">
                 Tanggal Akhir
               </label>
               <input
                 type="date"
                 value={dateRange.end}
                 onChange={(e) => handleDateChange(e, 'end')}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full px-2 py-1.5 text-xs sm:text-sm border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
             
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs text-gray-600 mb-1">
                 Kelas
               </label>
               <select
                 value={selectedClass}
                 onChange={handleClassChange}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full px-2 py-1.5 text-xs sm:text-sm border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">Semua Kelas</option>
                 <option value="class1">Kelas 10 IPA 1</option>
@@ -224,13 +224,13 @@ const AnalyticsDashboard: React.FC = () => {
             </div>
             
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs text-gray-600 mb-1">
                 Mata Pelajaran
               </label>
               <select
                 value={selectedSubject}
                 onChange={handleSubjectChange}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full px-2 py-1.5 text-xs sm:text-sm border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">Semua Mata Pelajaran</option>
                 <option value="math">Matematika</option>
@@ -258,14 +258,14 @@ const AnalyticsDashboard: React.FC = () => {
             
             {/* Teacher Filter - Only show when teacher tab is active */}
             {activeTab === 'teacher' && (
-              <div className="col-span-2 sm:col-span-1">
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">
                   Guru
                 </label>
                 <select
                   value={selectedTeacher}
                   onChange={handleTeacherChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-2 py-1.5 text-xs sm:text-sm border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="">Semua Guru</option>
                   <option value="teacher1">Budi Santoso</option>
@@ -278,17 +278,16 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
 
         {/* Analytics Chart */}
-        <div className="bg-white border border-gray-200 rounded-lg">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">{getChartTitle()}</h2>
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="p-3 sm:p-4 border-b border-gray-200">
+            <h2 className="text-sm sm:text-base lg:text-lg font-medium text-gray-900">{getChartTitle()}</h2>
           </div>
           
-          <div className="p-6">
+          <div className="p-3 sm:p-4 lg:p-6">
             <ScoreTrendAnalytics 
               title=""
               defaultFilters={getDefaultFilters()}
               showFilters={false}
-              height={400}
             />
           </div>
         </div>
