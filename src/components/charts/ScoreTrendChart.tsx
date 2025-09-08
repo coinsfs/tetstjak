@@ -1,16 +1,15 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { TrendingUp, BarChart3 } from 'lucide-react';
 import { ScoreTrendSeries } from '@/types/scoreTrendAnalytics';
 
 interface ScoreTrendChartProps {
   data: ScoreTrendSeries[];
-  title?: string;
   height?: number;
 }
 
 const ScoreTrendChart: React.FC<ScoreTrendChartProps> = ({ 
-  data, 
-  title = 'Tren Nilai Ujian', 
+  data,
   height = 400 
 }) => {
   // Generate unique colors for each series
@@ -76,8 +75,8 @@ const ScoreTrendChart: React.FC<ScoreTrendChartProps> = ({
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-medium text-gray-900 mb-2">{label}</p>
+        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4">
+          <p className="text-sm font-medium text-gray-900 mb-2">{label}</p>
           {payload.map((entry: any, index: number) => {
             // Find the original series data to get additional info
             const originalSeries = data.find(s => s.label === entry.name);
@@ -86,22 +85,15 @@ const ScoreTrendChart: React.FC<ScoreTrendChartProps> = ({
             );
             
             return (
-              <div key={index} className="flex items-center justify-between mb-1">
-                <div className="flex items-center">
+              <div key={index} className="flex items-center space-x-2 text-sm">
+                <div className="flex items-center space-x-2">
                   <div 
-                    className="w-3 h-3 rounded-full mr-2" 
+                    className="w-3 h-3 rounded-full" 
                     style={{ backgroundColor: entry.color }}
-                  ></div>
-                  <span className="text-sm text-gray-600">{entry.name}</span>
+                  />
+                  <span className="text-gray-600">{entry.name}:</span>
                 </div>
-                <div className="text-right">
-                  <span className="font-medium text-gray-900">{entry.value}</span>
-                  {originalPoint && (
-                    <p className="text-xs text-gray-500">
-                      {originalPoint.exam_title}
-                    </p>
-                  )}
-                </div>
+                <span className="font-semibold text-gray-900">{Number(entry.value).toFixed(1)}</span>
               </div>
             );
           })}
@@ -113,45 +105,42 @@ const ScoreTrendChart: React.FC<ScoreTrendChartProps> = ({
 
   if (!data || data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-32">
         <div className="text-center">
-          <div className="text-gray-400 mb-2">Tidak ada data tren nilai</div>
-          <p className="text-sm text-gray-500">Data akan muncul setelah ujian dilakukan</p>
+          <BarChart3 className="w-6 h-6 text-gray-300 mx-auto mb-2" />
+          <p className="text-xs text-gray-500 mb-1">Belum Ada Data</p>
+          <p className="text-xs text-gray-400">Data akan muncul setelah ujian</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {title && (
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-      )}
-      
-      <div className="h-64 md:h-80 lg:h-96">
+    <div className="bg-white rounded border border-gray-200 p-3">
+      <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={chartData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+            margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
             <XAxis 
               dataKey="date" 
-              stroke="#6B7280"
-              tick={{ fontSize: 12 }}
-              tickMargin={10}
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 10, fill: '#6B7280' }}
             />
             <YAxis 
-              stroke="#6B7280"
-              tick={{ fontSize: 12 }}
-              tickMargin={10}
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 10, fill: '#6B7280' }}
               domain={[0, 100]}
+              width={30}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend 
-              verticalAlign="top" 
-              height={36}
-              wrapperStyle={{ paddingBottom: '10px' }}
+              iconSize={8} 
+              wrapperStyle={{ fontSize: '11px' }}
             />
             {series.map((s, index) => (
               <Line
@@ -162,44 +151,20 @@ const ScoreTrendChart: React.FC<ScoreTrendChartProps> = ({
                 strokeWidth={2}
                 dot={{ 
                   fill: s.color, 
-                  strokeWidth: 2, 
-                  r: 4,
-                  stroke: '#ffffff'
+                  strokeWidth: 1, 
+                  r: 3
                 }}
                 activeDot={{ 
-                  r: 6, 
-                  fill: s.color,
-                  stroke: '#ffffff',
-                  strokeWidth: 2
+                  r: 5, 
+                  fill: s.color
                 }}
                 name={s.name}
                 connectNulls={false}
-                animationDuration={800}
               />
             ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
-      
-      {series.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {series.map((s, index) => (
-            <div 
-              key={index} 
-              className="flex items-center px-3 py-1.5 bg-gray-100 rounded-full text-xs"
-            >
-              <div 
-                className="w-2 h-2 rounded-full mr-2" 
-                style={{ backgroundColor: s.color }}
-              ></div>
-              <span className="text-gray-700">{s.name}</span>
-              {s.studentCount > 0 && (
-                <span className="ml-1 text-gray-500">({s.studentCount} siswa)</span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };

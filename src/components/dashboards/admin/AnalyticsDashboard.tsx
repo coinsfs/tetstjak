@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
-import { ArrowLeft, BarChart3, Users, BookOpen, GraduationCap, Filter, RefreshCw } from 'lucide-react';
+import { ArrowLeft, BarChart3, Users, BookOpen, GraduationCap, Filter, RotateCcw } from 'lucide-react';
 import ScoreTrendAnalytics, { ScoreTrendAnalyticsRef } from '@/components/analytics/ScoreTrendAnalytics';
 import FilterModal from '@/components/modals/FilterModal';
 
@@ -301,16 +301,16 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
 
         {/* Analytics Chart */}
-        <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-          <div className="p-3 border-b border-gray-100">
+        <div className="space-y-3">
+          <div className="bg-white shadow-sm rounded-lg p-3">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-medium text-gray-900">{getChartTitle()}</h2>
               <button
                 onClick={handleRefresh}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                 title="Refresh Data"
               >
-                <RefreshCw className="w-4 h-4" />
+                <RotateCcw className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -318,8 +318,8 @@ const AnalyticsDashboard: React.FC = () => {
           <ScoreTrendAnalytics 
             ref={analyticsRef}
             defaultFilters={getDefaultFilters()}
-            height={400}
           />
+        </div>
         </div>
 
         {/* Filter Modal */}
