@@ -209,7 +209,7 @@ const AnalyticsDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="bg-white shadow-sm rounded-lg p-3">
