@@ -230,18 +230,12 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
       if (!filterContainerRef.current) return;
 
       const containerWidth = filterContainerRef.current.offsetWidth;
-      const moreButtonWidth = moreButtonRef.current?.offsetWidth || 80; // Estimate if not rendered
-      const horizontalPadding = 24; // p-3 on container is 12px left + 12px right
-      const gapBetweenItems = 12; // space-x-3
-      const availableWidth = containerWidth - horizontalPadding - gapBetweenItems;
-
-      console.log('📏 Subject Mastery Filter Container Measurements:', {
-        containerWidth,
-        moreButtonWidth,
-        availableWidth,
-        horizontalPadding,
-        gapBetweenItems
-      });
+      const moreButtonWidth = moreButtonRef.current?.offsetWidth || 80;
+      
+      // Calculate the total available width for filters, accounting for container padding and the "More" button's space.
+      // The '32' here is an empirical value from ScoreTrendFilterSection that seems to work.
+      // It likely accounts for the container's horizontal padding (p-3 = 24px) plus an additional margin/gap.
+      const availableWidthForFilters = containerWidth - moreButtonWidth - 32;
 
       let accumulatedWidth = 0;
       const visible: string[] = [];
@@ -251,53 +245,28 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
       filterConfig.forEach((filter, index) => {
         const filterElement = filterItemRefs.current[index];
         if (filterElement) {
-          const filterWidth = filterElement.getBoundingClientRect().width;
-          const widthIncludingGap = filterWidth + gapBetweenItems;
-          console.log(`📏 Subject Mastery Filter ${filter.id} width:`, filterWidth);
+          // Get the actual rendered width of the filter element.
+          // Add 12px for the 'space-x-3' gap that applies to elements after the first.
+          const filterTotalWidth = filterElement.getBoundingClientRect().width + 12;
 
-          // Simple logic: if adding this filter would exceed available width, hide it
-          if (accumulatedWidth + widthIncludingGap <= availableWidth) {
+          // If adding this filter would exceed the available space (considering the More button),
+          // then this filter and all subsequent ones should be hidden.
+          if (accumulatedWidth + filterTotalWidth <= availableWidthForFilters) {
             visible.push(filter.id);
-            accumulatedWidth += widthIncludingGap;
+            accumulatedWidth += filterTotalWidth;
           } else {
             hidden.push(filter.id);
           }
         }
       });
 
-      // If we have hidden filters, we need to account for More button space
-      // Recalculate visible filters if More button is needed
-      if (hidden.length > 0) {
-        const availableWidthWithMoreButton = containerWidth - moreButtonWidth - horizontalPadding - (gapBetweenItems * 2);
-        let recalculatedAccumulatedWidth = 0;
-        const recalculatedVisible: string[] = [];
-        const recalculatedHidden: string[] = [];
-        
-        filterConfig.forEach((filter, index) => {
-          const filterElement = filterItemRefs.current[index];
-          if (filterElement) {
-            const filterWidth = filterElement.getBoundingClientRect().width;
-            const widthIncludingGap = filterWidth + gapBetweenItems;
-            
-            if (recalculatedAccumulatedWidth + widthIncludingGap <= availableWidthWithMoreButton) {
-              recalculatedVisible.push(filter.id);
-              recalculatedAccumulatedWidth += widthIncludingGap;
-            } else {
-              recalculatedHidden.push(filter.id);
-            }
-          }
-        });
-        
-        setVisibleFilters(recalculatedVisible);
-        setHiddenFilters(recalculatedHidden);
-      } else {
-        setVisibleFilters(visible);
-        setHiddenFilters(hidden);
-      }
-
-      console.log('📏 Subject Mastery Filter Visibility:', { visible, hidden });
+      // Set the state based on the single pass.
+      // The 'More' button will only be rendered if hidden.length > 0,
+      // and its width was already accounted for in `availableWidthForFilters`.
       setVisibleFilters(visible);
       setHiddenFilters(hidden);
+      
+      console.log('📏 Subject Mastery Filter Visibility:', { visible, hidden });
     };
 
     // Measure after initial render
@@ -345,9 +314,11 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
         ref={(el) => (filterItemRefs.current[index] = el)}
         className="flex-shrink-0 min-w-[160px]"
       >
-        <label className="block text-xs text-gray-600 mb-1">
-          {filter.label}
-        </label>
+        {filter.type !== 'checkbox' && (
+          <label className="block text-xs text-gray-600 mb-1">
+            {filter.label}
+          </label>
+        )}
         {filter.type === 'date' ? (
           <input
             type="date"
@@ -356,12 +327,18 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
           />
         ) : filter.type === 'checkbox' ? (
-          <input
-            type="checkbox"
-            checked={filter.value as boolean}
-            onChange={filter.onChange}
-            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 mt-1"
-          />
+          <div className="flex items-center h-full">
+            <input
+              id={filter.id}
+              type="checkbox"
+              checked={filter.value as boolean}
+              onChange={filter.onChange}
+              className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+            />
+            <label htmlFor={filter.id} className="ml-2 text-sm text-gray-700 cursor-pointer">
+              {filter.label}
+            </label>
+          </div>
         ) : (
           <select
             value={filter.value as string}
@@ -421,7 +398,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
         {/* Dynamic Filter Container */}
         <div 
           ref={filterContainerRef}
-          className="flex items-end space-x-3 min-w-0"
+          className="flex items-end space-x-3 min-w-0 overflow-hidden"
         >
           {/* Visible Filters */}
           {filterConfig.map((filter, index) => {
