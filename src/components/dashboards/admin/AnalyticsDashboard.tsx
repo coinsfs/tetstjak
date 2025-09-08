@@ -320,7 +320,6 @@ const AnalyticsDashboard: React.FC = () => {
             defaultFilters={getDefaultFilters()}
           />
         </div>
-        </div>
 
         {/* Filter Modal */}
         <FilterModal
