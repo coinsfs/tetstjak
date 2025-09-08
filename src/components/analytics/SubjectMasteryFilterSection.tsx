@@ -154,8 +154,8 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
           )}
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          <div>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex-grow basis-0 min-w-[120px]">
             <label className="block text-xs text-gray-600 mb-1">
               Tanggal Mulai
             </label>
@@ -167,7 +167,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
             />
           </div>
           
-          <div>
+          <div className="flex-grow basis-0 min-w-[120px]">
             <label className="block text-xs text-gray-600 mb-1">
               Tanggal Akhir
             </label>
@@ -179,7 +179,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
             />
           </div>
           
-          <div>
+          <div className="flex-grow basis-0 min-w-[120px]">
             <label className="block text-xs text-gray-600 mb-1">
               Kelas
             </label>
@@ -202,7 +202,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
             </select>
           </div>
           
-          <div>
+          <div className="flex-grow basis-0 min-w-[120px]">
             <label className="block text-xs text-gray-600 mb-1">
               Mata Pelajaran
             </label>
@@ -225,7 +225,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
             </select>
           </div>
           
-          <div>
+          <div className="flex-grow basis-0 min-w-[120px]">
             <label className="block text-xs text-gray-600 mb-1">
               Jenjang
             </label>
@@ -241,7 +241,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
             </select>
           </div>
           
-          <div>
+          <div className="flex-grow basis-0 min-w-[120px]">
             <label className="block text-xs text-gray-600 mb-1">
               Program Keahlian
             </label>
@@ -265,7 +265,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
           </div>
 
           {/* Subject Mastery Specific Filters */}
-          <div>
+          <div className="flex-grow basis-0 min-w-[120px]">
             <label className="block text-xs text-gray-600 mb-1">
               Min. Ujian per Mapel
             </label>
@@ -281,7 +281,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
             </select>
           </div>
 
-          <div className="flex items-end">
+          <div className="flex items-end min-w-[120px]">
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
                 type="checkbox"
