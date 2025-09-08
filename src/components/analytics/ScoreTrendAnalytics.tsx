@@ -58,12 +58,23 @@ const ScoreTrendAnalytics = forwardRef<ScoreTrendAnalyticsRef, ScoreTrendAnalyti
 
   useEffect(() => {
     refreshData();
-  }, [token, filters]);
+  }, [token]);
+
+  // Separate effect for filters to avoid infinite loops
+  useEffect(() => {
+    if (token) {
+      refreshData();
+    }
+  }, [filters]);
 
   const handleFilterChange = (newFilters: ScoreTrendFilters) => {
     setFilters(newFilters);
   };
 
+  // Update filters when defaultFilters change
+  useEffect(() => {
+    setFilters(defaultFilters);
+  }, [JSON.stringify(defaultFilters)]);
   if (loading) {
     return (
       <div className="bg-white rounded-xl shadow-sm p-4">
@@ -120,10 +131,16 @@ const ScoreTrendAnalytics = forwardRef<ScoreTrendAnalyticsRef, ScoreTrendAnalyti
         <div className="px-3 py-2 bg-gray-50 border-t border-gray-100 text-xs sm:text-sm text-gray-500">
           <div className="flex flex-wrap items-center justify-between">
             <div>
-              Data diperbarui: {new Date(data.metadata.generated_at).toLocaleString('id-ID')}
+              Data diperbarui: {new Date(data.metadata.generated_at).toLocaleString('id-ID', {
+                timeZone: 'Asia/Jakarta'
+              })} WIB
             </div>
             <div>
-              Grup berdasarkan: {data.metadata.group_by}
+              Grup: {data.metadata.group_by === 'class' ? 'Kelas' : 
+                     data.metadata.group_by === 'subject' ? 'Mata Pelajaran' :
+                     data.metadata.group_by === 'grade' ? 'Jenjang' :
+                     data.metadata.group_by === 'teacher' ? 'Guru' : 
+                     data.metadata.group_by}
             </div>
           </div>
         </div>

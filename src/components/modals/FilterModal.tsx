@@ -1,5 +1,8 @@
 import React from 'react';
 import { X, Filter, RotateCcw } from 'lucide-react';
+import { Class } from '@/types/class';
+import { Subject } from '@/types/subject';
+import { BasicTeacher } from '@/types/user';
 
 interface FilterModalProps {
   isOpen: boolean;
@@ -10,6 +13,10 @@ interface FilterModalProps {
   selectedGrade: string;
   selectedTeacher: string;
   activeTab: string;
+  classes: Class[];
+  subjects: Subject[];
+  teachers: BasicTeacher[];
+  filterOptionsLoading: boolean;
   onDateChange: (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => void;
   onClassChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onSubjectChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
@@ -28,6 +35,10 @@ const FilterModal: React.FC<FilterModalProps> = ({
   selectedGrade,
   selectedTeacher,
   activeTab,
+  classes,
+  subjects,
+  teachers,
+  filterOptionsLoading,
   onDateChange,
   onClassChange,
   onSubjectChange,
@@ -43,6 +54,14 @@ const FilterModal: React.FC<FilterModalProps> = ({
     onClose();
   };
 
+  const getGradeLabel = (gradeLevel: number) => {
+    switch (gradeLevel) {
+      case 10: return 'X';
+      case 11: return 'XI';
+      case 12: return 'XII';
+      default: return gradeLevel.toString();
+    }
+  };
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -116,11 +135,18 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   value={selectedClass}
                   onChange={onClassChange}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  disabled={filterOptionsLoading}
                 >
                   <option value="">Semua Kelas</option>
-                  <option value="class1">Kelas 10 IPA 1</option>
-                  <option value="class2">Kelas 11 IPA 2</option>
-                  <option value="class3">Kelas 12 IPS 1</option>
+                  {filterOptionsLoading ? (
+                    <option disabled>Memuat...</option>
+                  ) : (
+                    classes.map((classItem) => (
+                      <option key={classItem._id} value={classItem._id}>
+                        Kelas {getGradeLabel(classItem.grade_level)} {classItem.expertise_details?.abbreviation} {classItem.name}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
 
@@ -130,12 +156,18 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   value={selectedSubject}
                   onChange={onSubjectChange}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  disabled={filterOptionsLoading}
                 >
                   <option value="">Semua Mata Pelajaran</option>
-                  <option value="math">Matematika</option>
-                  <option value="science">IPA</option>
-                  <option value="english">Bahasa Inggris</option>
-                  <option value="indonesian">Bahasa Indonesia</option>
+                  {filterOptionsLoading ? (
+                    <option disabled>Memuat...</option>
+                  ) : (
+                    subjects.map((subject) => (
+                      <option key={subject._id} value={subject._id}>
+                        {subject.name} ({subject.code})
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
 
@@ -147,11 +179,18 @@ const FilterModal: React.FC<FilterModalProps> = ({
                     value={selectedTeacher}
                     onChange={onTeacherChange}
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    disabled={filterOptionsLoading}
                   >
                     <option value="">Semua Guru</option>
-                    <option value="teacher1">Budi Santoso</option>
-                    <option value="teacher2">Siti Rahayu</option>
-                    <option value="teacher3">Ahmad Fauzi</option>
+                    {filterOptionsLoading ? (
+                      <option disabled>Memuat...</option>
+                    ) : (
+                      teachers.map((teacher) => (
+                        <option key={teacher._id} value={teacher._id}>
+                          {teacher.full_name}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
               )}
@@ -171,8 +210,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
           <button
             onClick={onClose}
             className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+            disabled={filterOptionsLoading}
           >
-            Terapkan
+            {filterOptionsLoading ? 'Memuat...' : 'Terapkan'}
           </button>
         </div>
       </div>

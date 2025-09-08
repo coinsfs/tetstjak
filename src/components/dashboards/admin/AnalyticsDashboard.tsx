@@ -1,25 +1,74 @@
 import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
 import { ArrowLeft, BarChart3, Users, BookOpen, GraduationCap, Filter, RotateCcw } from 'lucide-react';
 import ScoreTrendAnalytics, { ScoreTrendAnalyticsRef } from '@/components/analytics/ScoreTrendAnalytics';
 import FilterModal from '@/components/modals/FilterModal';
+import { classService } from '@/services/class';
+import { subjectService } from '@/services/subject';
+import { userService } from '@/services/user';
+import { studentExamService } from '@/services/studentExam';
+import { convertWIBToUTC } from '@/utils/timezone';
+import { Class } from '@/types/class';
+import { Subject } from '@/types/subject';
+import { BasicTeacher } from '@/types/user';
+import { AcademicPeriod } from '@/types/common';
+import toast from 'react-hot-toast';
 
 const AnalyticsDashboard: React.FC = () => {
   const { navigate } = useRouter();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const analyticsRef = useRef<ScoreTrendAnalyticsRef>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'class' | 'subject' | 'grade' | 'teacher'>('overview');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
-    start: '',
-    end: ''
+    start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days ago
+    end: new Date().toISOString().split('T')[0]
   });
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedGrade, setSelectedGrade] = useState<string>('');
   const [selectedTeacher, setSelectedTeacher] = useState<string>('');
+  
+  // Filter options state
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [teachers, setTeachers] = useState<BasicTeacher[]>([]);
+  const [activeAcademicPeriod, setActiveAcademicPeriod] = useState<AcademicPeriod | null>(null);
+  const [filterOptionsLoading, setFilterOptionsLoading] = useState(true);
 
+  // Fetch filter options on component mount
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      if (!token) return;
+      
+      try {
+        setFilterOptionsLoading(true);
+        
+        // Fetch all filter options in parallel
+        const [classesResponse, subjectsResponse, teachersResponse, academicPeriodResponse] = await Promise.all([
+          classService.getClasses(token, { limit: 100 }),
+          subjectService.getSubjects(token, { limit: 100 }),
+          userService.getBasicTeachers(token),
+          studentExamService.getActiveAcademicPeriod(token).catch(() => null)
+        ]);
+        
+        setClasses(classesResponse.data || []);
+        setSubjects(subjectsResponse.data || []);
+        setTeachers(teachersResponse || []);
+        setActiveAcademicPeriod(academicPeriodResponse);
+        
+      } catch (error) {
+        console.error('Error fetching filter options:', error);
+        toast.error('Gagal memuat opsi filter');
+      } finally {
+        setFilterOptionsLoading(false);
+      }
+    };
+
+    fetchFilterOptions();
+  }, [token]);
   const handleRefresh = () => {
     analyticsRef.current?.refreshData();
   };
@@ -48,7 +97,10 @@ const AnalyticsDashboard: React.FC = () => {
   };
 
   const clearAllFilters = () => {
-    setDateRange({ start: '', end: '' });
+    setDateRange({
+      start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      end: new Date().toISOString().split('T')[0]
+    });
     setSelectedClass('');
     setSelectedSubject('');
     setSelectedGrade('');
@@ -61,13 +113,20 @@ const AnalyticsDashboard: React.FC = () => {
     // Always include group_by based on active tab
     filters.group_by = activeTab === 'overview' ? 'class' : activeTab;
 
-    // Only add parameters if they have values
+    // Add academic period if available
+    if (activeAcademicPeriod) {
+      filters.academic_period_id = activeAcademicPeriod._id;
+    }
+
+    // Convert date range to UTC ISO format
     if (dateRange.start) {
-      filters.start_date = new Date(dateRange.start).toISOString();
+      filters.start_date = convertWIBToUTC(dateRange.start + 'T00:00');
     }
     if (dateRange.end) {
-      filters.end_date = new Date(dateRange.end).toISOString();
+      filters.end_date = convertWIBToUTC(dateRange.end + 'T23:59');
     }
+    
+    // Only add other parameters if they have values
     if (selectedClass) {
       filters.class_id = selectedClass;
     }
@@ -95,13 +154,25 @@ const AnalyticsDashboard: React.FC = () => {
   };
 
   const hasActiveFilters = () => {
-    return dateRange.start || dateRange.end || selectedClass || selectedSubject || selectedGrade || selectedTeacher;
+    const defaultStart = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const defaultEnd = new Date().toISOString().split('T')[0];
+    
+    return (dateRange.start !== defaultStart) || 
+           (dateRange.end !== defaultEnd) || 
+           selectedClass || 
+           selectedSubject || 
+           selectedGrade || 
+           selectedTeacher;
   };
 
   const getActiveFilterCount = () => {
     let count = 0;
-    if (dateRange.start) count++;
-    if (dateRange.end) count++;
+    
+    const defaultStart = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const defaultEnd = new Date().toISOString().split('T')[0];
+    
+    if (dateRange.start !== defaultStart) count++;
+    if (dateRange.end !== defaultEnd) count++;
     if (selectedClass) count++;
     if (selectedSubject) count++;
     if (selectedGrade) count++;
@@ -109,6 +180,14 @@ const AnalyticsDashboard: React.FC = () => {
     return count;
   };
 
+  const getGradeLabel = (gradeLevel: number) => {
+    switch (gradeLevel) {
+      case 10: return 'X';
+      case 11: return 'XI';
+      case 12: return 'XII';
+      default: return gradeLevel.toString();
+    }
+  };
   const tabs = [
     { id: 'overview', label: 'Keseluruhan', icon: BarChart3 },
     { id: 'class', label: 'Kelas', icon: Users },
@@ -273,11 +352,14 @@ const AnalyticsDashboard: React.FC = () => {
                   value={selectedTeacher}
                   onChange={handleTeacherChange}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  disabled={filterOptionsLoading}
                 >
                   <option value="">Semua Guru</option>
-                  <option value="teacher1">Budi Santoso</option>
-                  <option value="teacher2">Siti Rahayu</option>
-                  <option value="teacher3">Ahmad Fauzi</option>
+                  {classes.map((classItem) => (
+                    <option key={classItem._id} value={classItem._id}>
+                      Kelas {getGradeLabel(classItem.grade_level)} {classItem.expertise_details?.abbreviation} {classItem.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             )}
@@ -289,6 +371,7 @@ const AnalyticsDashboard: React.FC = () => {
           <button
             onClick={() => setIsFilterModalOpen(true)}
             className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-white shadow-sm rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={filterOptionsLoading}
           >
             <Filter className="w-4 h-4 text-gray-600" />
             <span className="text-sm font-medium text-gray-700">Filter Data</span>
@@ -306,10 +389,11 @@ const AnalyticsDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-medium text-gray-900">{getChartTitle()}</h2>
               <button
-                onClick={handleRefresh}
-                className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                title="Refresh Data"
-              >
+                  {subjects.map((subject) => (
+                    <option key={subject._id} value={subject._id}>
+                      {subject.name} ({subject.code})
+                    </option>
+                  ))}
                 <RotateCcw className="w-4 h-4" />
               </button>
             </div>
@@ -331,6 +415,10 @@ const AnalyticsDashboard: React.FC = () => {
           selectedGrade={selectedGrade}
           selectedTeacher={selectedTeacher}
           activeTab={activeTab}
+          classes={classes}
+          subjects={subjects}
+          teachers={teachers}
+          filterOptionsLoading={filterOptionsLoading}
           onDateChange={handleDateChange}
           onClassChange={handleClassChange}
           onSubjectChange={handleSubjectChange}
