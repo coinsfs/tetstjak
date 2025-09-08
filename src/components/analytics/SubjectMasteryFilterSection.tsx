@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Filter, RotateCcw, Target, BookOpen, GraduationCap, Users, MoreHorizontal } from 'lucide-react';
+import { OverflowList } from 'react-overflow-list';
 import FilterModal from '@/components/modals/FilterModal';
 import { Class } from '@/types/class';
 import { Subject } from '@/types/subject';
