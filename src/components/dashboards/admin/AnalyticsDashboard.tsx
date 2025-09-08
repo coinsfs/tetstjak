@@ -69,6 +69,7 @@ const AnalyticsDashboard: React.FC = () => {
 
     fetchFilterOptions();
   }, [token]);
+  
   const handleRefresh = () => {
     analyticsRef.current?.refreshData();
   };
@@ -188,6 +189,7 @@ const AnalyticsDashboard: React.FC = () => {
       default: return gradeLevel.toString();
     }
   };
+  
   const tabs = [
     { id: 'overview', label: 'Keseluruhan', icon: BarChart3 },
     { id: 'class', label: 'Kelas', icon: Users },
@@ -303,9 +305,11 @@ const AnalyticsDashboard: React.FC = () => {
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">Semua Kelas</option>
-                <option value="class1">Kelas 10 IPA 1</option>
-                <option value="class2">Kelas 11 IPA 2</option>
-                <option value="class3">Kelas 12 IPS 1</option>
+                {classes.map((classItem) => (
+                  <option key={classItem._id} value={classItem._id}>
+                    Kelas {getGradeLabel(classItem.grade_level)} {classItem.expertise_details?.abbreviation} {classItem.name}
+                  </option>
+                ))}
               </select>
             </div>
             
@@ -319,10 +323,11 @@ const AnalyticsDashboard: React.FC = () => {
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">Semua Mata Pelajaran</option>
-                <option value="math">Matematika</option>
-                <option value="science">IPA</option>
-                <option value="english">Bahasa Inggris</option>
-                <option value="indonesian">Bahasa Indonesia</option>
+                {subjects.map((subject) => (
+                  <option key={subject._id} value={subject._id}>
+                    {subject.name} ({subject.code})
+                  </option>
+                ))}
               </select>
             </div>
             
@@ -355,9 +360,9 @@ const AnalyticsDashboard: React.FC = () => {
                   disabled={filterOptionsLoading}
                 >
                   <option value="">Semua Guru</option>
-                  {classes.map((classItem) => (
-                    <option key={classItem._id} value={classItem._id}>
-                      Kelas {getGradeLabel(classItem.grade_level)} {classItem.expertise_details?.abbreviation} {classItem.name}
+                  {teachers.map((teacher) => (
+                    <option key={teacher._id} value={teacher._id}>
+                      {teacher.name}
                     </option>
                   ))}
                 </select>
@@ -371,7 +376,7 @@ const AnalyticsDashboard: React.FC = () => {
           <button
             onClick={() => setIsFilterModalOpen(true)}
             className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-white shadow-sm rounded-lg hover:bg-gray-50 transition-colors"
-                  disabled={filterOptionsLoading}
+            disabled={filterOptionsLoading}
           >
             <Filter className="w-4 h-4 text-gray-600" />
             <span className="text-sm font-medium text-gray-700">Filter Data</span>
@@ -389,11 +394,9 @@ const AnalyticsDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-medium text-gray-900">{getChartTitle()}</h2>
               <button
-                  {subjects.map((subject) => (
-                    <option key={subject._id} value={subject._id}>
-                      {subject.name} ({subject.code})
-                    </option>
-                  ))}
+                onClick={handleRefresh}
+                className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+              >
                 <RotateCcw className="w-4 h-4" />
               </button>
             </div>
