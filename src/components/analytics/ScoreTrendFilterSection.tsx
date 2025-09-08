@@ -6,13 +6,14 @@ import { Subject } from '@/types/subject';
 import { ExpertiseProgram } from '@/types/expertise';
 import { BasicTeacher } from '@/types/user';
 
-interface AnalyticsFilters {
+interface ScoreTrendFilters {
   dateRange: { start: string; end: string };
   selectedClass: string;
   selectedSubject: string;
   selectedGrade: string;
   selectedTeacher: string;
   selectedExpertise: string;
+  activeTab: string;
 }
 
 interface FilterOptions {
@@ -22,21 +23,17 @@ interface FilterOptions {
   expertisePrograms: ExpertiseProgram[];
 }
 
-interface AnalyticsFilterSectionProps {
-  filters: AnalyticsFilters;
-  onFiltersChange: (filters: AnalyticsFilters) => void;
-  activeTab: string;
-  onActiveTabChange: (tab: string) => void;
+interface ScoreTrendFilterSectionProps {
+  filters: ScoreTrendFilters;
+  onFiltersChange: (filters: ScoreTrendFilters) => void;
   filterOptions: FilterOptions;
   filterOptionsLoading: boolean;
   onClearFilters: () => void;
 }
 
-const AnalyticsFilterSection: React.FC<AnalyticsFilterSectionProps> = ({
+const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
   filters,
   onFiltersChange,
-  activeTab,
-  onActiveTabChange,
   filterOptions,
   filterOptionsLoading,
   onClearFilters
@@ -50,6 +47,13 @@ const AnalyticsFilterSection: React.FC<AnalyticsFilterSectionProps> = ({
     { id: 'grade', label: 'Jenjang', icon: GraduationCap },
     { id: 'teacher', label: 'Guru', icon: Users }
   ];
+
+  const handleActiveTabChange = (tab: string) => {
+    onFiltersChange({
+      ...filters,
+      activeTab: tab
+    });
+  };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => {
     onFiltersChange({
@@ -132,12 +136,12 @@ const AnalyticsFilterSection: React.FC<AnalyticsFilterSectionProps> = ({
         <nav className="flex overflow-x-auto scrollbar-hide border-b border-gray-200" aria-label="Tabs">
           {tabs.map((tab) => {
             const IconComponent = tab.icon;
-            const isActive = activeTab === tab.id;
+            const isActive = filters.activeTab === tab.id;
             
             return (
               <button
                 key={tab.id}
-                onClick={() => onActiveTabChange(tab.id)}
+                onClick={() => handleActiveTabChange(tab.id)}
                 className={`flex-shrink-0 py-3 px-3 sm:px-4 text-sm font-medium text-center border-b-2 transition-colors min-w-0 ${
                   isActive
                     ? 'text-blue-600 border-blue-600'
@@ -249,7 +253,7 @@ const AnalyticsFilterSection: React.FC<AnalyticsFilterSectionProps> = ({
           </div>
           
           {/* Teacher Filter - Only show when teacher tab is active */}
-          {activeTab === 'teacher' && (
+          {filters.activeTab === 'teacher' && (
             <div className="col-span-full sm:col-span-1">
               <label className="block text-xs text-gray-600 mb-1">
                 Guru
@@ -323,7 +327,7 @@ const AnalyticsFilterSection: React.FC<AnalyticsFilterSectionProps> = ({
         selectedGrade={filters.selectedGrade}
         selectedTeacher={filters.selectedTeacher}
         selectedExpertise={filters.selectedExpertise}
-        activeTab={activeTab}
+        activeTab={filters.activeTab}
         classes={filterOptions.classes}
         subjects={filterOptions.subjects}
         teachers={filterOptions.teachers}
@@ -342,4 +346,4 @@ const AnalyticsFilterSection: React.FC<AnalyticsFilterSectionProps> = ({
   );
 };
 
-export default AnalyticsFilterSection;
+export default ScoreTrendFilterSection;
