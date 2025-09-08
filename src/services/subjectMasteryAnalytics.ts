@@ -3,12 +3,16 @@ import { SubjectMasteryResponse, SubjectMasteryFilters } from '@/types/subjectMa
 
 class SubjectMasteryAnalyticsService extends BaseService {
   async getSubjectMasteryAnalytics(token: string, filters: SubjectMasteryFilters = {}): Promise<SubjectMasteryResponse> {
-    // For GET requests, we need to build query parameters
-    if (Object.keys(filters).length > 0) {
-      const queryString = this.buildQueryParams(filters);
-      return this.get<SubjectMasteryResponse>(`/analytics/subject-mastery?${queryString}`, token);
-    }
-    return this.get<SubjectMasteryResponse>('/analytics/subject-mastery', token);
+    // Always include default parameters
+    const defaultParams = {
+      include_zero_scores: false,
+      min_exams_per_subject: 1,
+      use_cache: true,
+      ...filters
+    };
+    
+    const queryString = this.buildQueryParams(defaultParams);
+    return this.get<SubjectMasteryResponse>(`/exam-analytics/subject-mastery?${queryString}`, token);
   }
 
   async postSubjectMasteryAnalytics(token: string, filters: SubjectMasteryFilters): Promise<SubjectMasteryResponse> {
