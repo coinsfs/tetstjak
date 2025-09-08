@@ -309,7 +309,7 @@ const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
       <div
         key={filter.id}
         ref={(el) => (filterItemRefs.current[index] = el)}
-        className="flex-shrink-0"
+        className="flex-grow basis-0 min-w-[120px]"
       >
         <label className="block text-xs text-gray-600 mb-0.5">
           {filter.label}
