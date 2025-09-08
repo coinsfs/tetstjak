@@ -432,16 +432,6 @@ const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
           )}
         </div>
 
-        {/* Debug Info - Development Only */}
-        {import.meta.env.DEV && (
-          <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-500">
-            <div>Container Width: {filterContainerRef.current?.offsetWidth || 'measuring...'}px</div>
-            <div>Visible Filters: {visibleFilters.join(', ') || 'all'}</div>
-            <div>Hidden Filters: {hiddenFilters.join(', ') || 'none'}</div>
-          </div>
-        )}
-      </div>
-
       {/* Mobile Filter Button */}
       <div className="md:hidden">
         <button
