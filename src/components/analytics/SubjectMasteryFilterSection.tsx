@@ -224,67 +224,6 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
     return config.sort((a, b) => a.priority - b.priority);
   };
 
-  // Measure filter dimensions and determine visibility
-  useEffect(() => {
-    const measureFilters = () => {
-      if (!filterContainerRef.current) return;
-
-      const containerWidth = filterContainerRef.current.offsetWidth;
-      const moreButtonWidth = moreButtonRef.current?.offsetWidth || 80;
-      
-      // Calculate the total available width for filters, accounting for container padding and the "More" button's space.
-      // The '32' here is an empirical value from ScoreTrendFilterSection that seems to work.
-      // It likely accounts for the container's horizontal padding (p-3 = 24px) plus an additional margin/gap.
-      const availableWidthForFilters = containerWidth - moreButtonWidth - 32;
-
-      let accumulatedWidth = 0;
-      const visible: string[] = [];
-      const hidden: string[] = [];
-      const filterConfig = getFilterConfig();
-
-      filterConfig.forEach((filter, index) => {
-        const filterElement = filterItemRefs.current[index];
-        if (filterElement) {
-          // Get the actual rendered width of the filter element.
-          // Add 12px for the 'space-x-3' gap that applies to elements after the first.
-          const filterTotalWidth = filterElement.getBoundingClientRect().width + 12;
-
-          // If adding this filter would exceed the available space (considering the More button),
-          // then this filter and all subsequent ones should be hidden.
-          if (accumulatedWidth + filterTotalWidth <= availableWidthForFilters) {
-            visible.push(filter.id);
-            accumulatedWidth += filterTotalWidth;
-          } else {
-            hidden.push(filter.id);
-          }
-        }
-      });
-
-      // Set the state based on the single pass.
-      // The 'More' button will only be rendered if hidden.length > 0,
-      // and its width was already accounted for in `availableWidthForFilters`.
-      setVisibleFilters(visible);
-      setHiddenFilters(hidden);
-      
-      console.log('📏 Subject Mastery Filter Visibility:', { visible, hidden });
-    };
-
-    // Measure after initial render
-    const timer = setTimeout(measureFilters, 100);
-
-    // Re-measure on window resize
-    const handleResize = () => {
-      measureFilters();
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [filters, filterOptions, filterOptionsLoading]);
-
   const getActiveFilterCount = () => {
     let count = 0;
     
@@ -307,49 +246,48 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
   };
 
   // Render individual filter item
-  const renderFilterItem = (filter: FilterConfig, index: number) => {
+  const renderFilterItem = (item: FilterConfig) => {
     return (
       <div
-        key={filter.id}
-        ref={(el) => (filterItemRefs.current[index] = el)}
+        key={item.id}
         className="flex-shrink-0 min-w-[120px]"
       >
-        {filter.type !== 'checkbox' && (
+        {item.type !== 'checkbox' && (
           <label className="block text-xs text-gray-600 mb-0.5">
-            {filter.label}
+            {item.label}
           </label>
         )}
-        {filter.type === 'date' ? (
+        {item.type === 'date' ? (
           <input
             type="date"
-            value={filter.value as string}
-            onChange={filter.onChange}
+            value={item.value as string}
+            onChange={item.onChange}
             className="w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded-md focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
           />
-        ) : filter.type === 'checkbox' ? (
+        ) : item.type === 'checkbox' ? (
           <div className="flex items-center h-full">
             <input
-              id={filter.id}
+              id={item.id}
               type="checkbox"
-              checked={filter.value as boolean}
-              onChange={filter.onChange}
+              checked={item.value as boolean}
+              onChange={item.onChange}
               className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
             />
-            <label htmlFor={filter.id} className="ml-2 text-sm text-gray-700 cursor-pointer">
-              {filter.label}
+            <label htmlFor={item.id} className="ml-2 text-sm text-gray-700 cursor-pointer">
+              {item.label}
             </label>
           </div>
         ) : (
           <select
-            value={filter.value as string}
-            onChange={filter.onChange}
+            value={item.value as string}
+            onChange={item.onChange}
             className="w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded-md focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
             disabled={filterOptionsLoading}
           >
             {filterOptionsLoading ? (
               <option disabled>Memuat...</option>
             ) : (
-              filter.options?.map((option) => (
+              item.options?.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -395,55 +333,27 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
           )}
         </div>
         
-        {/* Dynamic Filter Container */}
-        <div 
-          ref={filterContainerRef}
-          className="flex items-end space-x-3 min-w-0 overflow-hidden"
-        >
-          {/* Visible Filters */}
-          {filterConfig.map((filter, index) => {
-            const isVisible = visibleFilters.length === 0 || visibleFilters.includes(filter.id);
-            
-            return (
-              <div
-                key={filter.id}
-                className={`transition-all duration-300 ${
-                  isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95 w-0 overflow-hidden'
-                }`}
-                style={{ display: isVisible ? 'block' : 'none' }}
-              >
-                {renderFilterItem(filter, index)}
-              </div>
-            );
-          })}
-
-          {/* More Button - Show when there are hidden filters */}
-          {hiddenFilters.length > 0 && (
+        {/* OverflowList Container */}
+        <OverflowList
+          items={filterConfig}
+          itemRenderer={renderFilterItem}
+          overflowRenderer={(overflowItems) => (
             <button
-              ref={moreButtonRef}
               onClick={() => setIsFilterModalOpen(true)}
               className="flex-shrink-0 flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-              title={`${hiddenFilters.length} filter tersembunyi`}
+              title={`${overflowItems.length} filter tersembunyi`}
             >
               <MoreHorizontal className="w-4 h-4" />
               <span>More</span>
-              {hiddenFilters.length > 0 && (
+              {overflowItems.length > 0 && (
                 <span className="bg-purple-100 text-purple-800 text-xs font-medium px-1.5 py-0.5 rounded-full">
-                  {hiddenFilters.length}
+                  {overflowItems.length}
                 </span>
               )}
             </button>
           )}
-        </div>
-
-        {/* Debug Info - Development Only */}
-        {import.meta.env.DEV && (
-          <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-500">
-            <div>Container Width: {filterContainerRef.current?.offsetWidth || 'measuring...'}px</div>
-            <div>Visible Filters: {visibleFilters.join(', ') || 'all'}</div>
-            <div>Hidden Filters: {hiddenFilters.join(', ') || 'none'}</div>
-          </div>
-        )}
+          className="flex items-end space-x-3 min-w-0"
+        />
       </div>
 
       {/* Mobile Filter Button */}

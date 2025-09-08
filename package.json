@@ -17,6 +17,7 @@
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.5.2",
+    "react-overflow-list": "^0.5.0",
     "react-quill": "^2.0.0",
     "recharts": "^3.1.0"
   },
