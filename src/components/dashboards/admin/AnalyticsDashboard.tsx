@@ -147,7 +147,7 @@ const AnalyticsDashboard: React.FC = () => {
 
         {/* Navigation Tabs */}
         <div className="bg-white shadow-sm rounded-lg">
-          <nav className="flex overflow-x-auto border-b border-gray-200" aria-label="Tabs">
+          <nav className="flex overflow-x-auto scrollbar-hide border-b border-gray-200" aria-label="Tabs">
             {tabs.map((tab) => {
               const IconComponent = tab.icon;
               const isActive = activeTab === tab.id;
@@ -156,7 +156,7 @@ const AnalyticsDashboard: React.FC = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex-shrink-0 py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-center border-b-2 transition-colors min-w-0 ${
+                  className={`flex-shrink-0 py-3 px-3 sm:px-4 text-sm font-medium text-center border-b-2 transition-colors min-w-0 ${
                     isActive
                       ? 'text-blue-600 border-blue-600'
                       : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
