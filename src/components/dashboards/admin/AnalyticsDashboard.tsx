@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
-import { ArrowLeft, BarChart3, Users, BookOpen, GraduationCap } from 'lucide-react';
+import { ArrowLeft, BarChart3, Users, BookOpen, GraduationCap, Filter } from 'lucide-react';
 import ScoreTrendAnalytics from '@/components/analytics/ScoreTrendAnalytics';
+import FilterModal from '@/components/modals/FilterModal';
 
 const AnalyticsDashboard: React.FC = () => {
   const { navigate } = useRouter();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'class' | 'subject' | 'grade' | 'teacher'>('overview');
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
     start: '',
     end: ''
@@ -111,10 +113,10 @@ const AnalyticsDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-4 sm:py-6">
         {/* Header */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 mb-6">
           <div className="flex items-center space-x-3 sm:space-x-4">
             <button
               onClick={() => navigate('/admin')}
@@ -123,7 +125,7 @@ const AnalyticsDashboard: React.FC = () => {
               <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
             </button>
             <div className="flex items-center space-x-2 sm:space-x-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
               </div>
               <div>
@@ -139,7 +141,7 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="bg-white border border-gray-200 rounded-lg mb-4 sm:mb-6">
+        <div className="bg-white border border-gray-200 rounded-lg mb-6">
           <nav className="flex overflow-x-auto border-b border-gray-200" aria-label="Tabs">
             {tabs.map((tab) => {
               const IconComponent = tab.icon;
@@ -165,13 +167,13 @@ const AnalyticsDashboard: React.FC = () => {
           </nav>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+        {/* Desktop Filters */}
+        <div className="hidden md:block bg-white border border-gray-200 rounded-lg p-4 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xs sm:text-sm font-medium text-gray-900">Filter</h3>
+            <h3 className="text-sm font-medium text-gray-900">Filter</h3>
             {hasActiveFilters() && (
-              <div className="flex items-center space-x-1 sm:space-x-2">
-                <span className="text-xs text-gray-500 hidden sm:inline">{getActiveFilterCount()} filter aktif</span>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs text-gray-500">{getActiveFilterCount()} filter aktif</span>
                 <button
                   onClick={clearAllFilters}
                   className="text-xs text-blue-600 hover:text-blue-700 font-medium"
@@ -182,7 +184,7 @@ const AnalyticsDashboard: React.FC = () => {
             )}
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
             <div>
               <label className="block text-xs text-gray-600 mb-1">
                 Tanggal Mulai
@@ -191,7 +193,7 @@ const AnalyticsDashboard: React.FC = () => {
                 type="date"
                 value={dateRange.start}
                 onChange={(e) => handleDateChange(e, 'start')}
-                className="w-full px-2 py-1.5 text-xs sm:text-sm border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
             
@@ -203,7 +205,7 @@ const AnalyticsDashboard: React.FC = () => {
                 type="date"
                 value={dateRange.end}
                 onChange={(e) => handleDateChange(e, 'end')}
-                className="w-full px-2 py-1.5 text-xs sm:text-sm border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
             
@@ -214,7 +216,7 @@ const AnalyticsDashboard: React.FC = () => {
               <select
                 value={selectedClass}
                 onChange={handleClassChange}
-                className="w-full px-2 py-1.5 text-xs sm:text-sm border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">Semua Kelas</option>
                 <option value="class1">Kelas 10 IPA 1</option>
@@ -230,7 +232,7 @@ const AnalyticsDashboard: React.FC = () => {
               <select
                 value={selectedSubject}
                 onChange={handleSubjectChange}
-                className="w-full px-2 py-1.5 text-xs sm:text-sm border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">Semua Mata Pelajaran</option>
                 <option value="math">Matematika</option>
@@ -241,7 +243,7 @@ const AnalyticsDashboard: React.FC = () => {
             </div>
             
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs text-gray-600 mb-1">
                 Jenjang
               </label>
               <select
@@ -265,7 +267,7 @@ const AnalyticsDashboard: React.FC = () => {
                 <select
                   value={selectedTeacher}
                   onChange={handleTeacherChange}
-                  className="w-full px-2 py-1.5 text-xs sm:text-sm border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="">Semua Guru</option>
                   <option value="teacher1">Budi Santoso</option>
@@ -277,13 +279,29 @@ const AnalyticsDashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* Mobile Filter Button */}
+        <div className="md:hidden mb-6">
+          <button
+            onClick={() => setIsFilterModalOpen(true)}
+            className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <Filter className="w-4 h-4 text-gray-600" />
+            <span className="text-sm font-medium text-gray-700">Filter Data</span>
+            {getActiveFilterCount() > 0 && (
+              <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                {getActiveFilterCount()}
+              </span>
+            )}
+          </button>
+        </div>
+
         {/* Analytics Chart */}
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <div className="p-3 sm:p-4 border-b border-gray-200">
-            <h2 className="text-sm sm:text-base lg:text-lg font-medium text-gray-900">{getChartTitle()}</h2>
+        <div className="bg-white border border-gray-200 rounded-lg">
+          <div className="p-4 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-900">{getChartTitle()}</h2>
           </div>
           
-          <div className="p-3 sm:p-4 lg:p-6">
+          <div className="p-4">
             <ScoreTrendAnalytics 
               title=""
               defaultFilters={getDefaultFilters()}
@@ -291,6 +309,25 @@ const AnalyticsDashboard: React.FC = () => {
             />
           </div>
         </div>
+
+        {/* Filter Modal */}
+        <FilterModal
+          isOpen={isFilterModalOpen}
+          onClose={() => setIsFilterModalOpen(false)}
+          dateRange={dateRange}
+          selectedClass={selectedClass}
+          selectedSubject={selectedSubject}
+          selectedGrade={selectedGrade}
+          selectedTeacher={selectedTeacher}
+          activeTab={activeTab}
+          onDateChange={handleDateChange}
+          onClassChange={handleClassChange}
+          onSubjectChange={handleSubjectChange}
+          onGradeChange={handleGradeChange}
+          onTeacherChange={handleTeacherChange}
+          onClearFilters={clearAllFilters}
+          getActiveFilterCount={getActiveFilterCount}
+        />
       </div>
     </div>
   );
