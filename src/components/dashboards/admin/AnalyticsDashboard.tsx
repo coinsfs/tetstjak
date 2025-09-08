@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
-import { ArrowLeft, BarChart3, Users, BookOpen, GraduationCap, Filter, RotateCcw } from 'lucide-react';
+import { ArrowLeft, BarChart3, Users, BookOpen, GraduationCap, Filter, RotateCcw, Target } from 'lucide-react';
 import ScoreTrendAnalytics, { ScoreTrendAnalyticsRef } from '@/components/analytics/ScoreTrendAnalytics';
 import SubjectMasteryAnalytics, { SubjectMasteryAnalyticsRef } from '@/components/analytics/SubjectMasteryAnalytics';
 import FilterModal from '@/components/modals/FilterModal';
