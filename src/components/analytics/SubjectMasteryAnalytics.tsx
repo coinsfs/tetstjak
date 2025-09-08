@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 interface SubjectMasteryAnalyticsProps {
   defaultFilters?: SubjectMasteryFilters;
   height?: number;
+  title?: string;
 }
 
 export interface SubjectMasteryAnalyticsRef {
@@ -17,7 +18,8 @@ export interface SubjectMasteryAnalyticsRef {
 
 const SubjectMasteryAnalytics = forwardRef<SubjectMasteryAnalyticsRef, SubjectMasteryAnalyticsProps>(({ 
   defaultFilters = {},
-  height 
+  height,
+  title
 }, ref) => {
   const { token, user } = useAuth();
   const [data, setData] = useState<SubjectMasteryResponse | null>(null);
@@ -105,6 +107,13 @@ const SubjectMasteryAnalytics = forwardRef<SubjectMasteryAnalyticsRef, SubjectMa
 
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      {/* Title */}
+      {title && (
+        <div className="px-3 py-2 border-b border-gray-100">
+          <h3 className="text-sm font-medium text-gray-900">{title}</h3>
+        </div>
+      )}
+      
       {/* Chart */}
       <div className="p-3">
         {data ? (

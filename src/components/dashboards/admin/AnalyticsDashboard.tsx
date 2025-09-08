@@ -23,7 +23,7 @@ const AnalyticsDashboard: React.FC = () => {
   const { user, token } = useAuth();
   const analyticsRef = useRef<ScoreTrendAnalyticsRef>(null);
   const subjectMasteryRef = useRef<SubjectMasteryAnalyticsRef>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'class' | 'subject' | 'grade' | 'teacher' | 'subject-mastery'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'class' | 'subject' | 'grade' | 'teacher'>('overview');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
     start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days ago
@@ -78,11 +78,9 @@ const AnalyticsDashboard: React.FC = () => {
   }, [token]);
   
   const handleRefresh = () => {
-    if (activeTab === 'subject-mastery') {
-      subjectMasteryRef.current?.refreshData();
-    } else {
-      analyticsRef.current?.refreshData();
-    }
+    // Refresh both charts
+    analyticsRef.current?.refreshData();
+    subjectMasteryRef.current?.refreshData();
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => {
@@ -124,13 +122,9 @@ const AnalyticsDashboard: React.FC = () => {
     setSelectedExpertise('');
   };
 
-  const getDefaultFilters = () => {
+  // Common filters for both charts
+  const getCommonFilters = () => {
     const filters: any = {};
-
-    // Include group_by based on active tab (only for score trend analytics)
-    if (activeTab !== 'subject-mastery') {
-      filters.group_by = activeTab === 'overview' ? 'class' : activeTab;
-    }
 
     // Add academic period if available
     if (activeAcademicPeriod) {
@@ -165,13 +159,26 @@ const AnalyticsDashboard: React.FC = () => {
     return filters;
   };
 
-  const getChartTitle = () => {
+  // Specific filters for Score Trend Analytics (includes group_by)
+  const getScoreTrendFilters = () => {
+    const commonFilters = getCommonFilters();
+    return {
+      ...commonFilters,
+      group_by: activeTab === 'overview' ? 'class' : activeTab
+    };
+  };
+
+  // Specific filters for Subject Mastery Analytics (no group_by)
+  const getSubjectMasteryFilters = () => {
+    return getCommonFilters();
+  };
+
+  const getScoreTrendChartTitle = () => {
     switch (activeTab) {
       case 'class': return 'Tren Nilai Berdasarkan Kelas';
       case 'subject': return 'Tren Nilai Berdasarkan Mata Pelajaran';
       case 'grade': return 'Tren Nilai Berdasarkan Jenjang';
       case 'teacher': return 'Tren Nilai Berdasarkan Guru';
-      case 'subject-mastery': return 'Penguasaan Mata Pelajaran';
       default: return 'Tren Nilai Keseluruhan';
     }
   };
@@ -219,8 +226,7 @@ const AnalyticsDashboard: React.FC = () => {
     { id: 'class', label: 'Kelas', icon: Users },
     { id: 'subject', label: 'Mata Pelajaran', icon: BookOpen },
     { id: 'grade', label: 'Jenjang', icon: GraduationCap },
-    { id: 'teacher', label: 'Guru', icon: Users },
-    { id: 'subject-mastery', label: 'Penguasaan Mapel', icon: Target }
+    { id: 'teacher', label: 'Guru', icon: Users }
   ];
 
   return (
@@ -437,11 +443,12 @@ const AnalyticsDashboard: React.FC = () => {
           </button>
         </div>
 
-        {/* Analytics Chart */}
+        {/* Analytics Charts */}
         <div className="space-y-3">
+          {/* Score Trend Analytics */}
           <div className="bg-white shadow-sm rounded-lg p-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-medium text-gray-900">{getChartTitle()}</h2>
+              <h2 className="text-lg font-medium text-gray-900">{getScoreTrendChartTitle()}</h2>
               <button
                 onClick={handleRefresh}
                 className="p-2 hover:bg-gray-100 rounded-md transition-colors"
@@ -451,17 +458,28 @@ const AnalyticsDashboard: React.FC = () => {
             </div>
           </div>
           
-          {activeTab === 'subject-mastery' ? (
-            <SubjectMasteryAnalytics 
-              ref={subjectMasteryRef}
-              defaultFilters={getDefaultFilters()}
-            />
-          ) : (
-            <ScoreTrendAnalytics 
-              ref={analyticsRef}
-              defaultFilters={getDefaultFilters()}
-            />
-          )}
+          <ScoreTrendAnalytics 
+            ref={analyticsRef}
+            defaultFilters={getScoreTrendFilters()}
+          />
+          
+          {/* Subject Mastery Analytics */}
+          <div className="bg-white shadow-sm rounded-lg p-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-medium text-gray-900">Penguasaan Mata Pelajaran</h2>
+              <button
+                onClick={handleRefresh}
+                className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          
+          <SubjectMasteryAnalytics 
+            ref={subjectMasteryRef}
+            defaultFilters={getSubjectMasteryFilters()}
+          />
         </div>
 
         {/* Filter Modal */}
