@@ -432,6 +432,8 @@ const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
           )}
         </div>
 
+      </div>
+
       {/* Mobile Filter Button */}
       <div className="md:hidden">
         <button
