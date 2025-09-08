@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Filter, RotateCcw, Target, BookOpen, GraduationCap, Users, MoreHorizontal } from 'lucide-react';
 import { OverflowList } from 'react-overflow-list';
 import FilterModal from '@/components/modals/FilterModal';
@@ -103,17 +103,17 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
     });
   };
 
-  const getGradeLabel = (gradeLevel: number) => {
+  const getGradeLabel = useCallback((gradeLevel: number) => {
     switch (gradeLevel) {
       case 10: return 'X';
       case 11: return 'XI';
       case 12: return 'XII';
       default: return gradeLevel.toString();
     }
-  };
+  }, []);
 
   // Dynamic filter configuration
-  const getFilterConfig = (): FilterConfig[] => {
+  const filterConfig = useMemo((): FilterConfig[] => {
     const config: FilterConfig[] = [
       {
         id: 'dateStart',
@@ -216,9 +216,29 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
 
     // Sort by priority
     return config.sort((a, b) => a.priority - b.priority);
-  };
+  }, [
+    filters.dateRange.start,
+    filters.dateRange.end,
+    filters.selectedClass,
+    filters.selectedSubject,
+    filters.selectedGrade,
+    filters.selectedExpertise,
+    filters.minExamsPerSubject,
+    filters.includeZeroScores,
+    filterOptions.classes,
+    filterOptions.subjects,
+    filterOptions.expertisePrograms,
+    getGradeLabel,
+    handleDateChange,
+    handleClassChange,
+    handleSubjectChange,
+    handleGradeChange,
+    handleExpertiseChange,
+    handleMinExamsChange,
+    handleIncludeZeroScoresChange
+  ]);
 
-  const getActiveFilterCount = () => {
+  const getActiveFilterCount = useCallback(() => {
     let count = 0;
     
     const defaultStart = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -233,14 +253,14 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
     if (filters.minExamsPerSubject !== 1) count++;
     if (filters.includeZeroScores !== false) count++;
     return count;
-  };
+  }, [filters]);
 
-  const hasActiveFilters = () => {
+  const hasActiveFilters = useCallback(() => {
     return getActiveFilterCount() > 0;
-  };
+  }, [getActiveFilterCount]);
 
   // Render individual filter item
-  const renderFilterItem = (item: FilterConfig) => {
+  const renderFilterItem = useCallback((item: FilterConfig) => {
     return (
       <div
         key={item.id}
@@ -291,9 +311,24 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
         )}
       </div>
     );
-  };
+  }, [filterOptionsLoading]);
 
-  const filterConfig = getFilterConfig();
+  // Memoize overflow renderer
+  const renderOverflow = useCallback((overflowItems: FilterConfig[]) => (
+    <button
+      onClick={() => setIsFilterModalOpen(true)}
+      className="flex-shrink-0 flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+      title={`${overflowItems.length} filter tersembunyi`}
+    >
+      <MoreHorizontal className="w-4 h-4" />
+      <span>More</span>
+      {overflowItems.length > 0 && (
+        <span className="bg-purple-100 text-purple-800 text-xs font-medium px-1.5 py-0.5 rounded-full">
+          {overflowItems.length}
+        </span>
+      )}
+    </button>
+  ), [setIsFilterModalOpen]);
 
   return (
     <>
@@ -331,21 +366,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
         <OverflowList
           items={filterConfig}
           itemRenderer={renderFilterItem}
-          overflowRenderer={(overflowItems) => (
-            <button
-              onClick={() => setIsFilterModalOpen(true)}
-              className="flex-shrink-0 flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-              title={`${overflowItems.length} filter tersembunyi`}
-            >
-              <MoreHorizontal className="w-4 h-4" />
-              <span>More</span>
-              {overflowItems.length > 0 && (
-                <span className="bg-purple-100 text-purple-800 text-xs font-medium px-1.5 py-0.5 rounded-full">
-                  {overflowItems.length}
-                </span>
-              )}
-            </button>
-          )}
+          overflowRenderer={renderOverflow}
           className="flex items-end space-x-3 min-w-0"
         />
       </div>
