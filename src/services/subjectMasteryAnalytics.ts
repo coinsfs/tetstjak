@@ -16,11 +16,11 @@ class SubjectMasteryAnalyticsService extends BaseService {
   }
 
   async postSubjectMasteryAnalytics(token: string, filters: SubjectMasteryFilters): Promise<SubjectMasteryResponse> {
-    return this.post<SubjectMasteryResponse>('/analytics/subject-mastery', filters, token);
+    return this.post<SubjectMasteryResponse>('/exam-analytics/subject-mastery', filters, token);
   }
 
   async clearCache(token: string): Promise<void> {
-    return this.delete('/analytics/subject-mastery/cache', token);
+    return this.delete('/exam-analytics/subject-mastery/cache', token);
   }
 }
 
