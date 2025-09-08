@@ -96,9 +96,9 @@ const ScoreTrendAnalytics: React.FC<ScoreTrendAnalyticsProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-4 sm:p-5 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
           <button
@@ -150,7 +150,7 @@ const ScoreTrendAnalytics: React.FC<ScoreTrendAnalyticsProps> = ({
       
       {/* Footer */}
       {data && (
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 text-sm text-gray-500">
+        <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-sm text-gray-500">
           <div className="flex flex-wrap items-center justify-between">
             <div>
               Data diperbarui: {new Date(data.metadata.generated_at).toLocaleString('id-ID')}

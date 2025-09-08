@@ -113,10 +113,10 @@ const AnalyticsDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 mb-6">
+        <div className="bg-white shadow-sm rounded-lg p-3 sm:p-4">
           <div className="flex items-center space-x-3 sm:space-x-4">
             <button
               onClick={() => navigate('/admin')}
@@ -141,7 +141,7 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="bg-white border border-gray-200 rounded-lg mb-6">
+        <div className="bg-white shadow-sm rounded-lg">
           <nav className="flex overflow-x-auto border-b border-gray-200" aria-label="Tabs">
             {tabs.map((tab) => {
               const IconComponent = tab.icon;
@@ -168,7 +168,7 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
 
         {/* Desktop Filters */}
-        <div className="hidden md:block bg-white border border-gray-200 rounded-lg p-4 mb-6">
+        <div className="hidden md:block bg-white shadow-sm rounded-lg p-3">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-medium text-gray-900">Filter</h3>
             {hasActiveFilters() && (
@@ -260,7 +260,7 @@ const AnalyticsDashboard: React.FC = () => {
             
             {/* Teacher Filter - Only show when teacher tab is active */}
             {activeTab === 'teacher' && (
-              <div>
+              <div className="col-span-full sm:col-span-1">
                 <label className="block text-xs text-gray-600 mb-1">
                   Guru
                 </label>
@@ -280,10 +280,10 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
 
         {/* Mobile Filter Button */}
-        <div className="md:hidden mb-6">
+        <div className="md:hidden">
           <button
             onClick={() => setIsFilterModalOpen(true)}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-white shadow-sm rounded-lg hover:bg-gray-50 transition-colors"
           >
             <Filter className="w-4 h-4 text-gray-600" />
             <span className="text-sm font-medium text-gray-700">Filter Data</span>
@@ -296,12 +296,12 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
 
         {/* Analytics Chart */}
-        <div className="bg-white border border-gray-200 rounded-lg">
-          <div className="p-4 border-b border-gray-200">
+        <div className="bg-white shadow-sm rounded-lg">
+          <div className="p-3 border-b border-gray-200">
             <h2 className="text-lg font-medium text-gray-900">{getChartTitle()}</h2>
           </div>
           
-          <div className="p-4">
+          <div className="p-3">
             <ScoreTrendAnalytics 
               title=""
               defaultFilters={getDefaultFilters()}
