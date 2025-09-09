@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Filter, BarChart3, Users, BookOpen, GraduationCap, MoreHorizontal } from 'lucide-react';
 import FilterModal from '@/components/modals/FilterModal';
+import AsyncSelect from 'react-select/async';
 import { Class } from '@/types/class';
 import { Subject } from '@/types/subject';
 import { ExpertiseProgram } from '@/types/expertise';
@@ -34,6 +35,8 @@ interface ScoreTrendFilterSectionProps {
   filterOptionsLoading: boolean;
   onClearFilters: () => void;
   visibleFilterIds?: string[];
+  loadStudentOptions?: (inputValue: string, callback: (options: any[]) => void) => void;
+  loadTeacherOptions?: (inputValue: string, callback: (options: any[]) => void) => void;
 }
 
 interface FilterConfig {
@@ -53,7 +56,9 @@ const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
   filterOptions,
   filterOptionsLoading,
   onClearFilters,
-  visibleFilterIds
+  visibleFilterIds,
+  loadStudentOptions,
+  loadTeacherOptions
 }) => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
@@ -303,6 +308,79 @@ const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
 
   // Render individual filter item
   const renderFilterItem = (filter: FilterConfig) => {
+    // Special handling for student and teacher filters with AsyncSelect
+    if (filter.id === 'student' && loadStudentOptions) {
+      return (
+        <div key={filter.id} className="flex-1">
+          <label className="block text-xs text-gray-600 mb-0.5">
+            {filter.label}
+          </label>
+          <AsyncSelect
+            cacheOptions
+            defaultOptions
+            loadOptions={loadStudentOptions}
+            value={filter.value ? { value: filter.value, label: filterOptions.students.find(s => s._id === filter.value)?.full_name || filter.value } : null}
+            onChange={(selectedOption) => {
+              const event = {
+                target: { value: selectedOption ? selectedOption.value : '' }
+              } as React.ChangeEvent<HTMLSelectElement>;
+              filter.onChange(event);
+            }}
+            isClearable
+            placeholder="Cari siswa..."
+            className="text-xs"
+            styles={{
+              control: (provided) => ({
+                ...provided,
+                minHeight: '30px',
+                fontSize: '12px'
+              }),
+              option: (provided) => ({
+                ...provided,
+                fontSize: '12px'
+              })
+            }}
+          />
+        </div>
+      );
+    }
+
+    if (filter.id === 'teacher' && loadTeacherOptions) {
+      return (
+        <div key={filter.id} className="flex-1">
+          <label className="block text-xs text-gray-600 mb-0.5">
+            {filter.label}
+          </label>
+          <AsyncSelect
+            cacheOptions
+            defaultOptions
+            loadOptions={loadTeacherOptions}
+            value={filter.value ? { value: filter.value, label: filterOptions.teachers.find(t => t._id === filter.value)?.full_name || filter.value } : null}
+            onChange={(selectedOption) => {
+              const event = {
+                target: { value: selectedOption ? selectedOption.value : '' }
+              } as React.ChangeEvent<HTMLSelectElement>;
+              filter.onChange(event);
+            }}
+            isClearable
+            placeholder="Cari guru..."
+            className="text-xs"
+            styles={{
+              control: (provided) => ({
+                ...provided,
+                minHeight: '30px',
+                fontSize: '12px'
+              }),
+              option: (provided) => ({
+                ...provided,
+                fontSize: '12px'
+              })
+            }}
+          />
+        </div>
+      );
+    }
+
     return (
       <div
         key={filter.id}
@@ -466,6 +544,8 @@ const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
         academicPeriods={filterOptions.academicPeriods}
         onStudentChange={handleStudentChange}
         onAcademicPeriodChange={handleAcademicPeriodChange}
+        loadStudentOptions={loadStudentOptions}
+        loadTeacherOptions={loadTeacherOptions}
       />
     </>
   );

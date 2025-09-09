@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Filter, RotateCcw } from 'lucide-react';
+import AsyncSelect from 'react-select/async';
 import { Class } from '@/types/class';
 import { Subject } from '@/types/subject';
 import { ExpertiseProgram } from '@/types/expertise';
@@ -36,6 +37,8 @@ interface FilterModalProps {
   onAcademicPeriodChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onClearFilters: () => void;
   getActiveFilterCount: () => number;
+  loadStudentOptions?: (inputValue: string, callback: (options: any[]) => void) => void;
+  loadTeacherOptions?: (inputValue: string, callback: (options: any[]) => void) => void;
 }
 
 interface FilterConfig {
@@ -77,7 +80,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
   onStudentChange,
   onAcademicPeriodChange,
   onClearFilters,
-  getActiveFilterCount
+  visibleFilterIds,
+  loadStudentOptions,
+  loadTeacherOptions
 }) => {
   if (!isOpen) return null;
 
@@ -223,6 +228,69 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const sortedFilters = filtersToDisplay.sort((a, b) => a.priority - b.priority);
 
   const renderFilterItem = (filter: FilterConfig) => {
+    // Special handling for student and teacher filters with AsyncSelect
+    if (filter.id === 'student' && loadStudentOptions) {
+      return (
+        <div key={filter.id} className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {filter.label}
+          </label>
+          <AsyncSelect
+            cacheOptions
+            defaultOptions
+            loadOptions={loadStudentOptions}
+            value={filter.value ? { value: filter.value, label: students.find(s => s._id === filter.value)?.full_name || filter.value } : null}
+            onChange={(selectedOption) => {
+              const event = {
+                target: { value: selectedOption ? selectedOption.value : '' }
+              } as React.ChangeEvent<HTMLSelectElement>;
+              filter.onChange(event);
+            }}
+            isClearable
+            placeholder="Cari siswa..."
+            className="text-sm"
+            styles={{
+              control: (provided) => ({
+                ...provided,
+                minHeight: '38px'
+              })
+            }}
+          />
+        </div>
+      );
+    }
+
+    if (filter.id === 'teacher' && loadTeacherOptions) {
+      return (
+        <div key={filter.id} className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {filter.label}
+          </label>
+          <AsyncSelect
+            cacheOptions
+            defaultOptions
+            loadOptions={loadTeacherOptions}
+            value={filter.value ? { value: filter.value, label: teachers.find(t => t._id === filter.value)?.full_name || filter.value } : null}
+            onChange={(selectedOption) => {
+              const event = {
+                target: { value: selectedOption ? selectedOption.value : '' }
+              } as React.ChangeEvent<HTMLSelectElement>;
+              filter.onChange(event);
+            }}
+            isClearable
+            placeholder="Cari guru..."
+            className="text-sm"
+            styles={{
+              control: (provided) => ({
+                ...provided,
+                minHeight: '38px'
+              })
+            }}
+          />
+        </div>
+      );
+    }
+
     return (
       <div key={filter.id} className="space-y-2">
         {filter.type !== 'checkbox' && (

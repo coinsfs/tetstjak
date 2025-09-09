@@ -63,6 +63,57 @@ const AnalyticsDashboard: React.FC = () => {
   const [activeAcademicPeriod, setActiveAcademicPeriod] = useState<AcademicPeriod | null>(null);
   const [filterOptionsLoading, setFilterOptionsLoading] = useState(true);
 
+  // Load options functions for AsyncSelect
+  const loadStudentOptions = (inputValue: string, callback: (options: any[]) => void) => {
+    if (!token) {
+      callback([]);
+      return;
+    }
+
+    // Debounce the API call
+    const timeoutId = setTimeout(async () => {
+      try {
+        const students = await userService.getBasicStudents(token, inputValue);
+        const options = students.map(student => ({
+          value: student._id,
+          label: student.full_name
+        }));
+        callback(options);
+      } catch (error) {
+        console.error('Error loading student options:', error);
+        callback([]);
+      }
+    }, 500);
+
+    // Store timeout ID for potential cleanup
+    return () => clearTimeout(timeoutId);
+  };
+
+  const loadTeacherOptions = (inputValue: string, callback: (options: any[]) => void) => {
+    if (!token) {
+      callback([]);
+      return;
+    }
+
+    // Debounce the API call
+    const timeoutId = setTimeout(async () => {
+      try {
+        const teachers = await userService.getBasicTeachers(token, inputValue);
+        const options = teachers.map(teacher => ({
+          value: teacher._id,
+          label: teacher.full_name
+        }));
+        callback(options);
+      } catch (error) {
+        console.error('Error loading teacher options:', error);
+        callback([]);
+      }
+    }, 500);
+
+    // Store timeout ID for potential cleanup
+    return () => clearTimeout(timeoutId);
+  };
+
   // Fetch filter options on component mount
   useEffect(() => {
     const fetchFilterOptions = async () => {
@@ -266,6 +317,8 @@ const AnalyticsDashboard: React.FC = () => {
             }}
             filterOptionsLoading={filterOptionsLoading}
             onClearFilters={clearScoreTrendFilters}
+            loadStudentOptions={loadStudentOptions}
+            loadTeacherOptions={loadTeacherOptions}
           />
           
           {/* Score Trend Chart */}
