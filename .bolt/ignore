@@ -28,7 +28,7 @@ src/components/profile/UserActivity.tsx
 src/components/profile/SecuritySettings.tsx
 src/components/profile/ProfileSettings.tsx
 src/components/profile/ProfileInformation.tsx
-src/components/profile/GeneralSettings.tsx
+
 src/components/modals/TeacherDeleteModal.tsx
 src/components/modals/SubjectDeleteModal.tsx
 src/components/modals/StudentDeleteModal.tsx
