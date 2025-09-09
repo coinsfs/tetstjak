@@ -74,7 +74,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick, isOpen, onCl
 
       {/* Sidebar - Fixed positioning for desktop, overlay for mobile */}
       <div className={`
-        w-64 bg-white dark:bg-gray-800 shadow-lg flex flex-col h-full
+        w-64 bg-white shadow-lg flex flex-col h-full
         ${isOpen 
           ? 'fixed top-0 left-0 z-50 transform translate-x-0 lg:relative lg:z-auto' 
           : 'fixed top-0 left-0 z-50 transform -translate-x-full lg:relative lg:translate-x-0 lg:z-auto'
@@ -85,21 +85,21 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick, isOpen, onCl
         <div className="lg:hidden flex justify-end p-4 flex-shrink-0">
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>
 
         {/* Logo/Header - Fixed */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
               <School className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900 dark:text-white">Admin Panel</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">School Management</p>
+              <h1 className="text-lg font-bold text-gray-900">Admin Panel</h1>
+              <p className="text-sm text-gray-500">School Management</p>
             </div>
           </div>
         </div>
@@ -112,18 +112,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick, isOpen, onCl
                 <button
                   onClick={() => handleMenuClick(item.id)}
                   onMouseEnter={() => handleMenuHover(item)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors group ${
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
                     activeMenu === item.id
-                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-r-2 border-blue-700'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
+                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                      : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <item.icon className={`w-5 h-5 flex-shrink-0 transition-colors ${
-                    activeMenu === item.id 
-                      ? 'text-blue-600 dark:text-blue-400' 
-                      : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'
-                  }`} />
-                  <span className="font-medium transition-colors">{item.label}</span>
+                  <item.icon className="w-5 h-5 flex-shrink-0" />
+                  <span className="font-medium">{item.label}</span>
                 </button>
               </li>
             ))}
@@ -131,28 +127,20 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick, isOpen, onCl
         </nav>
 
         {/* Bottom Menu - Fixed at bottom */}
-        <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="px-4 py-4 border-t border-gray-200 flex-shrink-0">
           <ul className="space-y-2">
             {bottomMenuItems.map((item) => (
               <li key={item.id}>
                 <button
                   onClick={() => handleMenuClick(item.id, item.action)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors group ${
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
                     activeMenu === item.id
-                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
-                      : item.id === 'logout'
-                      ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
-                  }`}
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  } ${item.id === 'logout' ? 'hover:bg-red-50 hover:text-red-700' : ''}`}
                 >
-                  <item.icon className={`w-5 h-5 flex-shrink-0 transition-colors ${
-                    activeMenu === item.id 
-                      ? 'text-blue-600 dark:text-blue-400' 
-                      : item.id === 'logout' 
-                      ? 'text-red-500 dark:text-red-400' 
-                      : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'
-                  }`} />
-                  <span className="font-medium transition-colors">{item.label}</span>
+                  <item.icon className="w-5 h-5 flex-shrink-0" />
+                  <span className="font-medium">{item.label}</span>
                 </button>
               </li>
             ))}
