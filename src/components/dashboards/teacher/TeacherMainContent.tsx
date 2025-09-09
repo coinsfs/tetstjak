@@ -12,7 +12,7 @@ import TeacherAnalyticsPage from './pages/TeacherAnalyticsPage';
 import TeacherExamAnalyticsPage from './pages/TeacherExamAnalyticsPage';
 import TeacherProfilePage from './pages/TeacherProfilePage';
 import TeacherQuestionSetsPage from './pages/TeacherQuestionSetsPage';
-import TeacherAnalyticsPage from './pages/TeacherAnalyticsPage';
+import TeacherScoreTrendAnalyticsPage from './pages/TeacherScoreTrendAnalyticsPage';
 
 interface TeacherMainContentProps {
   user: UserProfile | null;
@@ -20,6 +20,7 @@ interface TeacherMainContentProps {
   dashboardStats?: TeacherDashboardStats;
   statsLoading?: boolean;
 }
+
 const TeacherMainContent: React.FC<TeacherMainContentProps> = ({
   user,
   currentPath,
