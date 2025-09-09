@@ -28,7 +28,7 @@ const LoginForm: React.FC = () => {
   const isFormValid = username.trim() !== '' && password.trim() !== '';
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       {/* Subtle Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-20 left-20 w-64 h-64 bg-slate-600 rounded-full blur-3xl"></div>
@@ -69,17 +69,17 @@ const LoginForm: React.FC = () => {
                 NIS / NKTAM
               </label>
               <div className="relative">
-                <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors duration-200 ${
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
                   focusedField === 'username' ? 'text-slate-600' : 'text-slate-400'
                 }`}>
-                  <User className="h-5 w-5" />
+          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-300">
                 </div>
                 <input
                   id="username"
-                  type="text"
+        <form className="mt-8 space-y-6 bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md" onSubmit={handleSubmit}>
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  onFocus={() => setFocusedField('username')}
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   onBlur={() => setFocusedField(null)}
                   className={`w-full pl-12 pr-4 py-4 bg-slate-50 border-2 rounded-xl text-slate-800 placeholder-slate-400 transition-all duration-300 ${
                     focusedField === 'username' 
@@ -87,14 +87,14 @@ const LoginForm: React.FC = () => {
                       : 'border-slate-200 hover:border-slate-300'
                   }`}
                   placeholder="Masukkan NIS atau NKTAM"
-                  required
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 />
               </div>
             </div>
 
             {/* Password Input */}
             <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-semibold text-slate-700">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Password
               </label>
               <div className="relative">
@@ -102,7 +102,7 @@ const LoginForm: React.FC = () => {
                   focusedField === 'password' ? 'text-slate-600' : 'text-slate-400'
                 }`}>
                   <Lock className="h-5 w-5" />
-                </div>
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
@@ -181,13 +181,13 @@ const LoginForm: React.FC = () => {
                 <span>Modern</span>
               </div>
             </div>
-          </div>
+                  <AlertCircle className="h-5 w-5 text-red-400 dark:text-red-300" />
         </div>
 
-        {/* Footer */}
+                  <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
         <div className="mt-6 text-center">
           <p className="text-slate-500 text-sm">
-            © 2025 School Management System
+                  <div className="mt-2 text-sm text-red-700 dark:text-red-300">
           </p>
         </div>
       </div>
