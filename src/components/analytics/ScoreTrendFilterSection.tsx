@@ -29,6 +29,7 @@ interface ScoreTrendFilterSectionProps {
   filterOptions: FilterOptions;
   filterOptionsLoading: boolean;
   onClearFilters: () => void;
+  visibleFilterIds?: string[];
 }
 
 interface FilterConfig {
@@ -47,7 +48,8 @@ const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
   onFiltersChange,
   filterOptions,
   filterOptionsLoading,
-  onClearFilters
+  onClearFilters,
+  visibleFilterIds
 }) => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
@@ -217,7 +219,16 @@ const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
     ];
 
     // Filter out hidden items and sort by priority
-    return config.filter(item => !item.hidden).sort((a, b) => a.priority - b.priority);
+    const filteredConfig = config.filter(item => !item.hidden);
+    
+    // If visibleFilterIds is provided, only show those filters
+    if (visibleFilterIds && visibleFilterIds.length > 0) {
+      return filteredConfig
+        .filter(item => visibleFilterIds.includes(item.id))
+        .sort((a, b) => a.priority - b.priority);
+    }
+    
+    return filteredConfig.sort((a, b) => a.priority - b.priority);
   };
 
   const getActiveFilterCount = () => {
