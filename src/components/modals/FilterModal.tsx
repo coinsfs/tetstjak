@@ -80,7 +80,6 @@ const FilterModal: React.FC<FilterModalProps> = ({
   onStudentChange,
   onAcademicPeriodChange,
   onClearFilters,
-  visibleFilterIds,
   loadStudentOptions,
   loadTeacherOptions
 }) => {
