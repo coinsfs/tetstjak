@@ -19,6 +19,7 @@ interface TeacherMainContentProps {
   currentPath: string;
   dashboardStats?: TeacherDashboardStats;
   statsLoading?: boolean;
+}
 const TeacherMainContent: React.FC<TeacherMainContentProps> = ({
   user,
   currentPath,
