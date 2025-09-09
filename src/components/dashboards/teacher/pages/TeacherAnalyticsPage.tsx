@@ -1,52 +1,262 @@
-import React from 'react';
-import { BarChart3, TrendingUp } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
+import { ArrowLeft, BarChart3, RotateCcw } from 'lucide-react';
+import ScoreTrendAnalytics, { ScoreTrendAnalyticsRef } from '@/components/analytics/ScoreTrendAnalytics';
+import ScoreTrendFilterSection from '@/components/analytics/ScoreTrendFilterSection';
+import { classService } from '@/services/class';
+import { subjectService } from '@/services/subject';
+import { expertiseProgramService } from '@/services/expertise';
+import { userService } from '@/services/user';
+import { studentExamService } from '@/services/studentExam';
+import { convertWIBToUTC } from '@/utils/timezone';
+import { Class } from '@/types/class';
+import { Subject } from '@/types/subject';
+import { ExpertiseProgram } from '@/types/expertise';
+import { BasicTeacher } from '@/types/user';
+import { AcademicPeriod } from '@/types/common';
+import toast from 'react-hot-toast';
 
 const TeacherAnalyticsPage: React.FC = () => {
   const { navigate } = useRouter();
+  const { user, token } = useAuth();
+  const analyticsRef = useRef<ScoreTrendAnalyticsRef>(null);
+  
+  // Score Trend Filters - automatically set teacher_id to current user
+  const [scoreTrendFilters, setScoreTrendFilters] = useState({
+    dateRange: {
+      start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      end: new Date().toISOString().split('T')[0]
+    },
+    selectedClass: '',
+    selectedSubject: '',
+    selectedGrade: '',
+    selectedTeacher: user?._id || '', // Automatically set to current teacher
+    selectedExpertise: '',
+    activeTab: 'teacher' // Default to teacher view for teacher dashboard
+  });
+  
+  // Filter options state
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [teachers, setTeachers] = useState<BasicTeacher[]>([]);
+  const [expertisePrograms, setExpertisePrograms] = useState<ExpertiseProgram[]>([]);
+  const [activeAcademicPeriod, setActiveAcademicPeriod] = useState<AcademicPeriod | null>(null);
+  const [filterOptionsLoading, setFilterOptionsLoading] = useState(true);
+
+  // Update teacher filter when user changes
+  useEffect(() => {
+    if (user?._id) {
+      setScoreTrendFilters(prev => ({
+        ...prev,
+        selectedTeacher: user._id
+      }));
+    }
+  }, [user?._id]);
+
+  // Fetch filter options on component mount
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      if (!token) return;
+      
+      try {
+        setFilterOptionsLoading(true);
+        
+        // Fetch all filter options in parallel
+        const [classesResponse, subjectsResponse, teachersResponse, expertiseResponse, academicPeriodResponse] = await Promise.all([
+          classService.getClasses(token, { limit: 100 }),
+          subjectService.getSubjects(token, { limit: 100 }),
+          userService.getBasicTeachers(token),
+          expertiseProgramService.getExpertisePrograms(token, { limit: 100 }),
+          studentExamService.getActiveAcademicPeriod(token).catch(() => null)
+        ]);
+        
+        setClasses(classesResponse.data || []);
+        setSubjects(subjectsResponse.data || []);
+        setTeachers(teachersResponse || []);
+        setExpertisePrograms(expertiseResponse.data || []);
+        setActiveAcademicPeriod(academicPeriodResponse);
+        
+      } catch (error) {
+        console.error('Error fetching filter options:', error);
+        toast.error('Gagal memuat opsi filter');
+      } finally {
+        setFilterOptionsLoading(false);
+      }
+    };
+
+    fetchFilterOptions();
+  }, [token]);
+  
+  const handleRefresh = () => {
+    // Refresh analytics chart
+    analyticsRef.current?.refreshData();
+  };
+
+  // Score Trend Filter Handlers
+  const handleScoreTrendFiltersChange = (newFilters: typeof scoreTrendFilters) => {
+    // Ensure teacher_id is always set to current user
+    setScoreTrendFilters({
+      ...newFilters,
+      selectedTeacher: user?._id || ''
+    });
+  };
+
+  const clearScoreTrendFilters = () => {
+    setScoreTrendFilters({
+      dateRange: {
+        start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        end: new Date().toISOString().split('T')[0]
+      },
+      selectedClass: '',
+      selectedSubject: '',
+      selectedGrade: '',
+      selectedTeacher: user?._id || '', // Keep current teacher
+      selectedExpertise: '',
+      activeTab: 'teacher'
+    });
+  };
+
+  // Common filters helper
+  const getCommonFilters = (filters: any) => {
+    const commonFilters: any = {};
+
+    // Add academic period if available
+    if (activeAcademicPeriod) {
+      commonFilters.academic_period_id = activeAcademicPeriod._id;
+    }
+
+    // Convert date range to UTC ISO format
+    if (filters.dateRange.start) {
+      commonFilters.start_date = convertWIBToUTC(filters.dateRange.start + 'T00:00');
+    }
+    if (filters.dateRange.end) {
+      commonFilters.end_date = convertWIBToUTC(filters.dateRange.end + 'T23:59');
+    }
+    
+    // Only add other parameters if they have values
+    if (filters.selectedClass) {
+      commonFilters.class_id = filters.selectedClass;
+    }
+    if (filters.selectedSubject) {
+      commonFilters.subject_id = filters.selectedSubject;
+    }
+    if (filters.selectedGrade) {
+      commonFilters.grade_level = parseInt(filters.selectedGrade);
+    }
+    if (filters.selectedTeacher) {
+      commonFilters.teacher_id = filters.selectedTeacher;
+    }
+    if (filters.selectedExpertise) {
+      commonFilters.expertise_id = filters.selectedExpertise;
+    }
+
+    return commonFilters;
+  };
+
+  // Specific filters for Score Trend Analytics
+  const getScoreTrendFilters = () => {
+    const commonFilters = getCommonFilters(scoreTrendFilters);
+    return {
+      ...commonFilters,
+      group_by: scoreTrendFilters.activeTab === 'overview' ? 'class' : scoreTrendFilters.activeTab,
+      // Ensure teacher_id is always included for teacher dashboard
+      teacher_id: user?._id || ''
+    };
+  };
+
+  const getScoreTrendChartTitle = () => {
+    switch (scoreTrendFilters.activeTab) {
+      case 'class': return 'Tren Nilai Berdasarkan Kelas';
+      case 'subject': return 'Tren Nilai Berdasarkan Mata Pelajaran';
+      case 'grade': return 'Tren Nilai Berdasarkan Jenjang';
+      case 'teacher': return 'Tren Nilai Saya';
+      default: return 'Tren Nilai Keseluruhan';
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <div className="text-center py-8">
-          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <BarChart3 className="h-8 w-8 text-orange-600" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Analitik Pembelajaran
-          </h3>
-          <p className="text-gray-600 max-w-md mx-auto mb-6">
-            Pilih jenis analitik yang ingin Anda lihat:
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        {/* Header */}
+        <div className="bg-white shadow-sm rounded-lg p-3">
+          <div className="flex items-center space-x-3 sm:space-x-4">
             <button
-              onClick={() => navigate('/teacher/score-trend-analytics')}
-              className="flex flex-col items-center p-6 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all"
+              onClick={() => navigate('/teacher')}
+              className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-md transition-colors"
             >
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
-                <TrendingUp className="h-6 w-6 text-blue-600" />
-              </div>
-              <h4 className="font-medium text-gray-900 mb-1">Tren Nilai Ujian</h4>
-              <p className="text-sm text-gray-600 text-center">
-                Lihat tren perkembangan nilai ujian siswa dari waktu ke waktu
-              </p>
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
             </button>
-            
-            <div className="flex flex-col items-center p-6 bg-white border border-gray-200 rounded-lg opacity-50">
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-3">
-                <BarChart3 className="h-6 w-6 text-orange-600" />
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
               </div>
-              <h4 className="font-medium text-gray-900 mb-1">Analitik Lainnya</h4>
-              <p className="text-sm text-gray-600 text-center">
-                Fitur analitik tambahan sedang dalam pengembangan
-              </p>
-              <div className="mt-3 inline-flex items-center px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-xs font-medium">
-                Coming Soon
+              <div>
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900">
+                  Dashboard Analitik
+                </h1>
+                <p className="text-sm sm:text-base text-gray-600 hidden sm:block">
+                  Analisis tren nilai ujian kelas Anda
+                </p>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Score Trend Analytics Section */}
+        <div className="space-y-3">
+          {/* Score Trend Filter Section */}
+          <ScoreTrendFilterSection
+            filters={scoreTrendFilters}
+            onFiltersChange={handleScoreTrendFiltersChange}
+            filterOptions={{
+              classes,
+              subjects,
+              teachers,
+              expertisePrograms
+            }}
+            filterOptionsLoading={filterOptionsLoading}
+            onClearFilters={clearScoreTrendFilters}
+          />
+          
+          {/* Score Trend Chart */}
+          <div className="bg-white shadow-sm rounded-lg p-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-medium text-gray-900">{getScoreTrendChartTitle()}</h2>
+              <button
+                onClick={() => analyticsRef.current?.refreshData()}
+                className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                title="Refresh Tren Nilai"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          
+          <ScoreTrendAnalytics 
+            ref={analyticsRef}
+            defaultFilters={getScoreTrendFilters()}
+          />
+        </div>
+
+        {/* Future Analytics Sections */}
+        <div className="bg-white shadow-sm rounded-lg p-6">
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BarChart3 className="h-8 w-8 text-orange-600" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Analitik Tambahan
+            </h3>
+            <p className="text-gray-600 max-w-md mx-auto mb-6">
+              Fitur analitik tambahan seperti penguasaan mata pelajaran dan performa siswa akan segera hadir.
+            </p>
+            <div className="inline-flex items-center px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-xs font-medium">
+              Coming Soon
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );

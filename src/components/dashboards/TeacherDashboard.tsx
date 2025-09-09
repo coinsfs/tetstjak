@@ -45,7 +45,7 @@ const TeacherDashboard: React.FC = () => {
       case '/teacher/questions':
         return 'Bank Soal';
       case '/teacher/analytics':
-        return 'Analitik';
+        return 'Dashboard Analitik';
       case '/teacher/profile':
         return 'Profile';
       default:
