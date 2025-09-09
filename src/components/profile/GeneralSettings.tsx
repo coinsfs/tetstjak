@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import { 
   Settings, 
   Bell, 
@@ -40,9 +39,9 @@ interface GeneralSettingsData {
 
 const GeneralSettings: React.FC = () => {
   const { user } = useAuth();
-  const { theme, setTheme } = useTheme();
   const [settings, setSettings] = useState<GeneralSettingsData>({
     language: 'id',
+    theme: 'system',
     notifications: {
       email: true,
       push: true,
@@ -71,7 +70,7 @@ const GeneralSettings: React.FC = () => {
     }));
   };
 
-  const handleDirectSettingChange = (key: keyof Omit<GeneralSettingsData, 'theme'>, value: any) => {
+  const handleDirectSettingChange = (key: keyof GeneralSettingsData, value: any) => {
     setSettings(prev => ({
       ...prev,
       [key]: value
@@ -96,8 +95,8 @@ const GeneralSettings: React.FC = () => {
     }
   };
 
-  const getThemeIcon = (themeValue: string) => {
-    switch (themeValue) {
+  const getThemeIcon = (theme: string) => {
+    switch (theme) {
       case 'light': return <Sun className="w-4 h-4" />;
       case 'dark': return <Moon className="w-4 h-4" />;
       default: return <Monitor className="w-4 h-4" />;
@@ -164,9 +163,9 @@ const GeneralSettings: React.FC = () => {
                 ].map((theme) => (
                   <button
                     key={theme.value}
-                    onClick={() => setTheme(themeOption.value as 'light' | 'dark' | 'system')}
+                    onClick={() => handleDirectSettingChange('theme', theme.value)}
                     className={`flex flex-col items-center p-3 border rounded-lg transition-colors ${
-                      theme === themeOption.value
+                      settings.theme === theme.value
                         ? 'border-blue-500 bg-blue-50 text-blue-700'
                         : 'border-gray-300 hover:bg-gray-50'
                     }`}

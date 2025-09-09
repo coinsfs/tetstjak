@@ -28,7 +28,7 @@ const LoginForm: React.FC = () => {
   const isFormValid = username.trim() !== '' && password.trim() !== '';
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Subtle Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-20 left-20 w-64 h-64 bg-slate-600 rounded-full blur-3xl"></div>
@@ -184,9 +184,10 @@ const LoginForm: React.FC = () => {
           </div>
         </div>
 
+        {/* Footer */}
         <div className="mt-6 text-center">
           <p className="text-slate-500 text-sm">
-            © 2024 Sistem Manajemen Sekolah
+            © 2025 School Management System
           </p>
         </div>
       </div>
