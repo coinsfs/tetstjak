@@ -12,7 +12,7 @@ import TeacherAnalyticsPage from './pages/TeacherAnalyticsPage';
 import TeacherExamAnalyticsPage from './pages/TeacherExamAnalyticsPage';
 import TeacherProfilePage from './pages/TeacherProfilePage';
 import TeacherQuestionSetsPage from './pages/TeacherQuestionSetsPage';
-import TeacherScoreTrendAnalyticsPage from './pages/TeacherScoreTrendAnalyticsPage';
+import TeacherAnalyticsPage from './pages/TeacherAnalyticsPage';
 
 interface TeacherMainContentProps {
   user: UserProfile | null;
