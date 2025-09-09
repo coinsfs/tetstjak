@@ -412,6 +412,12 @@ const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
         onExpertiseChange={handleExpertiseChange}
         onClearFilters={onClearFilters}
         getActiveFilterCount={getActiveFilterCount}
+        selectedStudent={filters.selectedStudent}
+        selectedAcademicPeriod={filters.selectedAcademicPeriod}
+        students={filterOptions.students}
+        academicPeriods={filterOptions.academicPeriods}
+        onStudentChange={handleStudentChange}
+        onAcademicPeriodChange={handleAcademicPeriodChange}
       />
     </>
   );

@@ -261,7 +261,7 @@ const AnalyticsDashboard: React.FC = () => {
               subjects,
               teachers,
               students,
-              expertisePrograms
+              expertisePrograms,
               academicPeriods
             }}
             filterOptionsLoading={filterOptionsLoading}
