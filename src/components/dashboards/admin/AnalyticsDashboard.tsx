@@ -49,6 +49,8 @@ const AnalyticsDashboard: React.FC = () => {
     selectedSubject: '',
     selectedGrade: '',
     selectedExpertise: '',
+    selectedStudent: '',
+    selectedTeacher: '',
     minExamsPerSubject: 1,
     includeZeroScores: false
   });
@@ -195,6 +197,8 @@ const AnalyticsDashboard: React.FC = () => {
       selectedSubject: '',
       selectedGrade: '',
       selectedExpertise: '',
+      selectedStudent: '',
+      selectedTeacher: '',
       minExamsPerSubject: 1,
       includeZeroScores: false
     });
@@ -357,6 +361,8 @@ const AnalyticsDashboard: React.FC = () => {
             }}
             filterOptionsLoading={filterOptionsLoading}
             onClearFilters={clearSubjectMasteryFilters}
+            loadStudentOptions={loadStudentOptions}
+            loadTeacherOptions={loadTeacherOptions}
           />
           
           {/* Subject Mastery Chart */}

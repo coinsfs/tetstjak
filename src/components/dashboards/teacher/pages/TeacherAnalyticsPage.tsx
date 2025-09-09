@@ -4,6 +4,8 @@ import { useRouter } from '@/hooks/useRouter';
 import { ArrowLeft, BarChart3, RotateCcw } from 'lucide-react';
 import ScoreTrendAnalytics, { ScoreTrendAnalyticsRef } from '@/components/analytics/ScoreTrendAnalytics';
 import ScoreTrendFilterSection from '@/components/analytics/ScoreTrendFilterSection';
+import SubjectMasteryAnalytics, { SubjectMasteryAnalyticsRef } from '@/components/analytics/SubjectMasteryAnalytics';
+import SubjectMasteryFilterSection from '@/components/analytics/SubjectMasteryFilterSection';
 import { classService } from '@/services/class';
 import { subjectService } from '@/services/subject';
 import { expertiseProgramService } from '@/services/expertise';
@@ -21,6 +23,7 @@ const TeacherAnalyticsPage: React.FC = () => {
   const { navigate } = useRouter();
   const { user, token } = useAuth();
   const analyticsRef = useRef<ScoreTrendAnalyticsRef>(null);
+  const subjectMasteryRef = useRef<SubjectMasteryAnalyticsRef>(null);
   
   // Score Trend Filters - automatically set teacher_id to current user
   const [scoreTrendFilters, setScoreTrendFilters] = useState({
@@ -36,6 +39,22 @@ const TeacherAnalyticsPage: React.FC = () => {
     selectedStudent: '',
     selectedAcademicPeriod: '',
     activeTab: 'teacher' // Default to teacher view for teacher dashboard
+  });
+  
+  // Subject Mastery Filters
+  const [subjectMasteryFilters, setSubjectMasteryFilters] = useState({
+    dateRange: {
+      start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      end: new Date().toISOString().split('T')[0]
+    },
+    selectedClass: '',
+    selectedSubject: '',
+    selectedGrade: '',
+    selectedExpertise: '',
+    selectedStudent: '',
+    selectedTeacher: user?._id || '', // Automatically set to current teacher
+    minExamsPerSubject: 1,
+    includeZeroScores: false
   });
   
   // Filter options state
@@ -148,8 +167,9 @@ const TeacherAnalyticsPage: React.FC = () => {
   }, [token]);
   
   const handleRefresh = () => {
-    // Refresh analytics chart
+    // Refresh both charts
     analyticsRef.current?.refreshData();
+    subjectMasteryRef.current?.refreshData();
   };
 
   // Score Trend Filter Handlers
@@ -175,6 +195,32 @@ const TeacherAnalyticsPage: React.FC = () => {
       selectedStudent: '',
       selectedAcademicPeriod: '',
       activeTab: 'teacher'
+    });
+  };
+
+  // Subject Mastery Filter Handlers
+  const handleSubjectMasteryFiltersChange = (newFilters: typeof subjectMasteryFilters) => {
+    // Ensure teacher_id is always set to current user
+    setSubjectMasteryFilters({
+      ...newFilters,
+      selectedTeacher: user?._id || ''
+    });
+  };
+
+  const clearSubjectMasteryFilters = () => {
+    setSubjectMasteryFilters({
+      dateRange: {
+        start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        end: new Date().toISOString().split('T')[0]
+      },
+      selectedClass: '',
+      selectedSubject: '',
+      selectedGrade: '',
+      selectedExpertise: '',
+      selectedStudent: '',
+      selectedTeacher: user?._id || '', // Keep current teacher
+      minExamsPerSubject: 1,
+      includeZeroScores: false
     });
   };
 
@@ -218,6 +264,19 @@ const TeacherAnalyticsPage: React.FC = () => {
     return {
       ...commonFilters,
       group_by: scoreTrendFilters.activeTab === 'overview' ? 'class' : scoreTrendFilters.activeTab,
+      // Ensure teacher_id is always included for teacher dashboard
+      teacher_id: user?._id || ''
+    };
+  };
+
+  // Specific filters for Subject Mastery Analytics
+  const getSubjectMasteryFilters = () => {
+    const commonFilters = getCommonFilters(subjectMasteryFilters);
+    return {
+      ...commonFilters,
+      min_exams_per_subject: subjectMasteryFilters.minExamsPerSubject,
+      include_zero_scores: subjectMasteryFilters.includeZeroScores,
+      use_cache: true,
       // Ensure teacher_id is always included for teacher dashboard
       teacher_id: user?._id || ''
     };
@@ -301,6 +360,47 @@ const TeacherAnalyticsPage: React.FC = () => {
             defaultFilters={getScoreTrendFilters()}
           />
         </div>
+
+       {/* Subject Mastery Analytics Section */}
+       <div className="space-y-3">
+         {/* Subject Mastery Filter Section */}
+         <SubjectMasteryFilterSection
+           filters={subjectMasteryFilters}
+           onFiltersChange={handleSubjectMasteryFiltersChange}
+           filterOptions={{
+             classes,
+             subjects,
+             teachers,
+             students,
+             expertisePrograms,
+             academicPeriods
+           }}
+           filterOptionsLoading={filterOptionsLoading}
+           onClearFilters={clearSubjectMasteryFilters}
+           loadStudentOptions={loadStudentOptions}
+           loadTeacherOptions={loadTeacherOptions}
+         />
+         
+         {/* Subject Mastery Chart */}
+         <div className="bg-white shadow-sm rounded-lg p-3">
+           <div className="flex items-center justify-between">
+             <h2 className="text-lg font-medium text-gray-900">Penguasaan Mata Pelajaran</h2>
+             <button
+               onClick={() => subjectMasteryRef.current?.refreshData()}
+               className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+               title="Refresh Penguasaan Mata Pelajaran"
+             >
+               <RotateCcw className="w-4 h-4" />
+             </button>
+           </div>
+         </div>
+         
+         <SubjectMasteryAnalytics 
+           ref={subjectMasteryRef}
+           title=""
+           defaultFilters={getSubjectMasteryFilters()}
+         />
+       </div>
 
         {/* Future Analytics Sections */}
         <div className="bg-white shadow-sm rounded-lg p-6">

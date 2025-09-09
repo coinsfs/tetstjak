@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Filter, RotateCcw, Target, BookOpen, GraduationCap, Users, MoreHorizontal } from 'lucide-react';
 import FilterModal from '@/components/modals/FilterModal';
+import AsyncSelect from 'react-select/async';
 import { Class } from '@/types/class';
 import { Subject } from '@/types/subject';
 import { ExpertiseProgram } from '@/types/expertise';
-import { BasicTeacher } from '@/types/user';
+import { BasicTeacher, BasicStudent } from '@/types/user';
 
 interface SubjectMasteryFilters {
   dateRange: { start: string; end: string };
@@ -12,6 +13,8 @@ interface SubjectMasteryFilters {
   selectedSubject: string;
   selectedGrade: string;
   selectedExpertise: string;
+  selectedStudent: string;
+  selectedTeacher: string;
   minExamsPerSubject: number;
   includeZeroScores: boolean;
 }
@@ -20,8 +23,8 @@ interface FilterOptions {
   classes: Class[];
   subjects: Subject[];
   teachers: BasicTeacher[];
-  expertisePrograms: ExpertiseProgram[];
   students: BasicStudent[];
+  expertisePrograms: ExpertiseProgram[];
   academicPeriods: any[];
 }
 
@@ -31,15 +34,18 @@ interface SubjectMasteryFilterSectionProps {
   onClearFilters: () => void;
   filterOptions: FilterOptions;
   filterOptionsLoading: boolean;
+  loadStudentOptions?: (inputValue: string, callback: (options: any[]) => void) => void;
+  loadTeacherOptions?: (inputValue: string, callback: (options: any[]) => void) => void;
 }
 
 interface FilterConfig {
   id: string;
   label: string;
-  type: 'date' | 'select' | 'checkbox';
+  type: 'date' | 'select' | 'checkbox' | 'async-select';
   value: string | number | boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   options?: Array<{ value: string; label: string }>;
+  loadOptions?: (inputValue: string, callback: (options: any[]) => void) => void;
   priority: number; // Lower number = higher priority (shown first)
 }
 
@@ -48,7 +54,9 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
   onFiltersChange,
   onClearFilters,
   filterOptions,
-  filterOptionsLoading
+  filterOptionsLoading,
+  loadStudentOptions,
+  loadTeacherOptions
 }) => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
@@ -87,6 +95,20 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
     onFiltersChange({
       ...filters,
       selectedExpertise: e.target.value
+    });
+  };
+
+  const handleStudentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onFiltersChange({
+      ...filters,
+      selectedStudent: e.target.value
+    });
+  };
+
+  const handleTeacherChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onFiltersChange({
+      ...filters,
+      selectedTeacher: e.target.value
     });
   };
 
@@ -192,6 +214,24 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
         priority: 6
       },
       {
+        id: 'student',
+        label: 'Siswa',
+        type: 'async-select',
+        value: filters.selectedStudent,
+        onChange: handleStudentChange,
+        loadOptions: loadStudentOptions,
+        priority: 7
+      },
+      {
+        id: 'teacher',
+        label: 'Guru',
+        type: 'async-select',
+        value: filters.selectedTeacher,
+        onChange: handleTeacherChange,
+        loadOptions: loadTeacherOptions,
+        priority: 8
+      },
+      {
         id: 'minExams',
         label: 'Min. Ujian per Mapel',
         type: 'select',
@@ -203,7 +243,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
           { value: '3', label: 'Minimal 3 ujian' },
           { value: '5', label: 'Minimal 5 ujian' }
         ],
-        priority: 7
+        priority: 9
       },
       {
         id: 'includeZero',
@@ -211,7 +251,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
         type: 'checkbox',
         value: filters.includeZeroScores,
         onChange: handleIncludeZeroScoresChange,
-        priority: 8
+        priority: 10
       }
     ];
 
@@ -251,6 +291,8 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
     if (filters.selectedSubject) count++;
     if (filters.selectedGrade) count++;
     if (filters.selectedExpertise) count++;
+    if (filters.selectedStudent) count++;
+    if (filters.selectedTeacher) count++;
     if (filters.minExamsPerSubject !== 1) count++;
     if (filters.includeZeroScores !== false) count++;
     return count;
@@ -262,6 +304,79 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
 
   // Render individual filter item
   const renderFilterItem = useCallback((item: FilterConfig) => {
+    // Special handling for student and teacher filters with AsyncSelect
+    if (item.id === 'student' && loadStudentOptions) {
+      return (
+        <div key={item.id}>
+          <label className="block text-xs text-gray-600 mb-0.5">
+            {item.label}
+          </label>
+          <AsyncSelect
+            cacheOptions
+            defaultOptions
+            loadOptions={loadStudentOptions}
+            value={item.value ? { value: item.value, label: filterOptions.students.find(s => s._id === item.value)?.full_name || item.value } : null}
+            onChange={(selectedOption) => {
+              const event = {
+                target: { value: selectedOption ? selectedOption.value : '' }
+              } as React.ChangeEvent<HTMLSelectElement>;
+              item.onChange(event);
+            }}
+            isClearable
+            placeholder="Cari siswa..."
+            className="text-xs"
+            styles={{
+              control: (provided) => ({
+                ...provided,
+                minHeight: '30px',
+                fontSize: '12px'
+              }),
+              option: (provided) => ({
+                ...provided,
+                fontSize: '12px'
+              })
+            }}
+          />
+        </div>
+      );
+    }
+
+    if (item.id === 'teacher' && loadTeacherOptions) {
+      return (
+        <div key={item.id}>
+          <label className="block text-xs text-gray-600 mb-0.5">
+            {item.label}
+          </label>
+          <AsyncSelect
+            cacheOptions
+            defaultOptions
+            loadOptions={loadTeacherOptions}
+            value={item.value ? { value: item.value, label: filterOptions.teachers.find(t => t._id === item.value)?.full_name || item.value } : null}
+            onChange={(selectedOption) => {
+              const event = {
+                target: { value: selectedOption ? selectedOption.value : '' }
+              } as React.ChangeEvent<HTMLSelectElement>;
+              item.onChange(event);
+            }}
+            isClearable
+            placeholder="Cari guru..."
+            className="text-xs"
+            styles={{
+              control: (provided) => ({
+                ...provided,
+                minHeight: '30px',
+                fontSize: '12px'
+              }),
+              option: (provided) => ({
+                ...provided,
+                fontSize: '12px'
+              })
+            }}
+          />
+        </div>
+      );
+    }
+
     return (
       <div key={item.id}>
         {item.type !== 'checkbox' && (
@@ -406,6 +521,8 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
         onExpertiseChange={handleExpertiseChange}
         onClearFilters={onClearFilters}
         getActiveFilterCount={getActiveFilterCount}
+        loadStudentOptions={loadStudentOptions}
+        loadTeacherOptions={loadTeacherOptions}
       />
     </>
   );
