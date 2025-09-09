@@ -168,6 +168,36 @@ const FilterModal: React.FC<FilterModalProps> = ({
       priority: 6
     },
     {
+      id: 'student',
+      label: 'Siswa',
+      type: 'select',
+      value: selectedStudent,
+      onChange: onStudentChange,
+      options: [
+        { value: '', label: 'Semua Siswa' },
+        ...students.map((student) => ({
+          value: student._id,
+          label: student.class_name ? `${student.full_name} (${student.class_name})` : student.full_name
+        }))
+      ],
+      priority: 7
+    },
+    {
+      id: 'academicPeriod',
+      label: 'Periode Akademik',
+      type: 'select',
+      value: selectedAcademicPeriod,
+      onChange: onAcademicPeriodChange,
+      options: [
+        { value: '', label: 'Semua Periode' },
+        ...academicPeriods.map((period) => ({
+          value: period._id,
+          label: `${period.year} - Semester ${period.semester}`
+        }))
+      ],
+      priority: 8
+    },
+    {
       id: 'expertise',
       label: 'Program Keahlian',
       type: 'select',
@@ -180,7 +210,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
           label: `${expertise.name} (${expertise.abbreviation})`
         }))
       ],
-      priority: 7
+      priority: 9
     }
   ];
 
