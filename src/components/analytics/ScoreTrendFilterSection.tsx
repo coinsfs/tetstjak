@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Filter, RotateCcw, BarChart3, Users, BookOpen, GraduationCap, MoreHorizontal } from 'lucide-react';
+import { Filter, BarChart3, Users, BookOpen, GraduationCap, MoreHorizontal } from 'lucide-react';
 import FilterModal from '@/components/modals/FilterModal';
 import { Class } from '@/types/class';
 import { Subject } from '@/types/subject';
@@ -50,13 +50,6 @@ const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
   onClearFilters
 }) => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [visibleFilters, setVisibleFilters] = useState<string[]>([]);
-  const [hiddenFilters, setHiddenFilters] = useState<string[]>([]);
-  
-  // Refs for measurement
-  const filterContainerRef = useRef<HTMLDivElement>(null);
-  const filterItemRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const moreButtonRef = useRef<HTMLButtonElement>(null);
 
   const tabs = [
     { id: 'overview', label: 'Keseluruhan', icon: BarChart3 },
@@ -227,62 +220,6 @@ const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
     return config.filter(item => !item.hidden).sort((a, b) => a.priority - b.priority);
   };
 
-  // Measure filter dimensions and determine visibility
-  useEffect(() => {
-    const measureFilters = () => {
-      if (!filterContainerRef.current) return;
-
-      const containerWidth = filterContainerRef.current.offsetWidth;
-      const moreButtonWidth = moreButtonRef.current?.offsetWidth || 80; // Estimate if not rendered
-      const availableWidth = containerWidth - moreButtonWidth - 32; // Account for padding and gaps
-
-      console.log('📏 Filter Container Measurements:', {
-        containerWidth,
-        moreButtonWidth,
-        availableWidth
-      });
-
-      let accumulatedWidth = 0;
-      const visible: string[] = [];
-      const hidden: string[] = [];
-      const filterConfig = getFilterConfig();
-
-      filterConfig.forEach((filter, index) => {
-        const filterElement = filterItemRefs.current[index];
-        if (filterElement) {
-          const filterWidth = filterElement.offsetWidth + 12; // Add gap
-          console.log(`📏 Filter ${filter.id} width:`, filterWidth);
-
-          if (accumulatedWidth + filterWidth <= availableWidth) {
-            visible.push(filter.id);
-            accumulatedWidth += filterWidth;
-          } else {
-            hidden.push(filter.id);
-          }
-        }
-      });
-
-      console.log('📏 Filter Visibility:', { visible, hidden });
-      setVisibleFilters(visible);
-      setHiddenFilters(hidden);
-    };
-
-    // Measure after initial render
-    const timer = setTimeout(measureFilters, 100);
-
-    // Re-measure on window resize
-    const handleResize = () => {
-      measureFilters();
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [filters, filterOptions, filterOptionsLoading]);
-
   const getActiveFilterCount = () => {
     let count = 0;
     
@@ -304,12 +241,11 @@ const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
   };
 
   // Render individual filter item
-  const renderFilterItem = (filter: FilterConfig, index: number) => {
+  const renderFilterItem = (filter: FilterConfig) => {
     return (
       <div
         key={filter.id}
-        ref={(el) => (filterItemRefs.current[index] = el)}
-        className="flex-grow basis-0 min-w-[120px]"
+        className="flex-1"
       >
         <label className="block text-xs text-gray-600 mb-0.5">
           {filter.label}
@@ -344,6 +280,10 @@ const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
   };
 
   const filterConfig = getFilterConfig();
+  
+  // Get the first 4 filters to display
+  const visibleFilters = filterConfig.slice(0, 4);
+  const hiddenFiltersCount = filterConfig.length - 4;
 
   return (
     <>
@@ -392,44 +332,26 @@ const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
         </div>
         
         {/* Dynamic Filter Container */}
-        <div 
-          ref={filterContainerRef}
-          className="flex items-end space-x-3 overflow-hidden"
-        >
-          {/* Visible Filters */}
-          {filterConfig.map((filter, index) => {
-            const isVisible = visibleFilters.length === 0 || visibleFilters.includes(filter.id);
-            
-            return (
-              <div
-                key={filter.id}
-                className={`transition-all duration-300 ${
-                  isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95 w-0 overflow-hidden'
-                }`}
-                style={{ display: isVisible ? 'block' : 'none' }}
-              >
-                {renderFilterItem(filter, index)}
-              </div>
-            );
-          })}
+        <div className="flex items-end space-x-3">
+          {/* Display first 4 filters */}
+          {visibleFilters.map((filter) => renderFilterItem(filter))}
 
-          {/* More Button - Show when there are hidden filters */}
-          {hiddenFilters.length > 0 && (
+          {/* More Button - Always visible */}
+          <div className="flex-1">
             <button
-              ref={moreButtonRef}
               onClick={() => setIsFilterModalOpen(true)}
-              className="flex-shrink-0 flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-              title={`${hiddenFilters.length} filter tersembunyi`}
+              className="w-full h-[38px] flex items-center justify-center space-x-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+              title={`${hiddenFiltersCount} filter tambahan`}
             >
               <MoreHorizontal className="w-4 h-4" />
               <span>More</span>
-              {hiddenFilters.length > 0 && (
+              {hiddenFiltersCount > 0 && (
                 <span className="bg-blue-100 text-blue-800 text-xs font-medium px-1.5 py-0.5 rounded-full">
-                  {hiddenFilters.length}
+                  {hiddenFiltersCount}
                 </span>
               )}
             </button>
-          )}
+          </div>
         </div>
 
       </div>
