@@ -20,6 +20,7 @@ interface FilterModalProps {
   teachers: BasicTeacher[];
   expertisePrograms: ExpertiseProgram[];
   filterOptionsLoading: boolean;
+  visibleFilterIds?: string[]; // Added this prop
   onDateChange: (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => void;
   onClassChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onSubjectChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
@@ -28,6 +29,16 @@ interface FilterModalProps {
   onExpertiseChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onClearFilters: () => void;
   getActiveFilterCount: () => number;
+}
+
+interface FilterConfig {
+  id: string;
+  label: string;
+  type: 'date' | 'select' | 'checkbox';
+  value: string | number | boolean;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  options?: Array<{ value: string; label: string }>;
+  priority: number;
 }
 
 const FilterModal: React.FC<FilterModalProps> = ({
@@ -45,6 +56,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
   teachers,
   expertisePrograms,
   filterOptionsLoading,
+  visibleFilterIds, // Use this prop
   onDateChange,
   onClassChange,
   onSubjectChange,
@@ -56,11 +68,6 @@ const FilterModal: React.FC<FilterModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const handleClearAndClose = () => {
-    onClearFilters();
-    onClose();
-  };
-
   const getGradeLabel = (gradeLevel: number) => {
     switch (gradeLevel) {
       case 10: return 'X';
@@ -69,180 +76,207 @@ const FilterModal: React.FC<FilterModalProps> = ({
       default: return gradeLevel.toString();
     }
   };
+
+  // Complete filter configuration - all possible filters
+  const allFilterConfig: FilterConfig[] = [
+    {
+      id: 'dateStart',
+      label: 'Tanggal Mulai',
+      type: 'date',
+      value: dateRange.start,
+      onChange: (e) => onDateChange(e as React.ChangeEvent<HTMLInputElement>, 'start'),
+      priority: 1
+    },
+    {
+      id: 'dateEnd',
+      label: 'Tanggal Akhir',
+      type: 'date',
+      value: dateRange.end,
+      onChange: (e) => onDateChange(e as React.ChangeEvent<HTMLInputElement>, 'end'),
+      priority: 2
+    },
+    {
+      id: 'grade',
+      label: 'Jenjang',
+      type: 'select',
+      value: selectedGrade,
+      onChange: onGradeChange,
+      options: [
+        { value: '', label: 'Semua Jenjang' },
+        { value: '10', label: 'Kelas 10' },
+        { value: '11', label: 'Kelas 11' },
+        { value: '12', label: 'Kelas 12' }
+      ],
+      priority: 3
+    },
+    {
+      id: 'class',
+      label: 'Kelas',
+      type: 'select',
+      value: selectedClass,
+      onChange: onClassChange,
+      options: [
+        { value: '', label: 'Semua Kelas' },
+        ...classes.map((classItem) => ({
+          value: classItem._id,
+          label: `Kelas ${getGradeLabel(classItem.grade_level)} ${classItem.expertise_details?.abbreviation} ${classItem.name}`
+        }))
+      ],
+      priority: 4
+    },
+    {
+      id: 'subject',
+      label: 'Mata Pelajaran',
+      type: 'select',
+      value: selectedSubject,
+      onChange: onSubjectChange,
+      options: [
+        { value: '', label: 'Semua Mata Pelajaran' },
+        ...subjects.map((subject) => ({
+          value: subject._id,
+          label: `${subject.name} (${subject.code})`
+        }))
+      ],
+      priority: 5
+    },
+    {
+      id: 'teacher',
+      label: 'Guru',
+      type: 'select',
+      value: selectedTeacher,
+      onChange: onTeacherChange,
+      options: [
+        { value: '', label: 'Semua Guru' },
+        ...teachers.map((teacher) => ({
+          value: teacher._id,
+          label: teacher.full_name
+        }))
+      ],
+      priority: 6
+    },
+    {
+      id: 'expertise',
+      label: 'Program Keahlian',
+      type: 'select',
+      value: selectedExpertise,
+      onChange: onExpertiseChange,
+      options: [
+        { value: '', label: 'Semua Program Keahlian' },
+        ...expertisePrograms.map((expertise) => ({
+          value: expertise._id,
+          label: `${expertise.name} (${expertise.abbreviation})`
+        }))
+      ],
+      priority: 7
+    }
+  ];
+
+  // Filter logic: if visibleFilterIds is provided and not empty, filter; otherwise show all
+  const filtersToDisplay = visibleFilterIds && visibleFilterIds.length > 0
+    ? allFilterConfig.filter(filter => visibleFilterIds.includes(filter.id))
+    : allFilterConfig;
+
+  // Sort by priority
+  const sortedFilters = filtersToDisplay.sort((a, b) => a.priority - b.priority);
+
+  const renderFilterItem = (filter: FilterConfig) => {
+    return (
+      <div key={filter.id} className="space-y-2">
+        {filter.type !== 'checkbox' && (
+          <label className="block text-sm font-medium text-gray-700">
+            {filter.label}
+          </label>
+        )}
+        {filter.type === 'date' ? (
+          <input
+            type="date"
+            value={filter.value as string}
+            onChange={filter.onChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          />
+        ) : filter.type === 'checkbox' ? (
+          <div className="flex items-center">
+            <input
+              id={filter.id}
+              type="checkbox"
+              checked={filter.value as boolean}
+              onChange={filter.onChange}
+              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label htmlFor={filter.id} className="ml-2 text-sm text-gray-700 cursor-pointer">
+              {filter.label}
+            </label>
+          </div>
+        ) : (
+          <select
+            value={filter.value as string}
+            onChange={filter.onChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            disabled={filterOptionsLoading}
+          >
+            {filterOptionsLoading ? (
+              <option disabled>Memuat...</option>
+            ) : (
+              filter.options?.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))
+            )}
+          </select>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center space-x-2">
             <Filter className="w-5 h-5 text-gray-600" />
-            <h2 className="text-lg font-medium text-gray-900">Filter Data</h2>
-            {getActiveFilterCount() > 0 && (
-              <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-                {getActiveFilterCount()}
-              </span>
-            )}
+            <h2 className="text-lg font-semibold text-gray-900">Filter Data</h2>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
+          <div className="flex items-center space-x-2">
+            {getActiveFilterCount() > 0 && (
+              <button
+                onClick={onClearFilters}
+                className="flex items-center space-x-1 px-3 py-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Reset</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
         </div>
 
-        {/* Filter Content */}
-        <div className="p-4 space-y-4">
-          {/* Date Range */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-gray-900">Rentang Tanggal</h3>
-            <div className="space-y-2">
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Tanggal Mulai</label>
-                <input
-                  type="date"
-                  value={dateRange.start}
-                  onChange={(e) => onDateChange(e, 'start')}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Tanggal Akhir</label>
-                <input
-                  type="date"
-                  value={dateRange.end}
-                  onChange={(e) => onDateChange(e, 'end')}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Academic Filters */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-gray-900">Filter Akademik</h3>
-            <div className="space-y-2">
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Jenjang</label>
-                <select
-                  value={selectedGrade}
-                  onChange={onGradeChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="">Semua Jenjang</option>
-                  <option value="10">Kelas 10</option>
-                  <option value="11">Kelas 11</option>
-                  <option value="12">Kelas 12</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Kelas</label>
-                <select
-                  value={selectedClass}
-                  onChange={onClassChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  disabled={filterOptionsLoading}
-                >
-                  <option value="">Semua Kelas</option>
-                  {filterOptionsLoading ? (
-                    <option disabled>Memuat...</option>
-                  ) : (
-                    classes.map((classItem) => (
-                      <option key={classItem._id} value={classItem._id}>
-                        Kelas {getGradeLabel(classItem.grade_level)} {classItem.expertise_details?.abbreviation} {classItem.name}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Mata Pelajaran</label>
-                <select
-                  value={selectedSubject}
-                  onChange={onSubjectChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  disabled={filterOptionsLoading}
-                >
-                  <option value="">Semua Mata Pelajaran</option>
-                  {filterOptionsLoading ? (
-                    <option disabled>Memuat...</option>
-                  ) : (
-                    subjects.map((subject) => (
-                      <option key={subject._id} value={subject._id}>
-                        {subject.name} ({subject.code})
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
-
-              {/* Teacher Filter - Only show when teacher tab is active */}
-              {activeTab === 'teacher' && (
-                <div>
-                  <label className="block text-xs text-gray-600 mb-1">Guru</label>
-                  <select
-                    value={selectedTeacher}
-                    onChange={onTeacherChange}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                    disabled={filterOptionsLoading}
-                  >
-                    <option value="">Semua Guru</option>
-                    {filterOptionsLoading ? (
-                      <option disabled>Memuat...</option>
-                    ) : (
-                      teachers.map((teacher) => (
-                        <option key={teacher._id} value={teacher._id}>
-                          {teacher.full_name}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                </div>
-              )}
-              
-              {/* Expertise Filter */}
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Program Keahlian</label>
-                <select
-                  value={selectedExpertise}
-                  onChange={onExpertiseChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  disabled={filterOptionsLoading}
-                >
-                  <option value="">Semua Program Keahlian</option>
-                  {filterOptionsLoading ? (
-                    <option disabled>Memuat...</option>
-                  ) : (
-                    expertisePrograms.map((expertise) => (
-                      <option key={expertise._id} value={expertise._id}>
-                        {expertise.name} ({expertise.abbreviation})
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
-            </div>
+        {/* Content */}
+        <div className="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {sortedFilters.map((filter) => renderFilterItem(filter))}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-4 border-t border-gray-200">
-          <button
-            onClick={handleClearAndClose}
-            className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span>Reset Filter</span>
-          </button>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
-            disabled={filterOptionsLoading}
-          >
-            {filterOptionsLoading ? 'Memuat...' : 'Terapkan'}
-          </button>
+        <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-gray-50">
+          <div className="text-sm text-gray-600">
+            {getActiveFilterCount()} filter aktif
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            >
+              Tutup
+            </button>
+          </div>
         </div>
       </div>
     </div>
