@@ -61,7 +61,7 @@ src/components/dashboards/teacher/TeacherDepartmentInfo.tsx
 src/components/dashboards/teacher/TeacherHeader.tsx
 src/components/dashboards/teacher/TeacherInfoCard.tsx
 src/components/dashboards/teacher/TeacherMainContent.tsx
-src/components/dashboards/teacher/TeacherSidebar.tsx
+
 src/components/dashboards/teacher/TeacherStatsGrid.tsx
 src/components/dashboards/teacher/TeacherSubjectsList.tsx
 src/components/dashboards/teacher/TeacherWelcomeCard.tsx
@@ -71,7 +71,7 @@ src/components/charts/BrowserUsageChart.tsx
 src/components/charts/StudentGrowthChart.tsx
 src/components/charts/StudentsByMajorChart.tsx
 src/components/dashboards/StudentDashboard.tsx
-src/components/dashboards/TeacherDashboard.tsx
+
 src/components/dashboards/teacher/pages/TeacherQuestionSetsPage.tsx
 src/components/dashboards/teacher/pages/TeacherQuestionsPage.tsx
 src/components/dashboards/teacher/pages/components/MyQuestionsTable.tsx
@@ -132,7 +132,7 @@ src/components/charts/ScoreDistributionChart.tsx
 
 src/components/dashboards/student/pages/StudentScoreTrendAnalyticsPage.tsx
 src/components/dashboards/teacher/pages/TeacherExamAnalyticsPage.tsx
-src/components/dashboards/teacher/pages/TeacherScoreTrendAnalyticsPage.tsx
+
 src/components/dashboards/teacher/pages/modals/QuestionSetPermissionModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherExamFinishConfirmationModal.tsx
 src/components/modals/FilterModal.tsx
