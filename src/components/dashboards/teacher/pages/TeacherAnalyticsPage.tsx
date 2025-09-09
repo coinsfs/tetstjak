@@ -141,15 +141,6 @@ const TeacherAnalyticsPage: React.FC = () => {
     if (filters.selectedSubject) {
       commonFilters.subject_id = filters.selectedSubject;
     }
-    if (filters.selectedGrade) {
-      commonFilters.grade_level = parseInt(filters.selectedGrade);
-    }
-    if (filters.selectedTeacher) {
-      commonFilters.teacher_id = filters.selectedTeacher;
-    }
-    if (filters.selectedExpertise) {
-      commonFilters.expertise_id = filters.selectedExpertise;
-    }
 
     return commonFilters;
   };
