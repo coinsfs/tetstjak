@@ -21,6 +21,8 @@ interface FilterOptions {
   subjects: Subject[];
   teachers: BasicTeacher[];
   expertisePrograms: ExpertiseProgram[];
+  students: BasicStudent[];
+  academicPeriods: any[];
 }
 
 interface SubjectMasteryFilterSectionProps {
@@ -392,6 +394,8 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
         classes={filterOptions.classes}
         subjects={filterOptions.subjects}
         teachers={filterOptions.teachers}
+        students={filterOptions.students}
+        academicPeriods={filterOptions.academicPeriods}
         expertisePrograms={filterOptions.expertisePrograms}
         filterOptionsLoading={filterOptionsLoading}
         onDateChange={handleDateChange}
