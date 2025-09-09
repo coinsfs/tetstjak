@@ -60,7 +60,7 @@ src/components/dashboards/teacher/pages/modals/TeacherQuestionDetailModal.tsx
 src/components/dashboards/teacher/TeacherDepartmentInfo.tsx
 src/components/dashboards/teacher/TeacherHeader.tsx
 src/components/dashboards/teacher/TeacherInfoCard.tsx
-src/components/dashboards/teacher/TeacherMainContent.tsx
+
 
 src/components/dashboards/teacher/TeacherStatsGrid.tsx
 src/components/dashboards/teacher/TeacherSubjectsList.tsx
