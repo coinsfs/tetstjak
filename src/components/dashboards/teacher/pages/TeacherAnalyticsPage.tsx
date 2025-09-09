@@ -208,7 +208,7 @@ const TeacherAnalyticsPage: React.FC = () => {
             }}
             filterOptionsLoading={filterOptionsLoading}
             onClearFilters={clearScoreTrendFilters}
-            visibleFilterIds={['dateStart', 'dateEnd', 'class', 'subject']}
+            visibleFilterIds={['dateStart', 'dateEnd', 'grade', 'class', 'subject']}
           />
           
           {/* Score Trend Chart */}
