@@ -47,6 +47,23 @@ class UserService extends BaseService {
     return this.get<BasicTeacher[]>(endpoint, token);
   }
 
+  // Optimized method for getting basic student info (for filters)
+  async getBasicStudents(
+    token: string, 
+    searchTerm?: string
+  ): Promise<BasicStudent[]> {
+    const params: Record<string, any> = {};
+    
+    if (searchTerm && searchTerm.trim()) {
+      params.search = searchTerm.trim();
+    }
+
+    const queryString = this.buildQueryParams(params);
+    const endpoint = queryString ? `/users/students/basic?${queryString}` : '/users/students/basic';
+    
+    return this.get<BasicStudent[]>(endpoint, token);
+  }
+
   async getTeacherById(token: string, id: string): Promise<Teacher> {
     return this.get<Teacher>(`/users/${id}`, token);
   }

@@ -244,6 +244,8 @@ const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
     if (filters.selectedGrade) count++;
     if (filters.selectedTeacher) count++;
     if (filters.selectedExpertise) count++;
+    if (filters.selectedStudent) count++;
+    if (filters.selectedAcademicPeriod) count++;
     return count;
   };
 

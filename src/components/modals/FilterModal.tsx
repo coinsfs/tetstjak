@@ -3,7 +3,8 @@ import { X, Filter, RotateCcw } from 'lucide-react';
 import { Class } from '@/types/class';
 import { Subject } from '@/types/subject';
 import { ExpertiseProgram } from '@/types/expertise';
-import { BasicTeacher } from '@/types/user';
+import { BasicTeacher, BasicStudent } from '@/types/user';
+import { AcademicPeriod } from '@/types/common';
 
 interface FilterModalProps {
   isOpen: boolean;
@@ -14,11 +15,15 @@ interface FilterModalProps {
   selectedGrade: string;
   selectedTeacher: string;
   selectedExpertise: string;
+  selectedStudent: string;
+  selectedAcademicPeriod: string;
   activeTab: string;
   classes: Class[];
   subjects: Subject[];
   teachers: BasicTeacher[];
+  students: BasicStudent[];
   expertisePrograms: ExpertiseProgram[];
+  academicPeriods: AcademicPeriod[];
   filterOptionsLoading: boolean;
   visibleFilterIds?: string[]; // Added this prop
   onDateChange: (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => void;
@@ -27,6 +32,8 @@ interface FilterModalProps {
   onGradeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onTeacherChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onExpertiseChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onStudentChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onAcademicPeriodChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onClearFilters: () => void;
   getActiveFilterCount: () => number;
 }
@@ -50,11 +57,15 @@ const FilterModal: React.FC<FilterModalProps> = ({
   selectedGrade,
   selectedTeacher,
   selectedExpertise,
+  selectedStudent,
+  selectedAcademicPeriod,
   activeTab,
   classes,
   subjects,
   teachers,
+  students,
   expertisePrograms,
+  academicPeriods,
   filterOptionsLoading,
   visibleFilterIds, // Use this prop
   onDateChange,
@@ -63,6 +74,8 @@ const FilterModal: React.FC<FilterModalProps> = ({
   onGradeChange,
   onTeacherChange,
   onExpertiseChange,
+  onStudentChange,
+  onAcademicPeriodChange,
   onClearFilters,
   getActiveFilterCount
 }) => {

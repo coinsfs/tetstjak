@@ -29,6 +29,13 @@ export interface BasicTeacher {
   profile_picture_key: string | null;
 }
 
+// Basic Student for filter dropdowns (optimized payload)
+export interface BasicStudent {
+  _id: string;
+  full_name: string;
+  class_name?: string;
+}
+
 export interface TeachingSummary {
   subject_name: string;
   class_name: string;

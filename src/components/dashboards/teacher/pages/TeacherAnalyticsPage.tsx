@@ -33,6 +33,8 @@ const TeacherAnalyticsPage: React.FC = () => {
     selectedGrade: '',
     selectedTeacher: user?._id || '', // Automatically set to current teacher
     selectedExpertise: '',
+    selectedStudent: '',
+    selectedAcademicPeriod: '',
     activeTab: 'teacher' // Default to teacher view for teacher dashboard
   });
   
@@ -40,7 +42,9 @@ const TeacherAnalyticsPage: React.FC = () => {
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [teachers, setTeachers] = useState<BasicTeacher[]>([]);
+  const [students, setStudents] = useState<BasicStudent[]>([]);
   const [expertisePrograms, setExpertisePrograms] = useState<ExpertiseProgram[]>([]);
+  const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [activeAcademicPeriod, setActiveAcademicPeriod] = useState<AcademicPeriod | null>(null);
   const [filterOptionsLoading, setFilterOptionsLoading] = useState(true);
 
@@ -63,19 +67,23 @@ const TeacherAnalyticsPage: React.FC = () => {
         setFilterOptionsLoading(true);
         
         // Fetch all filter options in parallel
-        const [classesResponse, subjectsResponse, teachersResponse, expertiseResponse, academicPeriodResponse] = await Promise.all([
+        const [classesResponse, subjectsResponse, teachersResponse, studentsResponse, expertiseResponse, academicPeriodsResponse, activeAcademicPeriodResponse] = await Promise.all([
           classService.getClasses(token, { limit: 100 }),
           subjectService.getSubjects(token, { limit: 100 }),
           userService.getBasicTeachers(token),
+          userService.getBasicStudents(token),
           expertiseProgramService.getExpertisePrograms(token, { limit: 100 }),
+          studentExamService.getAcademicPeriods(token),
           studentExamService.getActiveAcademicPeriod(token).catch(() => null)
         ]);
         
         setClasses(classesResponse.data || []);
         setSubjects(subjectsResponse.data || []);
         setTeachers(teachersResponse || []);
+        setStudents(studentsResponse || []);
         setExpertisePrograms(expertiseResponse.data || []);
-        setActiveAcademicPeriod(academicPeriodResponse);
+        setAcademicPeriods(academicPeriodsResponse || []);
+        setActiveAcademicPeriod(activeAcademicPeriodResponse);
         
       } catch (error) {
         console.error('Error fetching filter options:', error);
@@ -113,6 +121,8 @@ const TeacherAnalyticsPage: React.FC = () => {
       selectedGrade: '',
       selectedTeacher: user?._id || '', // Keep current teacher
       selectedExpertise: '',
+      selectedStudent: '',
+      selectedAcademicPeriod: '',
       activeTab: 'teacher'
     });
   };
@@ -140,6 +150,12 @@ const TeacherAnalyticsPage: React.FC = () => {
     }
     if (filters.selectedSubject) {
       commonFilters.subject_id = filters.selectedSubject;
+    }
+    if (filters.selectedStudent) {
+      commonFilters.student_id = filters.selectedStudent;
+    }
+    if (filters.selectedAcademicPeriod) {
+      commonFilters.academic_period_id = filters.selectedAcademicPeriod;
     }
 
     return commonFilters;
@@ -204,11 +220,13 @@ const TeacherAnalyticsPage: React.FC = () => {
               classes,
               subjects,
               teachers,
+              students,
               expertisePrograms
+              academicPeriods
             }}
             filterOptionsLoading={filterOptionsLoading}
             onClearFilters={clearScoreTrendFilters}
-            visibleFilterIds={['dateStart', 'dateEnd', 'class', 'subject', 'teacher']}
+            visibleFilterIds={['dateStart', 'dateEnd', 'class', 'subject', 'student', 'academicPeriod', 'teacher']}
           />
           
           {/* Score Trend Chart */}
