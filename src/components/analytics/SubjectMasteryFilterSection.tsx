@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Filter, RotateCcw, Target, BookOpen, GraduationCap, Users, MoreHorizontal } from 'lucide-react';
-import { OverflowList } from 'react-overflow-list';
 import FilterModal from '@/components/modals/FilterModal';
 import { Class } from '@/types/class';
 import { Subject } from '@/types/subject';
@@ -262,10 +261,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
   // Render individual filter item
   const renderFilterItem = useCallback((item: FilterConfig) => {
     return (
-      <div
-        key={item.id}
-        className="flex-shrink-0 min-w-[120px]"
-      >
+      <div key={item.id}>
         {item.type !== 'checkbox' && (
           <label className="block text-xs text-gray-600 mb-0.5">
             {item.label}
@@ -313,22 +309,9 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
     );
   }, [filterOptionsLoading]);
 
-  // Memoize overflow renderer
-  const renderOverflow = useCallback((overflowItems: FilterConfig[]) => (
-    <button
-      onClick={() => setIsFilterModalOpen(true)}
-      className="flex-shrink-0 flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-      title={`${overflowItems.length} filter tersembunyi`}
-    >
-      <MoreHorizontal className="w-4 h-4" />
-      <span>More</span>
-      {overflowItems.length > 0 && (
-        <span className="bg-purple-100 text-purple-800 text-xs font-medium px-1.5 py-0.5 rounded-full">
-          {overflowItems.length}
-        </span>
-      )}
-    </button>
-  ), [setIsFilterModalOpen]);
+  // Get the first 4 filters to display
+  const visibleFilters = filterConfig.slice(0, 4);
+  const hiddenFiltersCount = filterConfig.length - 4;
 
   return (
     <>
@@ -350,13 +333,32 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
           )}
         </div>
         
-        {/* OverflowList Container */}
-        <OverflowList
-          items={filterConfig}
-          itemRenderer={renderFilterItem}
-          overflowRenderer={renderOverflow}
-          className="flex items-end space-x-3 min-w-0"
-        />
+        {/* Fixed Filter Layout - 4 Filters + 1 More Button */}
+        <div className="flex items-end space-x-3">
+          {/* Display first 4 filters */}
+          {visibleFilters.map((filter) => (
+            <div key={filter.id} className="flex-1">
+              {renderFilterItem(filter)}
+            </div>
+          ))}
+          
+          {/* More Button - Always visible */}
+          <div className="flex-1">
+            <button
+              onClick={() => setIsFilterModalOpen(true)}
+              className="w-full h-[38px] flex items-center justify-center space-x-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+              title={`${hiddenFiltersCount} filter tambahan`}
+            >
+              <MoreHorizontal className="w-4 h-4" />
+              <span>More</span>
+              {hiddenFiltersCount > 0 && (
+                <span className="bg-purple-100 text-purple-800 text-xs font-medium px-1.5 py-0.5 rounded-full">
+                  {hiddenFiltersCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Mobile Filter Button */}
