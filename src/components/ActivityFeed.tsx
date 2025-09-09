@@ -52,7 +52,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities }) => {
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <User className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-500 mb-1">No recent activity</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">No recent activity</p>
               <p className="text-xs text-gray-400">User activities will appear here</p>
             </div>
           </div>
@@ -78,7 +78,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities }) => {
                 {/* Content - Compact */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between mb-0.5">
-                    <p className="text-sm font-medium text-gray-900 truncate pr-1">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate pr-1">
                       {activity.user_data.full_name}
                     </p>
                     <span className="text-xs text-gray-400 flex items-center space-x-0.5 flex-shrink-0">
@@ -87,7 +87,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities }) => {
                     </span>
                   </div>
 
-                  <p className="text-xs text-gray-500 mb-1.5">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">
                     Logged in from {activity.device_info.device_type}
                   </p>
 
