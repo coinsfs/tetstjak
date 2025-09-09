@@ -19,7 +19,7 @@ interface TeacherMainContentProps {
   currentPath: string;
   dashboardStats?: TeacherDashboardStats;
   statsLoading?: boolean;
-}
+import TeacherAnalyticsPage from "./pages/TeacherAnalyticsPage";
 
 const TeacherMainContent: React.FC<TeacherMainContentProps> = ({
   user,
