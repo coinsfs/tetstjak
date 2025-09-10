@@ -49,7 +49,7 @@ src/components/modals/details/ClassDetailModal.tsx
 src/components/dashboards/AdminDashboard.tsx
 src/components/dashboards/teacher/pages/TeacherClassesPage.tsx
 src/components/dashboards/teacher/pages/TeacherProfilePage.tsx
-
+src/components/dashboards/teacher/pages/TeacherAnalyticsPage.tsx
 src/components/dashboards/teacher/pages/TeacherExamsPage.tsx
 src/components/dashboards/teacher/pages/modals/TeacherExamDeleteModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherExamEditModal.tsx
@@ -104,7 +104,7 @@ src/components/dashboards/student/StudentHeader.tsx
 src/components/dashboards/student/StudentMainContent.tsx
 src/components/dashboards/student/StudentSidebar.tsx
 src/components/dashboards/student/pages/StudentDashboardPage.tsx
-
+src/components/dashboards/student/pages/StudentEvaluationPage.tsx
 src/components/dashboards/student/pages/StudentExamsPage.tsx
 src/components/dashboards/student/pages/StudentProfilePage.tsx
 src/components/dashboards/student/pages/StudentResultsPage.tsx
@@ -121,17 +121,17 @@ src/types/questionSet.ts
 src/services/assignment.ts
 
 src/components/VirtualSelect.tsx
-src/components/analytics/ScoreTrendAnalytics.tsx
-src/components/analytics/ScoreTrendFilterSection.tsx
 
 
-src/components/charts/PerformanceTrendChart.tsx
+
+
+
 src/components/charts/ScoreDistributionChart.tsx
-src/components/charts/ScoreTrendChart.tsx
-src/components/charts/SubjectMasteryRadarChart.tsx
-src/components/dashboards/admin/AnalyticsDashboard.tsx
-src/components/dashboards/student/pages/StudentScoreTrendAnalyticsPage.tsx
 
+
+src/components/dashboards/admin/AnalyticsDashboard.tsx
+
+src/components/dashboards/teacher/pages/TeacherExamAnalyticsPage.tsx
 src/components/dashboards/teacher/pages/TeacherScoreTrendAnalyticsPage.tsx
 src/components/dashboards/teacher/pages/modals/QuestionSetPermissionModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherExamFinishConfirmationModal.tsx

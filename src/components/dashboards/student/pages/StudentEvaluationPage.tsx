@@ -73,7 +73,6 @@ const StudentEvaluationPage: React.FC<StudentEvaluationPageProps> = ({ user }) =
     selectedExpertise: '',
     selectedStudent: user?._id || '',
     selectedTeacher: '',
-    selectedAcademicPeriod: '',
     minExamsPerSubject: 1,
     includeZeroScores: false
   });
@@ -192,7 +191,6 @@ const StudentEvaluationPage: React.FC<StudentEvaluationPageProps> = ({ user }) =
       selectedExpertise: '',
       selectedStudent: user?._id || '',
       selectedTeacher: '',
-      selectedAcademicPeriod: '',
       minExamsPerSubject: 1,
       includeZeroScores: false
     });
