@@ -96,6 +96,8 @@ export interface AcademicPeriod {
 export interface TeacherExamFilters {
   academic_period_id?: string;
   class_id?: string;
+  status?: string;
+  status_ne?: string;
   page?: number;
   limit?: number;
 }
