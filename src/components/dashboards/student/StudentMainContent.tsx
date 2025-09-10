@@ -5,7 +5,6 @@ import StudentExamsPage from './pages/StudentExamsPage';
 import StudentResultsPage from './pages/StudentResultsPage';
 import StudentEvaluationPage from './pages/StudentEvaluationPage';
 import StudentProfilePage from './pages/StudentProfilePage';
-import StudentScoreTrendAnalyticsPage from './pages/StudentScoreTrendAnalyticsPage';
 
 interface StudentMainContentProps {
   user: UserProfile | null;
@@ -26,8 +25,6 @@ const StudentMainContent: React.FC<StudentMainContentProps> = ({
         return <StudentResultsPage user={user} />;
       case '/student/evaluation':
         return <StudentEvaluationPage user={user} />;
-      case '/student/score-trend-analytics':
-        return <StudentScoreTrendAnalyticsPage user={user} />;
       case '/student/profile':
         return <StudentProfilePage user={user} />;
       default:
