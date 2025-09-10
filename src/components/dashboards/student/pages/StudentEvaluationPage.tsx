@@ -142,7 +142,7 @@ const StudentEvaluationPage: React.FC<StudentEvaluationPageProps> = ({ user }) =
               selectedAcademicPeriod: activeAcademicPeriod._id
             }));
           }
-            selectedAcademicPeriod: activeAcademicPeriod._id
+        } catch (error) {
           console.log('No active academic period found');
         }
 
