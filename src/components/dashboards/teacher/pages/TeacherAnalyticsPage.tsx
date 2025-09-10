@@ -404,7 +404,7 @@ const TeacherAnalyticsPage: React.FC = () => {
        </div>
 
         {/* Future Analytics Sections */}
-        <div className="bg-white shadow-sm rounded-lg p-6">
+        {/* <div className="bg-white shadow-sm rounded-lg p-6">
           <div className="text-center py-8">
             <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <BarChart3 className="h-8 w-8 text-orange-600" />
@@ -419,7 +419,7 @@ const TeacherAnalyticsPage: React.FC = () => {
               Coming Soon
             </div>
           </div>
-        </div>
+        </div> */}
 
       </div>
     </div>

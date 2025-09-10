@@ -39,7 +39,6 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
     { id: 'exams', label: 'Ujian', icon: FileText, path: '/student/exams' },
     { id: 'results', label: 'Hasil Ujian', icon: BarChart3, path: '/student/results' },
     { id: 'evaluation', label: 'Evaluasi', icon: TrendingUp, path: '/student/evaluation' },
-    { id: 'score-trend', label: 'Tren Nilai Saya', icon: TrendingUp, path: '/student/score-trend-analytics' },
   ];
 
   const bottomMenuItems: MenuItem[] = [

@@ -249,7 +249,7 @@ const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
           { value: '', label: 'Semua Periode' },
           ...filterOptions.academicPeriods.map((period) => ({
             value: period._id,
-            label: `${period.name} (${period.year})`
+            label: `${period.year} - Semester ${period.semester}`
           }))
         ],
         priority: 8

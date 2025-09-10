@@ -370,14 +370,14 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
       </div>
 
       {/* Study Progress */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+      {/* <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Progress Belajar</h3>
         <div className="text-center py-8">
           <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">Fitur progress belajar akan segera hadir</p>
           <p className="text-sm text-gray-400 mt-1">Coming Soon</p>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
