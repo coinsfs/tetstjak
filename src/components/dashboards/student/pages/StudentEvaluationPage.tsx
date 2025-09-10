@@ -198,25 +198,45 @@ const StudentEvaluationPage: React.FC<StudentEvaluationPageProps> = ({ user }) =
 
   // Convert filters to API format for Score Trend
   const getScoreTrendApiFilters = () => {
-    return {
-      start_date: scoreTrendFilters.dateRange.start ? new Date(scoreTrendFilters.dateRange.start).toISOString() : undefined,
-      end_date: scoreTrendFilters.dateRange.end ? new Date(scoreTrendFilters.dateRange.end).toISOString() : undefined,
-      student_id: scoreTrendFilters.selectedStudent,
+    const apiFilters: any = {
       academic_period_id: scoreTrendFilters.selectedAcademicPeriod,
       group_by: 'student'
     };
+    
+    // Only add non-empty parameters
+    if (filters.dateRange.start) {
+      apiFilters.start_date = convertWIBToUTC(filters.dateRange.start);
+    }
+    if (filters.dateRange.end) {
+      apiFilters.end_date = convertWIBToUTC(filters.dateRange.end);
+    }
+    if (filters.selectedAcademicPeriod) {
+      apiFilters.academic_period_id = filters.selectedAcademicPeriod;
+    }
+    
+    return apiFilters;
   };
 
   // Convert filters to API format for Subject Mastery
   const getSubjectMasteryApiFilters = () => {
-    return {
-      start_date: subjectMasteryFilters.dateRange.start ? new Date(subjectMasteryFilters.dateRange.start).toISOString() : undefined,
-      end_date: subjectMasteryFilters.dateRange.end ? new Date(subjectMasteryFilters.dateRange.end).toISOString() : undefined,
-      student_id: subjectMasteryFilters.selectedStudent,
+    const apiFilters: any = {
       academic_period_id: subjectMasteryFilters.selectedAcademicPeriod,
       min_exams_per_subject: subjectMasteryFilters.minExamsPerSubject,
       include_zero_scores: subjectMasteryFilters.includeZeroScores
     };
+    
+    // Only add non-empty parameters
+    if (filters.dateRange.start) {
+      apiFilters.start_date = convertWIBToUTC(filters.dateRange.start);
+    }
+    if (filters.dateRange.end) {
+      apiFilters.end_date = convertWIBToUTC(filters.dateRange.end);
+    }
+    if (filters.selectedAcademicPeriod) {
+      apiFilters.academic_period_id = filters.selectedAcademicPeriod;
+    }
+    
+    return apiFilters;
   };
 
   return (
