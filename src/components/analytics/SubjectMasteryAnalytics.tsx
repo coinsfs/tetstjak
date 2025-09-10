@@ -10,7 +10,6 @@ interface SubjectMasteryAnalyticsProps {
   defaultFilters?: SubjectMasteryFilters;
   height?: number;
   title?: string;
-  visibleFilterIds?: string[];
 }
 
 export interface SubjectMasteryAnalyticsRef {
@@ -20,8 +19,7 @@ export interface SubjectMasteryAnalyticsRef {
 const SubjectMasteryAnalytics = forwardRef<SubjectMasteryAnalyticsRef, SubjectMasteryAnalyticsProps>(({ 
   defaultFilters = {},
   height,
-  title,
-  visibleFilterIds
+  title
 }, ref) => {
   const { token, user } = useAuth();
   const [data, setData] = useState<SubjectMasteryResponse | null>(null);
