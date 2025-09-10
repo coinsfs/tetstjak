@@ -332,7 +332,6 @@ const TeacherAnalyticsPage: React.FC = () => {
               teachers,
               students,
               expertisePrograms,
-              academicPeriods
             }}
             filterOptionsLoading={filterOptionsLoading}
             onClearFilters={clearScoreTrendFilters}
