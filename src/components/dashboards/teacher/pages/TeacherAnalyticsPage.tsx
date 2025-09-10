@@ -336,7 +336,7 @@ const TeacherAnalyticsPage: React.FC = () => {
             }}
             filterOptionsLoading={filterOptionsLoading}
             onClearFilters={clearScoreTrendFilters}
-            dateStart
+            visibleFilterIds={['dateStart', 'dateEnd', 'class', 'subject', 'student', 'academicPeriods']}
             loadStudentOptions={loadStudentOptions}
             loadTeacherOptions={loadTeacherOptions}
           />
