@@ -34,6 +34,7 @@ interface SubjectMasteryFilterSectionProps {
   onClearFilters: () => void;
   filterOptions: FilterOptions;
   filterOptionsLoading: boolean;
+  visibleFilterIds?: string[];
   loadStudentOptions?: (inputValue: string, callback: (options: any[]) => void) => void;
   loadTeacherOptions?: (inputValue: string, callback: (options: any[]) => void) => void;
 }
@@ -55,6 +56,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
   onClearFilters,
   filterOptions,
   filterOptionsLoading,
+  visibleFilterIds,
   loadStudentOptions,
   loadTeacherOptions
 }) => {
@@ -255,8 +257,15 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
       }
     ];
 
-    // Sort by priority
-    return config.sort((a, b) => a.priority - b.priority);
+    // Sort by priority first
+    let processedConfig = config.sort((a, b) => a.priority - b.priority);
+    
+    // Filter based on visibleFilterIds if provided
+    if (visibleFilterIds && visibleFilterIds.length > 0) {
+      processedConfig = processedConfig.filter(item => visibleFilterIds.includes(item.id));
+    }
+    
+    return processedConfig;
   }, [
     filters.dateRange.start,
     filters.dateRange.end,
@@ -426,9 +435,11 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
     );
   }, [filterOptionsLoading]);
 
-  // Get the first 4 filters to display
-  const visibleFilters = filterConfig.slice(0, 4);
-  const hiddenFiltersCount = filterConfig.length - 4;
+  // Calculate visible and hidden filters based on processed config
+  const allApplicableFilters = filterConfig; // filterConfig now accounts for visibleFilterIds
+  const maxDirectFilters = allApplicableFilters.length <= 6 ? allApplicableFilters.length : 4;
+  const visibleFilters = allApplicableFilters.slice(0, maxDirectFilters);
+  const hiddenFiltersCount = Math.max(0, allApplicableFilters.length - maxDirectFilters);
 
   return (
     <>
@@ -521,6 +532,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
         onExpertiseChange={handleExpertiseChange}
         onClearFilters={onClearFilters}
         getActiveFilterCount={getActiveFilterCount}
+        visibleFilterIds={visibleFilterIds}
         loadStudentOptions={loadStudentOptions}
         loadTeacherOptions={loadTeacherOptions}
       />
