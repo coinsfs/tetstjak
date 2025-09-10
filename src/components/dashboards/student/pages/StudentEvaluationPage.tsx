@@ -198,25 +198,37 @@ const StudentEvaluationPage: React.FC<StudentEvaluationPageProps> = ({ user }) =
 
   // Convert filters to API format for Score Trend
   const getScoreTrendApiFilters = () => {
-    return {
+    const filters: any = {
       start_date: scoreTrendFilters.dateRange.start ? new Date(scoreTrendFilters.dateRange.start).toISOString() : undefined,
       end_date: scoreTrendFilters.dateRange.end ? new Date(scoreTrendFilters.dateRange.end).toISOString() : undefined,
       student_id: scoreTrendFilters.selectedStudent,
-      academic_period_id: scoreTrendFilters.selectedAcademicPeriod,
       group_by: 'student'
     };
+    
+    // Only add academic_period_id if it has a non-empty value
+    if (scoreTrendFilters.selectedAcademicPeriod) {
+      filters.academic_period_id = scoreTrendFilters.selectedAcademicPeriod;
+    }
+    
+    return filters;
   };
 
   // Convert filters to API format for Subject Mastery
   const getSubjectMasteryApiFilters = () => {
-    return {
+    const filters: any = {
       start_date: subjectMasteryFilters.dateRange.start ? new Date(subjectMasteryFilters.dateRange.start).toISOString() : undefined,
       end_date: subjectMasteryFilters.dateRange.end ? new Date(subjectMasteryFilters.dateRange.end).toISOString() : undefined,
       student_id: subjectMasteryFilters.selectedStudent,
-      academic_period_id: subjectMasteryFilters.selectedAcademicPeriod,
       min_exams_per_subject: subjectMasteryFilters.minExamsPerSubject,
       include_zero_scores: subjectMasteryFilters.includeZeroScores
     };
+    
+    // Only add academic_period_id if it has a non-empty value
+    if (subjectMasteryFilters.selectedAcademicPeriod) {
+      filters.academic_period_id = subjectMasteryFilters.selectedAcademicPeriod;
+    }
+    
+    return filters;
   };
 
   return (
