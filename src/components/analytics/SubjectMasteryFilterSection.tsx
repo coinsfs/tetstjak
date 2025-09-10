@@ -471,21 +471,22 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
           ))}
           
           {/* More Button - Always visible */}
-          <div className="flex-1">
-            <button
-              onClick={() => setIsFilterModalOpen(true)}
-              className="w-full h-[38px] flex items-center justify-center space-x-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-              title={`${hiddenFiltersCount} filter tambahan`}
-            >
-              <MoreHorizontal className="w-4 h-4" />
-              <span>More</span>
-              {hiddenFiltersCount > 0 && (
+          {/* More Button - Only show if there are hidden filters */}
+          {hiddenFiltersCount > 0 && (
+            <div className="flex-1">
+              <button
+                onClick={() => setIsFilterModalOpen(true)}
+                className="w-full h-[38px] flex items-center justify-center space-x-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                title={`${hiddenFiltersCount} filter tambahan`}
+              >
+                <MoreHorizontal className="w-4 h-4" />
+                <span>More</span>
                 <span className="bg-purple-100 text-purple-800 text-xs font-medium px-1.5 py-0.5 rounded-full">
                   {hiddenFiltersCount}
                 </span>
-              )}
-            </button>
-          </div>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
