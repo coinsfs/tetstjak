@@ -125,10 +125,10 @@ src/components/VirtualSelect.tsx
 
 
 
-src/components/charts/PerformanceTrendChart.tsx
+
 src/components/charts/ScoreDistributionChart.tsx
-src/components/charts/ScoreTrendChart.tsx
-src/components/charts/SubjectMasteryRadarChart.tsx
+
+
 src/components/dashboards/admin/AnalyticsDashboard.tsx
 
 src/components/dashboards/teacher/pages/TeacherExamAnalyticsPage.tsx
