@@ -49,7 +49,7 @@ src/components/modals/details/ClassDetailModal.tsx
 src/components/dashboards/AdminDashboard.tsx
 src/components/dashboards/teacher/pages/TeacherClassesPage.tsx
 src/components/dashboards/teacher/pages/TeacherProfilePage.tsx
-
+src/components/dashboards/teacher/pages/TeacherAnalyticsPage.tsx
 src/components/dashboards/teacher/pages/TeacherExamsPage.tsx
 src/components/dashboards/teacher/pages/modals/TeacherExamDeleteModal.tsx
 src/components/dashboards/teacher/pages/modals/TeacherExamEditModal.tsx
@@ -70,7 +70,7 @@ src/components/SubjectCoordinatorManagement.tsx
 src/components/charts/BrowserUsageChart.tsx
 src/components/charts/StudentGrowthChart.tsx
 src/components/charts/StudentsByMajorChart.tsx
-
+src/components/dashboards/StudentDashboard.tsx
 src/components/dashboards/TeacherDashboard.tsx
 src/components/dashboards/teacher/pages/TeacherQuestionSetsPage.tsx
 src/components/dashboards/teacher/pages/TeacherQuestionsPage.tsx
@@ -104,9 +104,9 @@ src/components/dashboards/student/StudentHeader.tsx
 src/components/dashboards/student/StudentMainContent.tsx
 src/components/dashboards/student/StudentSidebar.tsx
 src/components/dashboards/student/pages/StudentDashboardPage.tsx
-
+src/components/dashboards/student/pages/StudentEvaluationPage.tsx
 src/components/dashboards/student/pages/StudentExamsPage.tsx
-src/components/dashboards/student/pages/StudentProfilePage.tsx
+
 src/components/dashboards/student/pages/StudentResultsPage.tsx
 src/components/profile/index.ts
 src/components/dashboards/student/pages/StudentExamTakingPage.tsx
@@ -121,16 +121,16 @@ src/types/questionSet.ts
 src/services/assignment.ts
 
 src/components/VirtualSelect.tsx
-
-
-
-
-
+src/components/analytics/ScoreTrendAnalytics.tsx
+src/components/analytics/ScoreTrendFilterSection.tsx
+src/components/analytics/SubjectMasteryAnalytics.tsx
+src/components/analytics/SubjectMasteryFilterSection.tsx
+src/components/charts/PerformanceTrendChart.tsx
 src/components/charts/ScoreDistributionChart.tsx
-
-
+src/components/charts/ScoreTrendChart.tsx
+src/components/charts/SubjectMasteryRadarChart.tsx
 src/components/dashboards/admin/AnalyticsDashboard.tsx
-
+src/components/dashboards/student/pages/StudentScoreTrendAnalyticsPage.tsx
 src/components/dashboards/teacher/pages/TeacherExamAnalyticsPage.tsx
 src/components/dashboards/teacher/pages/TeacherScoreTrendAnalyticsPage.tsx
 src/components/dashboards/teacher/pages/modals/QuestionSetPermissionModal.tsx
