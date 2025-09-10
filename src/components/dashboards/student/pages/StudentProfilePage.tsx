@@ -2,6 +2,7 @@ import React from 'react';
 import { UserProfile } from '@/types/auth';
 import { User, Mail, Phone, MapPin, Calendar, GraduationCap } from 'lucide-react';
 import { getProfileImageUrl } from '@/constants/config';
+import StudentAccountSettingsPage from './StudentAccountSettingsPage';
 
 interface StudentProfilePageProps {
   user: UserProfile | null;
@@ -155,16 +156,7 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ user }) => {
         <div className="p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">Pengaturan Akun</h3>
         </div>
-        <div className="p-6">
-          <div className="text-center py-8">
-            <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h4 className="text-lg font-medium text-gray-900 mb-2">Pengaturan Akun</h4>
-            <p className="text-gray-500 mb-4">
-              Fitur pengaturan akun seperti ubah password dan preferensi akan segera hadir.
-            </p>
-            <p className="text-sm text-gray-400">Coming Soon</p>
-          </div>
-        </div>
+        <StudentAccountSettingsPage user={user} />
       </div>
     </div>
   );
