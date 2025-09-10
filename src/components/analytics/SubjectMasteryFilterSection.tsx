@@ -56,6 +56,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
   onClearFilters,
   filterOptions,
   filterOptionsLoading,
+  visibleFilterIds,
   loadStudentOptions,
   loadTeacherOptions
 }) => {
