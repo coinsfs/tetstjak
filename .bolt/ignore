@@ -108,6 +108,7 @@ src/components/dashboards/student/pages/StudentEvaluationPage.tsx
 src/components/dashboards/student/pages/StudentExamsPage.tsx
 src/components/dashboards/student/pages/StudentProfilePage.tsx
 
+
 src/components/profile/index.ts
 src/components/dashboards/student/pages/StudentExamTakingPage.tsx
 
