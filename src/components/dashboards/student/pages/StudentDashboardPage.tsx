@@ -95,33 +95,33 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
 
   const statsCards = [
     {
-      title: 'Ujian Tersedia',
-      value: loadingUpcoming ? '...' : upcomingExams.length.toString(),
+      title: 'Total Ujian',
+      value: loadingStats ? '...' : (studentStats?.total_exams?.toString() || '0'),
       icon: BookOpen,
       color: 'bg-blue-500',
       bgColor: 'bg-blue-50',
       textColor: 'text-blue-600'
     },
     {
-      title: 'Total Ujian',
-      value: loadingStats ? '...' : (studentStats?.total_exams?.toString() || '0'),
-      icon: Award,
+      title: 'Rata-rata Nilai',
+      value: loadingStats ? '...' : (studentStats?.average_score ? studentStats.average_score.toFixed(1) : '0'),
+      icon: TrendingUp,
       color: 'bg-green-500',
       bgColor: 'bg-green-50',
       textColor: 'text-green-600'
     },
     {
-      title: 'Rata-rata Nilai',
-      value: loadingStats ? '...' : (studentStats?.average_score ? studentStats.average_score.toFixed(1) : '0'),
-      icon: TrendingUp,
+      title: 'Nilai Tertinggi',
+      value: loadingStats ? '...' : (studentStats?.highest_score ? studentStats.highest_score.toFixed(1) : '0'),
+      icon: Target,
       color: 'bg-purple-500',
       bgColor: 'bg-purple-50',
       textColor: 'text-purple-600'
     },
     {
-      title: 'Nilai Tertinggi',
-      value: loadingStats ? '...' : (studentStats?.highest_score ? studentStats.highest_score.toFixed(1) : '0'),
-      icon: Target,
+      title: 'Nilai Terendah',
+      value: loadingStats ? '...' : (studentStats?.lowest_score ? studentStats.lowest_score.toFixed(1) : '0'),
+      icon: Award,
       color: 'bg-orange-500',
       bgColor: 'bg-orange-50',
       textColor: 'text-orange-600'
