@@ -9,7 +9,6 @@ import toast from 'react-hot-toast';
 interface ScoreTrendAnalyticsProps {
   defaultFilters?: ScoreTrendFilters;
   height?: number;
-  visibleFilterIds?: string[];
 }
 
 export interface ScoreTrendAnalyticsRef {
@@ -18,8 +17,7 @@ export interface ScoreTrendAnalyticsRef {
 
 const ScoreTrendAnalytics = forwardRef<ScoreTrendAnalyticsRef, ScoreTrendAnalyticsProps>(({ 
   defaultFilters = {},
-  height,
-  visibleFilterIds
+  height 
 }, ref) => {
   const { token, user } = useAuth();
   const [data, setData] = useState<ScoreTrendResponse | null>(null);
