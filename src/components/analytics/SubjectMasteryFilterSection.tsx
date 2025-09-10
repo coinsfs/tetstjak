@@ -437,7 +437,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
 
   // Calculate visible and hidden filters based on processed config
   const allApplicableFilters = filterConfig; // filterConfig now accounts for visibleFilterIds
-  const maxDirectFilters = allApplicableFilters.length <= 6 ? allApplicableFilters.length : 4;
+  const maxDirectFilters = allApplicableFilters.length <= 5 ? allApplicableFilters.length : 4;
   const visibleFilters = allApplicableFilters.slice(0, maxDirectFilters);
   const hiddenFiltersCount = Math.max(0, allApplicableFilters.length - maxDirectFilters);
 
