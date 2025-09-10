@@ -70,7 +70,7 @@ src/components/SubjectCoordinatorManagement.tsx
 src/components/charts/BrowserUsageChart.tsx
 src/components/charts/StudentGrowthChart.tsx
 src/components/charts/StudentsByMajorChart.tsx
-src/components/dashboards/StudentDashboard.tsx
+
 src/components/dashboards/TeacherDashboard.tsx
 src/components/dashboards/teacher/pages/TeacherQuestionSetsPage.tsx
 src/components/dashboards/teacher/pages/TeacherQuestionsPage.tsx
@@ -101,9 +101,9 @@ src/components/profile/ProfilePictureUpload.tsx
 src/components/profile/SubjectFilter.tsx
 src/components/SubjectFilter.tsx
 src/components/dashboards/student/StudentHeader.tsx
-src/components/dashboards/student/StudentMainContent.tsx
+
 src/components/dashboards/student/StudentSidebar.tsx
-src/components/dashboards/student/pages/StudentDashboardPage.tsx
+
 src/components/dashboards/student/pages/StudentEvaluationPage.tsx
 src/components/dashboards/student/pages/StudentExamsPage.tsx
 
