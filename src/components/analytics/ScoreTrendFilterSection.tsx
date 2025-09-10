@@ -421,7 +421,7 @@ const ScoreTrendFilterSection: React.FC<ScoreTrendFilterSectionProps> = ({
   const filterConfig = getFilterConfig();
   
   // Determine how many filters to show directly based on total count
-  const maxDirectFilters = filterConfig.length <= 6 ? filterConfig.length : 4;
+  const maxDirectFilters = filterConfig.length <= 5 ? filterConfig.length : 4;
   const visibleFilters = filterConfig.slice(0, maxDirectFilters);
   const hiddenFiltersCount = Math.max(0, filterConfig.length - maxDirectFilters);
 
