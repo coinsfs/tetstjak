@@ -221,7 +221,7 @@ const PerformanceTrendChart: React.FC<PerformanceTrendChartProps> = ({
                 name="Nilai Anda"
                 dot={{ fill: '#3B82F6', strokeWidth: 1, r: 3 }}
                 activeDot={{ r: 5, fill: '#3B82F6' }}
-                connectNulls={false}
+                connectNulls={true}
               />
               <Line 
                 type="monotone" 
@@ -231,7 +231,7 @@ const PerformanceTrendChart: React.FC<PerformanceTrendChartProps> = ({
                 name="Rata-rata Kelas"
                 dot={{ fill: '#10B981', strokeWidth: 1, r: 3 }}
                 activeDot={{ r: 5, fill: '#10B981' }}
-                connectNulls={false}
+                connectNulls={true}
                 strokeDasharray="4 2"
               />
             </LineChart>
