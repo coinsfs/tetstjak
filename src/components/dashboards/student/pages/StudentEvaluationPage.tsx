@@ -33,3 +33,5 @@ const getSubjectMasteryApiFilters = (filters: typeof subjectMasteryFilters): Sub
           height={300}
           title="Penguasaan Mata Pelajaran"
         />
+
+export default StudentEvaluationPage;
