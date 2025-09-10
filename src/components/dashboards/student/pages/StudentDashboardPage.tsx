@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '@/types/auth';
-import { BookOpen, Clock, TrendingUp, Award } from 'lucide-react';
+import { BookOpen, Clock, TrendingUp, Award, Target } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from '@/hooks/useRouter';
 import { studentExamService, StudentExam } from '@/services/studentExam';
+import { userService } from '@/services/user';
+import { StudentStats } from '@/types/studentStats';
 import { formatDateTimeWithTimezone } from '@/utils/timezone';
 import toast from 'react-hot-toast';
 
@@ -19,6 +21,8 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
   const [startingExamId, setStartingExamId] = useState<string | null>(null);
   const [recentResults, setRecentResults] = useState<StudentExam[]>([]);
   const [loadingResults, setLoadingResults] = useState(true);
+  const [studentStats, setStudentStats] = useState<StudentStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -27,6 +31,7 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
       try {
         setLoadingUpcoming(true);
         setLoadingResults(true);
+        setLoadingStats(true);
         
         const activeAcademicPeriod = await studentExamService.getActiveAcademicPeriod(token);
         
@@ -47,12 +52,22 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
           });
           setRecentResults(completedResponse.data);
         }
+
+        // Fetch student statistics
+        try {
+          const stats = await userService.getStudentStats(token);
+          setStudentStats(stats);
+        } catch (error) {
+          console.error('Error fetching student stats:', error);
+          // Don't show error toast for stats as it's not critical
+        }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         toast.error('Gagal memuat data dashboard');
       } finally {
         setLoadingUpcoming(false);
         setLoadingResults(false);
+        setLoadingStats(false);
       }
     };
 
@@ -81,15 +96,15 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
   const statsCards = [
     {
       title: 'Ujian Tersedia',
-      value: upcomingExams.length.toString(),
+      value: loadingUpcoming ? '...' : upcomingExams.length.toString(),
       icon: BookOpen,
       color: 'bg-blue-500',
       bgColor: 'bg-blue-50',
       textColor: 'text-blue-600'
     },
     {
-      title: 'Ujian Selesai',
-      value: recentResults.length.toString(),
+      title: 'Total Ujian',
+      value: loadingStats ? '...' : (studentStats?.total_exams?.toString() || '0'),
       icon: Award,
       color: 'bg-green-500',
       bgColor: 'bg-green-50',
@@ -97,16 +112,16 @@ const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ user }) => 
     },
     {
       title: 'Rata-rata Nilai',
-      value: '0',
+      value: loadingStats ? '...' : (studentStats?.average_score ? studentStats.average_score.toFixed(1) : '0'),
       icon: TrendingUp,
       color: 'bg-purple-500',
       bgColor: 'bg-purple-50',
       textColor: 'text-purple-600'
     },
     {
-      title: 'Waktu Belajar',
-      value: '0 jam',
-      icon: Clock,
+      title: 'Nilai Tertinggi',
+      value: loadingStats ? '...' : (studentStats?.highest_score ? studentStats.highest_score.toFixed(1) : '0'),
+      icon: Target,
       color: 'bg-orange-500',
       bgColor: 'bg-orange-50',
       textColor: 'text-orange-600'

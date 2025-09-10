@@ -12,6 +12,7 @@ import {
   UpdateStudentRequest,
   ClassDetails
 } from '@/types/user';
+import { StudentStats, StudentStatsFilters } from '@/types/studentStats';
 import { ExpertiseProgram } from '@/types/common';
 import { BaseService } from './base';
 
@@ -144,6 +145,13 @@ class UserService extends BaseService {
   async getDepartments(token: string): Promise<ExpertiseProgram[]> {
     const result = await this.get<{ data: ExpertiseProgram[] }>('/expertise-programs/', token);
     return result.data || [];
+  }
+
+  // Student stats method
+  async getStudentStats(token: string, filters?: StudentStatsFilters): Promise<StudentStats> {
+    const queryString = filters ? this.buildQueryParams(filters) : '';
+    const endpoint = queryString ? `/users/students/me/stats?${queryString}` : '/users/students/me/stats';
+    return this.get<StudentStats>(endpoint, token);
   }
 }
 
