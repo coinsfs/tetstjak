@@ -34,6 +34,7 @@ interface SubjectMasteryFilterSectionProps {
   onClearFilters: () => void;
   filterOptions: FilterOptions;
   filterOptionsLoading: boolean;
+  visibleFilterIds?: string[];
   loadStudentOptions?: (inputValue: string, callback: (options: any[]) => void) => void;
   loadTeacherOptions?: (inputValue: string, callback: (options: any[]) => void) => void;
 }
@@ -55,6 +56,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
   onClearFilters,
   filterOptions,
   filterOptionsLoading,
+  visibleFilterIds,
   loadStudentOptions,
   loadTeacherOptions
 }) => {
@@ -256,7 +258,14 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
     ];
 
     // Sort by priority
-    return config.sort((a, b) => a.priority - b.priority);
+    const sortedConfig = config.sort((a, b) => a.priority - b.priority);
+    
+    // If visibleFilterIds is provided, only show those filters
+    if (visibleFilterIds && visibleFilterIds.length > 0) {
+      return sortedConfig.filter(item => visibleFilterIds.includes(item.id));
+    }
+    
+    return sortedConfig;
   }, [
     filters.dateRange.start,
     filters.dateRange.end,
@@ -264,6 +273,8 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
     filters.selectedSubject,
     filters.selectedGrade,
     filters.selectedExpertise,
+    filters.selectedStudent,
+    filters.selectedTeacher,
     filters.minExamsPerSubject,
     filters.includeZeroScores,
     filterOptions.classes,
@@ -275,8 +286,11 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
     handleSubjectChange,
     handleGradeChange,
     handleExpertiseChange,
+    handleStudentChange,
+    handleTeacherChange,
     handleMinExamsChange,
-    handleIncludeZeroScoresChange
+    handleIncludeZeroScoresChange,
+    visibleFilterIds
   ]);
 
   const getActiveFilterCount = useCallback(() => {
@@ -426,9 +440,10 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
     );
   }, [filterOptionsLoading]);
 
-  // Get the first 4 filters to display
-  const visibleFilters = filterConfig.slice(0, 4);
-  const hiddenFiltersCount = filterConfig.length - 4;
+  // Determine how many filters to show directly based on total count and available space
+  const maxDirectFilters = filterConfig.length <= 6 ? filterConfig.length : 4;
+  const visibleFilters = filterConfig.slice(0, maxDirectFilters);
+  const hiddenFiltersCount = Math.max(0, filterConfig.length - maxDirectFilters);
 
   return (
     <>
@@ -450,31 +465,31 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
           )}
         </div>
         
-        {/* Fixed Filter Layout - 4 Filters + 1 More Button */}
+        {/* Dynamic Filter Layout */}
         <div className="flex items-end space-x-3">
-          {/* Display first 4 filters */}
+          {/* Display visible filters */}
           {visibleFilters.map((filter) => (
             <div key={filter.id} className="flex-1">
               {renderFilterItem(filter)}
             </div>
           ))}
           
-          {/* More Button - Always visible */}
-          <div className="flex-1">
-            <button
-              onClick={() => setIsFilterModalOpen(true)}
-              className="w-full h-[38px] flex items-center justify-center space-x-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-              title={`${hiddenFiltersCount} filter tambahan`}
-            >
-              <MoreHorizontal className="w-4 h-4" />
-              <span>More</span>
-              {hiddenFiltersCount > 0 && (
+          {/* More Button - Only show if there are hidden filters */}
+          {hiddenFiltersCount > 0 && (
+            <div className="flex-1">
+              <button
+                onClick={() => setIsFilterModalOpen(true)}
+                className="w-full h-[38px] flex items-center justify-center space-x-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                title={`${hiddenFiltersCount} filter tambahan`}
+              >
+                <MoreHorizontal className="w-4 h-4" />
+                <span>More</span>
                 <span className="bg-purple-100 text-purple-800 text-xs font-medium px-1.5 py-0.5 rounded-full">
                   {hiddenFiltersCount}
                 </span>
-              )}
-            </button>
-          </div>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -503,8 +518,10 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
         selectedClass={filters.selectedClass}
         selectedSubject={filters.selectedSubject}
         selectedGrade={filters.selectedGrade}
-        selectedTeacher=""
+        selectedTeacher={filters.selectedTeacher}
         selectedExpertise={filters.selectedExpertise}
+        selectedStudent={filters.selectedStudent}
+        selectedAcademicPeriod=""
         activeTab="subject-mastery"
         classes={filterOptions.classes}
         subjects={filterOptions.subjects}
@@ -513,12 +530,15 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
         academicPeriods={filterOptions.academicPeriods}
         expertisePrograms={filterOptions.expertisePrograms}
         filterOptionsLoading={filterOptionsLoading}
+        visibleFilterIds={visibleFilterIds}
         onDateChange={handleDateChange}
         onClassChange={handleClassChange}
         onSubjectChange={handleSubjectChange}
         onGradeChange={handleGradeChange}
-        onTeacherChange={() => {}} // Not used for subject mastery
+        onTeacherChange={handleTeacherChange}
         onExpertiseChange={handleExpertiseChange}
+        onStudentChange={handleStudentChange}
+        onAcademicPeriodChange={() => {}} // Not used for subject mastery
         onClearFilters={onClearFilters}
         getActiveFilterCount={getActiveFilterCount}
         loadStudentOptions={loadStudentOptions}
