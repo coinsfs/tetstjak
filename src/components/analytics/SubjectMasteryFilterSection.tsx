@@ -15,6 +15,7 @@ interface SubjectMasteryFilters {
   selectedExpertise: string;
   selectedStudent: string;
   selectedTeacher: string;
+  selectedAcademicPeriod: string;
   minExamsPerSubject: number;
   includeZeroScores: boolean;
 }
@@ -36,6 +37,7 @@ interface SubjectMasteryFilterSectionProps {
   filterOptionsLoading: boolean;
   loadStudentOptions?: (inputValue: string, callback: (options: any[]) => void) => void;
   loadTeacherOptions?: (inputValue: string, callback: (options: any[]) => void) => void;
+  visibleFilterIds?: string[];
 }
 
 interface FilterConfig {
@@ -56,7 +58,8 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
   filterOptions,
   filterOptionsLoading,
   loadStudentOptions,
-  loadTeacherOptions
+  loadTeacherOptions,
+  visibleFilterIds
 }) => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
@@ -123,6 +126,13 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
     onFiltersChange({
       ...filters,
       includeZeroScores: e.target.checked
+    });
+  };
+
+  const handleAcademicPeriodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onFiltersChange({
+      ...filters,
+      selectedAcademicPeriod: e.target.value
     });
   };
 
@@ -252,6 +262,21 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
         value: filters.includeZeroScores,
         onChange: handleIncludeZeroScoresChange,
         priority: 10
+      },
+      {
+        id: 'academicPeriod',
+        label: 'Periode Akademik',
+        type: 'select',
+        value: filters.selectedAcademicPeriod,
+        onChange: handleAcademicPeriodChange,
+        options: [
+          { value: '', label: 'Semua Periode' },
+          ...filterOptions.academicPeriods.map((period) => ({
+            value: period._id,
+            label: `${period.year} - ${period.semester}`
+          }))
+        ],
+        priority: 3
       }
     ];
 
@@ -276,7 +301,8 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
     handleGradeChange,
     handleExpertiseChange,
     handleMinExamsChange,
-    handleIncludeZeroScoresChange
+    handleIncludeZeroScoresChange,
+    handleAcademicPeriodChange
   ]);
 
   const getActiveFilterCount = useCallback(() => {
@@ -293,6 +319,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
     if (filters.selectedExpertise) count++;
     if (filters.selectedStudent) count++;
     if (filters.selectedTeacher) count++;
+    if (filters.selectedAcademicPeriod) count++;
     if (filters.minExamsPerSubject !== 1) count++;
     if (filters.includeZeroScores !== false) count++;
     return count;
@@ -426,9 +453,22 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
     );
   }, [filterOptionsLoading]);
 
-  // Get the first 4 filters to display
-  const visibleFilters = filterConfig.slice(0, 4);
-  const hiddenFiltersCount = filterConfig.length - 4;
+  // Get filters to display based on visibleFilterIds or default behavior
+  const visibleFilters = useMemo(() => {
+    if (visibleFilterIds && visibleFilterIds.length > 0) {
+      return filterConfig.filter(filter => visibleFilterIds.includes(filter.id));
+    }
+    // Default behavior: show first 4 filters
+    return filterConfig.slice(0, 4);
+  }, [filterConfig, visibleFilterIds]);
+
+  const hiddenFiltersCount = useMemo(() => {
+    if (visibleFilterIds && visibleFilterIds.length > 0) {
+      return filterConfig.length - visibleFilters.length;
+    }
+    // Default behavior
+    return filterConfig.length - 4;
+  }, [filterConfig.length, visibleFilters.length, visibleFilterIds]);
 
   return (
     <>
@@ -460,7 +500,8 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
           ))}
           
           {/* More Button - Always visible */}
-          <div className="flex-1">
+          {hiddenFiltersCount > 0 && (
+            <div className="flex-1">
             <button
               onClick={() => setIsFilterModalOpen(true)}
               className="w-full h-[38px] flex items-center justify-center space-x-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
@@ -468,13 +509,12 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
             >
               <MoreHorizontal className="w-4 h-4" />
               <span>More</span>
-              {hiddenFiltersCount > 0 && (
                 <span className="bg-purple-100 text-purple-800 text-xs font-medium px-1.5 py-0.5 rounded-full">
                   {hiddenFiltersCount}
                 </span>
-              )}
             </button>
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -505,6 +545,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
         selectedGrade={filters.selectedGrade}
         selectedTeacher=""
         selectedExpertise={filters.selectedExpertise}
+        selectedAcademicPeriod={filters.selectedAcademicPeriod}
         activeTab="subject-mastery"
         classes={filterOptions.classes}
         subjects={filterOptions.subjects}
@@ -519,6 +560,7 @@ const SubjectMasteryFilterSection: React.FC<SubjectMasteryFilterSectionProps> = 
         onGradeChange={handleGradeChange}
         onTeacherChange={() => {}} // Not used for subject mastery
         onExpertiseChange={handleExpertiseChange}
+        onAcademicPeriodChange={handleAcademicPeriodChange}
         onClearFilters={onClearFilters}
         getActiveFilterCount={getActiveFilterCount}
         loadStudentOptions={loadStudentOptions}

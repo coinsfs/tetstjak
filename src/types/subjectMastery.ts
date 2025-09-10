@@ -46,6 +46,7 @@ export interface SubjectMasteryFilters {
   start_date?: string;
   end_date?: string;
   academic_period_id?: string;
+  selectedAcademicPeriod: string;
   min_exams_per_subject?: number;
   include_zero_scores?: boolean;
   use_cache?: boolean;

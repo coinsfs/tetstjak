@@ -73,6 +73,7 @@ const StudentEvaluationPage: React.FC<StudentEvaluationPageProps> = ({ user }) =
     selectedExpertise: '',
     selectedStudent: user?._id || '',
     selectedTeacher: '',
+    selectedAcademicPeriod: '',
     minExamsPerSubject: 1,
     includeZeroScores: false
   });
@@ -141,7 +142,7 @@ const StudentEvaluationPage: React.FC<StudentEvaluationPageProps> = ({ user }) =
               selectedAcademicPeriod: activeAcademicPeriod._id
             }));
           }
-        } catch (error) {
+            selectedAcademicPeriod: activeAcademicPeriod._id
           console.log('No active academic period found');
         }
 
@@ -191,6 +192,7 @@ const StudentEvaluationPage: React.FC<StudentEvaluationPageProps> = ({ user }) =
       selectedExpertise: '',
       selectedStudent: user?._id || '',
       selectedTeacher: '',
+      selectedAcademicPeriod: '',
       minExamsPerSubject: 1,
       includeZeroScores: false
     });

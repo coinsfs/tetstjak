@@ -53,6 +53,7 @@ const TeacherAnalyticsPage: React.FC = () => {
     selectedExpertise: '',
     selectedStudent: '',
     selectedTeacher: user?._id || '', // Automatically set to current teacher
+    selectedAcademicPeriod: '',
     minExamsPerSubject: 1,
     includeZeroScores: false
   });
@@ -219,6 +220,7 @@ const TeacherAnalyticsPage: React.FC = () => {
       selectedExpertise: '',
       selectedStudent: '',
       selectedTeacher: user?._id || '', // Keep current teacher
+      selectedAcademicPeriod: '',
       minExamsPerSubject: 1,
       includeZeroScores: false
     });
