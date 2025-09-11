@@ -3,6 +3,7 @@ import { API_BASE_URL } from '../constants/config';
 class WebSocketService {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
   private reconnectInterval = 5000; // 5 seconds for first attempt
   private messageHandlers: Map<string, (data: any) => void> = new Map();
   private messageQueue: any[] = [];
@@ -132,7 +133,7 @@ class WebSocketService {
     console.log('🔍 WebSocketService - cleanEndpointSuffix:', cleanEndpointSuffix);
     
     // Build proper WebSocket URL: wss://domain/api/v1/ws/...
-    const newWsUrl = `wss://${domain}/api/v1${cleanEndpointSuffix}?token=${token}`;
+    const newWsUrl = `ws://${domain}/api/v1${cleanEndpointSuffix}?token=${token}`;
     console.log('🔍 WebSocketService - newWsUrl constructed:', newWsUrl);
 
     // If already connected or connecting to the same URL, skip
@@ -237,12 +238,6 @@ class WebSocketService {
             }
           }
         } catch (error) {
-          console.error('❌ Failed to parse WebSocket message:', {
-            rawData: event.data,
-            error: error,
-            errorMessage: error instanceof Error ? error.message : 'Unknown error',
-            timestamp: new Date().toISOString()
-          });
         }
       };
 
@@ -300,32 +295,29 @@ class WebSocketService {
       this.reconnectTimeoutId = null;
     }
 
-    // Infinite retry with exponential backoff
-    this.reconnectAttempts++;
-    
-    // Set isReconnecting to true for this attempt
-    this.isReconnecting = true;
-    
-    this.statusChangeCallback?.('reconnecting');
-    
-    // Exponential backoff with max delay of 30 seconds
-    const delay = Math.min(this.reconnectInterval * Math.pow(2, this.reconnectAttempts - 1), 30000);
-    
-    console.log(`🔄 WebSocket reconnect attempt ${this.reconnectAttempts} in ${delay}ms`);
-    
-    this.reconnectTimeoutId = setTimeout(() => {
-      // Double-check that we still need to reconnect and not already connected
-      if (this.currentToken && this.currentEndpoint && this.isReconnecting && 
-          (!this.ws || this.ws.readyState === WebSocket.CLOSED)) {
-        this.connect(this.currentToken, this.currentEndpoint, this.authErrorCallback || undefined, this.statusChangeCallback || undefined);
-      } else {
-        this.isReconnecting = false;
-      }
-    }, delay);
-    
-    // Log reconnection info for debugging
-    if (this.reconnectAttempts % 5 === 0) {
-      console.warn(`⚠️ WebSocket has attempted ${this.reconnectAttempts} reconnections. Next delay: ${delay}ms`);
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      
+      // Set isReconnecting to true for this attempt
+      this.isReconnecting = true;
+      
+      this.statusChangeCallback?.('reconnecting');
+      
+      // Exponential backoff with max delay of 30 seconds
+      const delay = Math.min(this.reconnectInterval * Math.pow(2, this.reconnectAttempts - 1), 30000);
+      
+      this.reconnectTimeoutId = setTimeout(() => {
+        // Double-check that we still need to reconnect and not already connected
+        if (this.currentToken && this.currentEndpoint && this.isReconnecting && 
+            (!this.ws || this.ws.readyState === WebSocket.CLOSED)) {
+          this.connect(this.currentToken, this.currentEndpoint, this.authErrorCallback || undefined, this.statusChangeCallback || undefined);
+        } else {
+          this.isReconnecting = false;
+        }
+      }, delay);
+    } else {
+      this.statusChangeCallback?.('error');
+      this.isReconnecting = false;
     }
   }
 
