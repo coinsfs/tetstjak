@@ -324,7 +324,7 @@ const ExamManagement: React.FC = () => {
             return (
               <>
             {/* Search Input */}
-                <div className="space-y-2 flex-1 min-w-[200px]" style={{ maxWidth: searchWidth }}>
+                <div className="space-y-2 w-full md:flex-1 md:min-w-[200px]" style={{ maxWidth: searchWidth }}>
               <label className="block text-sm font-medium text-gray-700">
                 Pencarian
               </label>
@@ -341,7 +341,7 @@ const ExamManagement: React.FC = () => {
             </div>
 
                 {academicPeriods.length > 0 && (
-                  <div className="space-y-2 flex-1 min-w-[150px] max-w-[30%]">
+                  <div className="space-y-2 w-full md:flex-1 md:min-w-[150px] md:max-w-[30%]">
             {/* Academic Period Filter */}
               <label className="block text-sm font-medium text-gray-700">
                 Periode Akademik
@@ -362,7 +362,7 @@ const ExamManagement: React.FC = () => {
             </div>
                 )}
 
-                <div className="space-y-2 flex-1 min-w-[150px] max-w-[30%]">
+                <div className="space-y-2 w-full md:flex-1 md:min-w-[150px] md:max-w-[30%]">
             {/* Exam Type Filter */}
               <label className="block text-sm font-medium text-gray-700">
                 Jenis Ujian
