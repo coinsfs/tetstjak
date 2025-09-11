@@ -137,7 +137,7 @@ const TeacherFilter: React.FC<TeacherFilterProps> = ({
 
       <div className="flex flex-wrap gap-4">
         {/* Search Input - Always available */}
-        <div className="space-y-2 flex-1 min-w-[200px] max-w-[70%]">
+        <div className="space-y-2 w-full md:flex-1 md:min-w-[200px] md:max-w-[70%]">
           <label className="block text-sm font-medium text-gray-700">
             Pencarian
           </label>
@@ -154,7 +154,7 @@ const TeacherFilter: React.FC<TeacherFilterProps> = ({
         </div>
 
         {/* Department Filter - Show immediately with loading state */}
-        <div className="space-y-2 flex-1 min-w-[150px] max-w-[30%]">
+        <div className="space-y-2 w-full md:flex-1 md:min-w-[150px] md:max-w-[30%]">
           <label className="block text-sm font-medium text-gray-700">
             Jurusan
           </label>

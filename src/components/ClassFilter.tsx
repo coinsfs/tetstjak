@@ -100,7 +100,7 @@ const ClassFilter: React.FC<ClassFilterProps> = ({
 
       <div className="flex flex-wrap gap-4">
         {/* Search Input - Always available */}
-        <div className="space-y-2 flex-1 min-w-[200px] max-w-[40%]">
+        <div className="space-y-2 w-full md:flex-1 md:min-w-[200px] md:max-w-[40%]">
           <label className="block text-sm font-medium text-gray-700">
             Pencarian
           </label>
@@ -117,7 +117,7 @@ const ClassFilter: React.FC<ClassFilterProps> = ({
         </div>
 
         {/* Grade Level Filter - Always available */}
-        <div className="space-y-2 flex-1 min-w-[150px] max-w-[20%]">
+        <div className="space-y-2 w-full md:flex-1 md:min-w-[150px] md:max-w-[20%]">
           <label className="block text-sm font-medium text-gray-700">
             Tingkat Kelas
           </label>
@@ -134,7 +134,7 @@ const ClassFilter: React.FC<ClassFilterProps> = ({
         </div>
 
         {/* Expertise Program Filter - Show immediately with loading state */}
-        <div className="space-y-2 flex-1 min-w-[150px] max-w-[20%]">
+        <div className="space-y-2 w-full md:flex-1 md:min-w-[150px] md:max-w-[20%]">
           <label className="block text-sm font-medium text-gray-700">
             Jurusan
           </label>
@@ -156,7 +156,7 @@ const ClassFilter: React.FC<ClassFilterProps> = ({
         </div>
 
         {/* Academic Year Filter - Always available */}
-        <div className="space-y-2 flex-1 min-w-[150px] max-w-[20%]">
+        <div className="space-y-2 w-full md:flex-1 md:min-w-[150px] md:max-w-[20%]">
           <label className="block text-sm font-medium text-gray-700">
             Tahun Ajaran
           </label>
