@@ -46,7 +46,7 @@ src/components/modals/details/SubjectDetailModal.tsx
 src/components/modals/details/StudentDetailModal.tsx
 src/components/modals/details/ExpertiseProgramDetailModal.tsx
 src/components/modals/details/ClassDetailModal.tsx
-src/components/dashboards/AdminDashboard.tsx
+
 src/components/dashboards/teacher/pages/TeacherClassesPage.tsx
 src/components/dashboards/teacher/pages/TeacherProfilePage.tsx
 src/components/dashboards/teacher/pages/TeacherAnalyticsPage.tsx
@@ -107,7 +107,7 @@ src/components/dashboards/student/pages/StudentDashboardPage.tsx
 src/components/dashboards/student/pages/StudentEvaluationPage.tsx
 src/components/dashboards/student/pages/StudentExamsPage.tsx
 src/components/dashboards/student/pages/StudentProfilePage.tsx
-
+src/components/dashboards/student/pages/StudentResultsPage.tsx
 src/components/profile/index.ts
 src/components/dashboards/student/pages/StudentExamTakingPage.tsx
 
@@ -140,4 +140,3 @@ src/components/security/ExamMonitoring.tsx
 src/components/security/SecurityCheck.tsx
 src/components/security/index.ts
 src/components/tables/TeacherExamsTable.tsx
-
