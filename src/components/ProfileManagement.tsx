@@ -91,7 +91,7 @@ const ProfileManagement: React.FC = () => {
 
       {/* Profile Navigation Tabs */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="border-b border-gray-200 overflow-x-auto">
+        <div className="border-b border-gray-200 overflow-x-auto scrollbar-hide">
           <nav className="-mb-px flex space-x-8 min-w-max" aria-label="Tabs">
             {mainMenuItems.map((item) => (
               <button
@@ -112,7 +112,7 @@ const ProfileManagement: React.FC = () => {
 
         {/* Sub-navigation for Profile tab */}
         {activeMainMenu === 'profile' && (
-          <div className="mt-4 overflow-x-auto">
+          <div className="mt-4 overflow-x-auto scrollbar-hide">
             <nav className="flex space-x-4 min-w-max" aria-label="Sub tabs">
               {mainMenuItems[0].subItems.map((subItem) => (
                 <button
