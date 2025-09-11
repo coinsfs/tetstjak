@@ -91,13 +91,13 @@ const ProfileManagement: React.FC = () => {
 
       {/* Profile Navigation Tabs */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+        <div className="border-b border-gray-200 overflow-x-auto">
+          <nav className="-mb-px flex space-x-8 min-w-max" aria-label="Tabs">
             {mainMenuItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveMainMenu(item.id)}
-                className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 flex-shrink-0 ${
                   activeMainMenu === item.id
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -112,8 +112,8 @@ const ProfileManagement: React.FC = () => {
 
         {/* Sub-navigation for Profile tab */}
         {activeMainMenu === 'profile' && (
-          <div className="mt-4">
-            <nav className="flex space-x-4" aria-label="Sub tabs">
+          <div className="mt-4 overflow-x-auto">
+            <nav className="flex space-x-4 min-w-max" aria-label="Sub tabs">
               {mainMenuItems[0].subItems.map((subItem) => (
                 <button
                   key={subItem.id}
@@ -121,7 +121,7 @@ const ProfileManagement: React.FC = () => {
                   className={`px-3 py-2 text-sm font-medium rounded-md ${
                     activeSubMenu === subItem.id
                       ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 whitespace-nowrap flex-shrink-0'
                   }`}
                 >
                   {subItem.label}
