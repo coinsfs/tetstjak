@@ -3,7 +3,7 @@ import { API_BASE_URL } from '../constants/config';
 class WebSocketService {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private maxReconnectAttempts = Number.MAX_SAFE_INTEGER; // No limit on reconnect attempts
   private reconnectInterval = 5000; // 5 seconds for first attempt
   private messageHandlers: Map<string, (data: any) => void> = new Map();
   private messageQueue: any[] = [];
@@ -295,7 +295,8 @@ class WebSocketService {
       this.reconnectTimeoutId = null;
     }
 
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+    // Always attempt to reconnect (no limit)
+    if (true) {
       this.reconnectAttempts++;
       
       // Set isReconnecting to true for this attempt
@@ -315,10 +316,6 @@ class WebSocketService {
           this.isReconnecting = false;
         }
       }, delay);
-    } else {
-      this.statusChangeCallback?.('error');
-      this.isReconnecting = false;
-    }
   }
 
   onMessage(type: string, handler: (data: any) => void) {
