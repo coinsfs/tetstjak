@@ -316,6 +316,7 @@ class WebSocketService {
           this.isReconnecting = false;
         }
       }, delay);
+    }
   }
 
   onMessage(type: string, handler: (data: any) => void) {
