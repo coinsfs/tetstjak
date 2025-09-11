@@ -216,301 +216,22 @@ const AdminDashboard: React.FC = () => {
     setSidebarOpen(false);
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-screen bg-gray-50">
-        <div className="hidden lg:block">
-          <Sidebar 
-            activeMenu={activeMenu} 
-            onMenuClick={handleMenuClick}
-            isOpen={false}
-            onClose={closeSidebar}
-          />
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex items-center space-x-3">
-            <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-900 border-t-transparent"></div>
-            <span className="text-sm font-medium text-gray-700">Loading dashboard...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (activeMenu !== 'dashboard') {
-    if (activeMenu === 'teachers') {
-      return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden">
-          <Sidebar 
-            activeMenu={activeMenu} 
-            onMenuClick={handleMenuClick}
-            isOpen={sidebarOpen}
-            onClose={closeSidebar}
-          />
-          <div className="flex-1 lg:ml-0 flex flex-col overflow-hidden">
-            <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
-              <button
-                onClick={toggleSidebar}
-                className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
-              >
-                <Menu className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-auto p-6">
-              <TeacherManagement />
-            </div>
-          </div>
-        </div>
-      );
+  // Helper function for dynamic header title
+  const getPageTitleForHeader = (menu: string) => {
+    switch (menu) {
+      case 'dashboard': return 'Dashboard';
+      case 'teachers': return 'Teacher Management';
+      case 'students': return 'Student Management';
+      case 'expertise-programs': return 'Expertise Program Management';
+      case 'exams': return 'Exam Management';
+      case 'subjects': return 'Subject Management';
+      case 'classes': return 'Class Management';
+      case 'assignments': return 'Assignment Management';
+      case 'analytics': return 'Analytics Dashboard';
+      case 'profile': return 'Profile Settings';
+      default: return 'Admin Panel';
     }
-    
-    if (activeMenu === 'students') {
-      return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden">
-          <Sidebar 
-            activeMenu={activeMenu} 
-            onMenuClick={handleMenuClick}
-            isOpen={sidebarOpen}
-            onClose={closeSidebar}
-          />
-          <div className="flex-1 lg:ml-0 flex flex-col overflow-hidden">
-            <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
-              <button
-                onClick={toggleSidebar}
-                className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
-              >
-                <Menu className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-auto p-6">
-              <StudentManagement />
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    if (activeMenu === 'expertise-programs') {
-      return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden">
-          <Sidebar 
-            activeMenu={activeMenu} 
-            onMenuClick={handleMenuClick}
-            isOpen={sidebarOpen}
-            onClose={closeSidebar}
-          />
-          <div className="flex-1 lg:ml-0 flex flex-col overflow-hidden">
-            <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
-              <button
-                onClick={toggleSidebar}
-                className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
-              >
-                <Menu className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-auto p-6">
-              <ExpertiseProgramManagement />
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    if (activeMenu === 'exams') {
-      return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden">
-          <Sidebar 
-            activeMenu={activeMenu} 
-            onMenuClick={handleMenuClick}
-            isOpen={sidebarOpen}
-            onClose={closeSidebar}
-          />
-          <div className="flex-1 lg:ml-0 flex flex-col overflow-hidden">
-            <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
-              <button
-                onClick={toggleSidebar}
-                className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
-              >
-                <Menu className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-auto p-6">
-              <ExamManagement />
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    if (activeMenu === 'subjects') {
-      return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden">
-          <Sidebar 
-            activeMenu={activeMenu} 
-            onMenuClick={handleMenuClick}
-            isOpen={sidebarOpen}
-            onClose={closeSidebar}
-          />
-          <div className="flex-1 lg:ml-0 flex flex-col overflow-hidden">
-            <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
-              <button
-                onClick={toggleSidebar}
-                className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
-              >
-                <Menu className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-auto p-6">
-              <SubjectManagement />
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    if (activeMenu === 'classes') {
-      return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden">
-          <Sidebar 
-            activeMenu={activeMenu} 
-            onMenuClick={handleMenuClick}
-            isOpen={sidebarOpen}
-            onClose={closeSidebar}
-          />
-          <div className="flex-1 lg:ml-0 flex flex-col overflow-hidden">
-            <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
-              <button
-                onClick={toggleSidebar}
-                className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
-              >
-                <Menu className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-auto p-6">
-              <ClassManagement />
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    if (activeMenu === 'assignments') {
-      return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden">
-          <Sidebar 
-            activeMenu={activeMenu} 
-            onMenuClick={handleMenuClick}
-            isOpen={sidebarOpen}
-            onClose={closeSidebar}
-          />
-          <div className="flex-1 lg:ml-0 flex flex-col overflow-hidden">
-            <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
-              <button
-                onClick={toggleSidebar}
-                className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
-              >
-                <Menu className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-auto p-6">
-              <AssignmentManagement />
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    if (activeMenu === 'analytics') {
-      return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden">
-          <Sidebar 
-            activeMenu={activeMenu} 
-            onMenuClick={handleMenuClick}
-            isOpen={sidebarOpen}
-            onClose={closeSidebar}
-          />
-          <div className="flex-1 lg:ml-0 flex flex-col overflow-hidden">
-            <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
-              <button
-                onClick={toggleSidebar}
-                className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
-              >
-                <Menu className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-auto p-6">
-              <AnalyticsDashboard />
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    if (activeMenu === 'profile') {
-      return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden">
-          <Sidebar 
-            activeMenu={activeMenu} 
-            onMenuClick={handleMenuClick}
-            isOpen={sidebarOpen}
-            onClose={closeSidebar}
-          />
-          <div className="flex-1 lg:ml-0 flex flex-col overflow-hidden">
-            <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
-              <button
-                onClick={toggleSidebar}
-                className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
-              >
-                <Menu className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-auto p-6">
-              <ProfileManagement />
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
-        <Sidebar 
-          activeMenu={activeMenu} 
-          onMenuClick={handleMenuClick}
-          isOpen={sidebarOpen}
-          onClose={closeSidebar}
-        />
-        <div className="flex-1 lg:ml-0 flex flex-col overflow-hidden">
-          <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
-            <button
-              onClick={toggleSidebar}
-              className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
-            >
-              <Menu className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
-          
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-lg font-semibold text-gray-900 mb-1">
-                {activeMenu.charAt(0).toUpperCase() + activeMenu.slice(1)}
-              </h2>
-              <p className="text-sm text-gray-500">Coming soon</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  };
 
   const statCards = [
     { 
@@ -543,94 +264,12 @@ const AdminDashboard: React.FC = () => {
     },
   ];
 
-  return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      <Sidebar 
-        activeMenu={activeMenu} 
-        onMenuClick={handleMenuClick}
-        isOpen={sidebarOpen}
-        onClose={closeSidebar}
-      />
-      
-      <div className="flex-1 lg:ml-0 flex flex-col overflow-hidden">
-        {/* Compact Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={toggleSidebar}
-                className="lg:hidden p-1.5 rounded-md hover:bg-gray-100 transition-colors"
-              >
-                <Menu className="w-5 h-5 text-gray-600" />
-              </button>
-              
-              <div className="hidden lg:block">
-                <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
-                <p className="text-sm text-gray-500 mt-0.5">Welcome back, {user?.profile_details?.full_name}</p>
-              </div>
-            </div>
-            
-            {/* User Profile Section */}
-            <div className="flex items-center space-x-3">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900 truncate max-w-[120px] sm:max-w-[200px]">
-                  {user?.profile_details?.full_name || user?.login_id}
-                </p>
-                {user?.department_details && (
-                  <p className="text-xs text-gray-500 truncate max-w-[120px] sm:max-w-[200px]">
-                    <span className="hidden lg:inline">
-                      {user.department_details.name}
-                    </span>
-                    <span className="lg:hidden">
-                      {user.department_details.abbreviation}
-                    </span>
-                  </p>
-                )}
-              </div>
-              
-              {/* Profile Picture */}
-              <div className="relative flex-shrink-0">
-                {user?.profile_details?.profile_picture_key ? (
-                  <img
-                    src={getProfileImageUrl(user.profile_details.profile_picture_key) || user.profile_details.profile_picture_key}
-                    alt="Profile"
-                    className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 shadow-sm"
-                    onError={(e) => {
-                      // Fallback to default avatar if image fails to load
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      const fallback = target.nextElementSibling as HTMLElement;
-                      if (fallback) fallback.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                
-                {/* Fallback Avatar */}
-                <div 
-                  className={`w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center border-2 border-gray-200 shadow-sm ${
-                    user?.profile_details?.profile_picture_key ? 'hidden' : 'flex'
-                  }`}
-                >
-                  <span className="text-white font-semibold text-sm">
-                    {user?.profile_details?.full_name 
-                      ? user.profile_details.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
-                      : user?.login_id?.substring(0, 2).toUpperCase() || 'U'
-                    }
-                  </span>
-                </div>
-                
-                {/* Online Status Indicator */}
-                {user?.is_active && (
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
-                )}
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="flex-1 overflow-auto">
-          <div className="max-w-7xl mx-auto p-6">
+  // Helper function to render main content based on activeMenu
+  const renderMainContent = () => {
+    switch (activeMenu) {
+      case 'dashboard':
+        return (
+          <>
             {/* Stats Grid - Compact */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {statCards.map((stat, index) => (
@@ -713,7 +352,6 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-            
             {/* Student Performance Table */}
             <div className="mt-4">
               <StudentPerformanceTable 
@@ -721,7 +359,149 @@ const AdminDashboard: React.FC = () => {
                 onViewProfile={handleViewStudentProfile}
               />
             </div>
+          </>
+        );
+      case 'teachers':
+        return <TeacherManagement />;
+      case 'students':
+        return <StudentManagement />;
+      case 'expertise-programs':
+        return <ExpertiseProgramManagement />;
+      case 'exams':
+        return <ExamManagement />;
+      case 'subjects':
+        return <SubjectManagement />;
+      case 'classes':
+        return <ClassManagement />;
+      case 'assignments':
+        return <AssignmentManagement />;
+      case 'analytics':
+        return <AnalyticsDashboard />;
+      case 'profile':
+        return <ProfileManagement />;
+      default:
+        return (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <h2 className="text-lg font-semibold text-gray-900 mb-1">
+                {activeMenu.charAt(0).toUpperCase() + activeMenu.slice(1)}
+              </h2>
+              <p className="text-sm text-gray-500">Coming soon</p>
+            </div>
           </div>
+        );
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-gray-50">
+        <div className="hidden lg:block">
+          <Sidebar 
+            activeMenu={activeMenu} 
+            onMenuClick={handleMenuClick}
+            isOpen={false}
+            onClose={closeSidebar}
+          />
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex items-center space-x-3">
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-900 border-t-transparent"></div>
+            <span className="text-sm font-medium text-gray-700">Loading dashboard...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <Sidebar 
+        activeMenu={activeMenu} 
+        onMenuClick={handleMenuClick}
+        isOpen={sidebarOpen}
+        onClose={closeSidebar}
+      />
+      
+      <div className="flex-1 lg:ml-0 flex flex-col overflow-hidden">
+        {/* Common Header - Always visible */}
+        <header className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={toggleSidebar}
+                className="lg:hidden p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+              >
+                <Menu className="w-5 h-5 text-gray-600" />
+              </button>
+              
+              <div className="hidden lg:block">
+                <h1 className="text-xl font-semibold text-gray-900">{getPageTitleForHeader(activeMenu)}</h1>
+                <p className="text-sm text-gray-500 mt-0.5">Welcome back, {user?.profile_details?.full_name}</p>
+              </div>
+            </div>
+            
+            {/* User Profile Section */}
+            <div className="flex items-center space-x-3">
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900 truncate max-w-[120px] sm:max-w-[200px]">
+                  {user?.profile_details?.full_name || user?.login_id}
+                </p>
+                {user?.department_details && (
+                  <p className="text-xs text-gray-500 truncate max-w-[120px] sm:max-w-[200px]">
+                    <span className="hidden lg:inline">
+                      {user.department_details.name}
+                    </span>
+                    <span className="lg:hidden">
+                      {user.department_details.abbreviation}
+                    </span>
+                  </p>
+                )}
+              </div>
+              
+              {/* Profile Picture */}
+              <div className="relative flex-shrink-0">
+                {user?.profile_details?.profile_picture_key ? (
+                  <img
+                    src={getProfileImageUrl(user.profile_details.profile_picture_key) || user.profile_details.profile_picture_key}
+                    alt="Profile"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 shadow-sm"
+                    onError={(e) => {
+                      // Fallback to default avatar if image fails to load
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      const fallback = target.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                
+                {/* Fallback Avatar */}
+                <div 
+                  className={`w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center border-2 border-gray-200 shadow-sm ${
+                    user?.profile_details?.profile_picture_key ? 'hidden' : 'flex'
+                  }`}
+                >
+                  <span className="text-white font-semibold text-sm">
+                    {user?.profile_details?.full_name 
+                      ? user.profile_details.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+                      : user?.login_id?.substring(0, 2).toUpperCase() || 'U'
+                    }
+                  </span>
+                </div>
+                
+                {/* Online Status Indicator */}
+                {user?.is_active && (
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
+                )}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-auto">
+          <div className="max-w-7xl mx-auto p-6">{renderMainContent()}</div>
         </main>
       </div>
     </div>
