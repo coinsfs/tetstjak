@@ -310,21 +310,8 @@ const ExamManagement: React.FC = () => {
         </div>
         
         <div className="flex flex-wrap gap-4">
-          {/* Calculate filter count for width distribution */}
-          {(() => {
-            const filterCount = [
-              academicPeriods.length > 0,
-              true // exam type always available
-            ].filter(Boolean).length;
-            
-            const searchWidth = filterCount === 0 ? '100%' : 
-                               filterCount === 1 ? '70%' :
-                               filterCount === 2 ? '40%' : '25%';
-            
-            return (
-              <>
-            {/* Search Input */}
-                <div className="space-y-2 w-full md:flex-1 md:min-w-[200px]" style={{ maxWidth: searchWidth }}>
+          {/* Search Input */}
+          <div className="space-y-2 w-full md:flex-1 md:min-w-[200px]">
               <label className="block text-sm font-medium text-gray-700">
                 Pencarian
               </label>
@@ -340,9 +327,9 @@ const ExamManagement: React.FC = () => {
               </div>
             </div>
 
-                {academicPeriods.length > 0 && (
-                  <div className="space-y-2 w-full md:flex-1 md:min-w-[150px] md:max-w-[30%]">
-            {/* Academic Period Filter */}
+          {/* Academic Period Filter */}
+          {academicPeriods.length > 0 && (
+            <div className="space-y-2 w-full md:flex-1 md:min-w-[150px]">
               <label className="block text-sm font-medium text-gray-700">
                 Periode Akademik
               </label>
@@ -360,10 +347,10 @@ const ExamManagement: React.FC = () => {
                 ))}
               </select>
             </div>
-                )}
+          )}
 
-                <div className="space-y-2 w-full md:flex-1 md:min-w-[150px] md:max-w-[30%]">
-            {/* Exam Type Filter */}
+          {/* Exam Type Filter */}
+          <div className="space-y-2 w-full md:flex-1 md:min-w-[150px]">
               <label className="block text-sm font-medium text-gray-700">
                 Jenis Ujian
               </label>
@@ -380,20 +367,17 @@ const ExamManagement: React.FC = () => {
               </select>
             </div>
 
-              </>
-            );
-          })()}
         </div>
 
         {/* Active Filters Display */}
-        {(filters.academic_period_id || filters.exam_type || searchValue) && (
+        {(filters.academic_period_id || filters.exam_type || debouncedSearch) && (
           <div className="pt-4 border-t border-gray-200">
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <span className="font-medium">Filter aktif:</span>
               <div className="flex flex-wrap gap-2">
-                {searchValue && (
+                {debouncedSearch && (
                   <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md">
-                    Pencarian: "{searchValue}"
+                    Pencarian: "{debouncedSearch}"
                   </span>
                 )}
                 {filters.academic_period_id && (
