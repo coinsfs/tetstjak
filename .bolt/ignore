@@ -7,9 +7,7 @@ src/components/Pagination.tsx
 src/components/LoginForm.tsx
 src/components/ExpertiseProgramManagement.tsx
 src/components/ExpertiseProgramFilter.tsx
-src/components/ExamManagement.tsx
-src/components/ClassManagement.tsx
-src/components/ClassFilter.tsx
+
 src/components/AssignmentMatrix.tsx
 src/components/AssignmentManagement.tsx
 src/components/ActivityFeed.tsx
