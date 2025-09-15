@@ -1,10 +1,17 @@
 import React from 'react';
 import { useDrop } from 'react-dnd';
 import { Plus, Database, Settings, X } from 'lucide-react';
-import { ExportConfiguration, SelectedField, JoinConfiguration, DragItem } from '@/types/export';
+import { 
+  ExportConfiguration, 
+  SelectedField, 
+  JoinConfiguration, 
+  DragItem,
+  CollectionsRelationshipsResponse 
+} from '@/types/export';
 
 interface ExportConfigurationPreviewProps {
   exportConfig: ExportConfiguration;
+  collections: CollectionsRelationshipsResponse | null;
   onFieldAdd: (field: SelectedField) => void;
   onFieldRemove: (fieldId: string) => void;
   onJoinAdd: (join: JoinConfiguration) => void;
@@ -13,11 +20,15 @@ interface ExportConfigurationPreviewProps {
 
 const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
   exportConfig,
+  collections,
   onFieldAdd,
   onFieldRemove,
   onJoinAdd,
   onJoinRemove
 }) => {
+  const [showJoinCollectionPicker, setShowJoinCollectionPicker] = React.useState(false);
+  const [selectedJoinTarget, setSelectedJoinTarget] = React.useState<string | null>(null);
+
   const [{ isOver }, drop] = useDrop({
     accept: 'field', 
     drop: (item: DragItem) => {
@@ -34,6 +45,61 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
       isOver: monitor.isOver()
     })
   });
+
+  const handleAddJoinClick = () => {
+    setShowJoinCollectionPicker(true);
+  };
+
+  const handleJoinCollectionSelect = (targetCollectionKey: string) => {
+    if (!collections || !targetCollectionKey) return;
+
+    const targetCollectionInfo = collections.relationships[targetCollectionKey];
+    if (!targetCollectionInfo || !targetCollectionInfo.possible_joins || targetCollectionInfo.possible_joins.length === 0) {
+      return;
+    }
+
+    // Use the first possible join
+    const firstJoin = targetCollectionInfo.possible_joins[0];
+    
+    // Create JoinConfiguration
+    const joinConfig: JoinConfiguration = {
+      id: `join_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      target_collection: targetCollectionKey,
+      local_field: firstJoin.suggested_local_field,
+      foreign_field: firstJoin.suggested_foreign_field,
+      relationship_type: firstJoin.relationship_type,
+      description: firstJoin.description,
+      selected_fields: []
+    };
+
+    onJoinAdd(joinConfig);
+    
+    // Reset state
+    setShowJoinCollectionPicker(false);
+    setSelectedJoinTarget(null);
+  };
+
+  const handleCancelJoinSelection = () => {
+    setShowJoinCollectionPicker(false);
+    setSelectedJoinTarget(null);
+  };
+
+  // Get available collections for joining (exclude main collection)
+  const getAvailableJoinCollections = () => {
+    if (!collections || !exportConfig.main_collection) return [];
+    
+    return Object.entries(collections.relationships)
+      .filter(([key, info]) => 
+        key !== exportConfig.main_collection && 
+        info.possible_joins && 
+        info.possible_joins.length > 0
+      )
+      .map(([key, info]) => ({
+        key,
+        display_name: info.display_name,
+        total_joinable: info.total_joinable
+      }));
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
@@ -115,10 +181,46 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-sm font-medium text-gray-900">Joins & Lookups</h4>
-                <button className="text-xs text-blue-600 hover:text-blue-700 font-medium">
+                <button 
+                  onClick={handleAddJoinClick}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                >
                   + Add Join
                 </button>
               </div>
+              
+              {/* Join Collection Picker */}
+              {showJoinCollectionPicker && (
+                <div className="mb-4 p-3 border border-blue-200 rounded-lg bg-blue-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="text-sm font-medium text-gray-900">Select Collection to Join</h5>
+                    <button
+                      onClick={handleCancelJoinSelection}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <select
+                    value={selectedJoinTarget || ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value) {
+                        handleJoinCollectionSelect(value);
+                      }
+                    }}
+                    className="w-full text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Choose a collection to join...</option>
+                    {getAvailableJoinCollections().map((collection) => (
+                      <option key={collection.key} value={collection.key}>
+                        {collection.display_name} ({collection.total_joinable} joins available)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
               <div className="space-y-2">
                 {exportConfig.joins.length === 0 ? (
                   <div className="p-4 border border-gray-200 rounded-lg text-center text-gray-500">
