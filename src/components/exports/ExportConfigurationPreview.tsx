@@ -15,6 +15,9 @@ import toast from 'react-hot-toast';
 interface ExportConfigurationPreviewProps {
   exportConfig: ExportConfiguration;
   collections: CollectionsRelationshipsResponse | null;
+  availableFieldContexts: { key: string; displayName: string }[];
+  activeFieldContextCollection: string;
+  setActiveFieldContextCollection: (collection: string) => void;
   onFieldAdd: (field: SelectedField) => void;
   onFieldRemove: (fieldId: string) => void;
   onJoinAdd: (join: JoinConfiguration) => void;
@@ -25,6 +28,9 @@ interface ExportConfigurationPreviewProps {
 const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
   exportConfig,
   collections,
+  availableFieldContexts,
+  activeFieldContextCollection,
+  setActiveFieldContextCollection,
   onFieldAdd,
   onFieldRemove,
   onJoinAdd,
@@ -314,6 +320,32 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Field Context Selection */}
+            {availableFieldContexts.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Available Collections</h4>
+                <div className="flex flex-wrap gap-2">
+                  {availableFieldContexts.map((context) => (
+                    <button
+                      key={context.key}
+                      onClick={() => setActiveFieldContextCollection(context.key)}
+                      className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                        activeFieldContextCollection === context.key
+                          ? 'bg-blue-100 border-blue-300 text-blue-800'
+                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <Database className="w-4 h-4 inline mr-1" />
+                      {context.displayName}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Select a collection to view its available fields for export
+                </p>
+              </div>
+            )}
+
             {/* Selected Fields */}
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-3">Selected Fields</h4>

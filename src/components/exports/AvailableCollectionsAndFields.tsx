@@ -13,6 +13,7 @@ interface AvailableCollectionsAndFieldsProps {
   collections: CollectionsRelationshipsResponse | null;
   selectedMainCollection: string;
   onMainCollectionChange: (collection: string) => void;
+  collectionToDisplayFieldsFor: string;
   token: string | null;
 }
 
@@ -20,6 +21,7 @@ const AvailableCollectionsAndFields: React.FC<AvailableCollectionsAndFieldsProps
   collections,
   selectedMainCollection,
   onMainCollectionChange,
+  collectionToDisplayFieldsFor,
   token
 }) => {
   const [fieldSuggestions, setFieldSuggestions] = useState<FieldSuggestionsResponse | null>(null);
@@ -29,14 +31,14 @@ const AvailableCollectionsAndFields: React.FC<AvailableCollectionsAndFieldsProps
   // Load field suggestions when main collection changes
   useEffect(() => {
     const loadFieldSuggestions = async () => {
-      if (!token || !selectedMainCollection) {
+      if (!token || !collectionToDisplayFieldsFor) {
         setFieldSuggestions(null);
         return;
       }
 
       try {
         setLoadingFields(true);
-        const data = await exportService.getFieldSuggestions(token, selectedMainCollection);
+        const data = await exportService.getFieldSuggestions(token, collectionToDisplayFieldsFor);
         setFieldSuggestions(data);
       } catch (error) {
         console.error('Error loading field suggestions:', error);
@@ -47,7 +49,7 @@ const AvailableCollectionsAndFields: React.FC<AvailableCollectionsAndFieldsProps
     };
 
     loadFieldSuggestions();
-  }, [token, selectedMainCollection]);
+  }, [token, collectionToDisplayFieldsFor]);
 
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => {
@@ -195,7 +197,7 @@ const AvailableCollectionsAndFields: React.FC<AvailableCollectionsAndFieldsProps
                           <FieldItem
                             key={`${category}-${field.field}-${index}`}
                             field={field}
-                            collection={selectedMainCollection}
+                            collection={collectionToDisplayFieldsFor}
                           />
                         ))}
                       </div>

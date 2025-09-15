@@ -19,6 +19,8 @@ const AdminExportPage: React.FC = () => {
   const { token } = useAuth();
   const [collections, setCollections] = useState<CollectionsRelationshipsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeFieldContextCollection, setActiveFieldContextCollection] = useState<string>('');
+  const [availableFieldContexts, setAvailableFieldContexts] = useState<{ key: string; displayName: string }[]>([]);
   const [exportConfig, setExportConfig] = useState<ExportConfiguration>({
     main_collection: '',
     selected_fields: [],
@@ -32,6 +34,48 @@ const AdminExportPage: React.FC = () => {
       flatten_nested: true
     }
   });
+
+  // Manage available field contexts based on main collection and joins
+  useEffect(() => {
+    if (!collections) return;
+
+    const contexts: { key: string; displayName: string }[] = [];
+    
+    // Add main collection if exists
+    if (exportConfig.main_collection) {
+      const mainCollectionInfo = collections.relationships[exportConfig.main_collection];
+      contexts.push({
+        key: exportConfig.main_collection,
+        displayName: `${mainCollectionInfo?.display_name || exportConfig.main_collection} (Main)`
+      });
+    }
+
+    // Add joined collections
+    exportConfig.joins.forEach(join => {
+      const targetCollectionInfo = collections.relationships[join.target_collection];
+      const existingContext = contexts.find(c => c.key === join.target_collection);
+      
+      if (!existingContext) {
+        contexts.push({
+          key: join.target_collection,
+          displayName: `${targetCollectionInfo?.display_name || join.target_collection} (Joined)`
+        });
+      }
+    });
+
+    setAvailableFieldContexts(contexts);
+
+    // Update active context if needed
+    if (exportConfig.main_collection && activeFieldContextCollection !== exportConfig.main_collection) {
+      setActiveFieldContextCollection(exportConfig.main_collection);
+    } else if (!exportConfig.main_collection && contexts.length > 0) {
+      setActiveFieldContextCollection(contexts[0].key);
+    } else if (contexts.length === 0) {
+      setActiveFieldContextCollection('');
+    } else if (!contexts.find(c => c.key === activeFieldContextCollection)) {
+      setActiveFieldContextCollection(contexts[0].key);
+    }
+  }, [collections, exportConfig.main_collection, exportConfig.joins, activeFieldContextCollection]);
 
   // Load collections on mount
   useEffect(() => {
@@ -368,6 +412,7 @@ const AdminExportPage: React.FC = () => {
       joins: [], // Reset joins
       filters: [] // Reset filters
     }));
+    setActiveFieldContextCollection(collection);
   };
 
   const handleFieldSelect = (field: SelectedField) => {
@@ -502,6 +547,7 @@ const AdminExportPage: React.FC = () => {
                 collections={collections}
                 selectedMainCollection={exportConfig.main_collection}
                 onMainCollectionChange={handleMainCollectionChange}
+                collectionToDisplayFieldsFor={activeFieldContextCollection}
                 token={token}
               />
             </div>
@@ -518,6 +564,9 @@ const AdminExportPage: React.FC = () => {
               <ExportConfigurationPreview
                 exportConfig={exportConfig}
                 collections={collections}
+                availableFieldContexts={availableFieldContexts}
+                activeFieldContextCollection={activeFieldContextCollection}
+                setActiveFieldContextCollection={setActiveFieldContextCollection}
                 onFieldAdd={handleFieldSelect}
                 onFieldRemove={handleFieldRemove}
                 onJoinAdd={handleJoinAdd}
