@@ -22,6 +22,7 @@ import AssignmentManagement from '../AssignmentManagement';
 import ExpertiseProgramManagement from '../ExpertiseProgramManagement';
 import ProfileManagement from '../ProfileManagement';
 import AnalyticsDashboard from './admin/AnalyticsDashboard';
+import AdminExportPage from './admin/AdminExportPage';
 
 const AdminDashboard: React.FC = () => {
   const { user, token } = useAuth();
@@ -46,6 +47,7 @@ const AdminDashboard: React.FC = () => {
     if (path === '/manage/subjects') return 'subjects';
     if (path === '/manage/classes') return 'classes';
     if (path === '/manage/assignments') return 'assignments';
+    if (path === '/manage/exports') return 'exports';
     if (path === '/manage/analytics') return 'analytics';
     if (path === '/profile') return 'profile';
     return 'dashboard';
@@ -195,6 +197,7 @@ const AdminDashboard: React.FC = () => {
       'subjects': '/manage/subjects',
       'classes': '/manage/classes',
       'assignments': '/manage/assignments',
+      'exports': '/manage/exports',
       'analytics': '/manage/analytics',
       'profile': '/profile',
     };
@@ -227,6 +230,7 @@ const AdminDashboard: React.FC = () => {
       case 'subjects': return 'Subject Management';
       case 'classes': return 'Class Management';
       case 'assignments': return 'Assignment Management';
+      case 'exports': return 'Data Export';
       case 'analytics': return 'Analytics Dashboard';
       case 'profile': return 'Profile Settings';
       default: return 'Admin Panel';
@@ -375,6 +379,8 @@ const AdminDashboard: React.FC = () => {
         return <ClassManagement />;
       case 'assignments':
         return <AssignmentManagement />;
+      case 'exports':
+        return <AdminExportPage />;
       case 'analytics':
         return <AnalyticsDashboard />;
       case 'profile':
