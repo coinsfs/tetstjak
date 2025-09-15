@@ -1,13 +1,13 @@
 import React from 'react';
 import { useDrop } from 'react-dnd';
 import { Plus, Database, Settings, X } from 'lucide-react';
-import { ExportConfig, SelectedField, JoinConfig } from '@/types/export';
+import { ExportConfiguration, SelectedField, JoinConfiguration } from '@/types/export';
 
 interface ExportConfigurationPreviewProps {
-  exportConfig: ExportConfig;
+  exportConfig: ExportConfiguration;
   onFieldAdd: (field: SelectedField) => void;
   onFieldRemove: (fieldId: string) => void;
-  onJoinAdd: (join: JoinConfig) => void;
+  onJoinAdd: (join: JoinConfiguration) => void;
   onJoinRemove: (joinId: string) => void;
 }
 
@@ -43,16 +43,16 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
           <Database className="w-5 h-5 text-blue-600" />
           <h3 className="text-lg font-semibold text-gray-900">Export Configuration</h3>
         </div>
-        {exportConfig.mainCollection && (
+        {exportConfig.main_collection && (
           <p className="text-sm text-gray-600 mt-1">
-            Main Collection: <span className="font-medium">{exportConfig.mainCollection}</span>
+            Main Collection: <span className="font-medium">{exportConfig.main_collection}</span>
           </p>
         )}
       </div>
 
       {/* Content */}
       <div className="flex-1 p-4">
-        {!exportConfig.mainCollection ? (
+        {!exportConfig.main_collection ? (
           <div className="flex items-center justify-center h-full text-gray-500">
             <div className="text-center">
               <Database className="w-12 h-12 mx-auto mb-3 text-gray-300" />
@@ -73,14 +73,14 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
                     : 'border-gray-300 bg-gray-50'
                 }`}
               >
-                {exportConfig.selectedFields.length === 0 ? (
+                {exportConfig.selected_fields.length === 0 ? (
                   <div className="text-center text-gray-500">
                     <Plus className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                     <p className="text-sm">Drag fields here to include them in your export</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {exportConfig.selectedFields.map((field) => (
+                    {exportConfig.selected_fields.map((field) => (
                       <div
                         key={field.id}
                         className="flex items-center justify-between p-2 bg-white rounded border border-gray-200"
@@ -135,10 +135,10 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {join.targetCollection}
+                            {join.target_collection}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {join.localField} → {join.foreignField}
+                            {join.local_field} → {join.foreign_field}
                           </div>
                         </div>
                         <button
