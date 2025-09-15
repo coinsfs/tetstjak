@@ -69,7 +69,10 @@ const AdminExportPage: React.FC = () => {
             total_joinable: 1
           }
         };
-        setCollections(mockCollections);
+        setCollections({ 
+          relationships: mockCollections, 
+          total_collections: Object.keys(mockCollections).length 
+        });
       } catch (error) {
         console.warn('Using mock data - API endpoint not available:', error);
         // Use mock data as fallback
@@ -80,7 +83,10 @@ const AdminExportPage: React.FC = () => {
             total_joinable: 0
           }
         };
-        setCollections(mockCollections);
+        setCollections({ 
+          relationships: mockCollections, 
+          total_collections: Object.keys(mockCollections).length 
+        });
       } finally {
         setLoading(false);
       }
@@ -245,7 +251,7 @@ const AdminExportPage: React.FC = () => {
             
             <div className="flex-1 overflow-auto">
               <ExportConfigurationPreview
-                config={exportConfig}
+                exportConfig={exportConfig}
                 collections={collections}
                 onFieldRemove={handleFieldRemove}
                 onJoinAdd={handleJoinAdd}
