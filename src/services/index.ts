@@ -17,3 +17,4 @@ export * from './studentExam';
 export * from './examSecurity';
 export * from './scoreTrendAnalytics';
 export * from './subjectMasteryAnalytics';
+export * from './export';

@@ -22,6 +22,7 @@ import AssignmentManagement from '../AssignmentManagement';
 import ExpertiseProgramManagement from '../ExpertiseProgramManagement';
 import ProfileManagement from '../ProfileManagement';
 import AnalyticsDashboard from './admin/AnalyticsDashboard';
+import AdminExportPage from './admin/AdminExportPage';
 
 const AdminDashboard: React.FC = () => {
   const { user, token } = useAuth();
@@ -379,16 +380,7 @@ const AdminDashboard: React.FC = () => {
       case 'assignments':
         return <AssignmentManagement />;
       case 'exports':
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <h2 className="text-lg font-semibold text-gray-900 mb-1">
-                Data Export
-              </h2>
-              <p className="text-sm text-gray-500">Coming soon</p>
-            </div>
-          </div>
-        );
+        return <AdminExportPage />;
       case 'analytics':
         return <AnalyticsDashboard />;
       case 'profile':
