@@ -46,6 +46,7 @@ const AdminDashboard: React.FC = () => {
     if (path === '/manage/subjects') return 'subjects';
     if (path === '/manage/classes') return 'classes';
     if (path === '/manage/assignments') return 'assignments';
+    if (path === '/manage/exports') return 'exports';
     if (path === '/manage/analytics') return 'analytics';
     if (path === '/profile') return 'profile';
     return 'dashboard';
@@ -195,6 +196,7 @@ const AdminDashboard: React.FC = () => {
       'subjects': '/manage/subjects',
       'classes': '/manage/classes',
       'assignments': '/manage/assignments',
+      'exports': '/manage/exports',
       'analytics': '/manage/analytics',
       'profile': '/profile',
     };
@@ -227,6 +229,7 @@ const AdminDashboard: React.FC = () => {
       case 'subjects': return 'Subject Management';
       case 'classes': return 'Class Management';
       case 'assignments': return 'Assignment Management';
+      case 'exports': return 'Data Export';
       case 'analytics': return 'Analytics Dashboard';
       case 'profile': return 'Profile Settings';
       default: return 'Admin Panel';
@@ -375,6 +378,17 @@ const AdminDashboard: React.FC = () => {
         return <ClassManagement />;
       case 'assignments':
         return <AssignmentManagement />;
+      case 'exports':
+        return (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <h2 className="text-lg font-semibold text-gray-900 mb-1">
+                Data Export
+              </h2>
+              <p className="text-sm text-gray-500">Coming soon</p>
+            </div>
+          </div>
+        );
       case 'analytics':
         return <AnalyticsDashboard />;
       case 'profile':

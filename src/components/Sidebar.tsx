@@ -10,7 +10,8 @@ import {
   ClipboardList,
   User, 
   LogOut,
-  X
+  X,
+  Download
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePrefetch } from '@/hooks/usePrefetch';
@@ -35,6 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick, isOpen, onCl
     { id: 'subjects', label: 'Mata Pelajaran', icon: BookOpen, path: '/manage/subjects', prefetch: prefetchSubjects },
     { id: 'classes', label: 'Kelas', icon: School, path: '/manage/classes', prefetch: prefetchClasses },
     { id: 'assignments', label: 'Penugasan', icon: ClipboardList, path: '/manage/assignments' },
+    { id: 'exports', label: 'Data Export', icon: Download, path: '/manage/exports' },
     { id: 'analytics', label: 'Analitik', icon: BarChart3, path: '/manage/analytics' },
   ];
 
