@@ -3,17 +3,16 @@ import {
   LayoutDashboard, 
   Users, 
   GraduationCap, 
-  FileText, 
   BookOpen, 
-  School, 
-  BarChart3, 
-  ClipboardList,
-  User, 
-  LogOut,
+  Calendar, 
+  ClipboardList, 
+  Settings,
+  BarChart3,
+  Download,
+  User,
   X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePrefetch } from '@/hooks/usePrefetch';
 
 interface SidebarProps {
   activeMenu: string;
@@ -23,128 +22,168 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick, isOpen, onClose }) => {
-  const { logout, token } = useAuth();
-  const { prefetchTeachers, prefetchStudents, prefetchExams, prefetchSubjects, prefetchClasses, prefetchExpertisePrograms } = usePrefetch(token);
+  const { user, logout } = useAuth();
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'teachers', label: 'Kelola Guru', icon: Users, path: '/manage/teachers', prefetch: prefetchTeachers },
-    { id: 'students', label: 'Kelola Siswa', icon: GraduationCap, path: '/manage/students', prefetch: prefetchStudents },
-    { id: 'expertise-programs', label: 'Kelola Jurusan', icon: School, path: '/manage/expertise-programs', prefetch: prefetchExpertisePrograms },
-    { id: 'exams', label: 'Kelola Ujian', icon: FileText, path: '/manage/exams', prefetch: prefetchExams },
-    { id: 'subjects', label: 'Mata Pelajaran', icon: BookOpen, path: '/manage/subjects', prefetch: prefetchSubjects },
-    { id: 'classes', label: 'Kelas', icon: School, path: '/manage/classes', prefetch: prefetchClasses },
-    { id: 'assignments', label: 'Penugasan', icon: ClipboardList, path: '/manage/assignments' },
-    { id: 'analytics', label: 'Analitik', icon: BarChart3, path: '/manage/analytics' },
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+      path: '/admin'
+    },
+    {
+      id: 'teachers',
+      label: 'Teacher Management',
+      icon: GraduationCap,
+      path: '/manage/teachers'
+    },
+    {
+      id: 'students',
+      label: 'Student Management',
+      icon: Users,
+      path: '/manage/students'
+    },
+    {
+      id: 'expertise-programs',
+      label: 'Expertise Programs',
+      icon: BookOpen,
+      path: '/manage/expertise-programs'
+    },
+    {
+      id: 'exams',
+      label: 'Exam Management',
+      icon: ClipboardList,
+      path: '/manage/exams'
+    },
+    {
+      id: 'subjects',
+      label: 'Subject Management',
+      icon: BookOpen,
+      path: '/manage/subjects'
+    },
+    {
+      id: 'classes',
+      label: 'Class Management',
+      icon: Calendar,
+      path: '/manage/classes'
+    },
+    {
+      id: 'assignments',
+      label: 'Assignment Management',
+      icon: ClipboardList,
+      path: '/manage/assignments'
+    },
+    {
+      id: 'exports',
+      label: 'Data Export',
+      icon: Download,
+      path: '/manage/exports'
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics',
+      icon: BarChart3,
+      path: '/manage/analytics'
+    },
+    {
+      id: 'profile',
+      label: 'Profile Settings',
+      icon: User,
+      path: '/profile'
+    }
   ];
 
-  const bottomMenuItems = [
-    { id: 'profile', label: 'Profile', icon: User, path: '/profile' },
-    { id: 'logout', label: 'Logout', icon: LogOut, action: logout },
-  ];
-
-  const handleMenuClick = (menu: string, action?: () => void) => {
-    if (action) {
-      action();
-    } else {
-      onMenuClick(menu);
-    }
-    onClose(); // Close mobile menu after selection
+  const handleMenuClick = (menuId: string) => {
+    onMenuClick(menuId);
+    onClose(); // Close sidebar on mobile after menu click
   };
 
-  const handleMenuHover = (item: any) => {
-    if (item.prefetch && activeMenu !== item.id) {
-      // Add small delay to avoid unnecessary requests on quick hovers
-      const timeoutId = setTimeout(() => {
-        item.prefetch();
-      }, 200);
-      
-      return () => clearTimeout(timeoutId);
-    }
-  };
   return (
     <>
-      {/* Mobile Overlay - Only show when mobile sidebar is open */}
+      {/* Mobile Overlay */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={onClose}
         />
       )}
-
-      {/* Sidebar - Fixed positioning for desktop, overlay for mobile */}
+      
+      {/* Sidebar */}
       <div className={`
-        w-64 bg-white shadow-lg flex flex-col h-full
-        ${isOpen 
-          ? 'fixed top-0 left-0 z-50 transform translate-x-0 lg:relative lg:z-auto' 
-          : 'fixed top-0 left-0 z-50 transform -translate-x-full lg:relative lg:translate-x-0 lg:z-auto'
-        }
-        lg:translate-x-0 transition-transform duration-300 ease-in-out
+        fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 z-50 transform transition-transform duration-300 ease-in-out
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:translate-x-0 lg:static lg:z-auto
+        sidebar-container
       `}>
-        {/* Mobile Close Button - Only show on mobile */}
-        <div className="lg:hidden flex justify-end p-4 flex-shrink-0">
+        {/* Header */}
+        <div className="sidebar-header px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">SSH</span>
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold text-gray-900">Smart Study Hub</h1>
+              <p className="text-xs text-gray-500">Admin Panel</p>
+            </div>
+          </div>
+          
+          {/* Close button for mobile */}
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="lg:hidden p-1 rounded-md hover:bg-gray-100 transition-colors"
           >
             <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>
 
-        {/* Logo/Header - Fixed */}
-        <div className="p-6 border-b border-gray-200 flex-shrink-0">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-              <School className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">Admin Panel</h1>
-              <p className="text-sm text-gray-500">School Management</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Menu - Scrollable if needed */}
-        <nav className="flex-1 px-4 py-6 overflow-y-auto scrollbar-hide min-h-0">
-          <ul className="space-y-2">
-            {menuItems.map((item) => (
-              <li key={item.id}>
+        {/* Navigation */}
+        <nav className="sidebar-nav">
+          <div className="space-y-1">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeMenu === item.id;
+              
+              return (
                 <button
+                  key={item.id}
                   onClick={() => handleMenuClick(item.id)}
-                  onMouseEnter={() => handleMenuHover(item)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                    activeMenu === item.id
-                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className={`
+                    w-full flex items-center px-4 py-3 text-left text-sm font-medium rounded-lg mx-2 transition-all duration-200
+                    ${isActive 
+                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600' 
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }
+                  `}
                 >
-                  <item.icon className="w-5 h-5 flex-shrink-0" />
-                  <span className="font-medium">{item.label}</span>
+                  <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
+                  <span className="truncate">{item.label}</span>
                 </button>
-              </li>
-            ))}
-          </ul>
+              );
+            })}
+          </div>
         </nav>
 
-        {/* Bottom Menu - Fixed at bottom */}
-        <div className="px-4 py-4 border-t border-gray-200 flex-shrink-0">
-          <ul className="space-y-2">
-            {bottomMenuItems.map((item) => (
-              <li key={item.id}>
-                <button
-                  onClick={() => handleMenuClick(item.id, item.action)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                    activeMenu === item.id
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  } ${item.id === 'logout' ? 'hover:bg-red-50 hover:text-red-700' : ''}`}
-                >
-                  <item.icon className="w-5 h-5 flex-shrink-0" />
-                  <span className="font-medium">{item.label}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+        {/* Footer */}
+        <div className="sidebar-footer px-4 py-4">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+              <User className="w-5 h-5 text-gray-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {user?.profile_details?.full_name || user?.login_id}
+              </p>
+              <p className="text-xs text-gray-500 truncate">Administrator</p>
+            </div>
+          </div>
+          
+          <button
+            onClick={logout}
+            className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Logout
+          </button>
         </div>
       </div>
     </>
