@@ -6,8 +6,11 @@ import {
   SelectedField, 
   JoinConfiguration, 
   DragItem,
-  CollectionsRelationshipsResponse 
+  CollectionsRelationshipsResponse,
+  FieldInfo
 } from '@/types/export';
+import { exportService } from '@/services/export';
+import toast from 'react-hot-toast';
 
 interface ExportConfigurationPreviewProps {
   exportConfig: ExportConfiguration;
@@ -16,6 +19,7 @@ interface ExportConfigurationPreviewProps {
   onFieldRemove: (fieldId: string) => void;
   onJoinAdd: (join: JoinConfiguration) => void;
   onJoinRemove: (joinId: string) => void;
+  token: string | null;
 }
 
 const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
@@ -24,10 +28,18 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
   onFieldAdd,
   onFieldRemove,
   onJoinAdd,
-  onJoinRemove
+  onJoinRemove,
+  token
 }) => {
-  const [showJoinCollectionPicker, setShowJoinCollectionPicker] = React.useState(false);
-  const [selectedJoinTarget, setSelectedJoinTarget] = React.useState<string | null>(null);
+  // Join Creator States
+  const [showJoinCreator, setShowJoinCreator] = React.useState(false);
+  const [currentJoinSourceCollection, setCurrentJoinSourceCollection] = React.useState<string>('');
+  const [currentJoinTargetCollection, setCurrentJoinTargetCollection] = React.useState<string>('');
+  const [currentJoinLocalField, setCurrentJoinLocalField] = React.useState<string>('');
+  const [currentJoinForeignField, setCurrentJoinForeignField] = React.useState<string>('');
+  const [sourceCollectionFields, setSourceCollectionFields] = React.useState<FieldInfo[]>([]);
+  const [targetCollectionFields, setTargetCollectionFields] = React.useState<FieldInfo[]>([]);
+  const [loadingJoinFields, setLoadingJoinFields] = React.useState(false);
 
   const [{ isOver }, drop] = useDrop({
     accept: 'field', 
@@ -46,59 +58,158 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
     })
   });
 
-  const handleAddJoinClick = () => {
-    setShowJoinCollectionPicker(true);
+  // Get collections that can be used as join sources (main collection + existing join targets)
+  const getJoinSourceCollections = () => {
+    const sources = [];
+    
+    // Add main collection
+    if (exportConfig.main_collection) {
+      sources.push({
+        key: exportConfig.main_collection,
+        display_name: collections?.relationships[exportConfig.main_collection]?.display_name || exportConfig.main_collection
+      });
+    }
+    
+    // Add existing join target collections
+    exportConfig.joins.forEach(join => {
+      if (!sources.find(s => s.key === join.target_collection)) {
+        sources.push({
+          key: join.target_collection,
+          display_name: collections?.relationships[join.target_collection]?.display_name || join.target_collection
+        });
+      }
+    });
+    
+    return sources;
   };
 
-  const handleJoinCollectionSelect = (targetCollectionKey: string) => {
-    if (!collections || !targetCollectionKey) return;
+  // Get collections that can be joined from a specific source collection
+  const getJoinTargetCollections = (sourceCollectionKey: string) => {
+    if (!collections || !sourceCollectionKey) return [];
+    
+    const sourceCollection = collections.relationships[sourceCollectionKey];
+    if (!sourceCollection || !sourceCollection.possible_joins) return [];
+    
+    return sourceCollection.possible_joins.map(join => ({
+      key: join.collection,
+      display_name: collections.relationships[join.collection]?.display_name || join.collection,
+      suggested_local_field: join.suggested_local_field,
+      suggested_foreign_field: join.suggested_foreign_field,
+      relationship_type: join.relationship_type,
+      description: join.description
+    }));
+  };
+  const handleAddJoinClick = () => {
+    setShowJoinCreator(true);
+    // Set default source collection to main collection
+    if (exportConfig.main_collection) {
+      setCurrentJoinSourceCollection(exportConfig.main_collection);
+    }
+  };
 
-    const targetCollectionInfo = collections.relationships[targetCollectionKey];
-    if (!targetCollectionInfo || !targetCollectionInfo.possible_joins || targetCollectionInfo.possible_joins.length === 0) {
+  const handleJoinSourceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const sourceCollection = e.target.value;
+    setCurrentJoinSourceCollection(sourceCollection);
+    
+    // Reset dependent fields
+    setCurrentJoinTargetCollection('');
+    setCurrentJoinLocalField('');
+    setCurrentJoinForeignField('');
+    setSourceCollectionFields([]);
+    setTargetCollectionFields([]);
+  };
+
+  const handleJoinTargetChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const targetCollection = e.target.value;
+    setCurrentJoinTargetCollection(targetCollection);
+    
+    if (!targetCollection || !token) return;
+    
+    try {
+      setLoadingJoinFields(true);
+      
+      // Get fields for both source and target collections
+      const [sourceFields, targetFields] = await Promise.all([
+        exportService.getFieldSuggestions(token, currentJoinSourceCollection),
+        exportService.getFieldSuggestions(token, targetCollection)
+      ]);
+      
+      setSourceCollectionFields(sourceFields.available_fields);
+      setTargetCollectionFields(targetFields.available_fields);
+      
+      // Try to auto-fill suggested fields
+      const targetCollections = getJoinTargetCollections(currentJoinSourceCollection);
+      const selectedTarget = targetCollections.find(t => t.key === targetCollection);
+      
+      if (selectedTarget) {
+        setCurrentJoinLocalField(selectedTarget.suggested_local_field);
+        setCurrentJoinForeignField(selectedTarget.suggested_foreign_field);
+      }
+      
+    } catch (error) {
+      console.error('Error loading join fields:', error);
+      toast.error('Gagal memuat field untuk join');
+    } finally {
+      setLoadingJoinFields(false);
+    }
+  };
+
+  const handleConfirmAddJoin = () => {
+    if (!currentJoinSourceCollection || !currentJoinTargetCollection || 
+        !currentJoinLocalField || !currentJoinForeignField) {
       return;
     }
 
-    // Use the first possible join
-    const firstJoin = targetCollectionInfo.possible_joins[0];
+    // Find the relationship info for description
+    const targetCollections = getJoinTargetCollections(currentJoinSourceCollection);
+    const selectedTarget = targetCollections.find(t => t.key === currentJoinTargetCollection);
     
-    // Create JoinConfiguration
     const joinConfig: JoinConfiguration = {
       id: `join_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      target_collection: targetCollectionKey,
-      local_field: firstJoin.suggested_local_field,
-      foreign_field: firstJoin.suggested_foreign_field,
-      relationship_type: firstJoin.relationship_type,
-      description: firstJoin.description,
+      source_collection: currentJoinSourceCollection,
+      target_collection: currentJoinTargetCollection,
+      local_field: currentJoinLocalField,
+      foreign_field: currentJoinForeignField,
+      relationship_type: selectedTarget?.relationship_type || 'direct',
+      description: selectedTarget?.description || `Join ${currentJoinSourceCollection} to ${currentJoinTargetCollection}`,
       selected_fields: []
     };
 
     onJoinAdd(joinConfig);
     
-    // Reset state
-    setShowJoinCollectionPicker(false);
-    setSelectedJoinTarget(null);
+    // Reset all join creator state
+    setShowJoinCreator(false);
+    setCurrentJoinSourceCollection('');
+    setCurrentJoinTargetCollection('');
+    setCurrentJoinLocalField('');
+    setCurrentJoinForeignField('');
+    setSourceCollectionFields([]);
+    setTargetCollectionFields([]);
   };
 
-  const handleCancelJoinSelection = () => {
-    setShowJoinCollectionPicker(false);
-    setSelectedJoinTarget(null);
+  const handleCancelJoinCreation = () => {
+    setShowJoinCreator(false);
+    setCurrentJoinSourceCollection('');
+    setCurrentJoinTargetCollection('');
+    setCurrentJoinLocalField('');
+    setCurrentJoinForeignField('');
+    setSourceCollectionFields([]);
+    setTargetCollectionFields([]);
   };
 
-  // Get available collections for joining (exclude main collection)
-  const getAvailableJoinCollections = () => {
-    if (!collections || !exportConfig.main_collection) return [];
-    
-    return Object.entries(collections.relationships)
-      .filter(([key, info]) => 
-        key !== exportConfig.main_collection && 
-        info.possible_joins && 
-        info.possible_joins.length > 0
-      )
-      .map(([key, info]) => ({
-        key,
-        display_name: info.display_name,
-        total_joinable: info.total_joinable
-      }));
+  const canConfirmJoin = currentJoinSourceCollection && currentJoinTargetCollection && 
+                        currentJoinLocalField && currentJoinForeignField;
+
+  const joinSourceCollections = getJoinSourceCollections();
+  const joinTargetCollections = getJoinTargetCollections(currentJoinSourceCollection);
+
+  // Filter fields for dropdowns
+  const getFieldOptions = (fields: FieldInfo[]) => {
+    return fields.filter(field => 
+      field.category === 'recommended' || 
+      field.field.includes('id') || 
+      field.field.includes('_id')
+    );
   };
 
   return (

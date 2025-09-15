@@ -522,8 +522,6 @@ const AdminExportPage: React.FC = () => {
                 onFieldRemove={handleFieldRemove}
                 onJoinAdd={handleJoinAdd}
                 onJoinRemove={handleJoinRemove}
-                onFilterAdd={handleFilterAdd}
-                onConfigChange={setExportConfig}
                 token={token}
               />
             </div>

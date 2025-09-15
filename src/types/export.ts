@@ -48,6 +48,7 @@ export interface SelectedField {
 
 export interface JoinConfiguration {
   id: string;
+  source_collection: string;
   target_collection: string;
   local_field: string;
   foreign_field: string;
