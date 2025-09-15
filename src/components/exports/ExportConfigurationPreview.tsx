@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDrop } from 'react-dnd';
 import { Plus, Database, Settings, X } from 'lucide-react';
-import { ExportConfiguration, SelectedField, JoinConfiguration } from '@/types/export';
+import { ExportConfiguration, SelectedField, JoinConfiguration, DragItem } from '@/types/export';
 
 interface ExportConfigurationPreviewProps {
   exportConfig: ExportConfiguration;
@@ -19,14 +19,14 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
   onJoinRemove
 }) => {
   const [{ isOver }, drop] = useDrop({
-    accept: 'field',
-    drop: (item: { field: string; alias: string; category: string; collection: string }) => {
+    accept: 'field', 
+    drop: (item: DragItem) => {
       const selectedField: SelectedField = {
-        id: `${item.collection}.${item.field}`,
-        field: item.field,
-        alias: item.alias,
-        collection: item.collection,
-        category: item.category
+        id: `${item.field.collection}.${item.field.field}`,
+        field: item.field.field,
+        alias: item.field.alias,
+        collection: item.field.collection,
+        category: item.field.category
       };
       onFieldAdd(selectedField);
     },
