@@ -40,8 +40,93 @@ const AdminExportPage: React.FC = () => {
       
       setLoading(true);
       try {
-        // For now, use mock data since the API endpoint might not be available
+        // Use comprehensive mock data based on actual API response structure
         const mockCollections = {
+          subjects: {
+            display_name: "Subjects",
+            possible_joins: [
+              {
+                collection: "teaching_assignments",
+                suggested_local_field: "_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join subjects to teaching_assignments via _id"
+              }
+            ],
+            total_joinable: 1
+          },
+          notifications: {
+            display_name: "Notifications",
+            possible_joins: [],
+            total_joinable: 0
+          },
+          exam_sessions: {
+            display_name: "Exam Sessions",
+            possible_joins: [
+              {
+                collection: "users",
+                suggested_local_field: "student_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join exam_sessions to users via student_id"
+              },
+              {
+                collection: "exams",
+                suggested_local_field: "exam_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join exam_sessions to exams via exam_id"
+              }
+            ],
+            total_joinable: 2
+          },
+          exams: {
+            display_name: "Exams",
+            possible_joins: [
+              {
+                collection: "teaching_assignments",
+                suggested_local_field: "teaching_assignment_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join exams to teaching_assignments via teaching_assignment_id"
+              },
+              {
+                collection: "academic_periods",
+                suggested_local_field: "academic_period_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join exams to academic_periods via academic_period_id"
+              },
+              {
+                collection: "exam_sessions",
+                suggested_local_field: "_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join exams to exam_sessions via _id"
+              }
+            ],
+            total_joinable: 3
+          },
+          expertise_programs: {
+            display_name: "Expertise Programs",
+            possible_joins: [
+              {
+                collection: "classes",
+                suggested_local_field: "_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join expertise_programs to classes via _id"
+              },
+              {
+                collection: "departments",
+                suggested_local_field: "department_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join expertise_programs to departments via department_id"
+              }
+            ],
+            total_joinable: 2
+          },
           users: {
             display_name: "Users",
             possible_joins: [
@@ -51,9 +136,155 @@ const AdminExportPage: React.FC = () => {
                 suggested_foreign_field: "_id",
                 relationship_type: "direct",
                 description: "Join users to profiles via profile_id"
+              },
+              {
+                collection: "exam_sessions",
+                suggested_local_field: "_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join users to exam_sessions via _id"
+              },
+              {
+                collection: "teaching_assignments",
+                suggested_local_field: "_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join users to teaching_assignments via _id"
               }
             ],
-            total_joinable: 1
+            total_joinable: 3
+          },
+          academic_periods: {
+            display_name: "Academic Periods",
+            possible_joins: [
+              {
+                collection: "classes",
+                suggested_local_field: "_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join academic_periods to classes via _id"
+              },
+              {
+                collection: "teaching_assignments",
+                suggested_local_field: "_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join academic_periods to teaching_assignments via _id"
+              },
+              {
+                collection: "exams",
+                suggested_local_field: "_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join academic_periods to exams via _id"
+              }
+            ],
+            total_joinable: 3
+          },
+          teaching_assignments: {
+            display_name: "Teaching Assignments",
+            possible_joins: [
+              {
+                collection: "users",
+                suggested_local_field: "teacher_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join teaching_assignments to users via teacher_id"
+              },
+              {
+                collection: "subjects",
+                suggested_local_field: "subject_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join teaching_assignments to subjects via subject_id"
+              },
+              {
+                collection: "classes",
+                suggested_local_field: "class_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join teaching_assignments to classes via class_id"
+              },
+              {
+                collection: "academic_periods",
+                suggested_local_field: "academic_period_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join teaching_assignments to academic_periods via academic_period_id"
+              },
+              {
+                collection: "exams",
+                suggested_local_field: "_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join teaching_assignments to exams via _id"
+              }
+            ],
+            total_joinable: 5
+          },
+          classes: {
+            display_name: "Classes",
+            possible_joins: [
+              {
+                collection: "expertise_programs",
+                suggested_local_field: "expertise_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join classes to expertise_programs via expertise_id"
+              },
+              {
+                collection: "academic_periods",
+                suggested_local_field: "academic_period_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join classes to academic_periods via academic_period_id"
+              },
+              {
+                collection: "profiles",
+                suggested_local_field: "_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join classes to profiles via _id"
+              },
+              {
+                collection: "users",
+                suggested_local_field: "homeroom_teacher_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join classes to users via homeroom_teacher_id"
+              }
+            ],
+            total_joinable: 4
+          },
+          departments: {
+            display_name: "Departments",
+            possible_joins: [],
+            total_joinable: 0
+          },
+          system_logs: {
+            display_name: "System Logs",
+            possible_joins: [],
+            total_joinable: 0
+          },
+          profiles: {
+            display_name: "Profiles",
+            possible_joins: [
+              {
+                collection: "users",
+                suggested_local_field: "user_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join profiles to users via user_id"
+              },
+              {
+                collection: "classes",
+                suggested_local_field: "class_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join profiles to classes via class_id"
+              }
+            ],
+            total_joinable: 2
           },
           profiles: {
             display_name: "Profiles",
@@ -71,21 +302,55 @@ const AdminExportPage: React.FC = () => {
         };
         setCollections({ 
           relationships: mockCollections, 
-          total_collections: Object.keys(mockCollections).length 
+          total_collections: 12
         });
       } catch (error) {
         console.warn('Using mock data - API endpoint not available:', error);
-        // Use mock data as fallback
-        const mockCollections = {
+        // Use comprehensive mock data as fallback
+        const fallbackMockCollections = {
+          subjects: {
+            display_name: "Subjects",
+            possible_joins: [
+              {
+                collection: "teaching_assignments",
+                suggested_local_field: "_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join subjects to teaching_assignments via _id"
+              }
+            ],
+            total_joinable: 1
+          },
           users: {
             display_name: "Users",
-            possible_joins: [],
-            total_joinable: 0
+            possible_joins: [
+              {
+                collection: "profiles",
+                suggested_local_field: "profile_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join users to profiles via profile_id"
+              }
+            ],
+            total_joinable: 1
+          },
+          exam_sessions: {
+            display_name: "Exam Sessions",
+            possible_joins: [
+              {
+                collection: "users",
+                suggested_local_field: "student_id",
+                suggested_foreign_field: "_id",
+                relationship_type: "direct",
+                description: "Join exam_sessions to users via student_id"
+              }
+            ],
+            total_joinable: 1
           }
         };
         setCollections({ 
-          relationships: mockCollections, 
-          total_collections: Object.keys(mockCollections).length 
+          relationships: fallbackMockCollections, 
+          total_collections: Object.keys(fallbackMockCollections).length 
         });
       } finally {
         setLoading(false);
