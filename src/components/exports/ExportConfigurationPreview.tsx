@@ -40,6 +40,11 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
   const [sourceCollectionFields, setSourceCollectionFields] = React.useState<FieldInfo[]>([]);
   const [targetCollectionFields, setTargetCollectionFields] = React.useState<FieldInfo[]>([]);
   const [loadingJoinFields, setLoadingJoinFields] = React.useState(false);
+  
+  // New states for suggested vs custom join
+  const [joinMethod, setJoinMethod] = React.useState<'suggested' | 'custom'>('suggested');
+  const [availablePossibleJoins, setAvailablePossibleJoins] = React.useState<any[]>([]);
+  const [selectedPossibleJoin, setSelectedPossibleJoin] = React.useState<any | null>(null);
 
   const [{ isOver }, drop] = useDrop({
     accept: 'field', 
@@ -117,6 +122,9 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
     setCurrentJoinForeignField('');
     setSourceCollectionFields([]);
     setTargetCollectionFields([]);
+    setJoinMethod('suggested');
+    setAvailablePossibleJoins([]);
+    setSelectedPossibleJoin(null);
   };
 
   const handleJoinTargetChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -137,13 +145,30 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
       setSourceCollectionFields(sourceFields.available_fields);
       setTargetCollectionFields(targetFields.available_fields);
       
-      // Try to auto-fill suggested fields
+      // Get available possible joins for this source -> target combination
       const targetCollections = getJoinTargetCollections(currentJoinSourceCollection);
       const selectedTarget = targetCollections.find(t => t.key === targetCollection);
       
-      if (selectedTarget) {
-        setCurrentJoinLocalField(selectedTarget.suggested_local_field);
-        setCurrentJoinForeignField(selectedTarget.suggested_foreign_field);
+      // Find all possible joins from source to target
+      const sourceCollection = collections?.relationships[currentJoinSourceCollection];
+      const possibleJoins = sourceCollection?.possible_joins?.filter(join => 
+        join.collection === targetCollection
+      ) || [];
+      
+      setAvailablePossibleJoins(possibleJoins);
+      
+      if (possibleJoins.length > 0) {
+        // Default to suggested method with first possible join
+        setJoinMethod('suggested');
+        setSelectedPossibleJoin(possibleJoins[0]);
+        setCurrentJoinLocalField(possibleJoins[0].suggested_local_field);
+        setCurrentJoinForeignField(possibleJoins[0].suggested_foreign_field);
+      } else {
+        // No suggestions available, force custom method
+        setJoinMethod('custom');
+        setSelectedPossibleJoin(null);
+        setCurrentJoinLocalField('');
+        setCurrentJoinForeignField('');
       }
       
     } catch (error) {
@@ -154,26 +179,62 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
     }
   };
 
+  const handleJoinMethodChange = (method: 'suggested' | 'custom') => {
+    setJoinMethod(method);
+    
+    if (method === 'suggested' && availablePossibleJoins.length > 0) {
+      // Auto-select first suggested join
+      setSelectedPossibleJoin(availablePossibleJoins[0]);
+      setCurrentJoinLocalField(availablePossibleJoins[0].suggested_local_field);
+      setCurrentJoinForeignField(availablePossibleJoins[0].suggested_foreign_field);
+    } else if (method === 'custom') {
+      // Clear suggested selection
+      setSelectedPossibleJoin(null);
+      setCurrentJoinLocalField('');
+      setCurrentJoinForeignField('');
+    }
+  };
+
+  const handlePossibleJoinSelect = (possibleJoin: any) => {
+    setSelectedPossibleJoin(possibleJoin);
+    setCurrentJoinLocalField(possibleJoin.suggested_local_field);
+    setCurrentJoinForeignField(possibleJoin.suggested_foreign_field);
+  };
+
   const handleConfirmAddJoin = () => {
-    if (!currentJoinSourceCollection || !currentJoinTargetCollection || 
-        !currentJoinLocalField || !currentJoinForeignField) {
+    if (!currentJoinSourceCollection || !currentJoinTargetCollection) {
       return;
     }
 
-    // Find the relationship info for description
-    const targetCollections = getJoinTargetCollections(currentJoinSourceCollection);
-    const selectedTarget = targetCollections.find(t => t.key === currentJoinTargetCollection);
+    let joinConfig: JoinConfiguration;
     
-    const joinConfig: JoinConfiguration = {
-      id: `join_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      source_collection: currentJoinSourceCollection,
-      target_collection: currentJoinTargetCollection,
-      local_field: currentJoinLocalField,
-      foreign_field: currentJoinForeignField,
-      relationship_type: selectedTarget?.relationship_type || 'direct',
-      description: selectedTarget?.description || `Join ${currentJoinSourceCollection} to ${currentJoinTargetCollection}`,
-      selected_fields: []
-    };
+    if (joinMethod === 'suggested' && selectedPossibleJoin) {
+      // Use suggested join configuration
+      joinConfig = {
+        id: `join_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        source_collection: currentJoinSourceCollection,
+        target_collection: currentJoinTargetCollection,
+        local_field: selectedPossibleJoin.suggested_local_field,
+        foreign_field: selectedPossibleJoin.suggested_foreign_field,
+        relationship_type: selectedPossibleJoin.relationship_type,
+        description: selectedPossibleJoin.description,
+        selected_fields: []
+      };
+    } else if (joinMethod === 'custom' && currentJoinLocalField && currentJoinForeignField) {
+      // Use custom join configuration
+      joinConfig = {
+        id: `join_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        source_collection: currentJoinSourceCollection,
+        target_collection: currentJoinTargetCollection,
+        local_field: currentJoinLocalField,
+        foreign_field: currentJoinForeignField,
+        relationship_type: 'custom',
+        description: `Custom join ${currentJoinSourceCollection} to ${currentJoinTargetCollection}`,
+        selected_fields: []
+      };
+    } else {
+      return; // Invalid configuration
+    }
 
     onJoinAdd(joinConfig);
     
@@ -185,6 +246,9 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
     setCurrentJoinForeignField('');
     setSourceCollectionFields([]);
     setTargetCollectionFields([]);
+    setJoinMethod('suggested');
+    setAvailablePossibleJoins([]);
+    setSelectedPossibleJoin(null);
   };
 
   const handleCancelJoinCreation = () => {
@@ -195,10 +259,14 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
     setCurrentJoinForeignField('');
     setSourceCollectionFields([]);
     setTargetCollectionFields([]);
+    setJoinMethod('suggested');
+    setAvailablePossibleJoins([]);
+    setSelectedPossibleJoin(null);
   };
 
   const canConfirmJoin = currentJoinSourceCollection && currentJoinTargetCollection && 
-                        currentJoinLocalField && currentJoinForeignField;
+                        ((joinMethod === 'suggested' && selectedPossibleJoin) ||
+                         (joinMethod === 'custom' && currentJoinLocalField && currentJoinForeignField));
 
   const joinSourceCollections = getJoinSourceCollections();
   const joinTargetCollections = getJoinTargetCollections(currentJoinSourceCollection);
@@ -353,8 +421,74 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
                       </select>
                     </div>
 
-                    {/* Local Field */}
-                    {currentJoinTargetCollection && (
+                    {/* Join Method Selection */}
+                    {currentJoinTargetCollection && joinMethod === 'suggested' && availablePossibleJoins.length > 0 && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Join Method
+                        </label>
+                        <div className="flex gap-4 mb-3">
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="joinMethod"
+                              value="suggested"
+                              checked={joinMethod === 'suggested'}
+                              onChange={() => handleJoinMethodChange('suggested')}
+                              className="mr-2"
+                            />
+                            <span className="text-sm">Suggested Joins</span>
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="joinMethod"
+                              value="custom"
+                              checked={joinMethod === 'custom'}
+                              onChange={() => handleJoinMethodChange('custom')}
+                              className="mr-2"
+                            />
+                            <span className="text-sm">Custom Join</span>
+                          </label>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Suggested Joins */}
+                    {currentJoinTargetCollection && joinMethod === 'suggested' && availablePossibleJoins.length > 0 && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Available Join Options
+                        </label>
+                        <div className="space-y-2 mb-3">
+                          {availablePossibleJoins.map((possibleJoin, index) => (
+                            <label key={index} className="flex items-start p-2 border rounded cursor-pointer hover:bg-gray-50">
+                              <input
+                                type="radio"
+                                name="possibleJoin"
+                                checked={selectedPossibleJoin === possibleJoin}
+                                onChange={() => handlePossibleJoinSelect(possibleJoin)}
+                                className="mr-2 mt-1"
+                              />
+                              <div className="flex-1">
+                                <div className="text-sm font-medium">
+                                  {possibleJoin.suggested_local_field} → {possibleJoin.suggested_foreign_field}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {possibleJoin.description}
+                                </div>
+                                <div className="text-xs text-blue-600">
+                                  Type: {possibleJoin.relationship_type}
+                                </div>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Custom Join Fields */}
+                    {currentJoinTargetCollection && joinMethod === 'custom' && (
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Local Field ({currentJoinSourceCollection})
@@ -375,8 +509,7 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
                       </div>
                     )}
 
-                    {/* Foreign Field */}
-                    {currentJoinTargetCollection && (
+                    {currentJoinTargetCollection && joinMethod === 'custom' && (
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Foreign Field ({currentJoinTargetCollection})
