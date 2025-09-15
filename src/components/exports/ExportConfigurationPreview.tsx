@@ -65,27 +65,27 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
 
   // Get collections that can be used as join sources (main collection + existing join targets)
   const getJoinSourceCollections = () => {
-    const sources = [];
+    if (!collections) return [];
     
-    // Add main collection
+    // Return all available collections from the endpoint
+    const allCollections = Object.entries(collections.relationships).map(([key, info]) => ({
+      key,
+      display_name: info.display_name
+    }));
+
+    // Sort to put main collection first if it exists
     if (exportConfig.main_collection) {
-      sources.push({
-        key: exportConfig.main_collection,
-        display_name: collections?.relationships[exportConfig.main_collection]?.display_name || exportConfig.main_collection
-      });
-    }
-    
-    // Add existing join target collections
-    exportConfig.joins.forEach(join => {
-      if (!sources.find(s => s.key === join.target_collection)) {
-        sources.push({
-          key: join.target_collection,
-          display_name: collections?.relationships[join.target_collection]?.display_name || join.target_collection
+      const mainCollectionIndex = allCollections.findIndex(c => c.key === exportConfig.main_collection);
+      if (mainCollectionIndex > -1) {
+        const mainCollection = allCollections.splice(mainCollectionIndex, 1)[0];
+        allCollections.unshift({
+          ...mainCollection,
+          display_name: `${mainCollection.display_name} (Main Collection)`
         });
       }
-    });
+    }
     
-    return sources;
+    return allCollections;
   };
 
   // Get collections that can be joined from a specific source collection
@@ -122,7 +122,7 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
     setCurrentJoinForeignField('');
     setSourceCollectionFields([]);
     setTargetCollectionFields([]);
-    setJoinMethod('suggested');
+    // Don't reset joinMethod - let user keep their preference
     setAvailablePossibleJoins([]);
     setSelectedPossibleJoin(null);
   };
@@ -158,13 +158,14 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
       setAvailablePossibleJoins(possibleJoins);
       
       if (possibleJoins.length > 0) {
-        // Default to suggested method with first possible join
-        setJoinMethod('suggested');
-        setSelectedPossibleJoin(possibleJoins[0]);
-        setCurrentJoinLocalField(possibleJoins[0].suggested_local_field);
-        setCurrentJoinForeignField(possibleJoins[0].suggested_foreign_field);
+        // Only auto-select if user hasn't chosen custom method
+        if (joinMethod === 'suggested') {
+          setSelectedPossibleJoin(possibleJoins[0]);
+          setCurrentJoinLocalField(possibleJoins[0].suggested_local_field);
+          setCurrentJoinForeignField(possibleJoins[0].suggested_foreign_field);
+        }
       } else {
-        // No suggestions available, force custom method
+        // No suggestions available, switch to custom method
         setJoinMethod('custom');
         setSelectedPossibleJoin(null);
         setCurrentJoinLocalField('');
@@ -272,12 +273,18 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
   const joinTargetCollections = getJoinTargetCollections(currentJoinSourceCollection);
 
   // Filter fields for dropdowns
-  const getFieldOptions = (fields: FieldInfo[]) => {
-    return fields.filter(field => 
-      field.category === 'recommended' || 
-      field.field.includes('id') || 
-      field.field.includes('_id')
-    );
+  const getFieldOptions = (fields: FieldInfo[], forCustomJoin: boolean = false) => {
+    if (forCustomJoin) {
+      // For custom join, return all available fields
+      return fields;
+    } else {
+      // For suggested join dropdowns, filter to relevant fields
+      return fields.filter(field => 
+        field.category === 'recommended' || 
+        field.field.includes('id') || 
+        field.field.includes('_id')
+      );
+    }
   };
 
   return (
@@ -422,7 +429,7 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
                     </div>
 
                     {/* Join Method Selection */}
-                    {currentJoinTargetCollection && joinMethod === 'suggested' && availablePossibleJoins.length > 0 && (
+                    {currentJoinTargetCollection && (
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Join Method
@@ -435,9 +442,12 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
                               value="suggested"
                               checked={joinMethod === 'suggested'}
                               onChange={() => handleJoinMethodChange('suggested')}
+                              disabled={availablePossibleJoins.length === 0}
                               className="mr-2"
                             />
-                            <span className="text-sm">Suggested Joins</span>
+                            <span className={`text-sm ${availablePossibleJoins.length === 0 ? 'text-gray-400' : ''}`}>
+                              Suggested Joins {availablePossibleJoins.length === 0 ? '(None available)' : `(${availablePossibleJoins.length})`}
+                            </span>
                           </label>
                           <label className="flex items-center">
                             <input
@@ -488,7 +498,7 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
                     )}
 
                     {/* Custom Join Fields */}
-                    {currentJoinTargetCollection && joinMethod === 'custom' && (
+                    {currentJoinTargetCollection && joinMethod === 'custom' && !loadingJoinFields && (
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Local Field ({currentJoinSourceCollection})
@@ -496,11 +506,10 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
                         <select
                           value={currentJoinLocalField}
                           onChange={(e) => setCurrentJoinLocalField(e.target.value)}
-                          disabled={loadingJoinFields}
-                          className="w-full text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                          className="w-full text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                         >
                           <option value="">Select local field...</option>
-                          {getFieldOptions(sourceCollectionFields).map((field) => (
+                          {getFieldOptions(sourceCollectionFields, true).map((field) => (
                             <option key={field.field} value={field.field}>
                               {field.alias} ({field.field})
                             </option>
@@ -517,11 +526,10 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
                         <select
                           value={currentJoinForeignField}
                           onChange={(e) => setCurrentJoinForeignField(e.target.value)}
-                          disabled={loadingJoinFields}
-                          className="w-full text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                          className="w-full text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                         >
                           <option value="">Select foreign field...</option>
-                          {getFieldOptions(targetCollectionFields).map((field) => (
+                          {getFieldOptions(targetCollectionFields, true).map((field) => (
                             <option key={field.field} value={field.field}>
                               {field.alias} ({field.field})
                             </option>
