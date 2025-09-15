@@ -518,6 +518,7 @@ const AdminExportPage: React.FC = () => {
               <ExportConfigurationPreview
                 exportConfig={exportConfig}
                 collections={collections}
+                onFieldAdd={handleFieldSelect}
                 onFieldRemove={handleFieldRemove}
                 onJoinAdd={handleJoinAdd}
                 onJoinRemove={handleJoinRemove}
