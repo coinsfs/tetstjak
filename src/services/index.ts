@@ -15,6 +15,7 @@ export * from './questionSubmission';
 export * from './questionSet';
 export * from './studentExam';
 export * from './examSecurity';
+export * from './export';
 export * from './scoreTrendAnalytics';
 export * from './subjectMasteryAnalytics';
 export * from './export';
