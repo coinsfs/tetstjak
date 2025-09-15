@@ -301,34 +301,119 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
               </div>
               
               {/* Join Collection Picker */}
-              {showJoinCollectionPicker && (
-                <div className="mb-4 p-3 border border-blue-200 rounded-lg bg-blue-50">
+              {showJoinCreator && (
+                <div className="mb-4 p-4 border border-blue-200 rounded-lg bg-blue-50">
                   <div className="flex items-center justify-between mb-2">
-                    <h5 className="text-sm font-medium text-gray-900">Select Collection to Join</h5>
+                    <h5 className="text-sm font-medium text-gray-900">Create Join Configuration</h5>
                     <button
-                      onClick={handleCancelJoinSelection}
+                      onClick={handleCancelJoinCreation}
                       className="text-gray-400 hover:text-gray-600"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                  <select
-                    value={selectedJoinTarget || ''}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value) {
-                        handleJoinCollectionSelect(value);
-                      }
-                    }}
-                    className="w-full text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Choose a collection to join...</option>
-                    {getAvailableJoinCollections().map((collection) => (
-                      <option key={collection.key} value={collection.key}>
-                        {collection.display_name} ({collection.total_joinable} joins available)
-                      </option>
-                    ))}
-                  </select>
+                  
+                  <div className="space-y-3">
+                    {/* Join From */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Join From
+                      </label>
+                      <select
+                        value={currentJoinSourceCollection}
+                        onChange={handleJoinSourceChange}
+                        className="w-full text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Select source collection...</option>
+                        {joinSourceCollections.map((collection) => (
+                          <option key={collection.key} value={collection.key}>
+                            {collection.display_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Join To */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Join To
+                      </label>
+                      <select
+                        value={currentJoinTargetCollection}
+                        onChange={handleJoinTargetChange}
+                        disabled={!currentJoinSourceCollection}
+                        className="w-full text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                      >
+                        <option value="">Select target collection...</option>
+                        {joinTargetCollections.map((collection) => (
+                          <option key={collection.key} value={collection.key}>
+                            {collection.display_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Local Field */}
+                    {currentJoinTargetCollection && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Local Field ({currentJoinSourceCollection})
+                        </label>
+                        <select
+                          value={currentJoinLocalField}
+                          onChange={(e) => setCurrentJoinLocalField(e.target.value)}
+                          disabled={loadingJoinFields}
+                          className="w-full text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                        >
+                          <option value="">Select local field...</option>
+                          {getFieldOptions(sourceCollectionFields).map((field) => (
+                            <option key={field.field} value={field.field}>
+                              {field.alias} ({field.field})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Foreign Field */}
+                    {currentJoinTargetCollection && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Foreign Field ({currentJoinTargetCollection})
+                        </label>
+                        <select
+                          value={currentJoinForeignField}
+                          onChange={(e) => setCurrentJoinForeignField(e.target.value)}
+                          disabled={loadingJoinFields}
+                          className="w-full text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                        >
+                          <option value="">Select foreign field...</option>
+                          {getFieldOptions(targetCollectionFields).map((field) => (
+                            <option key={field.field} value={field.field}>
+                              {field.alias} ({field.field})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={handleConfirmAddJoin}
+                        disabled={!canConfirmJoin || loadingJoinFields}
+                        className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      >
+                        {loadingJoinFields ? 'Loading...' : 'Add Join'}
+                      </button>
+                      <button
+                        onClick={handleCancelJoinCreation}
+                        className="px-3 py-1.5 bg-gray-200 text-gray-700 text-xs rounded-md hover:bg-gray-300"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
               
@@ -348,11 +433,16 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {join.target_collection}
+                            {join.source_collection} → {join.target_collection}
                           </div>
                           <div className="text-xs text-gray-500">
                             {join.local_field} → {join.foreign_field}
                           </div>
+                          {join.description && (
+                            <div className="text-xs text-gray-400 mt-1">
+                              {join.description}
+                            </div>
+                          )}
                         </div>
                         <button
                           onClick={() => onJoinRemove(join.id)}
