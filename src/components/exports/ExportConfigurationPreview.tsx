@@ -84,25 +84,33 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
   const getJoinSourceCollections = () => {
     if (!collections) return [];
     
-    // Return all available collections from the endpoint
-    const allCollections = Object.entries(collections.relationships).map(([key, info]) => ({
-      key,
-      display_name: info.display_name
-    }));
-
-    // Sort to put main collection first if it exists
+    const sourceCollections: { key: string; display_name: string }[] = [];
+    
+    // Add main collection if it exists
     if (exportConfig.main_collection) {
-      const mainCollectionIndex = allCollections.findIndex(c => c.key === exportConfig.main_collection);
-      if (mainCollectionIndex > -1) {
-        const mainCollection = allCollections.splice(mainCollectionIndex, 1)[0];
-        allCollections.unshift({
-          ...mainCollection,
-          display_name: `${mainCollection.display_name} (Main Collection)`
-        });
-      }
+      const mainCollectionInfo = collections.relationships[exportConfig.main_collection];
+      sourceCollections.push({
+        key: exportConfig.main_collection,
+        display_name: `${mainCollectionInfo?.display_name || exportConfig.main_collection} (Main Collection)`
+      });
     }
     
-    return allCollections;
+    // Add all joined collections as potential sources for further joins
+    exportConfig.joins.forEach(join => {
+      const joinCollectionInfo = collections.relationships[join.target_collection];
+      // Avoid duplicates
+      if (!sourceCollections.find(c => c.key === join.target_collection)) {
+        sourceCollections.push({
+          key: join.target_collection,
+          display_name: `${joinCollectionInfo?.display_name || join.target_collection} (Joined Collection)`
+        });
+      }
+    });
+    
+    return sourceCollections.map(({ key, display_name }) => ({
+      key,
+      display_name
+    }));
   };
 
   // Get collections that can be joined from a specific source collection

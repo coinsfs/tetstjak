@@ -92,18 +92,23 @@ class ExportService extends BaseService {
 
     // Transform joins
     const backendJoins: BackendJoinConfiguration[] = config.joins.map(join => ({
+      // Get fields for this specific join collection
+      const joinFields = config.selected_fields
+        .filter(field => field.collection === join.target_collection)
+        .map(field => field.field);
+
       collection: join.target_collection,
       local_field: join.local_field,
       foreign_field: join.foreign_field,
       alias: join.target_collection, // Use collection name as alias
-      join_type: this.mapRelationshipTypeToJoinType(join.relationship_type),
+        fields: joinFields,
       fields: join.selected_fields.map(field => field.field),
       exclude_fields: [],
       filters: joinFiltersMap[join.target_collection] || [],
       joins: [], // Nested joins not supported in current UI
       preserve_null_and_empty_arrays: true,
       limit: 0,
-      sort: {}
+      };
     }));
 
     // Extract main collection fields
