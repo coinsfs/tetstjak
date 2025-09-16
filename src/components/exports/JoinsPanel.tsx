@@ -28,7 +28,7 @@ const JoinsPanel: React.FC<JoinsPanelProps> = ({
   const [showJoinCreator, setShowJoinCreator] = useState(false);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-medium text-gray-900 flex items-center">
           <Database className="w-4 h-4 mr-2" />

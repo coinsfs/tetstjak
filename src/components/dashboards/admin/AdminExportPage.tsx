@@ -621,7 +621,7 @@ const AdminExportPage: React.FC = () => {
           {exportConfig.main_collection && (
             <div className="flex-shrink-0 bg-gray-50 border-b border-gray-200 px-6 py-4">
               <div className="flex space-x-4">
-                <div className="w-1/2">
+                <div className="w-1/2 h-full">
                   <FiltersPanel
                     filters={exportConfig.filters}
                     onFilterAdd={handleFilterAdd}
@@ -633,7 +633,7 @@ const AdminExportPage: React.FC = () => {
                   />
                 </div>
                 
-                <div className="w-1/2">
+                <div className="w-1/2 h-full">
                   <JoinsPanel
                     joins={exportConfig.joins}
                     onJoinAdd={handleJoinAdd}

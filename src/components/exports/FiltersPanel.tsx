@@ -29,7 +29,7 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
   const [editingFilter, setEditingFilter] = useState<CollectionFilter | null>(null);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-medium text-gray-900 flex items-center">
           <Settings className="w-4 h-4 mr-2" />
