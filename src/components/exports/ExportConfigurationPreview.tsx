@@ -339,6 +339,7 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
                   {availableFieldContexts.map((context) => (
                     <button
                       key={context.key}
+                availableCollectionsForFilter={availableFieldContexts}
                       onClick={() => setActiveFieldContextCollection(context.key)}
                       className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
                         activeFieldContextCollection === context.key

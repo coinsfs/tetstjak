@@ -87,6 +87,68 @@ export interface ExportConfiguration {
   };
 }
 
+// Backend payload types
+export interface BackendFilterCondition {
+  field: string;
+  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'nin' | 'regex' | 'exists';
+  value: string;
+  options?: string;
+}
+
+export interface BackendComputedField {
+  name: string;
+  alias: string;
+  template: string;
+  fields: string[];
+}
+
+export interface BackendFormattingOptions {
+  exclude_ids: boolean;
+  use_aliases: boolean;
+  flatten_nested: boolean;
+  include_empty_fields: boolean;
+  computed_fields: BackendComputedField[];
+}
+
+export interface BackendJoinConfiguration {
+  collection: string;
+  local_field: string;
+  foreign_field: string;
+  alias?: string;
+  join_type: 'lookup' | 'left' | 'inner';
+  fields: string[];
+  exclude_fields: string[];
+  filters: BackendFilterCondition[];
+  joins: string[];
+  preserve_null_and_empty_arrays: boolean;
+  limit: number;
+  sort: Record<string, number>;
+}
+
+export interface BackendExportConfig {
+  main_collection: string;
+  fields: string[];
+  exclude_fields: string[];
+  filters: BackendFilterCondition[];
+  joins: BackendJoinConfiguration[];
+  group_by: string[];
+  having: BackendFilterCondition[];
+  sort: Record<string, number>;
+  skip: number;
+  limit: number;
+  allow_disk_use: boolean;
+  max_time_ms: number;
+}
+
+export interface BackendExportPayload {
+  config: BackendExportConfig;
+  format: 'excel' | 'csv' | 'json';
+  filename: string;
+  async_export: boolean;
+  explain: boolean;
+  dry_run: boolean;
+  formatting: BackendFormattingOptions;
+}
 // Drag and drop types
 export interface DragItem {
   type: string;

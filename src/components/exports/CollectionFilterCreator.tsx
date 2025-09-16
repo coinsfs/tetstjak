@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 
 interface CollectionFilterCreatorProps {
   collections: CollectionsRelationshipsResponse | null;
+  availableCollectionsForFilter: { key: string; displayName: string }[];
   token: string | null;
   editingFilter?: CollectionFilter | null;
   onSave: (filter: CollectionFilter) => void;
@@ -19,6 +20,7 @@ interface CollectionFilterCreatorProps {
 
 const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
   collections,
+  availableCollectionsForFilter,
   token,
   editingFilter,
   onSave,
@@ -44,6 +46,13 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
     }
   }, [editingFilter]);
 
+  // Reset selected collection if it's no longer available
+  useEffect(() => {
+    if (selectedCollection && !availableCollectionsForFilter.find(c => c.key === selectedCollection)) {
+      setSelectedCollection('');
+      setConditions([]);
+    }
+  }, [selectedCollection, availableCollectionsForFilter]);
   // Load available fields when collection changes
   useEffect(() => {
     const loadFields = async () => {
@@ -178,6 +187,13 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
                 <Database className="w-4 h-4 inline mr-1" />
                 Target Collection
               </label>
+              {availableCollectionsForFilter.length === 0 ? (
+                <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
+                  <Filter className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm">No collections available for filtering</p>
+                  <p className="text-xs text-gray-400">Please select a main collection and add joins first</p>
+                </div>
+              ) : (
               <select
                 value={selectedCollection}
                 onChange={handleCollectionChange}
@@ -237,9 +253,9 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
                   className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-green-700 bg-green-100 rounded-md hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Plus className="w-3 h-3 mr-1" />
-                  Add Condition
-                </button>
-              </div>
+                  {availableCollectionsForFilter.map((collection) => (
+                    <option key={collection.key} value={collection.key}>
+                      {collection.displayName}
 
               {conditions.length === 0 ? (
                 <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
@@ -343,7 +359,9 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
                   ))}
                 </div>
               )}
-            </div>
+              )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -357,7 +375,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
           </button>
           <button
             onClick={handleSave}
-            disabled={!selectedCollection || conditions.length === 0}
+            disabled={!selectedCollection || conditions.length === 0 || availableCollectionsForFilter.length === 0}
             className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {editingFilter ? 'Update Filter' : 'Create Filter'}
@@ -369,3 +387,5 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
 };
 
 export default CollectionFilterCreator;
+            {availableCollectionsForFilter.length > 0 && (
+              <div>

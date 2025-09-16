@@ -502,6 +502,7 @@ const AdminExportPage: React.FC = () => {
     if (!token) return;
 
     try {
+      console.log('Executing export with config:', exportConfig);
       const result = await exportService.executeExport(token, exportConfig);
       toast.success(`Export dimulai! Task ID: ${result.task_id}`);
       
