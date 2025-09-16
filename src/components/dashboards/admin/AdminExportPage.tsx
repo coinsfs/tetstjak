@@ -29,7 +29,6 @@ const AdminExportPage: React.FC = () => {
   const [availableFieldContexts, setAvailableFieldContexts] = useState<{ key: string; displayName: string }[]>([]);
   const [allFieldsForActiveContext, setAllFieldsForActiveContext] = useState<FieldInfo[]>([]);
   const [loadingFields, setLoadingFields] = useState(false);
-  const [activeConfigTab, setActiveConfigTab] = useState<'filters' | 'joins'>('filters');
   const [exportConfig, setExportConfig] = useState<ExportConfiguration>({
     main_collection: '',
     selected_fields: [],
