@@ -468,6 +468,20 @@ const AdminExportPage: React.FC = () => {
     }));
   };
 
+  const handleFilterRemove = (filterId: string) => {
+    setExportConfig(prev => ({
+      ...prev,
+      filters: prev.filters.filter(f => f.id !== filterId)
+    }));
+  };
+
+  const handleFilterUpdate = (filterId: string, updatedFilter: CollectionFilter) => {
+    setExportConfig(prev => ({
+      ...prev,
+      filters: prev.filters.map(f => f.id === filterId ? updatedFilter : f)
+    }));
+  };
+
   const handleValidateConfiguration = async () => {
     if (!token) return;
 
@@ -475,12 +489,6 @@ const AdminExportPage: React.FC = () => {
       const result = await exportService.validateConfiguration(token, exportConfig);
       if (result.valid) {
         toast.success('Konfigurasi valid!');
-  const handleFilterUpdate = (filterId: string, updatedFilter: CollectionFilter) => {
-    setExportConfig(prev => ({
-      ...prev,
-      filters: prev.filters.map(f => f.id === filterId ? updatedFilter : f)
-    }));
-  };
       } else {
         toast.error(`Konfigurasi tidak valid: ${result.errors?.join(', ')}`);
       }
