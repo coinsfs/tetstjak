@@ -91,6 +91,8 @@ class ExportService extends BaseService {
         collectionFiltersMap.set(filter.collection, []);
       }
       collectionFiltersMap.get(filter.collection)!.push(...backendConditions);
+    }
+    )
     // Build nested joins recursively
     const backendJoins = this.buildNestedJoins(
       config.main_collection,
