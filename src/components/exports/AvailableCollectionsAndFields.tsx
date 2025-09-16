@@ -1,18 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Database, Layers } from 'lucide-react';
+import { exportService } from '@/services/export';
 import { 
   CollectionsRelationshipsResponse, 
+  FieldSuggestionsResponse,
   FieldInfo 
 } from '@/types/export';
 import FieldItem from './FieldItem';
+import toast from 'react-hot-toast';
 
 interface AvailableCollectionsAndFieldsProps {
   collections: CollectionsRelationshipsResponse | null;
   selectedMainCollection: string;
   onMainCollectionChange: (collection: string) => void;
   collectionToDisplayFieldsFor: string;
-  availableFields: FieldInfo[];
-  loadingFields: boolean;
+  token: string | null;
 }
 
 const AvailableCollectionsAndFields: React.FC<AvailableCollectionsAndFieldsProps> = ({
@@ -20,10 +22,47 @@ const AvailableCollectionsAndFields: React.FC<AvailableCollectionsAndFieldsProps
   selectedMainCollection,
   onMainCollectionChange,
   collectionToDisplayFieldsFor,
-  availableFields,
-  loadingFields
+  token
 }) => {
-  console.log('🔍 AvailableCollectionsAndFields - Rendering with availableFields:', availableFields);
+  const [fieldSuggestions, setFieldSuggestions] = useState<FieldSuggestionsResponse | null>(null);
+  const [loadingFields, setLoadingFields] = useState(false);
+
+  // Load field suggestions when main collection changes
+  useEffect(() => {
+    const loadFieldSuggestions = async () => {
+      console.log('🔍 AvailableCollectionsAndFields - loadFieldSuggestions called');
+      console.log('🔍 collectionToDisplayFieldsFor:', collectionToDisplayFieldsFor);
+      console.log('🔍 token exists:', !!token);
+      
+      if (!token || !collectionToDisplayFieldsFor) {
+        console.log('🔍 Clearing fieldSuggestions - no token or collection');
+        setFieldSuggestions(null);
+        return;
+      }
+
+      try {
+        setLoadingFields(true);
+        // Reset field suggestions to show loading state
+        setFieldSuggestions(null);
+        
+        console.log('🔍 Calling exportService.getFieldSuggestions for:', collectionToDisplayFieldsFor);
+        const data = await exportService.getFieldSuggestions(token, collectionToDisplayFieldsFor);
+        console.log('🔍 Received field suggestions data:', data);
+        console.log('🔍 Available fields count:', data.available_fields?.length || 0);
+        setFieldSuggestions(data);
+      } catch (error) {
+        console.error('🔍 Error loading field suggestions:', error);
+        toast.error('Gagal memuat field suggestions');
+        setFieldSuggestions(null);
+      } finally {
+        console.log('🔍 Setting loadingFields to false');
+        setLoadingFields(false);
+      }
+    };
+
+    loadFieldSuggestions();
+  }, [token, collectionToDisplayFieldsFor]);
+
 
   if (!collections) {
     return (
@@ -74,29 +113,33 @@ const AvailableCollectionsAndFields: React.FC<AvailableCollectionsAndFieldsProps
             )}
           </div>
 
-          <div>
-            {console.log('🔍 Rendering fields for collection:', collectionToDisplayFieldsFor)}
-            {console.log('🔍 availableFields:', availableFields)}
-            {availableFields.length === 0 && !loadingFields ? (
-              <div className="text-center py-8 text-gray-500">
-                <Layers className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                <p className="text-sm">
-                  {collectionToDisplayFieldsFor 
-                    ? `All fields for ${collectionToDisplayFieldsFor} are already selected`
-                    : 'No fields available'
-                  }
-                </p>
-              </div>
-            ) : (
-              availableFields.map((field, index) => (
-                <FieldItem
-                  key={`${field.field}-${index}`}
-                  field={field}
-                  collection={collectionToDisplayFieldsFor}
-                />
-              ))
-            )}
-          </div>
+          {fieldSuggestions && (
+            <div className="space-y-1 max-h-96 overflow-y-auto">
+              {console.log('🔍 Rendering fields for collection:', collectionToDisplayFieldsFor)}
+              {console.log('🔍 fieldSuggestions.available_fields:', fieldSuggestions.available_fields)}
+              {fieldSuggestions.available_fields.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Layers className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm">No fields available</p>
+                </div>
+              ) : (
+                fieldSuggestions.available_fields.map((field, index) => (
+                  <FieldItem
+                    key={`${field.field}-${index}`}
+                    field={field}
+                    collection={collectionToDisplayFieldsFor}
+                  />
+                ))
+              )}
+            </div>
+          )}
+
+          {!fieldSuggestions && !loadingFields && collectionToDisplayFieldsFor && (
+            <div className="text-center py-8 text-gray-500">
+              <Layers className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+              <p className="text-sm">No field data available for {collectionToDisplayFieldsFor}</p>
+            </div>
+          )}
         </div>
       )}
     </div>
