@@ -665,6 +665,8 @@ const AdminExportPage: React.FC = () => {
                 collectionToDisplayFieldsFor={activeFieldContextCollection}
                 availableFields={fieldsToDisplayInAvailablePanel}
                 loadingFields={loadingFields}
+              )
+              }
               />
             </div>
           </div>
