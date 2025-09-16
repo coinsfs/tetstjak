@@ -353,50 +353,9 @@ const AdminExportPage: React.FC = () => {
       } catch (error) {
         console.warn('Using mock data - API endpoint not available:', error);
         // Use comprehensive mock data as fallback
-        const fallbackMockCollections = {
-          subjects: {
-            display_name: "Subjects",
-            possible_joins: [
-              {
-                collection: "teaching_assignments",
-                suggested_local_field: "_id",
-                suggested_foreign_field: "_id",
-                relationship_type: "direct",
-                description: "Join subjects to teaching_assignments via _id"
-              }
-            ],
-            total_joinable: 1
-          },
-          users: {
-            display_name: "Users",
-            possible_joins: [
-              {
-                collection: "profiles",
-                suggested_local_field: "profile_id",
-                suggested_foreign_field: "_id",
-                relationship_type: "direct",
-                description: "Join users to profiles via profile_id"
-              }
-            ],
-            total_joinable: 1
-          },
-          exam_sessions: {
-            display_name: "Exam Sessions",
-            possible_joins: [
-              {
-                collection: "users",
-                suggested_local_field: "student_id",
-                suggested_foreign_field: "_id",
-                relationship_type: "direct",
-                description: "Join exam_sessions to users via student_id"
-              }
-            ],
-            total_joinable: 1
-          }
-        };
         setCollections({ 
-          relationships: fallbackMockCollections, 
-          total_collections: Object.keys(fallbackMockCollections).length 
+          relationships: mockCollections, 
+          total_collections: Object.keys(mockCollections).length 
         });
       } finally {
         setLoading(false);
