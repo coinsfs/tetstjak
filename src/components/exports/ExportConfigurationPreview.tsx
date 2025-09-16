@@ -425,6 +425,7 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
                   collections={collections}
                   token={token}
                   editingFilter={editingFilter}
+                  availableCollectionsForFilter={availableFieldContexts}
                   onSave={(filter) => {
                     if (editingFilter) {
                       onFilterUpdate(editingFilter.id, filter);
