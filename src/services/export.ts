@@ -68,7 +68,6 @@ class ExportService extends BaseService {
   transformExportConfigToBackendPayload(config: ExportConfiguration): BackendExportPayload {
     // Create maps for fields and filters by collection
     const collectionFieldsMap = new Map<string, string[]>();
-    const collectionFiltersMap = new Map<string, BackendFilterCondition[]>();
 
     // Group selected fields by collection
     config.selected_fields.forEach(field => {
@@ -78,11 +77,11 @@ class ExportService extends BaseService {
       collectionFieldsMap.get(field.collection)!.push(field.field);
     });
 
-    // Get main collection fields and filters
+    // Get main collection fields
     const mainCollectionFields = [...(collectionFieldsMap.get(config.main_collection) || [])];
-    const mainCollectionFilters = collectionFiltersMap.get(config.main_collection) || [];
 
-    // Group filters by collection
+    // Create map for filters by collection and group them
+    const collectionFiltersMap = new Map<string, BackendFilterCondition[]>();
     config.filters.forEach(filter => {
       const backendConditions: BackendFilterCondition[] = filter.conditions.map(condition => ({
         field: condition.field,
@@ -95,8 +94,11 @@ class ExportService extends BaseService {
         collectionFiltersMap.set(filter.collection, []);
       }
       collectionFiltersMap.get(filter.collection)!.push(...backendConditions);
-    }
-    )
+    });
+
+    // Get main collection filters AFTER the filters have been processed
+    const mainCollectionFilters = collectionFiltersMap.get(config.main_collection) || [];
+
     // Build nested joins recursively
     const backendJoins = this.buildNestedJoins(
       config.main_collection,
