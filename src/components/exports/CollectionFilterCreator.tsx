@@ -206,6 +206,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
                   </option>
                 ))}
               </select>
+              )}
             </div>
 
             {/* Logic Selection */}
@@ -242,124 +243,124 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
             )}
 
             {/* Conditions */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  Filter Conditions
-                </label>
-                <button
-                  onClick={handleAddCondition}
-                  disabled={!selectedCollection}
-                  className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-green-700 bg-green-100 rounded-md hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Plus className="w-3 h-3 mr-1" />
-                  {availableCollectionsForFilter.map((collection) => (
-                    <option key={collection.key} value={collection.key}>
-                      {collection.displayName}
-
-              {conditions.length === 0 ? (
-                <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
-                  <Filter className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                  <p className="text-sm">No conditions added yet</p>
-                  <p className="text-xs text-gray-400">Select a collection and add conditions to filter data</p>
+            {availableCollectionsForFilter.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Filter Conditions
+                  </label>
+                  <button
+                    onClick={handleAddCondition}
+                    disabled={!selectedCollection}
+                    className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-green-700 bg-green-100 rounded-md hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    Add Condition
+                  </button>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {conditions.map((condition, index) => (
-                    <div key={condition.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-medium text-gray-700">
-                          Condition {index + 1}
-                        </span>
-                        <button
-                          onClick={() => handleRemoveCondition(condition.id)}
-                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                        {/* Field Selection */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Field
-                          </label>
-                          <select
-                            value={condition.field}
-                            onChange={(e) => handleUpdateCondition(condition.id, { field: e.target.value })}
-                            disabled={loadingFields}
-                            className="w-full text-sm border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                {conditions.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
+                    <Filter className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                    <p className="text-sm">No conditions added yet</p>
+                    <p className="text-xs text-gray-400">Select a collection and add conditions to filter data</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {conditions.map((condition, index) => (
+                      <div key={condition.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-medium text-gray-700">
+                            Condition {index + 1}
+                          </span>
+                          <button
+                            onClick={() => handleRemoveCondition(condition.id)}
+                            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                           >
-                            <option value="">Select field...</option>
-                            {availableFields.map((field) => (
-                              <option key={field.field} value={field.field}>
-                                {field.alias} ({field.field})
-                              </option>
-                            ))}
-                          </select>
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
 
-                        {/* Operator Selection */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Operator
-                          </label>
-                          <select
-                            value={condition.operator}
-                            onChange={(e) => handleUpdateCondition(condition.id, { operator: e.target.value as any })}
-                            className="w-full text-sm border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
-                          >
-                            {getOperatorOptions().map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                          {/* Field Selection */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Field
+                            </label>
+                            <select
+                              value={condition.field}
+                              onChange={(e) => handleUpdateCondition(condition.id, { field: e.target.value })}
+                              disabled={loadingFields}
+                              className="w-full text-sm border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                            >
+                              <option value="">Select field...</option>
+                              {availableFields.map((field) => (
+                                <option key={field.field} value={field.field}>
+                                  {field.alias} ({field.field})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Operator Selection */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Operator
+                            </label>
+                            <select
+                              value={condition.operator}
+                              onChange={(e) => handleUpdateCondition(condition.id, { operator: e.target.value as any })}
+                              className="w-full text-sm border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                            >
+                              {getOperatorOptions().map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Value Input */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Value
+                            </label>
+                            <input
+                              type="text"
+                              value={condition.value}
+                              onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
+                              placeholder="Enter value..."
+                              disabled={condition.operator === 'exists'}
+                              className="w-full text-sm border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100"
+                            />
+                          </div>
+
+                          {/* Options Input */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Options
+                            </label>
+                            <input
+                              type="text"
+                              value={condition.options || ''}
+                              onChange={(e) => handleUpdateCondition(condition.id, { options: e.target.value })}
+                              placeholder="Optional..."
+                              className="w-full text-sm border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                            />
+                          </div>
                         </div>
 
-                        {/* Value Input */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Value
-                          </label>
-                          <input
-                            type="text"
-                            value={condition.value}
-                            onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
-                            placeholder="Enter value..."
-                            disabled={condition.operator === 'exists'}
-                            className="w-full text-sm border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100"
-                          />
-                        </div>
-
-                        {/* Options Input */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Options
-                          </label>
-                          <input
-                            type="text"
-                            value={condition.options || ''}
-                            onChange={(e) => handleUpdateCondition(condition.id, { options: e.target.value })}
-                            placeholder="Optional..."
-                            className="w-full text-sm border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
-                          />
-                        </div>
+                        {/* Condition Preview */}
+                        {condition.field && condition.operator && condition.value && (
+                          <div className="mt-3 p-2 bg-white rounded border text-xs text-gray-600">
+                            <strong>Preview:</strong> {condition.field} {condition.operator} "{condition.value}"
+                            {condition.options && ` (options: ${condition.options})`}
+                          </div>
+                        )}
                       </div>
-
-                      {/* Condition Preview */}
-                      {condition.field && condition.operator && condition.value && (
-                        <div className="mt-3 p-2 bg-white rounded border text-xs text-gray-600">
-                          <strong>Preview:</strong> {condition.field} {condition.operator} "{condition.value}"
-                          {condition.options && ` (options: ${condition.options})`}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              )}
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -387,5 +388,3 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
 };
 
 export default CollectionFilterCreator;
-            {availableCollectionsForFilter.length > 0 && (
-              <div>
