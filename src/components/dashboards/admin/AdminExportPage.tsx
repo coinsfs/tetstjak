@@ -9,6 +9,7 @@ import {
   SelectedField,
   JoinConfiguration,
   CollectionFilter
+  FieldInfo
 } from '@/types/export';
 import { Database, Download, Settings, Play, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -21,6 +22,8 @@ const AdminExportPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeFieldContextCollection, setActiveFieldContextCollection] = useState<string>('');
   const [availableFieldContexts, setAvailableFieldContexts] = useState<{ key: string; displayName: string }[]>([]);
+  const [allFieldsForActiveContext, setAllFieldsForActiveContext] = useState<FieldInfo[]>([]);
+  const [loadingFields, setLoadingFields] = useState(false);
   const [exportConfig, setExportConfig] = useState<ExportConfiguration>({
     main_collection: '',
     selected_fields: [],
@@ -365,6 +368,59 @@ const AdminExportPage: React.FC = () => {
     loadCollections();
   }, [token]);
 
+  // Load fields for active context collection
+  useEffect(() => {
+    const loadFieldsForActiveContext = async () => {
+      console.log('🔍 AdminExportPage - loadFieldsForActiveContext called');
+      console.log('🔍 activeFieldContextCollection:', activeFieldContextCollection);
+      console.log('🔍 token exists:', !!token);
+      
+      if (!token || !activeFieldContextCollection) {
+        console.log('🔍 Clearing allFieldsForActiveContext - no token or collection');
+        setAllFieldsForActiveContext([]);
+        return;
+      }
+
+      try {
+        setLoadingFields(true);
+        // Reset fields to show loading state
+        setAllFieldsForActiveContext([]);
+        
+        console.log('🔍 Calling exportService.getFieldSuggestions for:', activeFieldContextCollection);
+        const data = await exportService.getFieldSuggestions(token, activeFieldContextCollection);
+        console.log('🔍 Received field suggestions data:', data);
+        console.log('🔍 Available fields count:', data.available_fields?.length || 0);
+        setAllFieldsForActiveContext(data.available_fields || []);
+      } catch (error) {
+        console.error('🔍 Error loading field suggestions:', error);
+        toast.error('Gagal memuat field suggestions');
+        setAllFieldsForActiveContext([]);
+      } finally {
+        console.log('🔍 Setting loadingFields to false');
+        setLoadingFields(false);
+      }
+    };
+
+    loadFieldsForActiveContext();
+  }, [token, activeFieldContextCollection]);
+
+  // Calculate available fields (exclude already selected fields)
+  const fieldsToDisplayInAvailablePanel = React.useMemo(() => {
+    console.log('🔍 AdminExportPage - Calculating fieldsToDisplayInAvailablePanel');
+    console.log('🔍 allFieldsForActiveContext:', allFieldsForActiveContext);
+    console.log('🔍 exportConfig.selected_fields:', exportConfig.selected_fields);
+    
+    const selectedFieldIds = new Set(exportConfig.selected_fields.map(f => f.id));
+    const availableFields = allFieldsForActiveContext.filter(field => {
+      const fieldId = `${activeFieldContextCollection}.${field.field}`;
+      const isSelected = selectedFieldIds.has(fieldId);
+      console.log(`🔍 Field ${fieldId}: isSelected=${isSelected}`);
+      return !isSelected;
+    });
+    
+    console.log('🔍 Final availableFields count:', availableFields.length);
+    return availableFields;
+  }, [allFieldsForActiveContext, exportConfig.selected_fields, activeFieldContextCollection]);
   const handleMainCollectionChange = (collection: string) => {
     setExportConfig(prev => ({
       ...prev,
@@ -373,6 +429,7 @@ const AdminExportPage: React.FC = () => {
       joins: [], // Reset joins
       filters: [] // Reset filters
     }));
+    setAllFieldsForActiveContext([]); // Reset fields when changing main collection
     setActiveFieldContextCollection(collection);
   };
 
@@ -509,7 +566,8 @@ const AdminExportPage: React.FC = () => {
                 selectedMainCollection={exportConfig.main_collection}
                 onMainCollectionChange={handleMainCollectionChange}
                 collectionToDisplayFieldsFor={activeFieldContextCollection}
-                token={token}
+                availableFields={fieldsToDisplayInAvailablePanel}
+                loadingFields={loadingFields}
               />
             </div>
           </div>
