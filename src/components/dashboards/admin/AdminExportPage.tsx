@@ -14,7 +14,9 @@ import {
 } from '@/types/export';
 import { Database, Download, Settings, Play, CheckCircle, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
-import AvailableCollectionsAndFields from '@/components/exports/AvailableCollectionsAndFields';
+import AvailableFieldsPanel from '@/components/exports/AvailableFieldsPanel';
+import FiltersPanel from '@/components/exports/FiltersPanel';
+import JoinsPanel from '@/components/exports/JoinsPanel';
 import ExportConfigurationPreview from '@/components/exports/ExportConfigurationPreview';
 
 const AdminExportPage: React.FC = () => {
@@ -423,6 +425,38 @@ const AdminExportPage: React.FC = () => {
     console.log('🔍 Final availableFields count:', availableFields.length);
     return availableFields;
   }, [allFieldsForActiveContext, exportConfig.selected_fields, activeFieldContextCollection]);
+
+  // Get available collections for filtering (main collection + joined collections)
+  const getAvailableCollectionsForFilter = () => {
+    if (!collections) return [];
+    
+    const contexts: { key: string; displayName: string }[] = [];
+    
+    // Add main collection if exists
+    if (exportConfig.main_collection) {
+      const mainCollectionInfo = collections.relationships[exportConfig.main_collection];
+      contexts.push({
+        key: exportConfig.main_collection,
+        displayName: `${mainCollectionInfo?.display_name || exportConfig.main_collection} (Main)`
+      });
+    }
+
+    // Add joined collections
+    exportConfig.joins.forEach(join => {
+      const targetCollectionInfo = collections.relationships[join.target_collection];
+      const existingContext = contexts.find(c => c.key === join.target_collection);
+      
+      if (!existingContext) {
+        contexts.push({
+          key: join.target_collection,
+          displayName: `${targetCollectionInfo?.display_name || join.target_collection} (Joined)`
+        });
+      }
+    });
+
+    return contexts;
+  };
+
   const handleMainCollectionChange = (collection: string) => {
     setExportConfig(prev => ({
       ...prev,
@@ -581,30 +615,50 @@ const AdminExportPage: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Filters and Joins Section */}
+          {exportConfig.main_collection && (
+            <div className="flex-shrink-0 bg-gray-50 border-b border-gray-200 p-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <FiltersPanel
+                  filters={exportConfig.filters}
+                  onFilterAdd={handleFilterAdd}
+                  onFilterRemove={handleFilterRemove}
+                  onFilterUpdate={handleFilterUpdate}
+                  collections={collections}
+                  token={token}
+                  availableCollectionsForFilter={getAvailableCollectionsForFilter()}
+                />
+                <JoinsPanel
+                  joins={exportConfig.joins}
+                  onJoinAdd={handleJoinAdd}
+                  onJoinRemove={handleJoinRemove}
+                  collections={collections}
+                  token={token}
+                  existingJoins={exportConfig.joins}
+                  mainCollection={exportConfig.main_collection}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Main Panels */}
+          <div className="flex-1 flex overflow-hidden">
           {/* Left Panel - Available Collections and Fields */}
           <div className="w-1/2 border-r border-gray-200 flex flex-col">
             <div className="flex-shrink-0 bg-gray-50 px-4 py-3 border-b border-gray-200">
-              <h2 className="text-sm font-medium text-gray-900">Available Collections & Fields</h2>
+              <h2 className="text-sm font-medium text-gray-900">Available Fields</h2>
               <p className="text-xs text-gray-500 mt-1">Pilih koleksi utama dan drag field ke panel kanan</p>
             </div>
             
             <div className="flex-1 overflow-auto">
-              <AvailableCollectionsAndFields
+              <AvailableFieldsPanel
                 collections={collections}
                 selectedMainCollection={exportConfig.main_collection}
                 onMainCollectionChange={handleMainCollectionChange}
                 collectionToDisplayFieldsFor={activeFieldContextCollection}
                 availableFields={fieldsToDisplayInAvailablePanel}
                 loadingFields={loadingFields}
-                filters={exportConfig.filters}
-                joins={exportConfig.joins}
-                onFilterAdd={handleFilterAdd}
-                onFilterRemove={handleFilterRemove}
-                onFilterUpdate={handleFilterUpdate}
-                onJoinAdd={handleJoinAdd}
-                onJoinRemove={handleJoinRemove}
-                token={token}
               />
             </div>
           </div>
@@ -626,6 +680,7 @@ const AdminExportPage: React.FC = () => {
                 onFieldRemove={handleFieldRemove}
               />
             </div>
+          </div>
           </div>
         </div>
 
