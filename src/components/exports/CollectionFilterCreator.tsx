@@ -200,9 +200,9 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
                 className="w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
               >
                 <option value="">Select collection to filter...</option>
-                {collections && Object.entries(collections.relationships).map(([key, info]) => (
-                  <option key={key} value={key}>
-                    {info.display_name}
+                {availableCollectionsForFilter.map((collection) => (
+                  <option key={collection.key} value={collection.key}>
+                    {collection.displayName}
                   </option>
                 ))}
               </select>
