@@ -11,6 +11,7 @@ import {
 } from '@/types/export';
 import { exportService } from '@/services/export';
 import toast from 'react-hot-toast';
+import CollectionFilterCreator from './CollectionFilterCreator';
 
 interface ExportConfigurationPreviewProps {
   exportConfig: ExportConfiguration;
@@ -419,33 +420,24 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
               
               {/* Filter Creator Placeholder */}
               {showFilterCreator && (
-                <div className="mb-4 p-4 border border-green-200 rounded-lg bg-green-50">
-                  <div className="flex items-center justify-between mb-2">
-                    <h5 className="text-sm font-medium text-gray-900">
-                      {editingFilter ? 'Edit Filter' : 'Create Filter'}
-                    </h5>
-                    <button
-                      onClick={() => {
-                        setShowFilterCreator(false);
-                        setEditingFilter(null);
-                      }}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  
-                  <div className="text-sm text-gray-600 p-4 bg-white rounded border">
-                    <p className="mb-2">🚧 Filter Creator Component</p>
-                    <p className="text-xs">This will be implemented in the next step with:</p>
-                    <ul className="text-xs mt-2 space-y-1 list-disc list-inside">
-                      <li>Collection selection</li>
-                      <li>Field selection with type-aware operators</li>
-                      <li>Value input with validation</li>
-                      <li>Multiple conditions with AND/OR logic</li>
-                    </ul>
-                  </div>
-                </div>
+                <CollectionFilterCreator
+                  collections={collections}
+                  token={token}
+                  editingFilter={editingFilter}
+                  onSave={(filter) => {
+                    if (editingFilter) {
+                      onFilterUpdate(editingFilter.id, filter);
+                    } else {
+                      onFilterAdd(filter);
+                    }
+                    setShowFilterCreator(false);
+                    setEditingFilter(null);
+                  }}
+                  onCancel={() => {
+                    setShowFilterCreator(false);
+                    setEditingFilter(null);
+                  }}
+                />
               )}
               
               <div className="space-y-2">
