@@ -78,6 +78,10 @@ class ExportService extends BaseService {
       collectionFieldsMap.get(field.collection)!.push(field.field);
     });
 
+    // Get main collection fields and filters
+    const mainCollectionFields = [...(collectionFieldsMap.get(config.main_collection) || [])];
+    const mainCollectionFilters = collectionFiltersMap.get(config.main_collection) || [];
+
     // Group filters by collection
     config.filters.forEach(filter => {
       const backendConditions: BackendFilterCondition[] = filter.conditions.map(condition => ({
@@ -98,15 +102,16 @@ class ExportService extends BaseService {
       config.main_collection,
       config.joins,
       collectionFieldsMap,
-      collectionFiltersMap
+      collectionFiltersMap,
+      mainCollectionFields // Pass main collection fields so direct joins can add their aliases
     );
 
     // Build backend config
     const backendConfig: BackendExportConfig = {
       main_collection: config.main_collection,
-      fields: collectionFieldsMap.get(config.main_collection) || [],
+      fields: mainCollectionFields, // Use the modified fields array that includes join aliases
       exclude_fields: [],
-      filters: collectionFiltersMap.get(config.main_collection) || [],
+      filters: mainCollectionFilters,
       joins: backendJoins,
       group_by: [],
       having: [],
@@ -147,7 +152,8 @@ class ExportService extends BaseService {
     sourceCollection: string,
     allJoins: JoinConfiguration[],
     collectionFieldsMap: Map<string, string[]>,
-    collectionFiltersMap: Map<string, BackendFilterCondition[]>
+    collectionFiltersMap: Map<string, BackendFilterCondition[]>,
+    parentFieldsArray: string[]
   ): BackendJoinConfiguration[] {
     // Find all joins that start from the current source collection
     const joinsFromSource = allJoins.filter(join => join.source_collection === sourceCollection);
@@ -157,28 +163,40 @@ class ExportService extends BaseService {
       const targetFields = collectionFieldsMap.get(join.target_collection) || [];
       const targetFilters = collectionFiltersMap.get(join.target_collection) || [];
 
-      // Recursively build nested joins for this target collection
-      const nestedJoins = this.buildNestedJoins(
-        join.target_collection,
-        allJoins,
-        collectionFieldsMap,
-        collectionFiltersMap
-      );
+      // Create a copy of target fields that can be modified by nested joins
+      const mutableTargetFields = [...targetFields];
 
-      return {
+      // Create the backend join configuration
+      const backendJoin: BackendJoinConfiguration = {
         collection: join.target_collection,
         local_field: join.local_field,
         foreign_field: join.foreign_field,
         alias: join.target_collection,
         join_type: this.mapRelationshipTypeToJoinType(join.relationship_type),
-        fields: targetFields,
+        fields: mutableTargetFields,
         exclude_fields: [],
         filters: targetFilters,
-        joins: nestedJoins, // This is where nested joins are properly structured
+        joins: [], // Will be filled by recursive call
         preserve_null_and_empty_arrays: true,
         limit: 0,
         sort: {}
       };
+
+      // Recursively build nested joins for this target collection
+      backendJoin.joins = this.buildNestedJoins(
+        join.target_collection,
+        allJoins,
+        collectionFieldsMap,
+        collectionFiltersMap,
+        mutableTargetFields // Pass the mutable fields array so nested joins can add their aliases
+      );
+
+      // After nested joins are built, add this join's alias to the parent's fields array
+      if (!parentFieldsArray.includes(backendJoin.alias)) {
+        parentFieldsArray.push(backendJoin.alias);
+      }
+
+      return backendJoin;
     });
   }
 

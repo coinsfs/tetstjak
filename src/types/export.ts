@@ -119,7 +119,7 @@ export interface BackendJoinConfiguration {
   fields: string[];
   exclude_fields: string[];
   filters: BackendFilterCondition[];
-  joins: string[];
+  joins: BackendJoinConfiguration[];
   preserve_null_and_empty_arrays: boolean;
   limit: number;
   sort: Record<string, number>;
