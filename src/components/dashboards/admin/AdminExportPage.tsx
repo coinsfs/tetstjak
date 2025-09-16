@@ -597,6 +597,14 @@ const AdminExportPage: React.FC = () => {
                 collectionToDisplayFieldsFor={activeFieldContextCollection}
                 availableFields={fieldsToDisplayInAvailablePanel}
                 loadingFields={loadingFields}
+                filters={exportConfig.filters}
+                joins={exportConfig.joins}
+                onFilterAdd={handleFilterAdd}
+                onFilterRemove={handleFilterRemove}
+                onFilterUpdate={handleFilterUpdate}
+                onJoinAdd={handleJoinAdd}
+                onJoinRemove={handleJoinRemove}
+                token={token}
               />
             </div>
           </div>
@@ -611,18 +619,11 @@ const AdminExportPage: React.FC = () => {
             <div className="flex-1 overflow-auto pb-20">
               <ExportConfigurationPreview
                 exportConfig={exportConfig}
-                collections={collections}
                 availableFieldContexts={availableFieldContexts}
                 activeFieldContextCollection={activeFieldContextCollection}
                 setActiveFieldContextCollection={setActiveFieldContextCollection}
                 onFieldAdd={handleFieldSelect}
                 onFieldRemove={handleFieldRemove}
-                onJoinAdd={handleJoinAdd}
-                onJoinRemove={handleJoinRemove}
-                onFilterAdd={handleFilterAdd}
-                onFilterRemove={handleFilterRemove}
-                onFilterUpdate={handleFilterUpdate}
-                token={token}
               />
             </div>
           </div>
