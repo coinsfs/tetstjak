@@ -66,10 +66,19 @@ class ExportService extends BaseService {
    * Transform frontend ExportConfiguration to backend payload format
    */
   transformExportConfigToBackendPayload(config: ExportConfiguration): BackendExportPayload {
-    // Separate filters by collection
-    const mainCollectionFilters: BackendFilterCondition[] = [];
-    const joinFiltersMap: Record<string, BackendFilterCondition[]> = {};
+    // Create maps for fields and filters by collection
+    const collectionFieldsMap = new Map<string, string[]>();
+    const collectionFiltersMap = new Map<string, BackendFilterCondition[]>();
 
+    // Group selected fields by collection
+    config.selected_fields.forEach(field => {
+      if (!collectionFieldsMap.has(field.collection)) {
+        collectionFieldsMap.set(field.collection, []);
+      }
+      collectionFieldsMap.get(field.collection)!.push(field.field);
+    });
+
+    // Group filters by collection
     config.filters.forEach(filter => {
       const backendConditions: BackendFilterCondition[] = filter.conditions.map(condition => ({
         field: condition.field,
@@ -78,50 +87,24 @@ class ExportService extends BaseService {
         options: condition.options
       }));
 
-      if (filter.collection === config.main_collection) {
-        // Add to main collection filters
-        mainCollectionFilters.push(...backendConditions);
-      } else {
-        // Add to join filters
-        if (!joinFiltersMap[filter.collection]) {
-          joinFiltersMap[filter.collection] = [];
-        }
-        joinFiltersMap[filter.collection].push(...backendConditions);
+      if (!collectionFiltersMap.has(filter.collection)) {
+        collectionFiltersMap.set(filter.collection, []);
       }
-    });
-
-    // Transform joins
-    const backendJoins: BackendJoinConfiguration[] = config.joins.map(join => {
-      // Get fields for this specific join collection
-      const joinFields = config.selected_fields
-        .filter(field => field.collection === join.target_collection)
-        .map(field => field.field);
-
-      return {
-        collection: join.target_collection,
-        local_field: join.local_field,
-        foreign_field: join.foreign_field,
-        alias: join.target_collection, // Use collection name as alias
-        fields: joinFields,
-        exclude_fields: [],
-        filters: joinFiltersMap[join.target_collection] || [],
-        joins: [], // Nested joins not supported in current UI
-        preserve_null_and_empty_arrays: true,
-        limit: 0
-      };
-    });
-
-    // Extract main collection fields
-    const mainCollectionFields = config.selected_fields
-      .filter(field => field.collection === config.main_collection)
-      .map(field => field.field);
+      collectionFiltersMap.get(filter.collection)!.push(...backendConditions);
+    // Build nested joins recursively
+    const backendJoins = this.buildNestedJoins(
+      config.main_collection,
+      config.joins,
+      collectionFieldsMap,
+      collectionFiltersMap
+    );
 
     // Build backend config
     const backendConfig: BackendExportConfig = {
       main_collection: config.main_collection,
-      fields: mainCollectionFields,
+      fields: collectionFieldsMap.get(config.main_collection) || [],
       exclude_fields: [],
-      filters: mainCollectionFilters,
+      filters: collectionFiltersMap.get(config.main_collection) || [],
       joins: backendJoins,
       group_by: [],
       having: [],
@@ -153,6 +136,48 @@ class ExportService extends BaseService {
     };
 
     return backendPayload;
+  }
+
+  /**
+   * Recursively build nested joins structure
+   */
+  private buildNestedJoins(
+    sourceCollection: string,
+    allJoins: JoinConfiguration[],
+    collectionFieldsMap: Map<string, string[]>,
+    collectionFiltersMap: Map<string, BackendFilterCondition[]>
+  ): BackendJoinConfiguration[] {
+    // Find all joins that start from the current source collection
+    const joinsFromSource = allJoins.filter(join => join.source_collection === sourceCollection);
+
+    return joinsFromSource.map(join => {
+      // Get fields and filters for this target collection
+      const targetFields = collectionFieldsMap.get(join.target_collection) || [];
+      const targetFilters = collectionFiltersMap.get(join.target_collection) || [];
+
+      // Recursively build nested joins for this target collection
+      const nestedJoins = this.buildNestedJoins(
+        join.target_collection,
+        allJoins,
+        collectionFieldsMap,
+        collectionFiltersMap
+      );
+
+      return {
+        collection: join.target_collection,
+        local_field: join.local_field,
+        foreign_field: join.foreign_field,
+        alias: join.target_collection,
+        join_type: this.mapRelationshipTypeToJoinType(join.relationship_type),
+        fields: targetFields,
+        exclude_fields: [],
+        filters: targetFilters,
+        joins: nestedJoins, // This is where nested joins are properly structured
+        preserve_null_and_empty_arrays: true,
+        limit: 0,
+        sort: {}
+      };
+    });
   }
 
   /**
