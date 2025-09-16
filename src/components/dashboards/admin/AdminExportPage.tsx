@@ -65,17 +65,19 @@ const AdminExportPage: React.FC = () => {
 
     setAvailableFieldContexts(contexts);
 
-    // Update active context if needed
-    if (exportConfig.main_collection && activeFieldContextCollection !== exportConfig.main_collection) {
-      setActiveFieldContextCollection(exportConfig.main_collection);
-    } else if (!exportConfig.main_collection && contexts.length > 0) {
-      setActiveFieldContextCollection(contexts[0].key);
-    } else if (contexts.length === 0) {
-      setActiveFieldContextCollection('');
-    } else if (!contexts.find(c => c.key === activeFieldContextCollection)) {
-      setActiveFieldContextCollection(contexts[0].key);
+    // Only update active context if current selection is invalid
+    const isCurrentContextValid = contexts.find(c => c.key === activeFieldContextCollection);
+    
+    if (!isCurrentContextValid) {
+      if (exportConfig.main_collection) {
+        setActiveFieldContextCollection(exportConfig.main_collection);
+      } else if (contexts.length > 0) {
+        setActiveFieldContextCollection(contexts[0].key);
+      } else {
+        setActiveFieldContextCollection('');
+      }
     }
-  }, [collections, exportConfig.main_collection, exportConfig.joins, activeFieldContextCollection]);
+  }, [collections, exportConfig.main_collection, exportConfig.joins]);
 
   // Load collections on mount
   useEffect(() => {
