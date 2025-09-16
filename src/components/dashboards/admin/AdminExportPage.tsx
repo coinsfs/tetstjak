@@ -475,6 +475,12 @@ const AdminExportPage: React.FC = () => {
       const result = await exportService.validateConfiguration(token, exportConfig);
       if (result.valid) {
         toast.success('Konfigurasi valid!');
+  const handleFilterUpdate = (filterId: string, updatedFilter: CollectionFilter) => {
+    setExportConfig(prev => ({
+      ...prev,
+      filters: prev.filters.map(f => f.id === filterId ? updatedFilter : f)
+    }));
+  };
       } else {
         toast.error(`Konfigurasi tidak valid: ${result.errors?.join(', ')}`);
       }
@@ -590,6 +596,9 @@ const AdminExportPage: React.FC = () => {
                 onFieldRemove={handleFieldRemove}
                 onJoinAdd={handleJoinAdd}
                 onJoinRemove={handleJoinRemove}
+                onFilterAdd={handleFilterAdd}
+                onFilterRemove={handleFilterRemove}
+                onFilterUpdate={handleFilterUpdate}
                 token={token}
               />
             </div>

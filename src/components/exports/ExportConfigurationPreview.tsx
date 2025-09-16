@@ -22,6 +22,9 @@ interface ExportConfigurationPreviewProps {
   onFieldRemove: (fieldId: string) => void;
   onJoinAdd: (join: JoinConfiguration) => void;
   onJoinRemove: (joinId: string) => void;
+  onFilterAdd: (filter: CollectionFilter) => void;
+  onFilterRemove: (filterId: string) => void;
+  onFilterUpdate: (filterId: string, updatedFilter: CollectionFilter) => void;
   token: string | null;
 }
 
@@ -35,6 +38,9 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
   onFieldRemove,
   onJoinAdd,
   onJoinRemove,
+  onFilterAdd,
+  onFilterRemove,
+  onFilterUpdate,
   token
 }) => {
   // Join Creator States
@@ -51,6 +57,10 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
   const [joinMethod, setJoinMethod] = React.useState<'suggested' | 'custom'>('suggested');
   const [availablePossibleJoins, setAvailablePossibleJoins] = React.useState<any[]>([]);
   const [selectedPossibleJoin, setSelectedPossibleJoin] = React.useState<any | null>(null);
+  
+  // Filter Creator States
+  const [showFilterCreator, setShowFilterCreator] = React.useState(false);
+  const [editingFilter, setEditingFilter] = React.useState<CollectionFilter | null>(null);
 
   const [{ isOver }, drop] = useDrop({
     accept: 'field', 
@@ -395,6 +405,105 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
               </div>
             </div>
 
+            {/* Filters Configuration */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-medium text-gray-900">Data Filters</h4>
+                <button 
+                  onClick={() => setShowFilterCreator(true)}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  + Add Filter
+                </button>
+              </div>
+              
+              {/* Filter Creator Placeholder */}
+              {showFilterCreator && (
+                <div className="mb-4 p-4 border border-green-200 rounded-lg bg-green-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="text-sm font-medium text-gray-900">
+                      {editingFilter ? 'Edit Filter' : 'Create Filter'}
+                    </h5>
+                    <button
+                      onClick={() => {
+                        setShowFilterCreator(false);
+                        setEditingFilter(null);
+                      }}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  
+                  <div className="text-sm text-gray-600 p-4 bg-white rounded border">
+                    <p className="mb-2">🚧 Filter Creator Component</p>
+                    <p className="text-xs">This will be implemented in the next step with:</p>
+                    <ul className="text-xs mt-2 space-y-1 list-disc list-inside">
+                      <li>Collection selection</li>
+                      <li>Field selection with type-aware operators</li>
+                      <li>Value input with validation</li>
+                      <li>Multiple conditions with AND/OR logic</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                {exportConfig.filters.length === 0 ? (
+                  <div className="p-4 border border-gray-200 rounded-lg text-center text-gray-500">
+                    <Settings className="w-6 h-6 mx-auto mb-2 text-gray-300" />
+                    <p className="text-sm">No filters configured</p>
+                    <p className="text-xs text-gray-400">Add filters to refine your data export</p>
+                  </div>
+                ) : (
+                  exportConfig.filters.map((filter) => (
+                    <div
+                      key={filter.id}
+                      className="p-3 border border-gray-200 rounded-lg bg-gray-50"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-gray-900 mb-1">
+                            {filter.collection} Filter
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {filter.conditions.length} condition{filter.conditions.length !== 1 ? 's' : ''} 
+                            {filter.conditions.length > 1 && ` (${filter.logic.toUpperCase()})`}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-1">
+                            {filter.conditions.map((condition, index) => (
+                              <span key={condition.id}>
+                                {condition.field} {condition.operator} {String(condition.value)}
+                                {index < filter.conditions.length - 1 && ` ${filter.logic.toUpperCase()} `}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <button
+                            onClick={() => {
+                              setEditingFilter(filter);
+                              setShowFilterCreator(true);
+                            }}
+                            className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                            title="Edit filter"
+                          >
+                            <Settings className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => onFilterRemove(filter.id)}
+                            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                            title="Remove filter"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
             {/* Joins Configuration */}
             <div>
               <div className="flex items-center justify-between mb-3">

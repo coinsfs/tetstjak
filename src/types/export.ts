@@ -59,12 +59,15 @@ export interface JoinConfiguration {
 }
 
 export interface FilterCondition {
+  id: string;
   field: string;
   operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'nin' | 'regex' | 'exists';
   value: any;
+  options?: string;
 }
 
 export interface CollectionFilter {
+  id: string;
   collection: string;
   conditions: FilterCondition[];
   logic: 'and' | 'or';
