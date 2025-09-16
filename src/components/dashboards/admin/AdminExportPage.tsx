@@ -608,7 +608,7 @@ const AdminExportPage: React.FC = () => {
               <p className="text-xs text-gray-500 mt-1">Konfigurasi field, join, dan filter untuk export</p>
             </div>
             
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-auto pb-20">
               <ExportConfigurationPreview
                 exportConfig={exportConfig}
                 collections={collections}
@@ -629,7 +629,7 @@ const AdminExportPage: React.FC = () => {
         </div>
 
         {/* Footer - Export Settings */}
-        <div className="flex-shrink-0 bg-white border-t border-gray-200 px-6 py-4">
+        <div className="fixed bottom-0 left-0 right-0 z-50 w-full bg-white border-t border-gray-200 px-6 py-4 shadow-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
               {/* Format Selection */}
