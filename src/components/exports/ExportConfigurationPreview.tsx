@@ -56,10 +56,10 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
     accept: 'field', 
     drop: (item: DragItem) => {
       const selectedField: SelectedField = {
-        id: `${item.field.collection}.${item.field.field}`,
+        id: `${item.collection}.${item.field.field}`,
         field: item.field.field,
         alias: item.field.alias,
-        collection: item.field.collection,
+        collection: item.collection,
         category: item.field.category
       };
       onFieldAdd(selectedField);
