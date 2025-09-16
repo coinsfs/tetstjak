@@ -74,31 +74,29 @@ const AvailableCollectionsAndFields: React.FC<AvailableCollectionsAndFieldsProps
             )}
           </div>
 
-          {fieldSuggestions && (
+          <div>
             {console.log('🔍 Rendering fields for collection:', collectionToDisplayFieldsFor)}
             {console.log('🔍 availableFields:', availableFields)}
             {availableFields.length === 0 && !loadingFields ? (
-              {fieldSuggestions.available_fields.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Layers className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                  <p className="text-sm">No fields available</p>
+              <div className="text-center py-8 text-gray-500">
+                <Layers className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                 <p className="text-sm">
                   {collectionToDisplayFieldsFor 
                     ? `All fields for ${collectionToDisplayFieldsFor} are already selected`
                     : 'No fields available'
                   }
                 </p>
-              ) : (
-                fieldSuggestions.available_fields.map((field, index) => (
+              </div>
+            ) : (
               availableFields.map((field, index) => (
-                    key={`${field.field}-${index}`}
-                    field={field}
-                    collection={collectionToDisplayFieldsFor}
-                  />
-                ))
-              )}
-            </div>
-          )}
+                <FieldItem
+                  key={`${field.field}-${index}`}
+                  field={field}
+                  collection={collectionToDisplayFieldsFor}
+                />
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>
