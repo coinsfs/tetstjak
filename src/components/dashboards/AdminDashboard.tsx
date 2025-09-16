@@ -22,6 +22,7 @@ import AssignmentManagement from '../AssignmentManagement';
 import ExpertiseProgramManagement from '../ExpertiseProgramManagement';
 import ProfileManagement from '../ProfileManagement';
 import AnalyticsDashboard from './admin/AnalyticsDashboard';
+import ExportLandingPage from './admin/ExportLandingPage';
 import AdminExportPage from './admin/AdminExportPage';
 
 const AdminDashboard: React.FC = () => {
@@ -48,6 +49,7 @@ const AdminDashboard: React.FC = () => {
     if (path === '/manage/classes') return 'classes';
     if (path === '/manage/assignments') return 'assignments';
     if (path === '/manage/exports') return 'exports';
+    if (path === '/manage/exports/configure') return 'export-configure';
     if (path === '/manage/analytics') return 'analytics';
     if (path === '/profile') return 'profile';
     return 'dashboard';
@@ -231,6 +233,7 @@ const AdminDashboard: React.FC = () => {
       case 'classes': return 'Class Management';
       case 'assignments': return 'Assignment Management';
       case 'exports': return 'Data Export';
+      case 'export-configure': return 'Data Export Configuration';
       case 'analytics': return 'Analytics Dashboard';
       case 'profile': return 'Profile Settings';
       default: return 'Admin Panel';
@@ -380,6 +383,8 @@ const AdminDashboard: React.FC = () => {
       case 'assignments':
         return <AssignmentManagement />;
       case 'exports':
+        return <ExportLandingPage />;
+      case 'export-configure':
         return <AdminExportPage />;
       case 'analytics':
         return <AnalyticsDashboard />;

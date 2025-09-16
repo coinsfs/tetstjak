@@ -9,6 +9,7 @@ import StudentExamTakingPage from './components/dashboards/student/pages/Student
 import ProctorMonitoringPage from './components/dashboards/teacher/pages/ProctorMonitoringPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AnalyticsDashboard from './components/dashboards/admin/AnalyticsDashboard';
+import AdminExportPage from './components/dashboards/admin/AdminExportPage';
 
 const AppContent: React.FC = () => {
   const { currentPath, navigate } = useRouter();
@@ -103,6 +104,15 @@ const AppContent: React.FC = () => {
         </ProtectedRoute>
       );
     }
+  }
+
+  // Handle admin export configuration route
+  if (cleanPath === '/manage/exports/configure') {
+    return (
+      <ProtectedRoute requiredRole="admin">
+        <AdminExportPage />
+      </ProtectedRoute>
+    );
   }
 
   // Handle admin analytics dashboard route
