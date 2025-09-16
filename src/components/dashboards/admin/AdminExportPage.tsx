@@ -8,7 +8,7 @@ import {
   ExportConfiguration, 
   SelectedField,
   JoinConfiguration,
-  CollectionFilter,
+  CollectionFilter
   FieldInfo
 } from '@/types/export';
 import { Database, Download, Settings, Play, CheckCircle } from 'lucide-react';

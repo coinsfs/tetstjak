@@ -77,7 +77,7 @@ const AvailableCollectionsAndFields: React.FC<AvailableCollectionsAndFieldsProps
           <div>
             {console.log('🔍 Rendering fields for collection:', collectionToDisplayFieldsFor)}
             {console.log('🔍 availableFields:', availableFields)}
-            {(!availableFields || availableFields.length === 0) && !loadingFields ? (
+            {availableFields.length === 0 && !loadingFields ? (
               <div className="text-center py-8 text-gray-500">
                 <Layers className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                 <p className="text-sm">
@@ -88,13 +88,13 @@ const AvailableCollectionsAndFields: React.FC<AvailableCollectionsAndFieldsProps
                 </p>
               </div>
             ) : (
-              availableFields?.map((field, index) => (
+              availableFields.map((field, index) => (
                 <FieldItem
                   key={`${field.field}-${index}`}
                   field={field}
                   collection={collectionToDisplayFieldsFor}
                 />
-              )) || null
+              ))
             )}
           </div>
         </div>
