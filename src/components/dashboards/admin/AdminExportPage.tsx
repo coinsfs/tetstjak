@@ -24,10 +24,12 @@ const AdminExportPage: React.FC = () => {
   const { navigate } = useRouter();
   const [collections, setCollections] = useState<CollectionsRelationshipsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeConfigTab, setActiveConfigTab] = useState<'filters' | 'joins'>('filters');
   const [activeFieldContextCollection, setActiveFieldContextCollection] = useState<string>('');
   const [availableFieldContexts, setAvailableFieldContexts] = useState<{ key: string; displayName: string }[]>([]);
   const [allFieldsForActiveContext, setAllFieldsForActiveContext] = useState<FieldInfo[]>([]);
   const [loadingFields, setLoadingFields] = useState(false);
+  const [activeConfigTab, setActiveConfigTab] = useState<'filters' | 'joins'>('filters');
   const [exportConfig, setExportConfig] = useState<ExportConfiguration>({
     main_collection: '',
     selected_fields: [],
@@ -616,28 +618,72 @@ const AdminExportPage: React.FC = () => {
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Filters and Joins Section */}
+          {/* Filters and Joins Tabs Section */}
           {exportConfig.main_collection && (
-            <div className="flex-shrink-0 bg-gray-50 border-b border-gray-200 p-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <FiltersPanel
-                  filters={exportConfig.filters}
-                  onFilterAdd={handleFilterAdd}
-                  onFilterRemove={handleFilterRemove}
-                  onFilterUpdate={handleFilterUpdate}
-                  collections={collections}
-                  token={token}
-                  availableCollectionsForFilter={getAvailableCollectionsForFilter()}
-                />
-                <JoinsPanel
-                  joins={exportConfig.joins}
-                  onJoinAdd={handleJoinAdd}
-                  onJoinRemove={handleJoinRemove}
-                  collections={collections}
-                  token={token}
-                  existingJoins={exportConfig.joins}
-                  mainCollection={exportConfig.main_collection}
-                />
+            <div className="flex-shrink-0 bg-gray-50 border-b border-gray-200">
+              {/* Tab Navigation */}
+              <div className="px-6 pt-4">
+                <div className="flex space-x-1">
+                  <button
+                    onClick={() => setActiveConfigTab('filters')}
+                    className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+                      activeConfigTab === 'filters'
+                        ? 'bg-white text-blue-600 border-t border-l border-r border-gray-200'
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Settings className="w-4 h-4 inline mr-2" />
+                    Data Filters
+                    {exportConfig.filters.length > 0 && (
+                      <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800">
+                        {exportConfig.filters.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setActiveConfigTab('joins')}
+                    className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+                      activeConfigTab === 'joins'
+                        ? 'bg-white text-blue-600 border-t border-l border-r border-gray-200'
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Database className="w-4 h-4 inline mr-2" />
+                    Joins & Lookups
+                    {exportConfig.joins.length > 0 && (
+                      <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800">
+                        {exportConfig.joins.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              {/* Tab Content */}
+              <div className="p-6 bg-white">
+                {activeConfigTab === 'filters' && (
+                  <FiltersPanel
+                    filters={exportConfig.filters}
+                    onFilterAdd={handleFilterAdd}
+                    onFilterRemove={handleFilterRemove}
+                    onFilterUpdate={handleFilterUpdate}
+                    collections={collections}
+                    token={token}
+                    availableCollectionsForFilter={getAvailableCollectionsForFilter()}
+                  />
+                )}
+                
+                {activeConfigTab === 'joins' && (
+                  <JoinsPanel
+                    joins={exportConfig.joins}
+                    onJoinAdd={handleJoinAdd}
+                    onJoinRemove={handleJoinRemove}
+                    collections={collections}
+                    token={token}
+                    existingJoins={exportConfig.joins}
+                    mainCollection={exportConfig.main_collection}
+                  />
+                )}
               </div>
             </div>
           )}
