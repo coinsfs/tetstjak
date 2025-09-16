@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from '@/hooks/useRouter';
 import { exportService } from '@/services/export';
 import { 
   CollectionsRelationshipsResponse, 
@@ -11,13 +12,14 @@ import {
   CollectionFilter,
   FieldInfo
 } from '@/types/export';
-import { Database, Download, Settings, Play, CheckCircle } from 'lucide-react';
+import { Database, Download, Settings, Play, CheckCircle, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AvailableCollectionsAndFields from '@/components/exports/AvailableCollectionsAndFields';
 import ExportConfigurationPreview from '@/components/exports/ExportConfigurationPreview';
 
 const AdminExportPage: React.FC = () => {
   const { token } = useAuth();
+  const { navigate } = useRouter();
   const [collections, setCollections] = useState<CollectionsRelationshipsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeFieldContextCollection, setActiveFieldContextCollection] = useState<string>('');
@@ -516,6 +518,10 @@ const AdminExportPage: React.FC = () => {
     }
   };
 
+  const handleBackToExports = () => {
+    navigate('/manage/exports');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -534,6 +540,14 @@ const AdminExportPage: React.FC = () => {
         <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
+              <button
+                onClick={handleBackToExports}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Kembali ke Data Export"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              
               <div className="p-2 bg-blue-100 rounded-lg">
                 <Database className="w-6 h-6 text-blue-600" />
               </div>
