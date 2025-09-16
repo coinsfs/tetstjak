@@ -86,7 +86,13 @@ const AdminExportPage: React.FC = () => {
       
       setLoading(true);
       try {
-        // Use comprehensive mock data based on actual API response structure
+        // Try to get collections from database first
+        const collectionsData = await exportService.getCollectionsRelationships(token);
+        setCollections(collectionsData);
+      } catch (error) {
+        console.warn('Failed to load collections from API, using mock data as fallback:', error);
+        
+        // Use comprehensive mock data as fallback when API fails
         const mockCollections = {
           subjects: {
             display_name: "Subjects",
@@ -346,13 +352,7 @@ const AdminExportPage: React.FC = () => {
             total_joinable: 1
           }
         };
-        setCollections({ 
-          relationships: mockCollections, 
-          total_collections: 12
-        });
-      } catch (error) {
-        console.warn('Using mock data - API endpoint not available:', error);
-        // Use comprehensive mock data as fallback
+        
         setCollections({ 
           relationships: mockCollections, 
           total_collections: Object.keys(mockCollections).length 
