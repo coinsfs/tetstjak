@@ -28,7 +28,7 @@ const JoinsPanel: React.FC<JoinsPanelProps> = ({
   const [showJoinCreator, setShowJoinCreator] = useState(false);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-medium text-gray-900 flex items-center">
           <Database className="w-4 h-4 mr-2" />
@@ -43,7 +43,7 @@ const JoinsPanel: React.FC<JoinsPanelProps> = ({
         </button>
       </div>
       
-      <div className="flex flex-nowrap overflow-x-auto space-x-3 pb-2">
+      <div className="flex flex-nowrap overflow-x-auto space-x-3 pb-2 flex-grow overflow-y-auto">
         {joins.length === 0 ? (
           <div className="flex-shrink-0 w-80 p-3 border border-gray-200 rounded-lg text-center text-gray-500">
             <Database className="w-5 h-5 mx-auto mb-2 text-gray-300" />

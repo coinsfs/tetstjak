@@ -619,8 +619,8 @@ const AdminExportPage: React.FC = () => {
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Filters and Joins Section */}
           {exportConfig.main_collection && (
-            <div className="flex-shrink-0 bg-gray-50 border-b border-gray-200 px-6 py-4">
-              <div className="flex space-x-4">
+                <div className="flex space-x-4 items-stretch">
+                  <div className="w-1/2">
                 <div className="w-1/2 h-full">
                   <FiltersPanel
                     filters={exportConfig.filters}
@@ -632,7 +632,7 @@ const AdminExportPage: React.FC = () => {
                     availableCollectionsForFilter={getAvailableCollectionsForFilter()}
                   />
                 </div>
-                
+                  <div className="w-1/2">
                 <div className="w-1/2 h-full">
                   <JoinsPanel
                     joins={exportConfig.joins}
