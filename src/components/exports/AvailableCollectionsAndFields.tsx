@@ -2,11 +2,11 @@ import React from 'react';
 import { Database, Layers } from 'lucide-react';
 import { 
   CollectionsRelationshipsResponse, 
-  FieldInfo
+  FieldInfo 
 } from '@/types/export';
 import FieldItem from './FieldItem';
 
-interface AvailableFieldsPanelProps {
+interface AvailableCollectionsAndFieldsProps {
   collections: CollectionsRelationshipsResponse | null;
   selectedMainCollection: string;
   onMainCollectionChange: (collection: string) => void;
@@ -15,7 +15,7 @@ interface AvailableFieldsPanelProps {
   loadingFields: boolean;
 }
 
-const AvailableFieldsPanel: React.FC<AvailableFieldsPanelProps> = ({
+const AvailableCollectionsAndFields: React.FC<AvailableCollectionsAndFieldsProps> = ({
   collections,
   selectedMainCollection,
   onMainCollectionChange,
@@ -23,7 +23,7 @@ const AvailableFieldsPanel: React.FC<AvailableFieldsPanelProps> = ({
   availableFields,
   loadingFields
 }) => {
-  console.log('🔍 AvailableFieldsPanel - Rendering with availableFields:', availableFields);
+  console.log('🔍 AvailableCollectionsAndFields - Rendering with availableFields:', availableFields);
 
   if (!collections) {
     return (
@@ -40,7 +40,7 @@ const AvailableFieldsPanel: React.FC<AvailableFieldsPanelProps> = ({
   }
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-4">
       {/* Collection Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -103,4 +103,4 @@ const AvailableFieldsPanel: React.FC<AvailableFieldsPanelProps> = ({
   );
 };
 
-export default AvailableFieldsPanel;
+export default AvailableCollectionsAndFields;
