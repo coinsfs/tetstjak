@@ -44,9 +44,9 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
         </button>
       </div>
       
-      <div className="space-y-2">
+      <div className="flex flex-nowrap overflow-x-auto space-x-3 pb-2">
         {filters.length === 0 ? (
-          <div className="p-3 border border-gray-200 rounded-lg text-center text-gray-500">
+          <div className="flex-shrink-0 w-80 p-3 border border-gray-200 rounded-lg text-center text-gray-500">
             <Settings className="w-5 h-5 mx-auto mb-2 text-gray-300" />
             <p className="text-xs">No filters configured</p>
             <p className="text-xs text-gray-400">Add filters to refine your data export</p>
@@ -55,7 +55,7 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
           filters.map((filter) => (
             <div
               key={filter.id}
-              className="p-3 border border-gray-200 rounded-lg bg-gray-50"
+              className="flex-shrink-0 w-80 p-3 border border-gray-200 rounded-lg bg-gray-50"
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
@@ -66,11 +66,13 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
                     {filter.conditions.length} condition{filter.conditions.length !== 1 ? 's' : ''} 
                     {filter.conditions.length > 1 && ` (${filter.logic.toUpperCase()})`}
                   </div>
-                  <div className="text-xs text-gray-400 mt-1">
+                  <div className="flex flex-wrap gap-1 mt-2">
                     {filter.conditions.map((condition, index) => (
-                      <span key={condition.id}>
+                      <span 
+                        key={condition.id}
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                      >
                         {condition.field} {condition.operator} {String(condition.value)}
-                        {index < filter.conditions.length - 1 && ` ${filter.logic.toUpperCase()} `}
                       </span>
                     ))}
                   </div>

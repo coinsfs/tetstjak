@@ -43,9 +43,9 @@ const JoinsPanel: React.FC<JoinsPanelProps> = ({
         </button>
       </div>
       
-      <div className="space-y-2">
+      <div className="flex flex-nowrap overflow-x-auto space-x-3 pb-2">
         {joins.length === 0 ? (
-          <div className="p-3 border border-gray-200 rounded-lg text-center text-gray-500">
+          <div className="flex-shrink-0 w-80 p-3 border border-gray-200 rounded-lg text-center text-gray-500">
             <Database className="w-5 h-5 mx-auto mb-2 text-gray-300" />
             <p className="text-xs">No joins configured</p>
             <p className="text-xs text-gray-400">Add joins to include related data</p>
@@ -54,7 +54,7 @@ const JoinsPanel: React.FC<JoinsPanelProps> = ({
           joins.map((join) => (
             <div
               key={join.id}
-              className="p-3 border border-gray-200 rounded-lg bg-gray-50"
+              className="flex-shrink-0 w-80 p-3 border border-gray-200 rounded-lg bg-gray-50"
             >
               <div className="flex items-center justify-between">
                 <div>
