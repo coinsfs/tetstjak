@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Database, ChevronDown, ChevronRight, Layers } from 'lucide-react';
+import { Database, Layers } from 'lucide-react';
 import { exportService } from '@/services/export';
 import { 
   CollectionsRelationshipsResponse, 
@@ -26,7 +26,6 @@ const AvailableCollectionsAndFields: React.FC<AvailableCollectionsAndFieldsProps
 }) => {
   const [fieldSuggestions, setFieldSuggestions] = useState<FieldSuggestionsResponse | null>(null);
   const [loadingFields, setLoadingFields] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['recommended']));
 
   // Load field suggestions when main collection changes
   useEffect(() => {
@@ -51,67 +50,6 @@ const AvailableCollectionsAndFields: React.FC<AvailableCollectionsAndFieldsProps
     loadFieldSuggestions();
   }, [token, collectionToDisplayFieldsFor]);
 
-  const toggleCategory = (category: string) => {
-    setExpandedCategories(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(category)) {
-        newSet.delete(category);
-      } else {
-        newSet.add(category);
-      }
-      return newSet;
-    });
-  };
-
-  const getCategoryFields = (category: string): FieldInfo[] => {
-    if (!fieldSuggestions) return [];
-    
-    if (category === 'recommended') {
-      return fieldSuggestions.smart_suggestions.recommended.map(fieldName => {
-        const field = fieldSuggestions.available_fields.find(f => f.field === fieldName);
-        return field || { field: fieldName, alias: fieldName, category: 'recommended' };
-      });
-    }
-    
-    if (category === 'optional') {
-      return fieldSuggestions.smart_suggestions.optional.map(fieldName => {
-        const field = fieldSuggestions.available_fields.find(f => f.field === fieldName);
-        return field || { field: fieldName, alias: fieldName, category: 'optional' };
-      });
-    }
-    
-    if (category === 'advanced') {
-      return fieldSuggestions.smart_suggestions.advanced.map(fieldName => {
-        const field = fieldSuggestions.available_fields.find(f => f.field === fieldName);
-        return field || { field: fieldName, alias: fieldName, category: 'advanced' };
-      });
-    }
-
-    return fieldSuggestions.available_fields.filter(f => f.category === category);
-  };
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'recommended': return '⭐';
-      case 'optional': return '📋';
-      case 'advanced': return '⚙️';
-      case 'user_info': return '👤';
-      case 'timestamps': return '🕒';
-      default: return '📄';
-    }
-  };
-
-  const getCategoryLabel = (category: string) => {
-    switch (category) {
-      case 'recommended': return 'Recommended Fields';
-      case 'optional': return 'Optional Fields';
-      case 'advanced': return 'Advanced Fields';
-      case 'user_info': return 'User Information';
-      case 'timestamps': return 'Timestamps';
-      case 'other': return 'Other Fields';
-      default: return category.charAt(0).toUpperCase() + category.slice(1);
-    }
-  };
 
   if (!collections) {
     return (
@@ -163,92 +101,28 @@ const AvailableCollectionsAndFields: React.FC<AvailableCollectionsAndFieldsProps
           </div>
 
           {fieldSuggestions && (
-            <div className="space-y-2">
-              {/* Smart Suggestions Categories */}
-              {['recommended', 'optional', 'advanced'].map(category => {
-                const fields = getCategoryFields(category);
-                if (fields.length === 0) return null;
+            <div className="space-y-1 max-h-96 overflow-y-auto">
+              {fieldSuggestions.available_fields.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Layers className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm">No fields available</p>
+                </div>
+              ) : (
+                fieldSuggestions.available_fields.map((field, index) => (
+                  <FieldItem
+                    key={`${field.field}-${index}`}
+                    field={field}
+                    collection={collectionToDisplayFieldsFor}
+                  />
+                ))
+              )}
+            </div>
+          )}
 
-                const isExpanded = expandedCategories.has(category);
-                
-                return (
-                  <div key={category} className="border border-gray-200 rounded-lg">
-                    <button
-                      onClick={() => toggleCategory(category)}
-                      className="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-gray-50 rounded-t-lg"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm">{getCategoryIcon(category)}</span>
-                        <span className="text-sm font-medium text-gray-700">
-                          {getCategoryLabel(category)}
-                        </span>
-                        <span className="text-xs text-gray-500">({fields.length})</span>
-                      </div>
-                      {isExpanded ? (
-                        <ChevronDown className="w-4 h-4 text-gray-400" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
-                      )}
-                    </button>
-                    
-                    {isExpanded && (
-                      <div className="px-3 pb-2 space-y-1 border-t border-gray-100">
-                        {fields.map((field, index) => (
-                          <FieldItem
-                            key={`${category}-${field.field}-${index}`}
-                            field={field}
-                            collection={collectionToDisplayFieldsFor}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              {/* Regular Categories */}
-              {Array.from(new Set(fieldSuggestions.available_fields.map(f => f.category)))
-                .filter(cat => !['recommended', 'optional', 'advanced'].includes(cat))
-                .map(category => {
-                  const fields = getCategoryFields(category);
-                  if (fields.length === 0) return null;
-
-                  const isExpanded = expandedCategories.has(category);
-                  
-                  return (
-                    <div key={category} className="border border-gray-200 rounded-lg">
-                      <button
-                        onClick={() => toggleCategory(category)}
-                        className="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-gray-50 rounded-t-lg"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm">{getCategoryIcon(category)}</span>
-                          <span className="text-sm font-medium text-gray-700">
-                            {getCategoryLabel(category)}
-                          </span>
-                          <span className="text-xs text-gray-500">({fields.length})</span>
-                        </div>
-                        {isExpanded ? (
-                          <ChevronDown className="w-4 h-4 text-gray-400" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4 text-gray-400" />
-                        )}
-                      </button>
-                      
-                      {isExpanded && (
-                        <div className="px-3 pb-2 space-y-1 border-t border-gray-100">
-                          {fields.map((field, index) => (
-                            <FieldItem
-                              key={`${category}-${field.field}-${index}`}
-                              field={field}
-                              collection={selectedMainCollection}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+          {!fieldSuggestions && !loadingFields && selectedMainCollection && (
+            <div className="text-center py-8 text-gray-500">
+              <Layers className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+              <p className="text-sm">Select a collection context to view available fields</p>
             </div>
           )}
         </div>
