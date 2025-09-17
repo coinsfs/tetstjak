@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Search, X, Loader2 } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import useDebounce from '@/hooks/useDebounce';
 
 interface Option {
@@ -15,19 +15,21 @@ interface SearchableDropdownProps {
   onSelect: (value: string) => void;
   onSearchTermChange: (searchTerm: string) => void;
   className?: string;
+  disabled?: boolean;
 }
 
 const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   value,
   options,
-  placeholder = "Search and select...",
+  placeholder = "Type to search...",
   loading = false,
   onSelect,
   onSearchTermChange,
-  className = ""
+  className = "",
+  disabled = false
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -35,22 +37,37 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   // Debounce the search term
   const debouncedSearchTerm = useDebounce(inputValue, 500);
   
-  // Find the selected option to display its label
-  const selectedOption = options.find(option => option.value === value);
-  const displayValue = selectedOption ? selectedOption.label : '';
+  // Sync inputValue with selected value
+  useEffect(() => {
+    if (value && options.length > 0) {
+      const selectedOption = options.find(option => option.value === value);
+      if (selectedOption) {
+        setInputValue(selectedOption.label);
+      }
+    } else if (!value) {
+      setInputValue('');
+    }
+  }, [value, options]);
 
   // Effect to handle debounced search term changes
   useEffect(() => {
-    onSearchTermChange(debouncedSearchTerm);
-  }, [debouncedSearchTerm, onSearchTermChange]);
+    // Only trigger search if user is actively typing (input is focused and has content)
+    if (isOpen && inputValue && !value) {
+      onSearchTermChange(debouncedSearchTerm);
+    }
+  }, [debouncedSearchTerm, onSearchTermChange, isOpen, inputValue, value]);
 
   // Effect to handle clicks outside the dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
-        setInputValue('');
         setHighlightedIndex(-1);
+        
+        // If no value is selected, clear the input
+        if (!value) {
+          setInputValue('');
+        }
       }
     };
 
@@ -58,7 +75,7 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [value]);
 
   // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,15 +83,48 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
     setInputValue(newValue);
     setHighlightedIndex(-1);
     
+    // Clear the selected value when user starts typing
+    if (value) {
+      onSelect('');
+    }
+    
     if (!isOpen) {
       setIsOpen(true);
     }
   };
 
+  // Handle input focus
+  const handleInputFocus = () => {
+    setIsOpen(true);
+    // If there's a selected value, clear input to allow searching
+    if (value) {
+      setInputValue('');
+    }
+  };
+
+  // Handle input blur
+  const handleInputBlur = () => {
+    // Delay hiding to allow for option clicks
+    setTimeout(() => {
+      setIsOpen(false);
+      setHighlightedIndex(-1);
+      
+      // Restore display value if something is selected
+      if (value && options.length > 0) {
+        const selectedOption = options.find(option => option.value === value);
+        if (selectedOption) {
+          setInputValue(selectedOption.label);
+        }
+      } else if (!value) {
+        setInputValue('');
+      }
+    }, 150);
+  };
+
   // Handle option selection
   const handleOptionSelect = (option: Option) => {
     onSelect(option.value);
-    setInputValue('');
+    setInputValue(option.label);
     setIsOpen(false);
     setHighlightedIndex(-1);
   };
@@ -86,20 +136,7 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
     setInputValue('');
     setIsOpen(false);
     setHighlightedIndex(-1);
-  };
-
-  // Handle dropdown toggle
-  const handleDropdownToggle = () => {
-    if (isOpen) {
-      setIsOpen(false);
-      setInputValue('');
-      setHighlightedIndex(-1);
-    } else {
-      setIsOpen(true);
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 0);
-    }
+    inputRef.current?.focus();
   };
 
   // Handle keyboard navigation
@@ -133,81 +170,62 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
         break;
       case 'Escape':
         setIsOpen(false);
-        setInputValue('');
         setHighlightedIndex(-1);
+        inputRef.current?.blur();
         break;
     }
   };
 
-  // Filter options based on input value (client-side filtering for better UX)
-  const filteredOptions = options.filter(option =>
-    option.label.toLowerCase().includes(inputValue.toLowerCase())
-  );
-
   return (
     <div ref={dropdownRef} className={`relative ${className}`}>
-      {/* Main Input/Display Area */}
-      <div
-        className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-l-md shadow-sm border-r-0 cursor-pointer hover:border-gray-400 focus-within:outline-none focus-within:ring-2 focus-within:ring-green-500 focus-within:border-green-500 transition-all duration-200"
-        onClick={handleDropdownToggle}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex-1 min-w-0">
-            {isOpen ? (
-              <input
-                ref={inputRef}
-                type="text"
-                value={inputValue}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                placeholder={placeholder}
-                className="w-full border-none outline-none bg-transparent text-sm"
-                autoComplete="off"
-              />
-            ) : (
-              <span className={`block truncate ${!displayValue ? 'text-gray-500' : ''}`}>
-                {displayValue || placeholder}
-              </span>
-            )}
-          </div>
-          
-          <div className="flex items-center space-x-1 ml-2">
-            {loading && (
-              <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-            )}
-            {value && !isOpen && (
-              <button
-                onClick={handleClear}
-                className="p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
-                type="button"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
-            <ChevronDown 
-              className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
-                isOpen ? 'transform rotate-180' : ''
-              }`} 
-            />
-          </div>
+      {/* Input Field */}
+      <div className="relative">
+        <input
+          ref={inputRef}
+          type="text"
+          value={inputValue}
+          onChange={handleInputChange}
+          onFocus={handleInputFocus}
+          onBlur={handleInputBlur}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          disabled={disabled}
+          className="block w-full px-3 py-2 pr-8 text-sm text-gray-900 bg-white border border-gray-300 rounded-l-md shadow-sm border-r-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          autoComplete="off"
+        />
+        
+        {/* Loading indicator and clear button */}
+        <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+          {loading && (
+            <Loader2 className="w-4 h-4 text-gray-400 animate-spin mr-1" />
+          )}
+          {value && !disabled && (
+            <button
+              onClick={handleClear}
+              className="p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
+              type="button"
+              tabIndex={-1}
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Dropdown Options */}
+      {/* Floating Dropdown Options */}
       {isOpen && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-          {loading && filteredOptions.length === 0 ? (
+          {loading && options.length === 0 ? (
             <div className="px-3 py-2 text-sm text-gray-500 flex items-center">
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Searching...
             </div>
-          ) : filteredOptions.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-gray-500 flex items-center">
-              <Search className="w-4 h-4 mr-2" />
+          ) : options.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-gray-500">
               {inputValue ? `No results found for "${inputValue}"` : 'Start typing to search...'}
             </div>
           ) : (
-            filteredOptions.map((option, index) => (
+            options.map((option, index) => (
               <button
                 key={option.value}
                 type="button"

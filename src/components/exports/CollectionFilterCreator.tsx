@@ -315,19 +315,14 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
         
       case 'academic_period':
         return (
-          <select
+          <SearchableDropdown
             value={condition.value}
-            onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
-            disabled={loadingLookupData}
-            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-l-md shadow-sm border-r-0 appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-          >
-            <option value="">Select academic period...</option>
-            {academicPeriods.map((period) => (
-              <option key={period.value} value={period.value}>
-                {period.label}
-              </option>
-            ))}
-          </select>
+            options={academicPeriods}
+            placeholder="Search and select academic period..."
+            loading={loadingLookupData}
+            onSelect={(value) => handleUpdateCondition(condition.id, { value })}
+            onSearchTermChange={() => {}} // Academic periods don't need server search
+          />
         );
         
       case 'text':
