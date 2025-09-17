@@ -229,6 +229,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
                   </label>
                   <label className="flex items-center">
                     <input
+                      disabled
                       type="radio"
                       name="logic"
                       value="or"
