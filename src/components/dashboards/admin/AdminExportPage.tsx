@@ -12,7 +12,7 @@ import {
   CollectionFilter,
   FieldInfo
 } from '@/types/export';
-import { Database, Download, Settings, Play, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Database, Download, Settings, Play, CheckCircle, ArrowLeft, Filter } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AvailableCollectionsAndFields from '@/components/exports/AvailableCollectionsAndFields';
 import ExportConfigurationPreview from '@/components/exports/ExportConfigurationPreview';
@@ -39,6 +39,9 @@ const AdminExportPage: React.FC = () => {
       flatten_nested: true
     }
   });
+  
+  // Join Creator States
+  const [showJoinCreator, setShowJoinCreator] = useState(false);
 
   // Manage available field contexts based on main collection and joins
   useEffect(() => {
@@ -484,6 +487,10 @@ const AdminExportPage: React.FC = () => {
     }));
   };
 
+  const handleAddJoinClick = () => {
+    setShowJoinCreator(true);
+  };
+
   const handleValidateConfiguration = async () => {
     if (!token) return;
 
@@ -535,7 +542,7 @@ const AdminExportPage: React.FC = () => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col bg-gray-50">
         {/* Header */}
         <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
@@ -580,6 +587,166 @@ const AdminExportPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Top Section - Data Filters and Joins Side by Side */}
+        <div className="flex-shrink-0 bg-white border-b border-gray-200">
+          <div className="flex h-80">
+            {/* Data Filters - Left Half */}
+            <div className="w-1/2 border-r border-gray-200 flex flex-col">
+              <div className="flex-shrink-0 bg-gray-50 px-4 py-3 border-b border-gray-200">
+                <h3 className="text-sm font-medium text-gray-900 flex items-center">
+                  <Filter className="w-4 h-4 mr-2" />
+                  Data Filters
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">Apply filters to refine your data export</p>
+              </div>
+              
+              <div className="flex-1 p-4 overflow-hidden">
+                <div className="h-full overflow-x-auto overflow-y-hidden">
+                  <div className="flex space-x-4 h-full min-w-max">
+                    {exportConfig.filters.length === 0 ? (
+                      <div className="flex items-center justify-center w-80 h-full border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
+                        <div>
+                          <Settings className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                          <p className="text-sm">No filters configured</p>
+                          <button 
+                            onClick={() => setShowFilterCreator(true)}
+                            className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                          >
+                            + Add Filter
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      exportConfig.filters.map((filter) => (
+                        <div
+                          key={filter.id}
+                          className="flex-shrink-0 w-80 p-3 border border-gray-200 rounded-lg bg-gray-50 h-fit"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-sm font-medium text-gray-900">
+                              {filter.collection} Filter
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <button
+                                onClick={() => {
+                                  setEditingFilter(filter);
+                                  setShowFilterCreator(true);
+                                }}
+                                className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                                title="Edit filter"
+                              >
+                                <Settings className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => onFilterRemove(filter.id)}
+                                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                title="Remove filter"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-500 mb-2">
+                            {filter.conditions.length} condition{filter.conditions.length !== 1 ? 's' : ''} 
+                            {filter.conditions.length > 1 && ` (${filter.logic.toUpperCase()})`}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {filter.conditions.map((condition, index) => (
+                              <div key={condition.id} className="truncate">
+                                {condition.field} {condition.operator} {String(condition.value)}
+                                {index < filter.conditions.length - 1 && ` ${filter.logic.toUpperCase()}`}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                    {exportConfig.filters.length > 0 && (
+                      <div className="flex-shrink-0 flex items-center">
+                        <button 
+                          onClick={() => setShowFilterCreator(true)}
+                          className="px-4 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                        >
+                          + Add Filter
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Joins & Lookups - Right Half */}
+            <div className="w-1/2 flex flex-col">
+              <div className="flex-shrink-0 bg-gray-50 px-4 py-3 border-b border-gray-200">
+                <h3 className="text-sm font-medium text-gray-900 flex items-center">
+                  <Database className="w-4 h-4 mr-2" />
+                  Joins & Lookups
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">Connect related data from multiple collections</p>
+              </div>
+              
+              <div className="flex-1 p-4 overflow-hidden">
+                <div className="h-full overflow-x-auto overflow-y-hidden">
+                  <div className="flex space-x-4 h-full min-w-max">
+                    {exportConfig.joins.length === 0 ? (
+                      <div className="flex items-center justify-center w-80 h-full border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
+                        <div>
+                          <Settings className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                          <p className="text-sm">No joins configured</p>
+                          <button 
+                            onClick={handleAddJoinClick}
+                            className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                          >
+                            + Add Join
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      exportConfig.joins.map((join) => (
+                        <div
+                          key={join.id}
+                          className="flex-shrink-0 w-80 p-3 border border-gray-200 rounded-lg bg-gray-50 h-fit"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-sm font-medium text-gray-900">
+                              {join.source_collection} → {join.target_collection}
+                            </div>
+                            <button
+                              onClick={() => onJoinRemove(join.id)}
+                              className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="text-xs text-gray-500 mb-2">
+                            {join.local_field} → {join.foreign_field}
+                          </div>
+                          {join.description && (
+                            <div className="text-xs text-gray-400 truncate">
+                              {join.description}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                    {exportConfig.joins.length > 0 && (
+                      <div className="flex-shrink-0 flex items-center">
+                        <button 
+                          onClick={handleAddJoinClick}
+                          className="px-4 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                        >
+                          + Add Join
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden">
           {/* Left Panel - Available Collections and Fields */}
@@ -604,7 +771,7 @@ const AdminExportPage: React.FC = () => {
           {/* Right Panel - Export Configuration */}
           <div className="w-1/2 flex flex-col">
             <div className="flex-shrink-0 bg-gray-50 px-4 py-3 border-b border-gray-200">
-              <h2 className="text-sm font-medium text-gray-900">Export Configuration</h2>
+              <h2 className="text-sm font-medium text-gray-900">Selected Fields</h2>
               <p className="text-xs text-gray-500 mt-1">Konfigurasi field, join, dan filter untuk export</p>
             </div>
             
@@ -612,9 +779,10 @@ const AdminExportPage: React.FC = () => {
               <ExportConfigurationPreview
                 exportConfig={exportConfig}
                 collections={collections}
-                availableFieldContexts={availableFieldContexts}
+                availableFieldContexts={availableFieldContexts} 
                 activeFieldContextCollection={activeFieldContextCollection}
                 setActiveFieldContextCollection={setActiveFieldContextCollection}
+                onTriggerJoinCreation={handleAddJoinClick}
                 onFieldAdd={handleFieldSelect}
                 onFieldRemove={handleFieldRemove}
                 onJoinAdd={handleJoinAdd}
@@ -627,6 +795,55 @@ const AdminExportPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Join Creator Modal */}
+        {showJoinCreator && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-96 max-h-96 overflow-y-auto">
+              <h3 className="text-lg font-semibold mb-4">Create Join Configuration</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Join creation functionality will be implemented here.
+              </p>
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={() => setShowJoinCreator(false)}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => setShowJoinCreator(false)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Create Join
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Filter Creator Modal */}
+        {showFilterCreator && (
+          <CollectionFilterCreator
+            collections={collections}
+            token={token}
+            editingFilter={editingFilter}
+            availableCollectionsForFilter={availableFieldContexts}
+            onSave={(filter) => {
+              if (editingFilter) {
+                onFilterUpdate(editingFilter.id, filter);
+              } else {
+                onFilterAdd(filter);
+              }
+              setShowFilterCreator(false);
+              setEditingFilter(null);
+            }}
+            onCancel={() => {
+              setShowFilterCreator(false);
+              setEditingFilter(null);
+            }}
+          />
+        )}
 
         {/* Footer - Export Settings */}
         <div className="fixed bottom-0 left-0 right-0 z-50 w-full bg-white border-t border-gray-200 px-6 py-4 shadow-lg">
