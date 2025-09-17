@@ -12,7 +12,7 @@ import {
   CollectionFilter,
   FieldInfo
 } from '@/types/export';
-import { Database, Download, Settings, Play, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Database, Settings, Play, CheckCircle, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AvailableCollectionsAndFields from '@/components/exports/AvailableCollectionsAndFields';
 import ExportConfigurationPreview from '@/components/exports/ExportConfigurationPreview';
@@ -344,19 +344,6 @@ const AdminExportPage: React.FC = () => {
             ],
             total_joinable: 2
           },
-          profiles: {
-            display_name: "Profiles",
-            possible_joins: [
-              {
-                collection: "users",
-                suggested_local_field: "user_id",
-                suggested_foreign_field: "_id",
-                relationship_type: "direct",
-                description: "Join profiles to users via user_id"
-              }
-            ],
-            total_joinable: 1
-          }
         };
         
         setCollections({ 
@@ -582,7 +569,7 @@ const AdminExportPage: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden p-16">
+        <div className="flex-1 flex flex-col overflow-hidden">
           {/* Filter and Join Configuration - Top Section */}
           {exportConfig.main_collection && (
             <ExportFilterAndJoinConfig
@@ -599,7 +586,7 @@ const AdminExportPage: React.FC = () => {
           )}
 
           {/* Main Panels - Bottom Section */}
-          <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1 flex overflow-hidden pb-16">
           {/* Left Panel - Available Collections and Fields */}
           <div className="w-1/2 border-r border-gray-200 flex flex-col">
             <div className="flex-shrink-0 bg-gray-50 px-4 py-3 border-b border-gray-200">
@@ -648,7 +635,7 @@ const AdminExportPage: React.FC = () => {
         </div>
 
         {/* Footer - Export Settings */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 w-full bg-white border-t border-gray-200 px-6 py-4 shadow-lg">
+        <div className="fixed bottom-0 left-0 right-0 z-2 w-full bg-white border-t border-gray-200 px-6 py-4 shadow-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
               {/* Format Selection */}

@@ -293,7 +293,7 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
       </div>
 
       {/* Main Content - Horizontal Layout */}
-      <div className="flex h-80">
+      <div className="flex">
         {/* Data Filters - Left Half */}
         <div className="w-1/2 border-r border-gray-200 flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50">
@@ -313,7 +313,7 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
           <div className="flex-1 p-4 overflow-x-auto">
             <div className="flex gap-4 min-w-max">
               {exportConfig.filters.length === 0 ? (
-                <div className="flex-shrink-0 w-64 p-6 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500 hover:border-gray-400 transition-colors">
+                <div className="flex-shrink-0 w-64 p-1 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500 hover:border-gray-400 transition-colors">
                   <Filter className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                   <p className="text-sm">No filters configured</p>
                   <p className="text-xs text-gray-400 mt-1">Add filters to refine your data export</p>
@@ -581,7 +581,7 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
 
             <div className="flex gap-4 min-w-max">
               {exportConfig.joins.length === 0 && !showJoinCreator ? (
-                <div className="flex-shrink-0 w-64 p-6 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500 hover:border-gray-400 transition-colors">
+                <div className="flex-shrink-0 w-64 p-1 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500 hover:border-gray-400 transition-colors">
                   <GitMerge className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                   <p className="text-sm">No joins configured</p>
                   <p className="text-xs text-gray-400 mt-1">Add joins to include related data</p>
