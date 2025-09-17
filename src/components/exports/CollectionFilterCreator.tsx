@@ -7,6 +7,10 @@ import {
   FieldInfo 
 } from '@/types/export';
 import { exportService } from '@/services/export';
+import { userService } from '@/services/user';
+import { studentExamService } from '@/services/studentExam';
+import { useAuth } from '@/contexts/AuthContext';
+import { convertWIBToUTC, convertUTCToWIB, getCurrentWIBDateTime } from '@/utils/timezone';
 import toast from 'react-hot-toast';
 
 interface CollectionFilterCreatorProps {
@@ -18,6 +22,11 @@ interface CollectionFilterCreatorProps {
   onCancel: () => void;
 }
 
+interface LookupOption {
+  value: string;
+  label: string;
+}
+
 const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
   collections,
   availableCollectionsForFilter,
@@ -26,11 +35,18 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
   onSave,
   onCancel
 }) => {
+  const { token: authToken } = useAuth();
   const [selectedCollection, setSelectedCollection] = useState<string>('');
   const [logic, setLogic] = useState<'and' | 'or'>('and');
   const [conditions, setConditions] = useState<FilterCondition[]>([]);
   const [availableFields, setAvailableFields] = useState<FieldInfo[]>([]);
   const [loadingFields, setLoadingFields] = useState(false);
+  
+  // Lookup data states
+  const [basicStudents, setBasicStudents] = useState<LookupOption[]>([]);
+  const [basicTeachers, setBasicTeachers] = useState<LookupOption[]>([]);
+  const [academicPeriods, setAcademicPeriods] = useState<LookupOption[]>([]);
+  const [loadingLookupData, setLoadingLookupData] = useState(false);
 
   // Initialize form with editing filter data
   useEffect(() => {
@@ -77,6 +93,42 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
     loadFields();
   }, [token, selectedCollection]);
 
+  // Load lookup data for dropdowns
+  useEffect(() => {
+    const fetchLookupData = async () => {
+      if (!authToken) return;
+      
+      try {
+        setLoadingLookupData(true);
+        const [students, teachers, periods] = await Promise.all([
+          userService.getBasicStudents(authToken),
+          userService.getBasicTeachers(authToken),
+          studentExamService.getAcademicPeriods(authToken)
+        ]);
+        
+        setBasicStudents(students.map(s => ({ 
+          value: s._id, 
+          label: `${s.full_name}${s.class_name ? ` (${s.class_name})` : ''}` 
+        })));
+        setBasicTeachers(teachers.map(t => ({ 
+          value: t._id, 
+          label: t.full_name 
+        })));
+        setAcademicPeriods(periods.map(p => ({ 
+          value: p._id, 
+          label: `${p.year} - ${p.semester}` 
+        })));
+      } catch (error) {
+        console.error('Error fetching lookup data:', error);
+        toast.error('Gagal memuat data lookup');
+      } finally {
+        setLoadingLookupData(false);
+      }
+    };
+
+    fetchLookupData();
+  }, [authToken]);
+
   const handleCollectionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newCollection = e.target.value;
     setSelectedCollection(newCollection);
@@ -90,12 +142,27 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
       field: '',
       operator: 'eq',
       value: '',
+      valueType: 'text',
       options: ''
     };
     setConditions([...conditions, newCondition]);
   };
 
   const handleUpdateCondition = (conditionId: string, updates: Partial<FilterCondition>) => {
+    // If valueType is changing, reset the value
+    if (updates.valueType && updates.valueType !== conditions.find(c => c.id === conditionId)?.valueType) {
+      updates.value = '';
+    }
+    
+    // Convert datetime values from WIB to UTC
+    if (updates.value && updates.valueType === 'datetime') {
+      try {
+        updates.value = convertWIBToUTC(updates.value);
+      } catch (error) {
+        console.error('Error converting datetime:', error);
+      }
+    }
+    
     setConditions(conditions.map(condition => 
       condition.id === conditionId 
         ? { ...condition, ...updates }
@@ -107,6 +174,149 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
     setConditions(conditions.filter(condition => condition.id !== conditionId));
   };
 
+  const getOperatorOptions = (valueType?: string) => {
+    const baseOperators = [
+      { value: 'eq', label: 'Equals (=)' },
+      { value: 'ne', label: 'Not Equals (≠)' },
+      { value: 'exists', label: 'Field Exists' }
+    ];
+    
+    const numericOperators = [
+      { value: 'gt', label: 'Greater Than (>)' },
+      { value: 'gte', label: 'Greater Than or Equal (≥)' },
+      { value: 'lt', label: 'Less Than (<)' },
+      { value: 'lte', label: 'Less Than or Equal (≤)' }
+    ];
+    
+    const textOperators = [
+      { value: 'in', label: 'In (contains)' },
+      { value: 'nin', label: 'Not In (not contains)' },
+      { value: 'regex', label: 'Regex Pattern' }
+    ];
+    
+    switch (valueType) {
+      case 'number':
+      case 'datetime':
+        return [...baseOperators, ...numericOperators];
+      case 'text':
+        return [...baseOperators, ...textOperators];
+      case 'boolean':
+      case 'student':
+      case 'teacher':
+      case 'academic_period':
+        return baseOperators;
+      default:
+        return [...baseOperators, ...numericOperators, ...textOperators];
+    }
+  };
+
+  const renderValueInput = (condition: FilterCondition) => {
+    const valueType = condition.valueType || 'text';
+    
+    // Don't show value input for 'exists' operator
+    if (condition.operator === 'exists') {
+      return null;
+    }
+    
+    switch (valueType) {
+      case 'number':
+        return (
+          <input
+            type="number"
+            value={condition.value}
+            onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
+            placeholder="Enter number..."
+            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+          />
+        );
+        
+      case 'boolean':
+        return (
+          <select
+            value={condition.value}
+            onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
+            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+          >
+            <option value="">Select boolean...</option>
+            <option value="true">True</option>
+            <option value="false">False</option>
+          </select>
+        );
+        
+      case 'datetime':
+        return (
+          <input
+            type="datetime-local"
+            value={condition.value ? convertUTCToWIB(condition.value) : ''}
+            onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value, valueType: 'datetime' })}
+            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+          />
+        );
+        
+      case 'student':
+        return (
+          <select
+            value={condition.value}
+            onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
+            disabled={loadingLookupData}
+            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          >
+            <option value="">Select student...</option>
+            {basicStudents.map((student) => (
+              <option key={student.value} value={student.value}>
+                {student.label}
+              </option>
+            ))}
+          </select>
+        );
+        
+      case 'teacher':
+        return (
+          <select
+            value={condition.value}
+            onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
+            disabled={loadingLookupData}
+            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          >
+            <option value="">Select teacher...</option>
+            {basicTeachers.map((teacher) => (
+              <option key={teacher.value} value={teacher.value}>
+                {teacher.label}
+              </option>
+            ))}
+          </select>
+        );
+        
+      case 'academic_period':
+        return (
+          <select
+            value={condition.value}
+            onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
+            disabled={loadingLookupData}
+            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          >
+            <option value="">Select academic period...</option>
+            {academicPeriods.map((period) => (
+              <option key={period.value} value={period.value}>
+                {period.label}
+              </option>
+            ))}
+          </select>
+        );
+        
+      case 'text':
+      default:
+        return (
+          <input
+            type="text"
+            value={condition.value}
+            onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
+            placeholder="Enter value..."
+            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+          />
+        );
+    }
+  };
   const handleSave = () => {
     // Validation
     if (!selectedCollection) {
@@ -139,17 +349,14 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
     onSave(filter);
   };
 
-  const getOperatorOptions = () => [
-    { value: 'eq', label: 'Equals (=)' },
-    { value: 'ne', label: 'Not Equals (≠)' },
-    { value: 'gt', label: 'Greater Than (>)' },
-    { value: 'gte', label: 'Greater Than or Equal (≥)' },
-    { value: 'lt', label: 'Less Than (<)' },
-    { value: 'lte', label: 'Less Than or Equal (≤)' },
-    { value: 'in', label: 'In (contains)' },
-    { value: 'nin', label: 'Not In (not contains)' },
-    { value: 'regex', label: 'Regex Pattern' },
-    { value: 'exists', label: 'Field Exists' }
+  const getValueTypeOptions = () => [
+    { value: 'text', label: 'Text' },
+    { value: 'number', label: 'Number' },
+    { value: 'boolean', label: 'Boolean' },
+    { value: 'datetime', label: 'Date/Time' },
+    { value: 'student', label: 'Student' },
+    { value: 'teacher', label: 'Teacher' },
+    { value: 'academic_period', label: 'Academic Period' }
   ];
 
   return (
@@ -282,7 +489,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                           {/* Field Selection */}
                           <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -313,7 +520,25 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
                               onChange={(e) => handleUpdateCondition(condition.id, { operator: e.target.value as any })}
                               className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
                             >
-                              {getOperatorOptions().map((option) => (
+                              {getOperatorOptions(condition.valueType).map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Value Type Selection */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Value Type
+                            </label>
+                            <select
+                              value={condition.valueType || 'text'}
+                              onChange={(e) => handleUpdateCondition(condition.id, { valueType: e.target.value as any })}
+                              className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+                            >
+                              {getValueTypeOptions().map((option) => (
                                 <option key={option.value} value={option.value}>
                                   {option.label}
                                 </option>
@@ -326,14 +551,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
                             <label className="block text-xs font-medium text-gray-600 mb-1">
                               Value
                             </label>
-                            <input
-                              type="text"
-                              value={condition.value}
-                              onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
-                              placeholder="Enter value..."
-                              disabled={condition.operator === 'exists'}
-                              className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                            />
+                            {renderValueInput(condition)}
                           </div>
 
                           {/* Options Input */}
@@ -354,7 +572,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
                         {/* Condition Preview */}
                         {condition.field && condition.operator && condition.value && (
                           <div className="mt-3 p-2 bg-white rounded border text-xs text-gray-600">
-                            <strong>Preview:</strong> {condition.field} {condition.operator} "{condition.value}"
+                            <strong>Preview:</strong> {condition.field} {condition.operator} "{condition.value}" ({condition.valueType || 'text'})
                             {condition.options && ` (options: ${condition.options})`}
                           </div>
                         )}

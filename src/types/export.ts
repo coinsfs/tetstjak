@@ -63,6 +63,7 @@ export interface FilterCondition {
   field: string;
   operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'nin' | 'regex' | 'exists';
   value: any;
+  valueType?: 'text' | 'number' | 'boolean' | 'datetime' | 'student' | 'teacher' | 'academic_period';
   options?: string;
 }
 
