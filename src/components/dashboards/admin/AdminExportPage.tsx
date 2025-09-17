@@ -660,8 +660,8 @@ const AdminExportPage: React.FC = () => {
                   onChange={(e) => setExportConfig(prev => ({ 
                     ...prev, 
                     format: e.target.value as 'excel' | 'csv' | 'json' 
-                  }))}
-                  className="text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  }))} 
+                  className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="excel">Excel (.xlsx)</option>
                   <option value="csv">CSV (.csv)</option>

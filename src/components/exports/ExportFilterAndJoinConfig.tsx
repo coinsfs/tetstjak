@@ -421,7 +421,7 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
                     <select
                       value={currentJoinSourceCollection}
                       onChange={handleJoinSourceChange}
-                      className="w-full text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                       <option value="">Select source collection...</option>
                       {joinSourceCollections.map((collection) => (
@@ -441,7 +441,7 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
                       value={currentJoinTargetCollection}
                       onChange={handleJoinTargetChange}
                       disabled={!currentJoinSourceCollection}
-                      className="w-full text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                      className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                       <option value="">Select target collection...</option>
                       {joinTargetCollections.map((collection) => (
@@ -528,7 +528,7 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
                         <select
                           value={currentJoinLocalField}
                           onChange={(e) => setCurrentJoinLocalField(e.target.value)}
-                          className="w-full text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
                         >
                           <option value="">Select local field...</option>
                           {getFieldOptions(sourceCollectionFields, true).map((field) => (
@@ -546,7 +546,7 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
                         <select
                           value={currentJoinForeignField}
                           onChange={(e) => setCurrentJoinForeignField(e.target.value)}
-                          className="w-full text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
                         >
                           <option value="">Select foreign field...</option>
                           {getFieldOptions(targetCollectionFields, true).map((field) => (
