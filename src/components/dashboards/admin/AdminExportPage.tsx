@@ -13,6 +13,7 @@ import {
   FieldInfo
 } from '@/types/export';
 import { Database, Download, Settings, Play, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Database, Download, Settings, Play, CheckCircle, ArrowLeft, Filter } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AvailableCollectionsAndFields from '@/components/exports/AvailableCollectionsAndFields';
 import ExportConfigurationPreview from '@/components/exports/ExportConfigurationPreview';
