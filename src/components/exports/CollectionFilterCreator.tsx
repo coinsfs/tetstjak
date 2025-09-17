@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Database, Filter, Trash2 } from 'lucide-react';
+import useDebounce from '@/hooks/useDebounce';
 import { 
   CollectionsRelationshipsResponse, 
   CollectionFilter, 
@@ -47,6 +48,12 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
   const [basicTeachers, setBasicTeachers] = useState<LookupOption[]>([]);
   const [academicPeriods, setAcademicPeriods] = useState<LookupOption[]>([]);
   const [loadingLookupData, setLoadingLookupData] = useState(false);
+  
+  // Search states for debounced lookup
+  const [studentSearchTerm, setStudentSearchTerm] = useState<string>('');
+  const [teacherSearchTerm, setTeacherSearchTerm] = useState<string>('');
+  const debouncedStudentSearchTerm = useDebounce(studentSearchTerm, 500);
+  const debouncedTeacherSearchTerm = useDebounce(teacherSearchTerm, 500);
 
   // Initialize form with editing filter data
   useEffect(() => {
@@ -93,41 +100,69 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
     loadFields();
   }, [token, selectedCollection]);
 
-  // Load lookup data for dropdowns
+  // Load academic periods (no search needed)
   useEffect(() => {
-    const fetchLookupData = async () => {
+    const fetchAcademicPeriods = async () => {
       if (!authToken) return;
       
       try {
         setLoadingLookupData(true);
-        const [students, teachers, periods] = await Promise.all([
-          userService.getBasicStudents(authToken),
-          userService.getBasicTeachers(authToken),
-          studentExamService.getAcademicPeriods(authToken)
-        ]);
+        const periods = await studentExamService.getAcademicPeriods(authToken);
         
-        setBasicStudents(students.map(s => ({ 
-          value: s._id, 
-          label: `${s.full_name}${s.class_name ? ` (${s.class_name})` : ''}` 
-        })));
-        setBasicTeachers(teachers.map(t => ({ 
-          value: t._id, 
-          label: t.full_name 
-        })));
         setAcademicPeriods(periods.map(p => ({ 
           value: p._id, 
           label: `${p.year} - ${p.semester}` 
         })));
       } catch (error) {
-        console.error('Error fetching lookup data:', error);
-        toast.error('Gagal memuat data lookup');
+        console.error('Error fetching academic periods:', error);
+        toast.error('Gagal memuat periode akademik');
       } finally {
         setLoadingLookupData(false);
       }
     };
 
-    fetchLookupData();
+    fetchAcademicPeriods();
   }, [authToken]);
+
+  // Load students with debounced search
+  useEffect(() => {
+    const fetchStudents = async () => {
+      if (!authToken) return;
+      
+      try {
+        const students = await userService.getBasicStudents(authToken, debouncedStudentSearchTerm);
+        setBasicStudents(students.map(s => ({ 
+          value: s._id, 
+          label: `${s.full_name}${s.class_name ? ` (${s.class_name})` : ''}` 
+        })));
+      } catch (error) {
+        console.error('Error fetching students:', error);
+        toast.error('Gagal memuat data siswa');
+      }
+    };
+
+    fetchStudents();
+  }, [authToken, debouncedStudentSearchTerm]);
+
+  // Load teachers with debounced search
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      if (!authToken) return;
+      
+      try {
+        const teachers = await userService.getBasicTeachers(authToken, debouncedTeacherSearchTerm);
+        setBasicTeachers(teachers.map(t => ({ 
+          value: t._id, 
+          label: t.full_name 
+        })));
+      } catch (error) {
+        console.error('Error fetching teachers:', error);
+        toast.error('Gagal memuat data guru');
+      }
+    };
+
+    fetchTeachers();
+  }, [authToken, debouncedTeacherSearchTerm]);
 
   const handleCollectionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newCollection = e.target.value;
@@ -226,7 +261,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
             value={condition.value}
             onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
             placeholder="Enter number..."
-            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-l-md shadow-sm border-r-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
           />
         );
         
@@ -235,7 +270,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
           <select
             value={condition.value}
             onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
-            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-l-md shadow-sm border-r-0 appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
           >
             <option value="">Select boolean...</option>
             <option value="true">True</option>
@@ -249,17 +284,19 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
             type="datetime-local"
             value={condition.value ? convertUTCToWIB(condition.value) : ''}
             onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value, valueType: 'datetime' })}
-            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-l-md shadow-sm border-r-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
           />
         );
         
       case 'student':
+        const selectedStudent = basicStudents.find(s => s.value === condition.value);
         return (
           <select
             value={condition.value}
             onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
             disabled={loadingLookupData}
-            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-l-md shadow-sm border-r-0 appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            onFocus={() => setStudentSearchTerm('')}
           >
             <option value="">Select student...</option>
             {basicStudents.map((student) => (
@@ -271,12 +308,14 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
         );
         
       case 'teacher':
+        const selectedTeacher = basicTeachers.find(t => t.value === condition.value);
         return (
           <select
             value={condition.value}
             onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
             disabled={loadingLookupData}
-            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-l-md shadow-sm border-r-0 appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            onFocus={() => setTeacherSearchTerm('')}
           >
             <option value="">Select teacher...</option>
             {basicTeachers.map((teacher) => (
@@ -293,7 +332,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
             value={condition.value}
             onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
             disabled={loadingLookupData}
-            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-l-md shadow-sm border-r-0 appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
             <option value="">Select academic period...</option>
             {academicPeriods.map((period) => (
@@ -312,7 +351,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
             value={condition.value}
             onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
             placeholder="Enter value..."
-            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-l-md shadow-sm border-r-0 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
           />
         );
     }
@@ -528,30 +567,25 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
                             </select>
                           </div>
 
-                          {/* Value Type Selection */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Value Type
-                            </label>
-                            <select
-                              value={condition.valueType || 'text'}
-                              onChange={(e) => handleUpdateCondition(condition.id, { valueType: e.target.value as any })}
-                              className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
-                            >
-                              {getValueTypeOptions().map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          {/* Value Input */}
-                          <div>
+                          {/* Combined Value Input and Type Selection */}
+                          <div className="md:col-span-2">
                             <label className="block text-xs font-medium text-gray-600 mb-1">
                               Value
                             </label>
-                            {renderValueInput(condition)}
+                            <div className="flex rounded-md shadow-sm">
+                              {renderValueInput(condition)}
+                              <select
+                                value={condition.valueType || 'text'}
+                                onChange={(e) => handleUpdateCondition(condition.id, { valueType: e.target.value as any })}
+                                className="px-3 py-2 text-xs text-gray-700 bg-gray-100 border border-gray-300 rounded-r-md border-l-0 appearance-none cursor-pointer hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 min-w-[100px]"
+                              >
+                                {getValueTypeOptions().map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
                           </div>
 
                           {/* Options Input */}
