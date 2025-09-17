@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Database, Filter, Trash2 } from 'lucide-react';
 import useDebounce from '@/hooks/useDebounce';
+import SearchableDropdown from './SearchableDropdown';
 import { 
   CollectionsRelationshipsResponse, 
   CollectionFilter, 
@@ -289,41 +290,27 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
         );
         
       case 'student':
-        const selectedStudent = basicStudents.find(s => s.value === condition.value);
         return (
-          <select
+          <SearchableDropdown
             value={condition.value}
-            onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
-            disabled={loadingLookupData}
-            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-l-md shadow-sm border-r-0 appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-            onFocus={() => setStudentSearchTerm('')}
-          >
-            <option value="">Select student...</option>
-            {basicStudents.map((student) => (
-              <option key={student.value} value={student.value}>
-                {student.label}
-              </option>
-            ))}
-          </select>
+            options={basicStudents}
+            placeholder="Search and select student..."
+            loading={loadingLookupData}
+            onSelect={(value) => handleUpdateCondition(condition.id, { value })}
+            onSearchTermChange={setStudentSearchTerm}
+          />
         );
         
       case 'teacher':
-        const selectedTeacher = basicTeachers.find(t => t.value === condition.value);
         return (
-          <select
+          <SearchableDropdown
             value={condition.value}
-            onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
-            disabled={loadingLookupData}
-            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-l-md shadow-sm border-r-0 appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-            onFocus={() => setTeacherSearchTerm('')}
-          >
-            <option value="">Select teacher...</option>
-            {basicTeachers.map((teacher) => (
-              <option key={teacher.value} value={teacher.value}>
-                {teacher.label}
-              </option>
-            ))}
-          </select>
+            options={basicTeachers}
+            placeholder="Search and select teacher..."
+            loading={loadingLookupData}
+            onSelect={(value) => handleUpdateCondition(condition.id, { value })}
+            onSearchTermChange={setTeacherSearchTerm}
+          />
         );
         
       case 'academic_period':
