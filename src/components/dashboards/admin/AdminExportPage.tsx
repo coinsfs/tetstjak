@@ -582,7 +582,7 @@ const AdminExportPage: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden p-16">
           {/* Filter and Join Configuration - Top Section */}
           {exportConfig.main_collection && (
             <ExportFilterAndJoinConfig
