@@ -37,25 +37,35 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   // Debounce the search term
   const debouncedSearchTerm = useDebounce(inputValue, 500);
   
-  // Sync inputValue with selected value
+  // Sync inputValue with selected value - this is the main source of truth
   useEffect(() => {
     if (value && options.length > 0) {
       const selectedOption = options.find(option => option.value === value);
       if (selectedOption) {
         setInputValue(selectedOption.label);
+        return;
       }
-    } else if (!value) {
+    }
+    
+    // If no value is selected, clear the input (unless user is actively typing)
+    if (!value && !isOpen) {
       setInputValue('');
     }
   }, [value, options]);
 
-  // Effect to handle debounced search term changes
+  // Effect to handle debounced search term changes - only trigger if user is searching
   useEffect(() => {
-    // Only trigger search if user is actively typing (input is focused and has content)
-    if (isOpen && inputValue && !value) {
+    // Only trigger search if:
+    // 1. Dropdown is open (user is actively searching)
+    // 2. There's input text
+    // 3. No value is currently selected OR the input text is different from selected label
+    const selectedOption = value && options.length > 0 ? options.find(option => option.value === value) : null;
+    const isSearching = isOpen && inputValue && (!value || (selectedOption && inputValue !== selectedOption.label));
+    
+    if (isSearching) {
       onSearchTermChange(debouncedSearchTerm);
     }
-  }, [debouncedSearchTerm, onSearchTermChange, isOpen, inputValue, value]);
+  }, [debouncedSearchTerm, onSearchTermChange, isOpen, inputValue, value, options]);
 
   // Effect to handle clicks outside the dropdown
   useEffect(() => {
@@ -63,11 +73,7 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
         setHighlightedIndex(-1);
-        
-        // If no value is selected, clear the input
-        if (!value) {
-          setInputValue('');
-        }
+        // Let the main useEffect handle inputValue based on current value
       }
     };
 
@@ -96,10 +102,7 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   // Handle input focus
   const handleInputFocus = () => {
     setIsOpen(true);
-    // If there's a selected value, clear input to allow searching
-    if (value) {
-      setInputValue('');
-    }
+    // Don't clear input on focus - let user see what's selected and type to search
   };
 
   // Handle input blur
@@ -108,23 +111,15 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
     setTimeout(() => {
       setIsOpen(false);
       setHighlightedIndex(-1);
-      
-      // Restore display value if something is selected
-      if (value && options.length > 0) {
-        const selectedOption = options.find(option => option.value === value);
-        if (selectedOption) {
-          setInputValue(selectedOption.label);
-        }
-      } else if (!value) {
-        setInputValue('');
-      }
+      // Let the main useEffect handle inputValue restoration
     }, 150);
   };
 
   // Handle option selection
   const handleOptionSelect = (option: Option) => {
+    // Only call onSelect - let the parent update the value prop
+    // The main useEffect will handle updating inputValue when value prop changes
     onSelect(option.value);
-    setInputValue(option.label);
     setIsOpen(false);
     setHighlightedIndex(-1);
   };
@@ -133,7 +128,6 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
     onSelect('');
-    setInputValue('');
     setIsOpen(false);
     setHighlightedIndex(-1);
     inputRef.current?.focus();
