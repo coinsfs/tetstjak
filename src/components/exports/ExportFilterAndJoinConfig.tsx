@@ -504,7 +504,7 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
                               onChange={() => handlePossibleJoinSelect(possibleJoin)}
                               className="mr-2 mt-1"
                             />
-                            <div className="flex-1">
+                            <div>
                               <div className="text-sm font-medium">
                                 {possibleJoin.suggested_local_field} → {possibleJoin.suggested_foreign_field}
                               </div>
