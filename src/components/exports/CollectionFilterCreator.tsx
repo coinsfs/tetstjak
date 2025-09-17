@@ -154,9 +154,9 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[calc(100vh-4rem)] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-green-100 rounded-lg">
               <Filter className="w-6 h-6 text-green-600" />
@@ -179,7 +179,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(100vh-4rem-96px)]">
+        <div className="p-6 overflow-y-auto flex-1">
           <div className="space-y-6">
             {/* Collection Selection */}
             <div>
@@ -367,7 +367,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
           <button
             onClick={onCancel}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
