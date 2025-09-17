@@ -608,11 +608,6 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
                         <X className="w-3 h-3" />
                       </button>
                     </div>
-                    <div className="flex items-center gap-1 mb-1.5">
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        {join.relationship_type}
-                      </span>
-                    </div>
                     <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
                       <span className="font-medium text-gray-700">{join.local_field}</span>
                       <span className="text-gray-400">→</span>
