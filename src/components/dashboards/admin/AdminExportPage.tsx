@@ -16,6 +16,7 @@ import { Database, Download, Settings, Play, CheckCircle, ArrowLeft } from 'luci
 import toast from 'react-hot-toast';
 import AvailableCollectionsAndFields from '@/components/exports/AvailableCollectionsAndFields';
 import ExportConfigurationPreview from '@/components/exports/ExportConfigurationPreview';
+import ExportFilterAndJoinConfig from '@/components/exports/ExportFilterAndJoinConfig';
 
 const AdminExportPage: React.FC = () => {
   const { token } = useAuth();
@@ -581,7 +582,24 @@ const AdminExportPage: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Filter and Join Configuration - Top Section */}
+          {exportConfig.main_collection && (
+            <ExportFilterAndJoinConfig
+              exportConfig={exportConfig}
+              collections={collections}
+              availableFieldContexts={availableFieldContexts}
+              token={token}
+              onJoinAdd={handleJoinAdd}
+              onJoinRemove={handleJoinRemove}
+              onFilterAdd={handleFilterAdd}
+              onFilterRemove={handleFilterRemove}
+              onFilterUpdate={handleFilterUpdate}
+            />
+          )}
+
+          {/* Main Panels - Bottom Section */}
+          <div className="flex-1 flex overflow-hidden">
           {/* Left Panel - Available Collections and Fields */}
           <div className="w-1/2 border-r border-gray-200 flex flex-col">
             <div className="flex-shrink-0 bg-gray-50 px-4 py-3 border-b border-gray-200">
@@ -625,6 +643,7 @@ const AdminExportPage: React.FC = () => {
                 token={token}
               />
             </div>
+          </div>
           </div>
         </div>
 
