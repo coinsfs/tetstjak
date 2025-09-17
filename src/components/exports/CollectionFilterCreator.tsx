@@ -179,7 +179,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(100vh-4rem-96px)]">
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
           <div className="space-y-6">
             {/* Collection Selection */}
             <div>
@@ -197,7 +197,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
               <select
                 value={selectedCollection}
                 onChange={handleCollectionChange}
-                className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
               >
                 <option value="">Select collection to filter...</option>
                 {availableCollectionsForFilter.map((collection) => (
@@ -291,7 +291,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
                               value={condition.field}
                               onChange={(e) => handleUpdateCondition(condition.id, { field: e.target.value })}
                               disabled={loadingFields}
-                              className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                              className="w-full text-sm border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
                             >
                               <option value="">Select field...</option>
                               {availableFields.map((field) => (
@@ -310,7 +310,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
                             <select
                               value={condition.operator}
                               onChange={(e) => handleUpdateCondition(condition.id, { operator: e.target.value as any })}
-                              className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                              className="w-full text-sm border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
                             >
                               {getOperatorOptions().map((option) => (
                                 <option key={option.value} value={option.value}>
@@ -331,7 +331,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
                               onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
                               placeholder="Enter value..."
                               disabled={condition.operator === 'exists'}
-                              className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                              className="w-full text-sm border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100"
                             />
                           </div>
 
@@ -345,7 +345,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
                               value={condition.options || ''}
                               onChange={(e) => handleUpdateCondition(condition.id, { options: e.target.value })}
                               placeholder="Optional..."
-                              className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
+                              className="w-full text-sm border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
                             />
                           </div>
                         </div>
