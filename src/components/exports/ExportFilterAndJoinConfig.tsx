@@ -500,16 +500,16 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
                             <input
                               type="radio"
                               name="possibleJoin"
-                              checked={selectedPossibleJoin === possibleJoin}
+                                <span key={condition.id} className="inline-flex items-center gap-1 mr-3 mb-1">
                               onChange={() => handlePossibleJoinSelect(possibleJoin)}
                               className="mr-2 mt-1"
                             />
-                            <div className="flex-1">
+                                </span>
                               <div className="text-sm font-medium">
                                 {possibleJoin.suggested_local_field} → {possibleJoin.suggested_foreign_field}
-                              </div>
+                                <span className="inline-flex text-gray-400 italic">
                               <div className="text-xs text-gray-500 truncate">
-                                {possibleJoin.description}
+                                </span>
                               </div>
                             </div>
                           </label>
