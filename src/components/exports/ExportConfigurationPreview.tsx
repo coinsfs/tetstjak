@@ -23,9 +23,6 @@ interface ExportConfigurationPreviewProps {
   onFieldRemove: (fieldId: string) => void;
   onJoinAdd: (join: JoinConfiguration) => void;
   onJoinRemove: (joinId: string) => void;
-  onFilterAdd: (filter: CollectionFilter) => void;
-  onFilterRemove: (filterId: string) => void;
-  onFilterUpdate: (filterId: string, updatedFilter: CollectionFilter) => void;
   token: string | null;
 }
 
@@ -42,7 +39,6 @@ const ExportConfigurationPreview: React.FC<ExportConfigurationPreviewProps> = ({
   onFilterAdd,
   onFilterRemove,
   onFilterUpdate,
-  token
 }) => {
   // Join Creator States
   const [showJoinCreator, setShowJoinCreator] = React.useState(false);
