@@ -16,6 +16,8 @@ import { Database, Download, Settings, Play, CheckCircle, ArrowLeft } from 'luci
 import toast from 'react-hot-toast';
 import AvailableCollectionsAndFields from '@/components/exports/AvailableCollectionsAndFields';
 import ExportConfigurationPreview from '@/components/exports/ExportConfigurationPreview';
+import ExportFiltersSection from '@/components/exports/ExportFiltersSection';
+import ExportJoinsSection from '@/components/exports/ExportJoinsSection';
 
 const AdminExportPage: React.FC = () => {
   const { token } = useAuth();
@@ -26,6 +28,24 @@ const AdminExportPage: React.FC = () => {
   const [availableFieldContexts, setAvailableFieldContexts] = useState<{ key: string; displayName: string }[]>([]);
   const [allFieldsForActiveContext, setAllFieldsForActiveContext] = useState<FieldInfo[]>([]);
   const [loadingFields, setLoadingFields] = useState(false);
+  
+  // Filter Creator States
+  const [showFilterCreator, setShowFilterCreator] = useState(false);
+  const [editingFilter, setEditingFilter] = useState<CollectionFilter | null>(null);
+  
+  // Join Creator States
+  const [showJoinCreator, setShowJoinCreator] = useState(false);
+  const [currentJoinSourceCollection, setCurrentJoinSourceCollection] = useState<string>('');
+  const [currentJoinTargetCollection, setCurrentJoinTargetCollection] = useState<string>('');
+  const [currentJoinLocalField, setCurrentJoinLocalField] = useState<string>('');
+  const [currentJoinForeignField, setCurrentJoinForeignField] = useState<string>('');
+  const [sourceCollectionFields, setSourceCollectionFields] = useState<FieldInfo[]>([]);
+  const [targetCollectionFields, setTargetCollectionFields] = useState<FieldInfo[]>([]);
+  const [loadingJoinFields, setLoadingJoinFields] = useState(false);
+  const [joinMethod, setJoinMethod] = useState<'suggested' | 'custom'>('suggested');
+  const [availablePossibleJoins, setAvailablePossibleJoins] = useState<any[]>([]);
+  const [selectedPossibleJoin, setSelectedPossibleJoin] = useState<any | null>(null);
+  
   const [exportConfig, setExportConfig] = useState<ExportConfiguration>({
     main_collection: '',
     selected_fields: [],
@@ -423,6 +443,57 @@ const AdminExportPage: React.FC = () => {
     console.log('🔍 Final availableFields count:', availableFields.length);
     return availableFields;
   }, [allFieldsForActiveContext, exportConfig.selected_fields, activeFieldContextCollection]);
+  
+  // Get collections that can be used as join sources (main collection + existing join targets)
+  const getJoinSourceCollections = () => {
+    if (!collections) return [];
+    
+    const sourceCollections: { key: string; display_name: string }[] = [];
+    
+    // Add main collection if it exists
+    if (exportConfig.main_collection) {
+      const mainCollectionInfo = collections.relationships[exportConfig.main_collection];
+      sourceCollections.push({
+        key: exportConfig.main_collection,
+        display_name: `${mainCollectionInfo?.display_name || exportConfig.main_collection} (Main Collection)`
+      });
+    }
+    
+    // Add all joined collections as potential sources for further joins
+    exportConfig.joins.forEach(join => {
+      const joinCollectionInfo = collections.relationships[join.target_collection];
+      // Avoid duplicates
+      if (!sourceCollections.find(c => c.key === join.target_collection)) {
+        sourceCollections.push({
+          key: join.target_collection,
+          display_name: `${joinCollectionInfo?.display_name || join.target_collection} (Joined Collection)`
+        });
+      }
+    });
+    
+    return sourceCollections.map(({ key, display_name }) => ({
+      key,
+      display_name
+    }));
+  };
+
+  // Get collections that can be joined from a specific source collection
+  const getJoinTargetCollections = (sourceCollectionKey: string) => {
+    if (!collections || !sourceCollectionKey) return [];
+    
+    const sourceCollection = collections.relationships[sourceCollectionKey];
+    if (!sourceCollection || !sourceCollection.possible_joins) return [];
+    
+    return sourceCollection.possible_joins.map(join => ({
+      key: join.collection,
+      display_name: collections.relationships[join.collection]?.display_name || join.collection,
+      suggested_local_field: join.suggested_local_field,
+      suggested_foreign_field: join.suggested_foreign_field,
+      relationship_type: join.relationship_type,
+      description: join.description
+    }));
+  };
+  
   const handleMainCollectionChange = (collection: string) => {
     setExportConfig(prev => ({
       ...prev,
@@ -482,6 +553,168 @@ const AdminExportPage: React.FC = () => {
       ...prev,
       filters: prev.filters.map(f => f.id === filterId ? updatedFilter : f)
     }));
+  };
+  
+  // Join Creator Handlers
+  const handleAddJoinClick = () => {
+    setShowJoinCreator(true);
+    // Set default source collection to main collection
+    if (exportConfig.main_collection) {
+      setCurrentJoinSourceCollection(exportConfig.main_collection);
+    }
+  };
+
+  const handleJoinSourceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const sourceCollection = e.target.value;
+    setCurrentJoinSourceCollection(sourceCollection);
+    
+    // Reset dependent fields
+    setCurrentJoinTargetCollection('');
+    setCurrentJoinLocalField('');
+    setCurrentJoinForeignField('');
+    setSourceCollectionFields([]);
+    setTargetCollectionFields([]);
+    // Don't reset joinMethod - let user keep their preference
+    setAvailablePossibleJoins([]);
+    setSelectedPossibleJoin(null);
+  };
+
+  const handleJoinTargetChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const targetCollection = e.target.value;
+    setCurrentJoinTargetCollection(targetCollection);
+    
+    if (!targetCollection || !token) return;
+    
+    try {
+      setLoadingJoinFields(true);
+      
+      // Get fields for both source and target collections
+      const [sourceFields, targetFields] = await Promise.all([
+        exportService.getFieldSuggestions(token, currentJoinSourceCollection),
+        exportService.getFieldSuggestions(token, targetCollection)
+      ]);
+      
+      setSourceCollectionFields(sourceFields.available_fields);
+      setTargetCollectionFields(targetFields.available_fields);
+      
+      // Get available possible joins for this source -> target combination
+      const targetCollections = getJoinTargetCollections(currentJoinSourceCollection);
+      const selectedTarget = targetCollections.find(t => t.key === targetCollection);
+      
+      // Find all possible joins from source to target
+      const sourceCollection = collections?.relationships[currentJoinSourceCollection];
+      const possibleJoins = sourceCollection?.possible_joins?.filter(join => 
+        join.collection === targetCollection
+      ) || [];
+      
+      setAvailablePossibleJoins(possibleJoins);
+      
+      if (possibleJoins.length > 0) {
+        // Only auto-select if user hasn't chosen custom method
+        if (joinMethod === 'suggested') {
+          setSelectedPossibleJoin(possibleJoins[0]);
+          setCurrentJoinLocalField(possibleJoins[0].suggested_local_field);
+          setCurrentJoinForeignField(possibleJoins[0].suggested_foreign_field);
+        }
+      } else {
+        // No suggestions available, switch to custom method
+        setJoinMethod('custom');
+        setSelectedPossibleJoin(null);
+        setCurrentJoinLocalField('');
+        setCurrentJoinForeignField('');
+      }
+      
+    } catch (error) {
+      console.error('Error loading join fields:', error);
+      toast.error('Gagal memuat field untuk join');
+    } finally {
+      setLoadingJoinFields(false);
+    }
+  };
+
+  const handleJoinMethodChange = (method: 'suggested' | 'custom') => {
+    setJoinMethod(method);
+    
+    if (method === 'suggested' && availablePossibleJoins.length > 0) {
+      // Auto-select first suggested join
+      setSelectedPossibleJoin(availablePossibleJoins[0]);
+      setCurrentJoinLocalField(availablePossibleJoins[0].suggested_local_field);
+      setCurrentJoinForeignField(availablePossibleJoins[0].suggested_foreign_field);
+    } else if (method === 'custom') {
+      // Clear suggested selection
+      setSelectedPossibleJoin(null);
+      setCurrentJoinLocalField('');
+      setCurrentJoinForeignField('');
+    }
+  };
+
+  const handlePossibleJoinSelect = (possibleJoin: any) => {
+    setSelectedPossibleJoin(possibleJoin);
+    setCurrentJoinLocalField(possibleJoin.suggested_local_field);
+    setCurrentJoinForeignField(possibleJoin.suggested_foreign_field);
+  };
+
+  const handleConfirmAddJoin = () => {
+    if (!currentJoinSourceCollection || !currentJoinTargetCollection) {
+      return;
+    }
+
+    let joinConfig: JoinConfiguration;
+    
+    if (joinMethod === 'suggested' && selectedPossibleJoin) {
+      // Use suggested join configuration
+      joinConfig = {
+        id: `join_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        source_collection: currentJoinSourceCollection,
+        target_collection: currentJoinTargetCollection,
+        local_field: selectedPossibleJoin.suggested_local_field,
+        foreign_field: selectedPossibleJoin.suggested_foreign_field,
+        relationship_type: selectedPossibleJoin.relationship_type,
+        description: selectedPossibleJoin.description,
+        selected_fields: []
+      };
+    } else if (joinMethod === 'custom' && currentJoinLocalField && currentJoinForeignField) {
+      // Use custom join configuration
+      joinConfig = {
+        id: `join_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        source_collection: currentJoinSourceCollection,
+        target_collection: currentJoinTargetCollection,
+        local_field: currentJoinLocalField,
+        foreign_field: currentJoinForeignField,
+        relationship_type: 'custom',
+        description: `Custom join ${currentJoinSourceCollection} to ${currentJoinTargetCollection}`,
+        selected_fields: []
+      };
+    } else {
+      return; // Invalid configuration
+    }
+
+    handleJoinAdd(joinConfig);
+    
+    // Reset all join creator state
+    setShowJoinCreator(false);
+    setCurrentJoinSourceCollection('');
+    setCurrentJoinTargetCollection('');
+    setCurrentJoinLocalField('');
+    setCurrentJoinForeignField('');
+    setSourceCollectionFields([]);
+    setTargetCollectionFields([]);
+    setJoinMethod('suggested');
+    setAvailablePossibleJoins([]);
+    setSelectedPossibleJoin(null);
+  };
+
+  const handleCancelJoinCreation = () => {
+    setShowJoinCreator(false);
+    setCurrentJoinSourceCollection('');
+    setCurrentJoinTargetCollection('');
+    setCurrentJoinLocalField('');
+    setCurrentJoinForeignField('');
+    setSourceCollectionFields([]);
+    setTargetCollectionFields([]);
+    setJoinMethod('suggested');
+    setAvailablePossibleJoins([]);
+    setSelectedPossibleJoin(null);
   };
 
   const handleValidateConfiguration = async () => {
@@ -608,6 +841,61 @@ const AdminExportPage: React.FC = () => {
               <p className="text-xs text-gray-500 mt-1">Konfigurasi field, join, dan filter untuk export</p>
             </div>
             
+            {/* Top Section - Filters and Joins */}
+            <div className="flex-shrink-0 h-[300px] flex flex-row gap-4 p-4">
+              {/* Filters Section */}
+              <div className="w-1/2">
+                <ExportFiltersSection
+                  exportConfig={exportConfig}
+                  collections={collections}
+                  availableFieldContexts={availableFieldContexts}
+                  token={token}
+                  showFilterCreator={showFilterCreator}
+                  editingFilter={editingFilter}
+                  onFilterAdd={handleFilterAdd}
+                  onFilterRemove={handleFilterRemove}
+                  onFilterUpdate={handleFilterUpdate}
+                  onShowFilterCreator={setShowFilterCreator}
+                  onSetEditingFilter={setEditingFilter}
+                />
+              </div>
+              
+              {/* Joins Section */}
+              <div className="w-1/2">
+                <ExportJoinsSection
+                  exportConfig={exportConfig}
+                  collections={collections}
+                  availableFieldContexts={availableFieldContexts}
+                  token={token}
+                  showJoinCreator={showJoinCreator}
+                  currentJoinSourceCollection={currentJoinSourceCollection}
+                  currentJoinTargetCollection={currentJoinTargetCollection}
+                  currentJoinLocalField={currentJoinLocalField}
+                  currentJoinForeignField={currentJoinForeignField}
+                  sourceCollectionFields={sourceCollectionFields}
+                  targetCollectionFields={targetCollectionFields}
+                  loadingJoinFields={loadingJoinFields}
+                  joinMethod={joinMethod}
+                  availablePossibleJoins={availablePossibleJoins}
+                  selectedPossibleJoin={selectedPossibleJoin}
+                  onJoinAdd={handleJoinAdd}
+                  onJoinRemove={handleJoinRemove}
+                  onShowJoinCreator={setShowJoinCreator}
+                  onJoinSourceChange={handleJoinSourceChange}
+                  onJoinTargetChange={handleJoinTargetChange}
+                  onJoinMethodChange={handleJoinMethodChange}
+                  onPossibleJoinSelect={handlePossibleJoinSelect}
+                  onJoinLocalFieldChange={setCurrentJoinLocalField}
+                  onJoinForeignFieldChange={setCurrentJoinForeignField}
+                  onConfirmAddJoin={handleConfirmAddJoin}
+                  onCancelJoinCreation={handleCancelJoinCreation}
+                  getJoinSourceCollections={getJoinSourceCollections}
+                  getJoinTargetCollections={getJoinTargetCollections}
+                />
+              </div>
+            </div>
+            
+            {/* Bottom Section - Selected Fields */}
             <div className="flex-1 overflow-auto pb-20">
               <ExportConfigurationPreview
                 exportConfig={exportConfig}
@@ -617,12 +905,6 @@ const AdminExportPage: React.FC = () => {
                 setActiveFieldContextCollection={setActiveFieldContextCollection}
                 onFieldAdd={handleFieldSelect}
                 onFieldRemove={handleFieldRemove}
-                onJoinAdd={handleJoinAdd}
-                onJoinRemove={handleJoinRemove}
-                onFilterAdd={handleFilterAdd}
-                onFilterRemove={handleFilterRemove}
-                onFilterUpdate={handleFilterUpdate}
-                token={token}
               />
             </div>
           </div>
