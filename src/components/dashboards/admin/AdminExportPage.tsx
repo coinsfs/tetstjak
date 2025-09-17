@@ -39,6 +39,9 @@ const AdminExportPage: React.FC = () => {
       flatten_nested: true
     }
   });
+  
+  // Join Creator States
+  const [showJoinCreator, setShowJoinCreator] = useState(false);
 
   // Manage available field contexts based on main collection and joins
   useEffect(() => {
@@ -484,6 +487,10 @@ const AdminExportPage: React.FC = () => {
     }));
   };
 
+  const handleAddJoinClick = () => {
+    setShowJoinCreator(true);
+  };
+
   const handleValidateConfiguration = async () => {
     if (!token) return;
 
@@ -775,6 +782,7 @@ const AdminExportPage: React.FC = () => {
                 availableFieldContexts={availableFieldContexts} 
                 activeFieldContextCollection={activeFieldContextCollection}
                 setActiveFieldContextCollection={setActiveFieldContextCollection}
+                onTriggerJoinCreation={handleAddJoinClick}
                 onFieldAdd={handleFieldSelect}
                 onFieldRemove={handleFieldRemove}
                 onJoinAdd={handleJoinAdd}
@@ -787,6 +795,32 @@ const AdminExportPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Join Creator Modal */}
+        {showJoinCreator && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-96 max-h-96 overflow-y-auto">
+              <h3 className="text-lg font-semibold mb-4">Create Join Configuration</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Join creation functionality will be implemented here.
+              </p>
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={() => setShowJoinCreator(false)}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => setShowJoinCreator(false)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Create Join
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Filter Creator Modal */}
         {showFilterCreator && (
