@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Database, Settings, X, Trash2 } from 'lucide-react';
+import { Plus, Database, Settings, X, Trash2, Filter, GitMerge, Edit3 } from 'lucide-react';
 import { 
   ExportConfiguration, 
   JoinConfiguration, 
@@ -297,7 +297,10 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
         {/* Data Filters - Left Half */}
         <div className="w-1/2 border-r border-gray-200 flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50">
-            <h4 className="text-sm font-medium text-gray-900">Data Filters</h4>
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-blue-600" />
+              <h4 className="text-sm font-medium text-gray-900">Data Filters</h4>
+            </div>
             <button 
               onClick={() => setShowFilterCreator(true)}
               className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
@@ -310,8 +313,8 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
           <div className="flex-1 p-4 overflow-x-auto">
             <div className="flex gap-4 min-w-max">
               {exportConfig.filters.length === 0 ? (
-                <div className="flex-shrink-0 w-64 p-4 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
-                  <Settings className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                <div className="flex-shrink-0 w-64 p-6 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500 hover:border-gray-400 transition-colors">
+                  <Filter className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                   <p className="text-sm">No filters configured</p>
                   <p className="text-xs text-gray-400 mt-1">Add filters to refine your data export</p>
                 </div>
@@ -319,44 +322,55 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
                 exportConfig.filters.map((filter) => (
                   <div
                     key={filter.id}
-                    className="flex-shrink-0 w-64 p-3 border border-gray-200 rounded-lg bg-gray-50"
+                    className="flex-shrink-0 w-64 p-2.5 border border-gray-200 rounded-lg bg-white hover:shadow-md hover:border-blue-300 transition-all duration-200 group"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-sm font-medium text-gray-900 truncate">
-                        {filter.collection} Filter
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <Filter className="w-3.5 h-3.5 text-blue-500" />
+                        <div className="text-sm font-medium text-gray-900 truncate">
+                          {filter.collection}
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-1">
+                      <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => {
                             setEditingFilter(filter);
                             setShowFilterCreator(true);
                           }}
-                          className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                          className="p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
                           title="Edit filter"
                         >
-                          <Settings className="w-3 h-3" />
+                          <Edit3 className="w-3 h-3" />
                         </button>
                         <button
                           onClick={() => onFilterRemove(filter.id)}
-                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                           title="Remove filter"
                         >
                           <X className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500 mb-2">
-                      {filter.conditions.length} condition{filter.conditions.length !== 1 ? 's' : ''} 
-                      {filter.conditions.length > 1 && ` (${filter.logic.toUpperCase()})`}
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {filter.conditions.length} condition{filter.conditions.length !== 1 ? 's' : ''}
+                      </span>
+                      {filter.conditions.length > 1 && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                          {filter.logic.toUpperCase()}
+                        </span>
+                      )}
                     </div>
-                    <div className="text-xs text-gray-400 space-y-1">
+                    <div className="text-xs text-gray-500 space-y-0.5">
                       {filter.conditions.slice(0, 2).map((condition, index) => (
-                        <div key={condition.id} className="truncate">
-                          {condition.field} {condition.operator} {String(condition.value)}
+                        <div key={condition.id} className="truncate flex items-center gap-1">
+                          <span className="font-medium text-gray-700">{condition.field}</span>
+                          <span className="text-gray-400">{condition.operator}</span>
+                          <span className="text-gray-600">"{String(condition.value)}"</span>
                         </div>
                       ))}
                       {filter.conditions.length > 2 && (
-                        <div className="text-gray-400">
+                        <div className="text-gray-400 italic">
                           +{filter.conditions.length - 2} more...
                         </div>
                       )}
@@ -371,7 +385,10 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
         {/* Joins & Lookups - Right Half */}
         <div className="w-1/2 flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50">
-            <h4 className="text-sm font-medium text-gray-900">Joins & Lookups</h4>
+            <div className="flex items-center gap-2">
+              <GitMerge className="w-4 h-4 text-green-600" />
+              <h4 className="text-sm font-medium text-gray-900">Joins & Lookups</h4>
+            </div>
             <button 
               onClick={handleAddJoinClick}
               className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-md hover:bg-green-200 transition-colors"
@@ -384,7 +401,7 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
           <div className="flex-1 p-4 overflow-x-auto">
             {/* Join Creator */}
             {showJoinCreator && (
-              <div className="flex-shrink-0 w-96 mr-4 p-4 border border-blue-200 rounded-lg bg-blue-50">
+              <div className="flex-shrink-0 w-96 mr-4 p-3 border border-blue-200 rounded-lg bg-blue-50 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <h5 className="text-sm font-medium text-gray-900">Create Join Configuration</h5>
                   <button
@@ -395,7 +412,7 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
                   </button>
                 </div>
                 
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {/* Join From */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -564,8 +581,8 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
 
             <div className="flex gap-4 min-w-max">
               {exportConfig.joins.length === 0 && !showJoinCreator ? (
-                <div className="flex-shrink-0 w-64 p-4 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
-                  <Database className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                <div className="flex-shrink-0 w-64 p-6 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500 hover:border-gray-400 transition-colors">
+                  <GitMerge className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                   <p className="text-sm">No joins configured</p>
                   <p className="text-xs text-gray-400 mt-1">Add joins to include related data</p>
                 </div>
@@ -573,24 +590,36 @@ const ExportFilterAndJoinConfig: React.FC<ExportFilterAndJoinConfigProps> = ({
                 exportConfig.joins.map((join) => (
                   <div
                     key={join.id}
-                    className="flex-shrink-0 w-64 p-3 border border-gray-200 rounded-lg bg-gray-50"
+                    className="flex-shrink-0 w-64 p-2.5 border border-gray-200 rounded-lg bg-white hover:shadow-md hover:border-green-300 transition-all duration-200 group"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-sm font-medium text-gray-900 truncate">
-                        {join.source_collection} → {join.target_collection}
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        <GitMerge className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                        <div className="text-sm font-medium text-gray-900 truncate">
+                          <span className="text-blue-600">{join.source_collection}</span>
+                          <span className="text-gray-400 mx-1">→</span>
+                          <span className="text-green-600">{join.target_collection}</span>
+                        </div>
                       </div>
                       <button
                         onClick={() => onJoinRemove(join.id)}
-                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
                       >
                         <X className="w-3 h-3" />
                       </button>
                     </div>
-                    <div className="text-xs text-gray-500 mb-1">
-                      {join.local_field} → {join.foreign_field}
+                    <div className="flex items-center gap-1 mb-1.5">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        {join.relationship_type}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                      <span className="font-medium text-gray-700">{join.local_field}</span>
+                      <span className="text-gray-400">→</span>
+                      <span className="font-medium text-gray-700">{join.foreign_field}</span>
                     </div>
                     {join.description && (
-                      <div className="text-xs text-gray-400 truncate">
+                      <div className="text-xs text-gray-400 truncate leading-relaxed">
                         {join.description}
                       </div>
                     )}
