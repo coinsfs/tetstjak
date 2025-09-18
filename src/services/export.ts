@@ -155,7 +155,7 @@ class ExportService extends BaseService {
     allJoins: JoinConfiguration[],
     collectionFieldsMap: Map<string, string[]>,
     collectionFiltersMap: Map<string, BackendFilterCondition[]>,
-    parentFieldsArray: string[]
+    parentFieldsArray?: string[]
   ): BackendJoinConfiguration[] {
     // Find all joins that start from the current source collection
     const joinsFromSource = allJoins.filter(join => join.source_collection === sourceCollection);
@@ -190,13 +190,9 @@ class ExportService extends BaseService {
         allJoins,
         collectionFieldsMap,
         collectionFiltersMap,
-        mutableTargetFields // Pass the mutable fields array so nested joins can add their aliases
+        mutableTargetFields // Pass the mutable fields array for nested joins
       );
 
-      // After nested joins are built, add this join's alias to the parent's fields array
-      if (!parentFieldsArray.includes(backendJoin.alias)) {
-        parentFieldsArray.push(backendJoin.alias);
-      }
 
       return backendJoin;
     });

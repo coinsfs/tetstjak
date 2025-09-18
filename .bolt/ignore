@@ -140,3 +140,5 @@ src/components/security/ExamMonitoring.tsx
 src/components/security/SecurityCheck.tsx
 src/components/security/index.ts
 src/components/tables/TeacherExamsTable.tsx
+
+src/components/dashboards/admin/ExportLandingPage.tsx
