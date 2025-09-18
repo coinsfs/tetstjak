@@ -19,3 +19,4 @@ export * from './export';
 export * from './scoreTrendAnalytics';
 export * from './subjectMasteryAnalytics';
 export * from './export';
+export * from './adminExport';
