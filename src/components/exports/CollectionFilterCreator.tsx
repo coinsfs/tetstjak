@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus, Database, Filter, Trash2 } from 'lucide-react';
 import AsyncSelect from 'react-select/async';
 import useDebounce from '@/hooks/useDebounce';
-import SearchableDropdown from './SearchableDropdown';
 import { 
   CollectionsRelationshipsResponse, 
   CollectionFilter, 
@@ -382,7 +381,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
         
       case 'academic_period':
         return (
-          <SearchableDropdown
+          <select
             value={condition.value}
             onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
             disabled={loadingLookupData}
