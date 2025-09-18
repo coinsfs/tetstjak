@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Database, Filter, Trash2 } from 'lucide-react';
+import AsyncSelect from 'react-select/async';
 import useDebounce from '@/hooks/useDebounce';
 import { 
   CollectionsRelationshipsResponse, 
@@ -253,6 +254,36 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
       return null;
     }
     
+    // Helper function to load student options
+    const loadStudentOptions = async (inputValue: string) => {
+      if (!authToken) return [];
+      try {
+        const students = await userService.getBasicStudents(authToken, inputValue);
+        return students.map(s => ({
+          value: s._id,
+          label: `${s.full_name}${s.class_name ? ` (${s.class_name})` : ''}`
+        }));
+      } catch (error) {
+        console.error('Error fetching students:', error);
+        return [];
+      }
+    };
+    
+    // Helper function to load teacher options
+    const loadTeacherOptions = async (inputValue: string) => {
+      if (!authToken) return [];
+      try {
+        const teachers = await userService.getBasicTeachers(authToken, inputValue);
+        return teachers.map(t => ({
+          value: t._id,
+          label: t.full_name
+        }));
+      } catch (error) {
+        console.error('Error fetching teachers:', error);
+        return [];
+      }
+    };
+    
     switch (valueType) {
       case 'number':
         return (
@@ -289,41 +320,63 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
         );
         
       case 'student':
-        const selectedStudent = basicStudents.find(s => s.value === condition.value);
         return (
-          <select
-            value={condition.value}
-            onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
-            disabled={loadingLookupData}
-            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-l-md shadow-sm border-r-0 appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-            onFocus={() => setStudentSearchTerm('')}
-          >
-            <option value="">Select student...</option>
-            {basicStudents.map((student) => (
-              <option key={student.value} value={student.value}>
-                {student.label}
-              </option>
-            ))}
-          </select>
+          <AsyncSelect
+            cacheOptions
+            defaultOptions
+            loadOptions={loadStudentOptions}
+            value={condition.value ? { value: condition.value, label: basicStudents.find(s => s.value === condition.value)?.label || condition.value } : null}
+            onChange={(selectedOption) => handleUpdateCondition(condition.id, { value: selectedOption ? selectedOption.value : '' })}
+            isClearable
+            placeholder="Search students..."
+            className="text-sm"
+            styles={{
+              control: (provided) => ({
+                ...provided,
+                minHeight: '38px',
+                borderRadius: '0.375rem',
+                borderColor: '#d1d5db',
+                boxShadow: 'none',
+                '&:hover': {
+                  borderColor: '#d1d5db'
+                }
+              }),
+              menu: (provided) => ({
+                ...provided,
+                zIndex: 9999
+              })
+            }}
+          />
         );
         
       case 'teacher':
-        const selectedTeacher = basicTeachers.find(t => t.value === condition.value);
         return (
-          <select
-            value={condition.value}
-            onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
-            disabled={loadingLookupData}
-            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-l-md shadow-sm border-r-0 appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-            onFocus={() => setTeacherSearchTerm('')}
-          >
-            <option value="">Select teacher...</option>
-            {basicTeachers.map((teacher) => (
-              <option key={teacher.value} value={teacher.value}>
-                {teacher.label}
-              </option>
-            ))}
-          </select>
+          <AsyncSelect
+            cacheOptions
+            defaultOptions
+            loadOptions={loadTeacherOptions}
+            value={condition.value ? { value: condition.value, label: basicTeachers.find(t => t.value === condition.value)?.label || condition.value } : null}
+            onChange={(selectedOption) => handleUpdateCondition(condition.id, { value: selectedOption ? selectedOption.value : '' })}
+            isClearable
+            placeholder="Search teachers..."
+            className="text-sm"
+            styles={{
+              control: (provided) => ({
+                ...provided,
+                minHeight: '38px',
+                borderRadius: '0.375rem',
+                borderColor: '#d1d5db',
+                boxShadow: 'none',
+                '&:hover': {
+                  borderColor: '#d1d5db'
+                }
+              }),
+              menu: (provided) => ({
+                ...provided,
+                zIndex: 9999
+              })
+            }}
+          />
         );
         
       case 'academic_period':
@@ -332,7 +385,7 @@ const CollectionFilterCreator: React.FC<CollectionFilterCreatorProps> = ({
             value={condition.value}
             onChange={(e) => handleUpdateCondition(condition.id, { value: e.target.value })}
             disabled={loadingLookupData}
-            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-l-md shadow-sm border-r-0 appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="block w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm appearance-none pr-8 cursor-pointer hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
             <option value="">Select academic period...</option>
             {academicPeriods.map((period) => (
