@@ -140,7 +140,5 @@ src/components/security/ExamMonitoring.tsx
 src/components/security/SecurityCheck.tsx
 src/components/security/index.ts
 src/components/tables/TeacherExamsTable.tsx
-src/components/exports/AvailableCollectionsAndFields.tsx
-src/components/exports/CollectionFilterCreator.tsx
-src/components/exports/ExportConfigurationPreview.tsx
-src/components/exports/ExportFilterAndJoinConfig.tsx
+
+src/components/dashboards/admin/ExportLandingPage.tsx
